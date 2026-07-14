@@ -123,6 +123,28 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+
+  // Server route handlers (`route.ts`) are the one exception under `app/`: they are server-only
+  // auth/session infrastructure (e.g. the OAuth callback's code-for-session exchange) with no
+  // React hook to route through. They may use the Supabase SSR wrapper in `@/lib/db/supabase/*`,
+  // but still must not import raw `@supabase/*`, Dexie, or another feature's internals. This
+  // override sits after the rule above so it wins for `route.ts` files.
+  {
+    files: ['app/**/route.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [...DEXIE_MODULES, ...SUPABASE_MODULES, ...CROSS_FEATURE_INTERNALS],
+              message: MSG_NO_DIRECT_DB,
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])
 
 export default eslintConfig
