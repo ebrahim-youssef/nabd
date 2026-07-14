@@ -10,6 +10,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # The build imports the Supabase client, whose env module fails fast if these are unset.
+    # Real values come from repo secrets when configured; placeholders keep CI self-contained
+    # (nothing here talks to Supabase).
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

@@ -10,6 +10,12 @@ concurrency:
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    # e2e runs against a production build (so the Serwist SW is active); that build imports the
+    # Supabase client and needs these. Real values come from repo secrets when configured;
+    # placeholders keep CI self-contained (the offline tests never reach Supabase).
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
