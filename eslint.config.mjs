@@ -30,6 +30,8 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // Raw design-system handoff (source material, not app code).
+    'design-import/**',
   ]),
 
   // console.* is banned everywhere; lib/logger.ts is the single allowed place (exempted below).

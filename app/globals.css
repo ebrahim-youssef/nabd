@@ -2,129 +2,281 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
-@custom-variant dark (&:is(.dark *));
+/* ─────────────────────────────────────────────────────────────
+   nabd (نبض) design tokens — imported from the nabd Claude Design
+   system (ADR-0007, NBD-3). One identity, two characters:
+     · data-mode="classic|modern"  → display font + corner radii
+     · data-theme="light|dark"      → colours (same identity)
+   Palette law: teal-green (--primary/--accent) = completed & current
+   worship; --gold = qadāʾ + gentle alerts ONLY; --faint = upcoming /
+   disabled. No colour outside this palette (there is no red).
+   Fonts load via next/font in app/layout.tsx as the CSS variables
+   --font-tajawal, --font-amiri, --font-aref-ruqaa, --font-reem-kufi.
+   ───────────────────────────────────────────────────────────── */
+
+@custom-variant dark (&:is([data-theme='dark'] *));
 
 @theme inline {
+  /* Type faces (font-body / font-display / font-scripture / font-sans) */
+  --font-sans: var(--font-body);
+  --font-body: var(--font-body);
+  --font-display: var(--font-display);
+  --font-scripture: var(--font-scripture);
+
+  /* Type scale (px, Arabic-first leading) */
+  --text-display: 40px;
+  --text-display--line-height: 1.2;
+  --text-title: 24px;
+  --text-title--line-height: 1.2;
+  --text-subtitle: 22px;
+  --text-subtitle--line-height: 1.3;
+  --text-body: 16px;
+  --text-body--line-height: 1.7;
+  --text-small: 13px;
+  --text-small--line-height: 1.5;
+  --text-xsmall: 12px;
+  --text-xsmall--line-height: 1.5;
+  --text-label: 11px;
+  --text-label--line-height: 1.4;
+  --text-scripture: 16px;
+  --text-scripture--line-height: 2;
+
+  /* shadcn semantic colours (bridged to nabd values below) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* nabd-specific semantic colours */
+  --color-primary-deep: var(--primary-deep);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-gold: var(--gold);
+  --color-gold-soft: var(--gold-soft);
+  --color-faint: var(--faint);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-on-primary: var(--on-primary);
+  --color-ring-track: var(--ring-track);
+
+  /* Charts + sidebar (retinted to the palette) */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radii (mode-bound; --radius drives shadcn's sm/md/lg steps) */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-icon: var(--r-icon);
+  --radius-btn: var(--r-btn);
+  --radius-chip: var(--r-chip);
+  --radius-card: var(--r-card);
+  --radius-ring: var(--r-ring);
+
+  /* Elevation (soft, tinted; deeper in dark) */
+  --shadow-card: var(--shadow);
+  --shadow-card-sm: var(--shadow-sm);
 }
 
+/* ── Global (mode/theme-independent): faces, scale, motion ── */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --font-body: var(--font-tajawal), system-ui, sans-serif;
+  --font-scripture: var(--font-amiri), 'Tajawal', serif;
+
+  /* Weights */
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+  --fw-black: 900;
+
+  /* Spacing — 4px grid (parity with Tailwind's default scale) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+
+  /* Motion — quiet, no bounce */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur: 0.22s;
 }
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+/* ── Mode = character (display font + corner radii) ── */
+:root,
+:root[data-mode='classic'] {
+  --font-display: var(--font-aref-ruqaa), var(--font-amiri), serif;
+  --r-icon: 50%;
+  --r-btn: 14px;
+  --r-chip: 22px;
+  --r-card: 16px;
+  --r-ring: 50%;
+  --radius: 14px;
+}
+:root[data-mode='modern'] {
+  --font-display: var(--font-reem-kufi), var(--font-tajawal), sans-serif;
+  --r-icon: 12px;
+  --r-btn: 12px;
+  --r-chip: 10px;
+  --r-card: 16px;
+  --r-ring: 22px;
+  --radius: 12px;
+}
+
+/* ── نهار — Light lighting (Classic default) ── */
+:root,
+:root[data-theme='light'] {
+  --bg: #eaf2f0;
+  --surface: #ffffff;
+  --surface-2: #eaf2f0;
+  --primary: #0e5a5a;
+  --primary-deep: #0e4f52;
+  --accent: #2fa6a0;
+  --gold: #c79a3a;
+  --gold-soft: #fbf3df;
+  --faint: #9bbebb;
+  --line: rgba(16, 48, 47, 0.1);
+  --on-primary: #eaf2f0;
+  --ring-track: rgba(234, 242, 240, 0.22);
+
+  /* shadcn bridge (light) */
+  --background: var(--bg);
+  --foreground: #0e3234;
+  --card: var(--surface);
+  --card-foreground: #0e3234;
+  --popover: var(--surface);
+  --popover-foreground: #0e3234;
+  --primary-foreground: var(--on-primary);
+  --secondary: var(--surface-2);
+  --secondary-foreground: #0e3234;
+  --muted: var(--surface-2);
+  --muted-foreground: #5c8582;
+  --accent-foreground: #0e3234;
+  --destructive: var(--gold);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--accent);
+
+  /* elevation (light) */
+  --shadow: 0 8px 24px rgba(14, 90, 90, 0.1);
+  --shadow-sm: 0 2px 8px rgba(14, 90, 90, 0.08);
+
+  /* charts + sidebar (light) */
+  --chart-1: var(--primary);
+  --chart-2: var(--accent);
+  --chart-3: var(--gold);
+  --chart-4: var(--primary-deep);
+  --chart-5: var(--faint);
+  --sidebar: var(--surface);
+  --sidebar-foreground: #0e3234;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--on-primary);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: #0e3234;
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
+}
+
+/* Modern lighting nudges the neutrals airier (light theme only) */
+:root[data-mode='modern'],
+:root[data-mode='modern'][data-theme='light'] {
+  --bg: #f4f8f7;
+  --muted-foreground: #7ba09d;
+}
+
+/* ── ليل — Dark lighting (same identity, both modes) ── */
+:root[data-theme='dark'] {
+  --bg: #08201f;
+  --surface: #0e3234;
+  --surface-2: #103a38;
+  --primary: #12736f;
+  --primary-deep: #0e5a5a;
+  --accent: #3fbdb6;
+  --gold: #d9ae4e;
+  --gold-soft: #2a2a18;
+  --faint: #4e6e6b;
+  --line: rgba(234, 242, 240, 0.1);
+  --on-primary: #eaf2f0;
+  --ring-track: rgba(234, 242, 240, 0.14);
+
+  /* shadcn bridge (dark) */
+  --background: var(--bg);
+  --foreground: #eaf2f0;
+  --card: var(--surface);
+  --card-foreground: #eaf2f0;
+  --popover: var(--surface);
+  --popover-foreground: #eaf2f0;
+  --primary-foreground: var(--on-primary);
+  --secondary: var(--surface-2);
+  --secondary-foreground: #eaf2f0;
+  --muted: var(--surface-2);
+  --muted-foreground: #7fa6a3;
+  --accent-foreground: #08201f;
+  --destructive: var(--gold);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--accent);
+
+  /* elevation (dark, deeper) */
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 3px 12px rgba(0, 0, 0, 0.3);
+
+  /* charts + sidebar (dark) */
+  --chart-1: var(--primary);
+  --chart-2: var(--accent);
+  --chart-3: var(--gold);
+  --chart-4: var(--primary-deep);
+  --chart-5: var(--faint);
+  --sidebar: var(--surface);
+  --sidebar-foreground: #eaf2f0;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--on-primary);
+  --sidebar-accent: var(--surface-2);
+  --sidebar-accent-foreground: #eaf2f0;
+  --sidebar-border: var(--line);
+  --sidebar-ring: var(--accent);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-  }
   html {
     @apply font-sans;
+  }
+  body {
+    @apply bg-background text-foreground;
+    line-height: 1.7;
   }
 }

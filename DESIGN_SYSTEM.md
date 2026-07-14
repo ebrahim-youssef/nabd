@@ -1,96 +1,196 @@
-# DESIGN_SYSTEM.md — nabd
+# DESIGN_SYSTEM.md — nabd (نبض)
 
-Personality: defined by the project's **Claude Design** system (the source of truth for the
-palette, fonts, and scales). Components never hardcode visual values — everything below is a
-token. New need → new token, never a magic value.
+The local source of truth for nabd's visual tokens, imported from the nabd Claude Design
+system (ADR-0007, ticket NBD-3). Components consume **semantic tokens only** — never a raw
+hex, font, or size literal. New need → new token, never a magic value.
 
-> **Source of truth & import.** The concrete token values (hex colors, font families, exact
-> scales) live in the Claude Design project:
-> `https://claude.ai/design/p/e42ff72c-8bbf-45a9-9481-a8f8acbbd452`. They are imported into
-> this repo via the `claude_design` MCP (`/design-login`, which needs an interactive
-> terminal) — see ticket **NBD-3**. This file is the contract every component codes against;
-> ticket NBD-3 fills the value tables below from the design project and this doc is then the
-> local source of truth. **No UI ticket starts before NBD-3 lands the real tokens.** Do not
-> invent substitute colors or fonts in the meantime.
+> **Source & import.** Concrete values live in the Claude Design project
+> (`https://claude.ai/design/p/e42ff72c-8bbf-45a9-9481-a8f8acbbd452`) and were imported as
+> the CSS variables in `app/globals.css`. The raw handoff sits under `design-import/`
+> (gitignored). If a value must change, change it in the design project and re-import — do
+> not hand-edit tokens to diverge from the source.
 
-## Colors
+## One identity, two characters
 
-Components consume **semantic tokens only** — never a raw ramp step or a hex literal. The
-token set below is fixed; NBD-3 fills the light/dark hex values from the Claude Design project
-and records the contrast ratio next to each foreground/background pair.
+nabd keeps **one** colour family and **one** font family always. Only three things switch:
 
-Required semantic tokens (light **and** dark): `background`, `surface`, `surface-raised`,
-`primary`, `primary-foreground`, `accent`, `accent-foreground`, `muted`, `muted-foreground`,
-`border`, `ring`, `success`, `warning`, `destructive`, `destructive-foreground`.
+- **`data-mode="classic|modern"`** on `<html>` — the _character_: display font + corner radii.
+  - **Classic (كلاسيكيّ)** — warm, ornamented; display font **Aref Ruqaa**; round/soft corners
+    (icon = full circle).
+  - **Modern (حديث)** — clean, geometric; display font **Reem Kufi**; gently squared corners.
+- **`data-theme="light|dark"`** on `<html>` — the _lighting_: colours (same identity, a
+  dedicated dark palette — not inverted light).
+- Nav position (mobile bottom / web top) — a layout concern, not a token.
 
-Exposed as CSS variables in `app/globals.css` under `@theme inline`, wired to Tailwind
-utilities. Contrast bar: body text ≥ 4.5:1, large text / UI ≥ 3:1 — each pair's measured
-ratio is stated here once NBD-3 imports the values; any pair that fails is corrected in the
-design project, not shipped.
+Everything is **RTL** (`dir="rtl"`, Arabic-only) and every number is **Arabic-Indic**
+(٠١٢٣٤٥٦٧٨٩). Default at the root: `data-mode="classic" data-theme="light"`. A mode/theme
+switcher UI is a later ticket; NBD-3 only lands the tokens and the defaults.
+
+## Colour
+
+**Palette law (fixed):** teal-green + gold, nothing outside it.
+
+- `--primary` / `--accent` → completed & current acts of worship.
+- `--gold` → gentle alerts and makeup (qaḍāʾ) **only**.
+- `--faint` → upcoming / disabled.
+- There is **no red / destructive** hue. Error and destructive surfaces use `gold` (mapped to
+  the shadcn `destructive` slot so components keep working).
+
+Tokens are CSS variables in `app/globals.css`, exposed as Tailwind utilities via `@theme`.
+shadcn/ui's semantic names (`background`, `foreground`, `card`, `primary`,
+`primary-foreground`, `secondary`, `muted`, `muted-foreground`, `accent`, `accent-foreground`,
+`destructive`, `border`, `input`, `ring`) are **bridged** to these values so generated
+components render in-palette.
+
+### Light (نهار) — Classic default
+
+| Token                                 | Utility                  | Hex                           |
+| ------------------------------------- | ------------------------ | ----------------------------- |
+| `--bg` / `background`                 | `bg-background`          | `#EAF2F0` (Modern: `#F4F8F7`) |
+| `--surface` / `card`                  | `bg-surface` / `bg-card` | `#FFFFFF`                     |
+| `--surface-2` / `muted`, `secondary`  | `bg-surface-2`           | `#EAF2F0`                     |
+| `--primary`                           | `bg-primary`             | `#0E5A5A`                     |
+| `--primary-deep`                      | `text-primary-deep`      | `#0E4F52`                     |
+| `--accent`                            | `bg-accent`              | `#2FA6A0`                     |
+| `--gold` / `destructive`              | `text-gold`              | `#C79A3A`                     |
+| `--gold-soft`                         | `bg-gold-soft`           | `#FBF3DF`                     |
+| `foreground` (ink)                    | `text-foreground`        | `#0E3234`                     |
+| `--muted-foreground`                  | `text-muted-foreground`  | `#5C8582` (Modern: `#7BA09D`) |
+| `--faint`                             | `text-faint`             | `#9BBEBB`                     |
+| `--on-primary` / `primary-foreground` | `text-on-primary`        | `#EAF2F0`                     |
+| `accent-foreground`                   | `text-accent-foreground` | `#0E3234`                     |
+| `--line` / `border`                   | `border-border`          | `rgba(16,48,47,.10)`          |
+| `ring`                                | `ring-ring`              | `#2FA6A0`                     |
+| `--ring-track`                        | `bg-ring-track`          | `rgba(234,242,240,.22)`       |
+
+### Dark (ليل) — both modes
+
+| Token                    | Hex                     |
+| ------------------------ | ----------------------- |
+| `--bg` / `background`    | `#08201F`               |
+| `--surface` / `card`     | `#0E3234`               |
+| `--surface-2` / `muted`  | `#103A38`               |
+| `--primary`              | `#12736F`               |
+| `--primary-deep`         | `#0E5A5A`               |
+| `--accent`               | `#3FBDB6`               |
+| `--gold` / `destructive` | `#D9AE4E`               |
+| `--gold-soft`            | `#2A2A18`               |
+| `foreground` (ink)       | `#EAF2F0`               |
+| `--muted-foreground`     | `#7FA6A3`               |
+| `--faint`                | `#4E6E6B`               |
+| `accent-foreground`      | `#08201F`               |
+| `--line` / `border`      | `rgba(234,242,240,.10)` |
+
+### Contrast (WCAG AA: body ≥ 4.5:1, large text / UI ≥ 3:1)
+
+Measured with a WCAG 2.1 luminance calc. **Bold = below its bar; correct in the design
+project, not by hand** (tracked — see the note at the end).
+
+| Pair                                         | Ratio    | Bar           |
+| -------------------------------------------- | -------- | ------------- |
+| Light ink on bg                              | 12.11    | AA            |
+| Light ink on surface                         | 13.78    | AA            |
+| Light on-primary on primary                  | 7.02     | AA            |
+| Light accent-foreground (ink) on accent      | 4.65     | AA            |
+| Light primary-deep on gold-soft (alert text) | 8.41     | AA            |
+| **Light muted-foreground on bg (Classic)**   | **3.60** | body ✗ / UI ✓ |
+| **Light muted-foreground on bg (Modern)**    | **2.67** | ✗             |
+| Light faint on bg (disabled — decorative)    | 1.76     | exempt        |
+| Dark ink on bg                               | 14.92    | AA            |
+| Dark ink on surface                          | 12.11    | AA            |
+| Dark on-primary on primary                   | 4.98     | AA            |
+| Dark muted-foreground on bg                  | 6.38     | AA            |
+| Dark gold on surface                         | 6.63     | AA            |
+| Dark faint on bg (disabled)                  | 3.05     | UI ✓          |
 
 ## Typography
 
-nabd uses **multiple faces, one per context** (per the design decision — the design project
-defines them). One usage context = one font.
+Multiple faces, one per context. Fonts load via `next/font/google` in `app/layout.tsx`
+(Tajawal, Amiri, Aref Ruqaa, Reem Kufi) and inject CSS variables.
 
-| Utility | CSS var | Usage context |
-| --- | --- | --- |
-| `font-quran` | `--font-quran` | Quran and adhkar text (the recitation content) |
-| `font-heading` | `--font-heading` | headings and section titles |
-| `font-sans` | `--font-sans` | UI / body text |
+| Utility                   | CSS var            | Face                                              | Usage                        |
+| ------------------------- | ------------------ | ------------------------------------------------- | ---------------------------- |
+| `font-scripture`          | `--font-scripture` | **Amiri**                                         | āyāt (﴿…﴾) and aḥādīth («…») |
+| `font-display`            | `--font-display`   | **Aref Ruqaa** (Classic) / **Reem Kufi** (Modern) | headings, big numerals       |
+| `font-body` / `font-sans` | `--font-body`      | **Tajawal**                                       | UI / body text               |
 
-Fonts load via `next/font` in the root layout and inject the CSS variables above. The exact
-families come from the Claude Design project (NBD-3). Type scale: filled from the design
-project as rem values (`xs … 4xl`); until then, code against the utility names, not raw sizes.
+Type scale (px, generous Arabic leading). Tailwind utilities in parentheses:
+
+| Utility          | Size | Line-height |
+| ---------------- | ---- | ----------- |
+| `text-display`   | 40   | 1.2         |
+| `text-title`     | 24   | 1.2         |
+| `text-subtitle`  | 22   | 1.3         |
+| `text-body`      | 16   | 1.7         |
+| `text-scripture` | 16   | 2.0         |
+| `text-small`     | 13   | 1.5         |
+| `text-xsmall`    | 12   | 1.5         |
+| `text-label`     | 11   | 1.4         |
+
+Weights: `--fw-regular 400`, `--fw-medium 500`, `--fw-semibold 600`, `--fw-bold 700`,
+`--fw-black 900`.
 
 ## Spacing, radii, elevation
 
-- **Spacing** — Tailwind's 4px grid; the allowed step set is confirmed against the design
-  project in NBD-3.
-- **Radii** — one radius personality from the design project (sharp / soft / pill), exposed as
-  `--radius`. Confirmed in NBD-3.
-- **Elevation** — at most three shadow levels, tinted toward the primary hue. Values from the
-  design project (NBD-3).
+- **Spacing** — 4px grid (`--sp-1 … --sp-12`), parity with Tailwind's default scale.
+- **Radii** — mode-bound, exposed as `--radius` (drives shadcn `sm/md/lg`) plus role radii
+  `rounded-icon / rounded-btn / rounded-chip / rounded-card / rounded-ring`. Classic:
+  icon 50%, btn 14, chip 22, card 16, ring 50%. Modern: icon 12, btn 12, chip 10, card 16,
+  ring 22.
+- **Elevation** — two soft, tinted levels: `shadow-card-sm`, `shadow-card`. Light is tinted
+  toward the primary hue; dark is deeper. No hard black shadows in light.
+- **Motion** — quiet: `--ease` `cubic-bezier(.22,.61,.36,1)`, `--dur` `.22s`. No bounce.
 
 ## Dark mode
 
-Light + dark from day one. Mechanism: CSS variables switched by a `.dark` class on the root
-(shadcn/ui convention). Dark mode is **not** inverted light — the design project defines a
-dedicated dark palette (reduced saturation, tinted-not-pure-black background). Components
-reference semantic tokens only, so they get correct colors in both modes for free.
+Light + dark from day one, switched by **`data-theme` on `<html>`** (nabd uses the
+`data-theme`/`data-mode` attribute model, not a `.dark` class). shadcn's `dark:` variant is
+retargeted to `[data-theme="dark"]`. Dark is a dedicated palette (tinted-not-pure-black
+background), not inverted light. Components reference semantic tokens, so both modes are free.
 
 ## RTL rules
 
 Default direction is **RTL** (Arabic-only). RTL-first is a hard rule:
 
-- Use CSS **logical properties** everywhere: `ps- pe- ms- me- start- end- text-start
-  text-end rounded-s- rounded-e-`.
+- CSS **logical properties** everywhere: `ps- pe- ms- me- start- end- text-start text-end
+rounded-s- rounded-e-`.
 - **Banned:** physical directional classes — `pl- pr- left- right- text-left text-right
-  rounded-l- rounded-r-`. Lint should flag these.
+rounded-l- rounded-r-`. Lint should flag these.
 - Directional icons (chevrons, arrows) get `rtl:rotate-180`.
 
 ## UX states
 
-- Every data-bound view has a **skeleton** loading state (Dexie `useLiveQuery` returns
-  `undefined` while in-flight — render the skeleton, never coerce to null).
+- Every data-bound view has a **skeleton** (Dexie `useLiveQuery` returns `undefined`
+  in-flight — render the skeleton, never coerce to null).
 - Every route segment that can fail has an **error surface** (`error.tsx`).
 - Async buttons show an **in-flight** state and **block double submits** (an `inFlight` ref
-  guard, per `docs/stack.md` §3).
+  guard, `docs/stack.md` §3).
 
-## Accessibility
+## Accessibility (WCAG AA, hard requirement)
 
-Accessibility is a **hard requirement**, not best-effort (WCAG AA):
-
-- Semantic HTML (real `button`, `nav`, `main`, headings in order) — not `div` soup.
+- Semantic HTML (real `button`, `nav`, `main`, ordered headings) — not `div` soup.
 - Fully keyboard reachable; visible focus ring on every interactive element (the `ring`
   token).
-- Color contrast meets AA (see Colors).
-- Icon-only controls (e.g. the dhikr counter tap button) have accessible names.
+- Colour contrast meets AA (see the table; sub-AA pairs are tracked, not shipped as final).
+- Icon-only controls (e.g. the counter tap button) have accessible names.
+
+## Iconography
+
+No icon font, no bespoke SVGs. A curated set of unicode glyphs, rendered in the current text
+colour at ~20px inside `rounded-icon` containers: `☾` night · `✦` highlight · `◈` home ·
+`◔` time · `❋` dhikr · `↺` reset · `۞` qaḍāʾ/ornament · `✓` done. **No emoji.** There is no
+logo yet; the name «نبض» is set in the display font wherever a mark would go.
 
 ## Signature
 
-The dhikr **counter** is nabd's signature surface: an oversized, calm tap target with a large
-live numeral, where completing the count visibly flows into the wird checklist (the counter
-and the checklist are one connected motion). The exact treatment (numeral scale, the
-completion transition into the checklist) is realized from the Claude Design project in NBD-3
-and recorded here as the app's one distinctive move.
+The dhikr **counter / misbaḥa** is nabd's signature surface: an oversized, calm tap target
+with a large live Arabic-Indic numeral in the display font, where completing the count visibly
+flows into the wird checklist (counter and checklist are one connected motion). The exact
+treatment is realized in the counter ticket (NBD-9) against these tokens.
+
+---
+
+**Open follow-up (contrast):** `muted-foreground` on `bg` is below body AA in Classic (3.60)
+and below all bars in Modern (2.67). Per this doc's own rule these must be corrected in the
+Claude Design project and re-imported before secondary text ships at body size — not patched
+locally. Tracked as a backlog item.
