@@ -1,4 +1,5 @@
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
+import { WirdStats } from '@/features/stats/components/WirdStats'
 import { WirdChecklist } from '@/features/wird/components/WirdChecklist'
 
 export default function Home() {
@@ -19,6 +20,7 @@ export default function Home() {
       </p>
 
       <WirdChecklist />
+      <WirdStats />
     </main>
   )
 }

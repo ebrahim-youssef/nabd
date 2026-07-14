@@ -24,3 +24,23 @@ export function isDayId(value: string): value is DayId {
 export function compareDayId(a: DayId, b: DayId): number {
   return a < b ? -1 : a > b ? 1 : 0
 }
+
+const MS_PER_DAY = 86_400_000
+
+// The `n` calendar days ending at `today`, oldest first (e.g. lastNDays('2026-07-14', 7) →
+// 2026-07-08 … 2026-07-14). Steps in UTC so it is DST-safe: it only counts calendar days, never
+// wall-clock hours.
+export function lastNDays(today: DayId, n: number): DayId[] {
+  const [year, month, day] = today.split('-').map(Number)
+  const base = Date.UTC(year, month - 1, day)
+  const days: DayId[] = []
+  for (let offset = n - 1; offset >= 0; offset -= 1) {
+    const date = new Date(base - offset * MS_PER_DAY)
+    // Format from UTC parts to match the UTC stepping above (avoids a near-midnight tz shift).
+    const y = date.getUTCFullYear()
+    const m = `${date.getUTCMonth() + 1}`.padStart(2, '0')
+    const d = `${date.getUTCDate()}`.padStart(2, '0')
+    days.push(`${y}-${m}-${d}`)
+  }
+  return days
+}
