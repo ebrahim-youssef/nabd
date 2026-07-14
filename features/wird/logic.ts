@@ -1,7 +1,7 @@
 import { latestStateByItem, versionInForce } from '@/lib/pure/wird'
 import type { WirdDefinition, WirdEntry } from '@/types/wird'
 
-import type { ChecklistAreaView } from './types'
+import type { ChecklistAreaView, TodaySummary } from './types'
 
 // Wird-specific pure logic: turning a definition + a day's entries into the checklist view.
 // The shared resolution helpers (versionInForce, latestStateByItem) live in @/lib/pure/wird so
@@ -29,4 +29,18 @@ export function buildChecklist(
         done: state.get(item.id) ?? false,
       })),
   }))
+}
+
+// Rolls the resolved checklist up into today's done/remaining counts (NBD-10). Derived from the
+// same view the checklist renders, so the summary can never disagree with it.
+export function summarizeChecklist(areas: ChecklistAreaView[]): TodaySummary {
+  let total = 0
+  let done = 0
+  for (const area of areas) {
+    for (const item of area.items) {
+      total += 1
+      if (item.done) done += 1
+    }
+  }
+  return { total, done, remaining: total - done }
 }

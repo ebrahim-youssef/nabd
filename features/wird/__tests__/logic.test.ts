@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { WirdDefinition, WirdEntry, WirdVersion } from '@/types/wird'
 
-import { buildChecklist, latestStateByItem, versionInForce } from '../logic'
+import { buildChecklist, latestStateByItem, summarizeChecklist, versionInForce } from '../logic'
 
 const definition: WirdDefinition = {
   // Intentionally out of display order to prove buildChecklist sorts by `order`.
@@ -71,5 +71,20 @@ describe('buildChecklist', () => {
     expect(view.map((area) => area.id)).toEqual(['prayers', 'quran'])
     expect(view[0].items[0]).toMatchObject({ id: 'fajr', done: true })
     expect(view[1].items[0]).toMatchObject({ id: 'wird', done: false })
+  })
+})
+
+describe('summarizeChecklist', () => {
+  it('counts done and remaining across all areas', () => {
+    const view = buildChecklist(definition, [entry('fajr', true, 100)])
+    expect(summarizeChecklist(view)).toEqual({ total: 2, done: 1, remaining: 1 })
+  })
+
+  it('is all-remaining when nothing is done', () => {
+    expect(summarizeChecklist(buildChecklist(definition, []))).toEqual({
+      total: 2,
+      done: 0,
+      remaining: 2,
+    })
   })
 })

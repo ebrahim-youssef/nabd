@@ -17,3 +17,10 @@ export type ChecklistAreaView = {
   order: number
   items: ChecklistItemView[]
 }
+
+// Today's done/remaining rollup across the whole checklist.
+export type TodaySummary = {
+  total: number
+  done: number
+  remaining: number
+}

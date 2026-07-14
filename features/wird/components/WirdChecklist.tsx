@@ -7,6 +7,7 @@ import { DhikrCounter } from '@/features/counter/components/DhikrCounter'
 import { today } from '@/lib/impure/clock'
 import { cn } from '@/lib/utils'
 
+import { useSeedWird } from '../hooks/useSeedWird'
 import { useToggleItem } from '../hooks/useToggleItem'
 import { useWirdChecklist } from '../hooks/useWirdChecklist'
 import type { ChecklistItemView } from '../types'
@@ -16,6 +17,7 @@ import type { ChecklistItemView } from '../types'
 export function WirdChecklist() {
   // Fix the day on mount so the live query key is stable for the session.
   const [day] = useState(() => today())
+  useSeedWird()
   const { areas, isLoading, versionId } = useWirdChecklist(day)
   const { toggle } = useToggleItem()
 
