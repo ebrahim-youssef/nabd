@@ -3,6 +3,7 @@
 import { Check } from 'lucide-react'
 import { useState } from 'react'
 
+import { DhikrCounter } from '@/features/counter/components/DhikrCounter'
 import { today } from '@/lib/impure/clock'
 import { cn } from '@/lib/utils'
 
@@ -34,10 +35,21 @@ export function WirdChecklist() {
           <ul className="flex flex-col gap-2">
             {area.items.map((item) => (
               <li key={item.id}>
-                <ChecklistRow
-                  item={item}
-                  onToggle={() => toggle(day, versionId, item.id, !item.done)}
-                />
+                {item.kind === 'counter' && item.target ? (
+                  <DhikrCounter
+                    day={day}
+                    versionId={versionId}
+                    itemId={item.id}
+                    label={item.label}
+                    target={item.target}
+                    done={item.done}
+                  />
+                ) : (
+                  <ChecklistRow
+                    item={item}
+                    onToggle={() => toggle(day, versionId, item.id, !item.done)}
+                  />
+                )}
               </li>
             ))}
           </ul>
