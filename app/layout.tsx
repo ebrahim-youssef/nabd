@@ -1,7 +1,8 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Amiri, Aref_Ruqaa, Reem_Kufi, Tajawal } from 'next/font/google'
 import './globals.css'
 
+import { UpdateNotifier } from '@/components/shared/UpdateNotifier'
 import { SyncProvider } from '@/features/sync/components/SyncProvider'
 
 // Body — Tajawal (both modes)
@@ -43,6 +44,10 @@ export const metadata: Metadata = {
   description: 'رفيقك اليوميّ للوِرد — صلاة وأذكار ونيّات ومحاسبة.',
 }
 
+export const viewport: Viewport = {
+  themeColor: '#0e5a5a',
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -58,6 +63,7 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col">
         <SyncProvider>{children}</SyncProvider>
+        <UpdateNotifier />
       </body>
     </html>
   )

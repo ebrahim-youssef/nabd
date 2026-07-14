@@ -16,8 +16,11 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'pnpm dev',
+    // Run against a production build so the Serwist service worker is active (it is disabled in
+    // dev). This is what makes the offline-persistence path testable.
+    command: 'pnpm build && pnpm start',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
   },
 })
