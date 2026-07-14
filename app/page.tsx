@@ -1,16 +1,5 @@
-import { Button } from '@/components/ui/button'
-
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
-
-// Temporary token-preview surface for NBD-3 (design tokens). Verifies the palette, the three
-// faces, radii, and RTL render correctly before real screens land. Replaced by the app shell
-// in a later ticket.
-const SWATCHES = [
-  { name: 'primary', className: 'bg-primary text-on-primary' },
-  { name: 'accent', className: 'bg-accent text-accent-foreground' },
-  { name: 'gold', className: 'bg-gold text-on-primary' },
-  { name: 'surface-2', className: 'bg-surface-2 text-foreground' },
-] as const
+import { WirdChecklist } from '@/features/wird/components/WirdChecklist'
 
 export default function Home() {
   return (
@@ -29,19 +18,7 @@ export default function Home() {
         ﴿ إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا ﴾
       </p>
 
-      <section className="grid grid-cols-2 gap-3">
-        {SWATCHES.map((s) => (
-          <div key={s.name} className={`rounded-card p-4 text-small shadow-card-sm ${s.className}`}>
-            {s.name}
-          </div>
-        ))}
-      </section>
-
-      <div className="flex flex-wrap gap-3">
-        <Button>تمّ</Button>
-        <Button variant="outline">لاحقًا</Button>
-        <Button variant="secondary">قضاء</Button>
-      </div>
+      <WirdChecklist />
     </main>
   )
 }
