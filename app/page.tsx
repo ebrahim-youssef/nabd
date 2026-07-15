@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
 import { OnboardingGate } from '@/features/onboarding/components/OnboardingGate'
 import { WirdStats } from '@/features/stats/components/WirdStats'
@@ -26,6 +28,12 @@ export default function Home() {
         <WirdChecklist />
         <WirdStats />
       </OnboardingGate>
+
+      <nav aria-label="المكتبات">
+        <Link href="/adhkar" className="text-primary text-body underline-offset-4 hover:underline">
+          مكتبة الأذكار
+        </Link>
+      </nav>
     </main>
   )
 }
