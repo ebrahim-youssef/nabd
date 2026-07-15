@@ -43,13 +43,16 @@ describe('scoring', () => {
 })
 
 describe('recommendLevel', () => {
-  it('recommends the highest level for established habits', () => {
-    expect(recommendLevel(WIRD_LEVELS, QUESTIONS, answersScoring(2))).toBe('level-2')
+  it('recommends الاجتهاد for established habits across the pillars', () => {
+    expect(recommendLevel(WIRD_LEVELS, QUESTIONS, answersScoring(2))).toBe('level-3')
   })
 
-  it('recommends the lowest level for beginners', () => {
+  it('recommends المداومة for middling habits', () => {
+    expect(recommendLevel(WIRD_LEVELS, QUESTIONS, answersScoring(1))).toBe('level-2')
+  })
+
+  it('recommends البداية for beginners', () => {
     expect(recommendLevel(WIRD_LEVELS, QUESTIONS, answersScoring(0))).toBe('level-1')
-    expect(recommendLevel(WIRD_LEVELS, QUESTIONS, answersScoring(1))).toBe('level-1')
   })
 })
 

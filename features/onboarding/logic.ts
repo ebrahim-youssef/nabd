@@ -4,11 +4,6 @@ import type { Answers, LevelId, Question } from './types'
 
 // Pure questionnaire resolution: answers in, recommended level out. No I/O, no clock.
 
-// Total score at or above this fraction of the maximum recommends the more demanding level.
-// With three questions scored 0–2 (max 6) the cut is ≥ 4: an established habit in at least
-// two of the three pillars.
-const UPPER_LEVEL_SCORE_FRACTION = 2 / 3
-
 export function isComplete(questions: Question[], answers: Answers): boolean {
   return questions.every((question) =>
     question.options.some((option) => option.id === answers[question.id]),
@@ -34,19 +29,19 @@ export function maxScore(questions: Question[]): number {
   return total
 }
 
-// Places the user in a level: high scorers (existing habits across the pillars) get the
-// higher-rank level, everyone else starts at the lowest. Written against the levels list so
-// levels 3 and 4 can slot in later without touching this function.
+// Places the user in a level by mapping the score fraction onto equal buckets across the
+// ranked levels (3 levels: < ⅓ → البداية, < ⅔ → المداومة, otherwise الاجتهاد). Written
+// against the levels list so level 4 can slot in later without touching this function.
 export function recommendLevel(
   levels: WirdLevel[],
   questions: Question[],
   answers: Answers,
 ): LevelId {
   const byRank = [...levels].sort((a, b) => a.rank - b.rank)
-  const lowest = byRank[0]
-  const highest = byRank[byRank.length - 1]
-  const threshold = maxScore(questions) * UPPER_LEVEL_SCORE_FRACTION
-  return totalScore(questions, answers) >= threshold ? highest.id : lowest.id
+  const max = maxScore(questions)
+  const fraction = max === 0 ? 0 : totalScore(questions, answers) / max
+  const index = Math.min(byRank.length - 1, Math.floor(fraction * byRank.length))
+  return byRank[index].id
 }
 
 export function levelById(levels: WirdLevel[], id: LevelId): WirdLevel | null {

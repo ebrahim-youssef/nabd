@@ -7,7 +7,8 @@ import { completeOnboarding } from './helpers'
 
 test('areas collapse and the header count stays live', async ({ page }) => {
   await page.goto('/')
-  await completeOnboarding(page)
+  // Beginner answers → level-1, whose prayers area holds exactly the five prayers.
+  await completeOnboarding(page, { prayers: 'struggling', quran: 'rarely', adhkar: 'rarely' })
 
   // Open by default.
   await expect(page.getByTestId('area-items-prayers')).toBeVisible()
