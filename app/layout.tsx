@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Amiri, Aref_Ruqaa, Reem_Kufi, Tajawal } from 'next/font/google'
 import './globals.css'
 
+import { SyncProvider } from '@/features/sync/components/SyncProvider'
+
 // Body — Tajawal (both modes)
 const tajawal = Tajawal({
   variable: '--font-tajawal',
@@ -54,7 +56,9 @@ export default function RootLayout({
       data-theme="light"
       className={`${fontVariables} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        <SyncProvider>{children}</SyncProvider>
+      </body>
     </html>
   )
 }
