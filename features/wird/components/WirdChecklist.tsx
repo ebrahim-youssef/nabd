@@ -4,6 +4,8 @@ import { Check, ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
 import { DhikrCounter } from '@/features/counter/components/DhikrCounter'
+import { PrayerTimeBadge } from '@/features/prayer-times/components/PrayerTimeBadge'
+import { PrayerTimesBar } from '@/features/prayer-times/components/PrayerTimesBar'
 import { today } from '@/lib/impure/clock'
 import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
@@ -11,6 +13,10 @@ import { cn } from '@/lib/utils'
 import { useToggleItem } from '../hooks/useToggleItem'
 import { useWirdChecklist } from '../hooks/useWirdChecklist'
 import type { ChecklistAreaView, ChecklistItemView } from '../types'
+
+// The area whose header carries the live prayer sub-header + per-item adhan times
+// (ADR-0009). Matches the area id used by every level in content/levels.ts.
+const PRAYERS_AREA_ID = 'prayers'
 
 // The daily wird checklist (NBD-7). Reads live from Dexie so a check-off survives an offline
 // reload, and writes append-only entries on tap. The first version is seeded by onboarding
@@ -49,6 +55,8 @@ export function WirdChecklist() {
         return (
           <section key={area.id} className="flex flex-col gap-2">
             <AreaHeader area={area} isOpen={isOpen} onToggle={() => toggleArea(area.id)} />
+            {/* Never collapses with the accordion (ADR-0009): the countdown stays visible. */}
+            {area.id === PRAYERS_AREA_ID && <PrayerTimesBar />}
             {isOpen && (
               <ul className="flex flex-col gap-2" data-testid={`area-items-${area.id}`}>
                 {area.items.map((item) => (
@@ -65,6 +73,7 @@ export function WirdChecklist() {
                     ) : (
                       <ChecklistRow
                         item={item}
+                        showPrayerTime={area.id === PRAYERS_AREA_ID}
                         onToggle={() => toggle(day, versionId, item.id, !item.done)}
                       />
                     )}
@@ -118,7 +127,15 @@ function AreaHeader({
   )
 }
 
-function ChecklistRow({ item, onToggle }: { item: ChecklistItemView; onToggle: () => void }) {
+function ChecklistRow({
+  item,
+  showPrayerTime,
+  onToggle,
+}: {
+  item: ChecklistItemView
+  showPrayerTime?: boolean
+  onToggle: () => void
+}) {
   return (
     <button
       type="button"
@@ -155,6 +172,7 @@ function ChecklistRow({ item, onToggle }: { item: ChecklistItemView; onToggle: (
           </span>
         )}
       </span>
+      {showPrayerTime && <PrayerTimeBadge prayerId={item.id} />}
       {item.optional && (
         <span className="bg-gold-soft text-gold rounded-chip px-2 py-0.5 text-label shrink-0">
           تطوّع

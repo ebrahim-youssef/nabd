@@ -1,6 +1,6 @@
 {
   "name": "nabd",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "private": true,
   "packageManager": "pnpm@10.29.3",
   "scripts": {
@@ -23,6 +23,7 @@
     "@supabase/ssr": "^0.12.1",
     "@supabase/supabase-js": "^2.110.3",
     "@vercel/analytics": "^2.0.1",
+    "adhan": "^4.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.4.4",
