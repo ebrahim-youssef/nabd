@@ -17,6 +17,14 @@ export type WirdArea = {
   order: number
 }
 
+// When an item is due (ADR-0008). Absent ⇒ daily. A monthly-goal item renders every day and
+// counts done-days toward its per-month target; a weekdays item exists only on its days
+// (0=Sunday … 6=Saturday).
+export type WirdSchedule =
+  | { type: 'daily' }
+  | { type: 'monthly-goal'; target: number }
+  | { type: 'weekdays'; days: number[] }
+
 export type WirdItem = {
   id: string
   areaId: string
@@ -24,6 +32,12 @@ export type WirdItem = {
   kind: WirdItemKind
   // Repetitions required for a counter item to count as complete. Omitted for checkboxes.
   target?: number
+  // ADR-0008: absent ⇒ daily.
+  schedule?: WirdSchedule
+  // ADR-0008: تطوّع — never counted in the required done/remaining totals.
+  optional?: boolean
+  // ADR-0008: display-only minimum for the deed to count (e.g. "٣ ركعات على الأقل").
+  minimum?: string
 }
 
 // The full wird as a single snapshot (whole-wird versioning, ADR-0006 §1).

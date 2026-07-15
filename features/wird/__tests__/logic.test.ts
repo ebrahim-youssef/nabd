@@ -4,6 +4,9 @@ import type { WirdDefinition, WirdEntry, WirdVersion } from '@/types/wird'
 
 import { buildChecklist, latestStateByItem, summarizeChecklist, versionInForce } from '../logic'
 
+// 2026-07-14 is a Tuesday (weekday 2).
+const DAY = '2026-07-14'
+
 const definition: WirdDefinition = {
   // Intentionally out of display order to prove buildChecklist sorts by `order`.
   areas: [
@@ -20,8 +23,8 @@ function version(id: string, effectiveFrom: string, createdAt: number): WirdVers
   return { id, effectiveFrom, definition, createdAt }
 }
 
-function entry(itemId: string, done: boolean, at: number): WirdEntry {
-  return { id: `${itemId}-${at}`, day: '2026-07-14', versionId: 'v', itemId, done, at }
+function entry(itemId: string, done: boolean, at: number, day = DAY): WirdEntry {
+  return { id: `${itemId}-${at}-${day}`, day, versionId: 'v', itemId, done, at }
 }
 
 describe('versionInForce', () => {
@@ -67,24 +70,97 @@ describe('latestStateByItem', () => {
 
 describe('buildChecklist', () => {
   it('groups items by area in ascending order with resolved done state', () => {
-    const view = buildChecklist(definition, [entry('fajr', true, 100)])
+    const view = buildChecklist(definition, [entry('fajr', true, 100)], DAY)
     expect(view.map((area) => area.id)).toEqual(['prayers', 'quran'])
     expect(view[0].items[0]).toMatchObject({ id: 'fajr', done: true })
     expect(view[1].items[0]).toMatchObject({ id: 'wird', done: false })
   })
 })
 
-describe('summarizeChecklist', () => {
-  it('counts done and remaining across all areas', () => {
-    const view = buildChecklist(definition, [entry('fajr', true, 100)])
-    expect(summarizeChecklist(view)).toEqual({ total: 2, done: 1, remaining: 1 })
+describe('buildChecklist — schedules (ADR-0008)', () => {
+  const scheduled: WirdDefinition = {
+    areas: [{ id: 'tatawwu', label: 'التطوّع', order: 0 }],
+    items: [
+      // Monday(1) & Thursday(4) only.
+      {
+        id: 'fast-mon-thu',
+        areaId: 'tatawwu',
+        label: 'صيام الإثنين والخميس',
+        kind: 'checkbox',
+        optional: true,
+        schedule: { type: 'weekdays', days: [1, 4] },
+      },
+      {
+        id: 'fast-monthly',
+        areaId: 'tatawwu',
+        label: 'صيام ٣ أيام',
+        kind: 'checkbox',
+        optional: true,
+        schedule: { type: 'monthly-goal', target: 3 },
+      },
+      {
+        id: 'qiyam',
+        areaId: 'tatawwu',
+        label: 'قيام الليل',
+        kind: 'checkbox',
+        optional: true,
+        minimum: '٣ ركعات على الأقل',
+      },
+    ],
+  }
+
+  it('hides a weekdays item off its days and shows it on them', () => {
+    // 2026-07-14 = Tuesday → hidden; 2026-07-13 = Monday → visible.
+    const tuesday = buildChecklist(scheduled, [], '2026-07-14')
+    expect(tuesday[0].items.map((i) => i.id)).not.toContain('fast-mon-thu')
+    const monday = buildChecklist(scheduled, [], '2026-07-13')
+    expect(monday[0].items.map((i) => i.id)).toContain('fast-mon-thu')
   })
 
-  it('is all-remaining when nothing is done', () => {
-    expect(summarizeChecklist(buildChecklist(definition, []))).toEqual({
+  it('computes monthly-goal progress from the month entries, latest-per-day wins', () => {
+    const monthEntries = [
+      entry('fast-monthly', true, 100, '2026-07-01'),
+      entry('fast-monthly', true, 100, '2026-07-05'),
+      entry('fast-monthly', false, 200, '2026-07-05'), // unchecked later — does not count
+      entry('fast-monthly', true, 100, '2026-06-30'), // previous month — out of window
+    ]
+    const view = buildChecklist(scheduled, [], DAY, monthEntries)
+    const item = view[0].items.find((i) => i.id === 'fast-monthly')
+    expect(item?.monthlyProgress).toEqual({ done: 1, target: 3 })
+  })
+
+  it('carries optional and minimum through to the view', () => {
+    const view = buildChecklist(scheduled, [], DAY)
+    const qiyam = view[0].items.find((i) => i.id === 'qiyam')
+    expect(qiyam).toMatchObject({ optional: true, minimum: '٣ ركعات على الأقل' })
+  })
+})
+
+describe('summarizeChecklist', () => {
+  it('counts done and remaining across all areas', () => {
+    const view = buildChecklist(definition, [entry('fajr', true, 100)], DAY)
+    expect(summarizeChecklist(view)).toEqual({
       total: 2,
-      done: 0,
-      remaining: 2,
+      done: 1,
+      remaining: 1,
+      voluntary: { total: 0, done: 0 },
+    })
+  })
+
+  it('tallies optional items separately — they never lower required completion', () => {
+    const mixed: WirdDefinition = {
+      areas: [{ id: 'a', label: 'أ', order: 0 }],
+      items: [
+        { id: 'req', areaId: 'a', label: 'فرض', kind: 'checkbox' },
+        { id: 'vol', areaId: 'a', label: 'تطوّع', kind: 'checkbox', optional: true },
+      ],
+    }
+    const view = buildChecklist(mixed, [entry('req', true, 100)], DAY)
+    expect(summarizeChecklist(view)).toEqual({
+      total: 1,
+      done: 1,
+      remaining: 0,
+      voluntary: { total: 1, done: 0 },
     })
   })
 })

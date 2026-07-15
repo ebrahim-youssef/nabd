@@ -1,5 +1,5 @@
-import { latestStateByItem, versionInForce } from '@/lib/pure/wird'
-import type { DayId, WirdEntry, WirdVersion } from '@/types/wird'
+import { isScheduledOn, latestStateByItem, versionInForce } from '@/lib/pure/wird'
+import type { DayId, WirdEntry, WirdItem, WirdVersion } from '@/types/wird'
 
 import type { AreaStat, DayCompletion, RangeSummary } from './types'
 
@@ -7,6 +7,13 @@ import type { AreaStat, DayCompletion, RangeSummary } from './types'
 // day (ADR-0006), which is what keeps history stable: adding a new version (effective later)
 // cannot change an earlier day's numbers, because that earlier day still resolves to its own
 // version. Data and days are passed in; no I/O, no clock.
+//
+// ADR-0008: a day's denominators count only items that are required (not تطوّع) and actually
+// scheduled on that day — a weekdays item outside its days can neither help nor hurt.
+
+function countableItems(items: WirdItem[], day: DayId): WirdItem[] {
+  return items.filter((item) => !item.optional && isScheduledOn(item, day))
+}
 
 function entriesOnDay(entries: WirdEntry[], day: DayId): WirdEntry[] {
   return entries.filter((entry) => entry.day === day)
@@ -22,9 +29,10 @@ export function dayCompletion(
   if (!version) return null
 
   const state = latestStateByItem(entriesOnDay(entries, day))
-  const total = version.definition.items.length
+  const items = countableItems(version.definition.items, day)
+  const total = items.length
   let done = 0
-  for (const item of version.definition.items) {
+  for (const item of items) {
     if (state.get(item.id)) done += 1
   }
   return { day, total, done }
@@ -57,7 +65,10 @@ export function dayAreaStats(
   return [...version.definition.areas]
     .sort((a, b) => a.order - b.order)
     .map((area) => {
-      const items = version.definition.items.filter((item) => item.areaId === area.id)
+      const items = countableItems(
+        version.definition.items.filter((item) => item.areaId === area.id),
+        day,
+      )
       const done = items.filter((item) => state.get(item.id)).length
       return { areaId: area.id, label: area.label, total: items.length, done }
     })

@@ -88,7 +88,11 @@ function AreaHeader({
   isOpen: boolean
   onToggle: () => void
 }) {
-  const doneCount = area.items.filter((item) => item.done).length
+  // Required items drive the count (ADR-0008); an all-تطوّع area falls back to all items so
+  // its header never reads ٠/٠.
+  const required = area.items.filter((item) => !item.optional)
+  const counted = required.length > 0 ? required : area.items
+  const doneCount = counted.filter((item) => item.done).length
   return (
     <button
       type="button"
@@ -108,7 +112,7 @@ function AreaHeader({
         />
       </span>
       <span className="text-muted-foreground text-small" data-testid={`area-count-${area.id}`}>
-        {toArabicIndic(doneCount)}/{toArabicIndic(area.items.length)}
+        {toArabicIndic(doneCount)}/{toArabicIndic(counted.length)}
       </span>
     </button>
   )
@@ -134,9 +138,28 @@ function ChecklistRow({ item, onToggle }: { item: ChecklistItemView; onToggle: (
       >
         {item.done && <Check className="size-4" aria-hidden />}
       </span>
-      <span className={cn('text-body', item.done && 'text-muted-foreground line-through')}>
-        {item.label}
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        <span className={cn('text-body', item.done && 'text-muted-foreground line-through')}>
+          {item.label}
+        </span>
+        {(item.minimum || item.monthlyProgress) && (
+          <span className="text-muted-foreground text-small">
+            {item.minimum}
+            {item.minimum && item.monthlyProgress && ' — '}
+            {item.monthlyProgress && (
+              <span data-testid={`monthly-progress-${item.id}`}>
+                {toArabicIndic(item.monthlyProgress.done)}/
+                {toArabicIndic(item.monthlyProgress.target)} هذا الشهر
+              </span>
+            )}
+          </span>
+        )}
       </span>
+      {item.optional && (
+        <span className="bg-gold-soft text-gold rounded-chip px-2 py-0.5 text-label shrink-0">
+          تطوّع
+        </span>
+      )}
     </button>
   )
 }

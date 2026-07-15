@@ -25,8 +25,8 @@ export function TodaySummary() {
     return <div className="bg-surface-2 h-28 w-full animate-pulse rounded-card" aria-hidden />
   }
 
-  const { total, done, remaining } = summarizeChecklist(areas)
-  if (total === 0) return null
+  const { total, done, remaining, voluntary } = summarizeChecklist(areas)
+  if (total === 0 && voluntary.total === 0) return null
 
   const fraction = done / total
   const dashOffset = RING_CIRCUMFERENCE * (1 - fraction)
@@ -82,6 +82,11 @@ export function TodaySummary() {
         <span className="text-muted-foreground text-small">
           بقي <span data-testid="summary-remaining">{toArabicIndic(remaining)}</span> من الوِرد
         </span>
+        {voluntary.total > 0 && (
+          <span className="text-gold text-small" data-testid="summary-voluntary">
+            تطوّع: {toArabicIndic(voluntary.done)}/{toArabicIndic(voluntary.total)}
+          </span>
+        )}
       </div>
     </div>
   )
