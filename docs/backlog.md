@@ -50,9 +50,25 @@ Deferred from this round: أذكار الصلاة ↔ wird linking (five instanc
 NBD-29); custom notification sounds + push backend (after ADR-0009's future upgrade);
 calculation-method picker for prayer times.
 
+## R3 — owner design mockups (2026-07-16 intake, see docs/product/design-notes-r3.md)
+
+| ID     | Status | Ticket                                                                                                                                                                                                                                                                               | Acceptance criterion                                                                                                      |
+| ------ | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| NBD-29 | —      | **Adhkar tabs + guided counter flow + wird linking** (design §4) — tabs per category; active dhikr card counts taps to its target then auto-advances; 3-card upcoming strip (strip scrolls, page doesn't); finishing a tab auto-marks the wird item; wird item deep-links to its tab | Completing all أذكار الصباح in the flow marks the home item; the home item links to the tab; direct check-off still works |
+| NBD-30 | —      | **Onboarding intro screen** — first step explains the app: تتبع العبادات والمحاسبة، مواقيت الصلاة، الإحصائيات                                                                                                                                                                        | A new user sees the purpose screen before the questionnaire                                                               |
+| NBD-31 | —      | **Stats v2 + export** (design §6) — streak card, weekly bars, percentage tiles; export a week or month of the user's data                                                                                                                                                            | Stats page matches the design language; a week/month export downloads the user's data                                     |
+| NBD-32 | —      | **Wird completion celebration** (design §7) — full-screen إنجاز view when required completion hits ١٠٠٪, once per day, with streak + share                                                                                                                                           | Completing the last required item shows the celebration exactly once for that day                                         |
+| NBD-24 | —      | **Intentions library v2** — curated additions from كتاب "نوايا" (طلال فاخر) with attribution; page stays a fixed list (design §5's user-added layer is Later)                                                                                                                        | The library carries the expanded curated set with a source note                                                           |
+| NBD-33 | —      | **Design polish pass** (design §§1–2) — bottom nav, day-ring card, and prayers/times section aligned with the mockups' visual language                                                                                                                                               | Home + nav visually match the mockups' spirit (deep-teal ring card, pill nav) with tokens only                            |
+
 ## Later (out of scope for MVP)
 
 - Level 4 of the questionnaire / wird difficulty (level 3 ships in NBD-26).
+- **قضاء الفوائت** (design §3): qada ledger page + the rule that a prayer checked after its
+  window counts as قضاء — needs an ADR (entry flag) before build.
+- **نوايا اليوم** (design §5): user-added/day-picked intentions on top of the fixed library.
+- Dedicated مواقيت الصلاة view (design §2) beyond the in-checklist integration.
+- Adhkar-page week/month planner; أذكار الصلاة ↔ wird linking (five daily instances).
 
 ## Notes
 
