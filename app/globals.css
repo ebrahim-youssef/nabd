@@ -181,7 +181,7 @@
   --secondary: var(--surface-2);
   --secondary-foreground: #0e3234;
   --muted: var(--surface-2);
-  --muted-foreground: #5c8582;
+  --muted-foreground: #4a706d;
   --accent-foreground: #0e3234;
   --destructive: var(--gold);
   --border: var(--line);
@@ -212,7 +212,7 @@
 :root[data-mode='modern'],
 :root[data-mode='modern'][data-theme='light'] {
   --bg: #f4f8f7;
-  --muted-foreground: #7ba09d;
+  --muted-foreground: #4d7875;
 }
 
 /* ── ليل — Dark lighting (same identity, both modes) ── */

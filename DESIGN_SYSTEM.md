@@ -55,7 +55,7 @@ components render in-palette.
 | `--gold` / `destructive`              | `text-gold`              | `#C79A3A`                     |
 | `--gold-soft`                         | `bg-gold-soft`           | `#FBF3DF`                     |
 | `foreground` (ink)                    | `text-foreground`        | `#0E3234`                     |
-| `--muted-foreground`                  | `text-muted-foreground`  | `#5C8582` (Modern: `#7BA09D`) |
+| `--muted-foreground`                  | `text-muted-foreground`  | `#4A706D` (Modern: `#4D7875`) |
 | `--faint`                             | `text-faint`             | `#9BBEBB`                     |
 | `--on-primary` / `primary-foreground` | `text-on-primary`        | `#EAF2F0`                     |
 | `accent-foreground`                   | `text-accent-foreground` | `#0E3234`                     |
@@ -83,25 +83,24 @@ components render in-palette.
 
 ### Contrast (WCAG AA: body ≥ 4.5:1, large text / UI ≥ 3:1)
 
-Measured with a WCAG 2.1 luminance calc. **Bold = below its bar; correct in the design
-project, not by hand** (tracked — see the note at the end).
+Measured with a WCAG 2.1 luminance calc.
 
-| Pair                                         | Ratio    | Bar           |
-| -------------------------------------------- | -------- | ------------- |
-| Light ink on bg                              | 12.11    | AA            |
-| Light ink on surface                         | 13.78    | AA            |
-| Light on-primary on primary                  | 7.02     | AA            |
-| Light accent-foreground (ink) on accent      | 4.65     | AA            |
-| Light primary-deep on gold-soft (alert text) | 8.41     | AA            |
-| **Light muted-foreground on bg (Classic)**   | **3.60** | body ✗ / UI ✓ |
-| **Light muted-foreground on bg (Modern)**    | **2.67** | ✗             |
-| Light faint on bg (disabled — decorative)    | 1.76     | exempt        |
-| Dark ink on bg                               | 14.92    | AA            |
-| Dark ink on surface                          | 12.11    | AA            |
-| Dark on-primary on primary                   | 4.98     | AA            |
-| Dark muted-foreground on bg                  | 6.38     | AA            |
-| Dark gold on surface                         | 6.63     | AA            |
-| Dark faint on bg (disabled)                  | 3.05     | UI ✓          |
+| Pair                                         | Ratio | Bar    |
+| -------------------------------------------- | ----- | ------ |
+| Light ink on bg                              | 12.11 | AA     |
+| Light ink on surface                         | 13.78 | AA     |
+| Light on-primary on primary                  | 7.02  | AA     |
+| Light accent-foreground (ink) on accent      | 4.65  | AA     |
+| Light primary-deep on gold-soft (alert text) | 8.41  | AA     |
+| Light muted-foreground on bg (Classic)       | 4.82  | AA     |
+| Light muted-foreground on bg (Modern)        | 4.61  | AA     |
+| Light faint on bg (disabled — decorative)    | 1.76  | exempt |
+| Dark ink on bg                               | 14.92 | AA     |
+| Dark ink on surface                          | 12.11 | AA     |
+| Dark on-primary on primary                   | 4.98  | AA     |
+| Dark muted-foreground on bg                  | 6.38  | AA     |
+| Dark gold on surface                         | 6.63  | AA     |
+| Dark faint on bg (disabled)                  | 3.05  | UI ✓   |
 
 ## Typography
 
@@ -190,7 +189,8 @@ treatment is realized in the counter ticket (NBD-9) against these tokens.
 
 ---
 
-**Open follow-up (contrast):** `muted-foreground` on `bg` is below body AA in Classic (3.60)
-and below all bars in Modern (2.67). Per this doc's own rule these must be corrected in the
-Claude Design project and re-imported before secondary text ships at body size — not patched
-locally. Tracked as a backlog item.
+**Contrast fix (NBD-18):** light-theme `muted-foreground` was corrected to meet body AA —
+Classic `#5c8582` → `#4a706d` (3.60 → 4.82 on `bg`, 5.48 on `surface`) and Modern
+`#7ba09d` → `#4d7875` (2.67 → 4.61 on `bg`). Same teal hue family; Modern stays lighter
+than Classic. These values are the source of truth; if the Claude Design project is
+re-imported later, keep or re-apply this correction.
