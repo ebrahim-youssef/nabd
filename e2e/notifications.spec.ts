@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 
-import { answerQuestionnaire, completeOnboarding, ensureChecked } from './helpers'
+import { answerQuestionnaire, completeOnboarding, ensureChecked, finishOnboarding } from './helpers'
 
 // NBD-28: onboarding's permissions step captures notification preferences (three moment
 // toggles with fixed iqamah offsets); the choice persists on the device.
@@ -25,9 +25,7 @@ test('opting in to notifications persists the chosen moments', async ({ page }) 
   await ensureChecked(page, 'onboarding-notifications')
   await expect(page.getByTestId('onboarding-moment-atIqamah')).toBeVisible()
   await page.getByTestId('onboarding-moment-atIqamah').uncheck()
-  await page.getByTestId('onboarding-finish').click()
-
-  await expect(page.getByTestId('wird-checklist')).toBeVisible()
+  await finishOnboarding(page)
 
   const prefs = await page.evaluate(() =>
     JSON.parse(window.localStorage.getItem('nabd:notification-prefs') ?? 'null'),

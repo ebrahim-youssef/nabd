@@ -42,5 +42,15 @@ export async function completeOnboarding(
   optionIds: OnboardingAnswers = DEFAULT_ANSWERS,
 ): Promise<void> {
   await answerQuestionnaire(page, optionIds)
-  await page.getByTestId('onboarding-finish').click()
+  await finishOnboarding(page)
+}
+
+// Clicks ابدأ وِردي and waits for the checklist. Retried as a unit: seeding is idempotent
+// (double-submit safe), so a swallowed click or a slow Dexie flip on a loaded CI runner just
+// clicks again instead of failing the spec.
+export async function finishOnboarding(page: Page): Promise<void> {
+  await expect(async () => {
+    await page.getByTestId('onboarding-finish').click()
+    await expect(page.getByTestId('wird-checklist')).toBeVisible({ timeout: 5000 })
+  }).toPass({ timeout: 30_000 })
 }

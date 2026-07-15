@@ -1,6 +1,7 @@
 'use client'
 
-import { Check, ChevronDown } from 'lucide-react'
+import { BookOpen, Check, ChevronDown } from 'lucide-react'
+import Link from 'next/link'
 import { useState } from 'react'
 
 import { DhikrCounter } from '@/features/counter/components/DhikrCounter'
@@ -17,6 +18,13 @@ import type { ChecklistAreaView, ChecklistItemView } from '../types'
 // The area whose header carries the live prayer sub-header + per-item adhan times
 // (ADR-0009). Matches the area id used by every level in content/levels.ts.
 const PRAYERS_AREA_ID = 'prayers'
+
+// Wird items that deep-link to their adhkar-library tab (NBD-29): the user can check off
+// directly here, or run the guided flow there — which marks the item back automatically.
+const ITEM_TO_ADHKAR_TAB: Record<string, string> = {
+  'morning-adhkar': 'morning',
+  'evening-adhkar': 'evening',
+}
 
 // The daily wird checklist (NBD-7). Reads live from Dexie so a check-off survives an offline
 // reload, and writes append-only entries on tap. The first version is seeded by onboarding
@@ -60,22 +68,34 @@ export function WirdChecklist() {
             {isOpen && (
               <ul className="flex flex-col gap-2" data-testid={`area-items-${area.id}`}>
                 {area.items.map((item) => (
-                  <li key={item.id}>
-                    {item.kind === 'counter' && item.target ? (
-                      <DhikrCounter
-                        day={day}
-                        versionId={versionId}
-                        itemId={item.id}
-                        label={item.label}
-                        target={item.target}
-                        done={item.done}
-                      />
-                    ) : (
-                      <ChecklistRow
-                        item={item}
-                        showPrayerTime={area.id === PRAYERS_AREA_ID}
-                        onToggle={() => toggle(day, versionId, item.id, !item.done)}
-                      />
+                  <li key={item.id} className="flex items-stretch gap-2">
+                    <div className="min-w-0 flex-1">
+                      {item.kind === 'counter' && item.target ? (
+                        <DhikrCounter
+                          day={day}
+                          versionId={versionId}
+                          itemId={item.id}
+                          label={item.label}
+                          target={item.target}
+                          done={item.done}
+                        />
+                      ) : (
+                        <ChecklistRow
+                          item={item}
+                          showPrayerTime={area.id === PRAYERS_AREA_ID}
+                          onToggle={() => toggle(day, versionId, item.id, !item.done)}
+                        />
+                      )}
+                    </div>
+                    {ITEM_TO_ADHKAR_TAB[item.id] && (
+                      <Link
+                        href={`/adhkar?tab=${ITEM_TO_ADHKAR_TAB[item.id]}`}
+                        aria-label={`افتح ${item.label} في مكتبة الأذكار`}
+                        data-testid={`adhkar-link-${item.id}`}
+                        className="bg-surface-2 text-primary hover:bg-surface-2/70 flex w-11 shrink-0 items-center justify-center rounded-card transition-colors"
+                      >
+                        <BookOpen className="size-5" aria-hidden />
+                      </Link>
                     )}
                   </li>
                 ))}
