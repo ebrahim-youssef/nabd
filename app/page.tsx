@@ -29,9 +29,12 @@ export default function Home() {
         <WirdStats />
       </OnboardingGate>
 
-      <nav aria-label="المكتبات">
+      <nav aria-label="المكتبات" className="flex items-center gap-6">
         <Link href="/adhkar" className="text-primary text-body underline-offset-4 hover:underline">
           مكتبة الأذكار
+        </Link>
+        <Link href="/niyyat" className="text-primary text-body underline-offset-4 hover:underline">
+          مكتبة النوايا
         </Link>
       </nav>
     </main>
