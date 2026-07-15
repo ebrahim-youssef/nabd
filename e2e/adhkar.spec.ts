@@ -8,9 +8,23 @@ test('adhkar library is browsable without a wird', async ({ page }) => {
 
   await expect(page.getByTestId('adhkar-library')).toBeVisible()
   await expect(page.getByRole('heading', { name: 'أذكار الصباح' })).toBeVisible()
-  await expect(page.getByTestId('dhikr-after-prayer-tasbih')).toBeVisible()
   // No questionnaire and no checklist involved on this page.
   await expect(page.getByTestId('onboarding-questionnaire')).toHaveCount(0)
+})
+
+test('categories are accordions: closed by default, toggle open and shut', async ({ page }) => {
+  await page.goto('/adhkar')
+
+  const firstDhikr = page.getByTestId('dhikr-morning-1')
+  await expect(firstDhikr).toBeHidden()
+
+  await page.getByTestId('adhkar-category-morning').locator('summary').click()
+  await expect(firstDhikr).toBeVisible()
+  // Scraped content carries the فضل line.
+  await expect(firstDhikr).toContainText('آية الكرسى')
+
+  await page.getByTestId('adhkar-category-morning').locator('summary').click()
+  await expect(firstDhikr).toBeHidden()
 })
 
 test('bottom nav reaches the adhkar library via the hub', async ({ page }) => {
