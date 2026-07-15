@@ -17,8 +17,8 @@ type ChecklistState = {
 }
 
 // Live, read-only checklist for a day: reads versions + that day's entries from Dexie (the
-// offline source of truth) and resolves them into the grouped view. Seeding lives in
-// useSeedWird so multiple readers of this hook never race to seed.
+// offline source of truth) and resolves them into the grouped view. The first version is
+// seeded by the onboarding questionnaire (features/onboarding), never here.
 export function useWirdChecklist(day: DayId): ChecklistState {
   const data = useLiveQuery(async () => {
     const [versions, entries] = await Promise.all([listVersions(), getDayEntries(day)])

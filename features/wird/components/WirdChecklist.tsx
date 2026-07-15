@@ -7,17 +7,16 @@ import { DhikrCounter } from '@/features/counter/components/DhikrCounter'
 import { today } from '@/lib/impure/clock'
 import { cn } from '@/lib/utils'
 
-import { useSeedWird } from '../hooks/useSeedWird'
 import { useToggleItem } from '../hooks/useToggleItem'
 import { useWirdChecklist } from '../hooks/useWirdChecklist'
 import type { ChecklistItemView } from '../types'
 
 // The daily wird checklist (NBD-7). Reads live from Dexie so a check-off survives an offline
-// reload, and writes append-only entries on tap.
+// reload, and writes append-only entries on tap. The first version is seeded by onboarding
+// (NBD-6), which gates this component — by the time it renders, a version exists.
 export function WirdChecklist() {
   // Fix the day on mount so the live query key is stable for the session.
   const [day] = useState(() => today())
-  useSeedWird()
   const { areas, isLoading, versionId } = useWirdChecklist(day)
   const { toggle } = useToggleItem()
 

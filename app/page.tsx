@@ -1,4 +1,5 @@
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
+import { OnboardingGate } from '@/features/onboarding/components/OnboardingGate'
 import { WirdStats } from '@/features/stats/components/WirdStats'
 import { TodaySummary } from '@/features/wird/components/TodaySummary'
 import { WirdChecklist } from '@/features/wird/components/WirdChecklist'
@@ -20,9 +21,11 @@ export default function Home() {
         ﴿ إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا ﴾
       </p>
 
-      <TodaySummary />
-      <WirdChecklist />
-      <WirdStats />
+      <OnboardingGate>
+        <TodaySummary />
+        <WirdChecklist />
+        <WirdStats />
+      </OnboardingGate>
     </main>
   )
 }

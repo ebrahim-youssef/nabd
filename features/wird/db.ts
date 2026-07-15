@@ -48,24 +48,6 @@ export async function addVersion(
   }
 }
 
-// Ensures at least one version exists, seeding one effective from `day` if the store is empty.
-// Returns the seeded version, or null when a version already existed (nothing to do).
-export async function seedVersionIfEmpty(
-  day: DayId,
-  definition: WirdDefinition,
-  createdAt: number,
-): Promise<Result<WirdVersion | null>> {
-  try {
-    const count = await db.wirdVersions.count()
-    if (count > 0) return { ok: true, value: null }
-    const seeded = await addVersion(day, definition, createdAt)
-    return seeded.ok ? { ok: true, value: seeded.value } : seeded
-  } catch (cause) {
-    logger.error('wird.seedVersionIfEmpty failed', cause, { day })
-    return { ok: false, error: 'seed_failed' }
-  }
-}
-
 // Appends a check/uncheck event for one item on one day. Append-only: never edits or deletes a
 // prior entry (ADR-0006 §3). Callers resolve `versionId` via `versionInForce` in logic.ts.
 export async function appendEntry(

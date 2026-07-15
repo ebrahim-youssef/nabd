@@ -1,10 +1,14 @@
 import { expect, test } from '@playwright/test'
 
+import { completeOnboarding } from './helpers'
+
 // NBD-7 + NBD-15: a checked wird item is stored in Dexie and the Serwist service worker caches
-// the app shell, so the checklist survives a reload — including a fully offline one.
+// the app shell, so the checklist survives a reload — including a fully offline one. Each spec
+// first answers the onboarding questionnaire (NBD-6), which seeds the wird.
 
 test('checked wird item persists across a reload', async ({ page }) => {
   await page.goto('/')
+  await completeOnboarding(page)
 
   const fajr = page.getByTestId('wird-item-fajr')
   await expect(fajr).toBeVisible()
@@ -21,6 +25,7 @@ test('checked wird item persists across a reload', async ({ page }) => {
 
 test('checked item persists across a fully offline reload', async ({ page, context }) => {
   await page.goto('/')
+  await completeOnboarding(page)
 
   // Wait until the service worker is controlling the page, so an offline reload can be served
   // from its cache.

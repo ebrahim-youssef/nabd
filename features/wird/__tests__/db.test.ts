@@ -6,10 +6,12 @@ vi.mock('@/lib/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
-import { DEFAULT_WIRD } from '@/content/default_wird'
+import { WIRD_LEVELS } from '@/content/levels'
 import { db } from '@/lib/db/db'
 
-import { addVersion, appendEntry, getDayEntries, listVersions, seedVersionIfEmpty } from '../db'
+import { addVersion, appendEntry, getDayEntries, listVersions } from '../db'
+
+const WIRD_FIXTURE = WIRD_LEVELS[0].wird
 
 beforeEach(async () => {
   await Promise.all([
@@ -22,28 +24,13 @@ beforeEach(async () => {
 
 describe('addVersion', () => {
   it('stores the version and queues it in the outbox atomically', async () => {
-    const result = await addVersion('2026-07-14', DEFAULT_WIRD, 1000)
+    const result = await addVersion('2026-07-14', WIRD_FIXTURE, 1000)
     expect(result.ok).toBe(true)
 
     expect(await listVersions()).toHaveLength(1)
     const outbox = await db.outbox.toArray()
     expect(outbox).toHaveLength(1)
     expect(outbox[0]).toMatchObject({ table: 'wirdVersions', createdAt: 1000 })
-  })
-})
-
-describe('seedVersionIfEmpty', () => {
-  it('seeds a version when the store is empty', async () => {
-    const result = await seedVersionIfEmpty('2026-07-14', DEFAULT_WIRD, 1000)
-    expect(result.ok && result.value?.effectiveFrom).toBe('2026-07-14')
-    expect(await db.wirdVersions.count()).toBe(1)
-  })
-
-  it('is a no-op when a version already exists', async () => {
-    await addVersion('2026-07-01', DEFAULT_WIRD, 500)
-    const result = await seedVersionIfEmpty('2026-07-14', DEFAULT_WIRD, 1000)
-    expect(result.ok && result.value).toBeNull()
-    expect(await db.wirdVersions.count()).toBe(1)
   })
 })
 
