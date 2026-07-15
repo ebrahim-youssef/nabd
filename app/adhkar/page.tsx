@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 // Public, server-rendered reference page (NBD-12): browsable without a wird or an account.
 export default function AdhkarPage() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-16">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pt-4 pb-10 md:gap-8 md:px-6 md:pt-8">
       <header className="flex flex-col gap-2">
         <h1 className="font-display text-display text-primary">الأذكار</h1>
         <p className="text-muted-foreground text-body">
