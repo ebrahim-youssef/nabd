@@ -274,6 +274,8 @@
   }
   html {
     @apply font-sans;
+    /* Keep scrolled-into-view targets clear of the fixed bottom navbar (NBD-22). */
+    scroll-padding-bottom: 6rem;
   }
   body {
     @apply bg-background text-foreground;

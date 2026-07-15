@@ -1,8 +1,5 @@
-import Link from 'next/link'
-
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
 import { OnboardingGate } from '@/features/onboarding/components/OnboardingGate'
-import { WirdStats } from '@/features/stats/components/WirdStats'
 import { TodaySummary } from '@/features/wird/components/TodaySummary'
 import { WirdChecklist } from '@/features/wird/components/WirdChecklist'
 
@@ -26,17 +23,7 @@ export default function Home() {
       <OnboardingGate>
         <TodaySummary />
         <WirdChecklist />
-        <WirdStats />
       </OnboardingGate>
-
-      <nav aria-label="المكتبات" className="flex items-center gap-6">
-        <Link href="/adhkar" className="text-primary text-body underline-offset-4 hover:underline">
-          مكتبة الأذكار
-        </Link>
-        <Link href="/niyyat" className="text-primary text-body underline-offset-4 hover:underline">
-          مكتبة النوايا
-        </Link>
-      </nav>
     </main>
   )
 }

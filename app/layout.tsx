@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Amiri, Aref_Ruqaa, Reem_Kufi, Tajawal } from 'next/font/google'
 import './globals.css'
 
+import { BottomNav } from '@/components/shared/BottomNav'
 import { UpdateNotifier } from '@/components/shared/UpdateNotifier'
 import { SyncProvider } from '@/features/sync/components/SyncProvider'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site'
@@ -84,8 +85,10 @@ export default function RootLayout({
       data-theme="light"
       className={`${fontVariables} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
+      {/* pb-20 keeps page content clear of the fixed bottom navbar. */}
+      <body className="flex min-h-full flex-col pb-20">
         <SyncProvider>{children}</SyncProvider>
+        <BottomNav />
         <UpdateNotifier />
         <Analytics />
       </body>

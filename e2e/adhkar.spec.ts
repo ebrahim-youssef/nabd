@@ -13,9 +13,15 @@ test('adhkar library is browsable without a wird', async ({ page }) => {
   await expect(page.getByTestId('onboarding-questionnaire')).toHaveCount(0)
 })
 
-test('home page links to the adhkar library', async ({ page }) => {
+test('bottom nav reaches the adhkar library via the hub', async ({ page }) => {
   await page.goto('/')
 
-  await page.getByRole('link', { name: 'مكتبة الأذكار' }).click()
+  await page.getByTestId('nav-libraries').click()
+  await expect(page.getByTestId('libraries-hub')).toBeVisible()
+  await page.getByRole('link', { name: /مكتبة الأذكار/ }).click()
   await expect(page.getByTestId('adhkar-library')).toBeVisible()
+
+  // The back header is fixed on screen — no scrolling needed to leave.
+  await page.getByTestId('page-back').click()
+  await expect(page.getByTestId('libraries-hub')).toBeVisible()
 })

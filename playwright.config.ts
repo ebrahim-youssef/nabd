@@ -21,6 +21,7 @@ export default defineConfig({
     command: 'pnpm build && pnpm start',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    // Covers a full production build + start; the build alone brushes 120s as pages grow.
+    timeout: 180_000,
   },
 })
