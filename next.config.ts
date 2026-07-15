@@ -1,3 +1,4 @@
+import { withSentryConfig } from '@sentry/nextjs'
 import withSerwistInit from '@serwist/next'
 import type { NextConfig } from 'next'
 
@@ -11,4 +12,12 @@ const withSerwist = withSerwistInit({
   disable: process.env.NODE_ENV === 'development',
 })
 
-export default withSerwist(nextConfig)
+// Sentry wraps the whole config to inject source-map upload at build time. Upload only
+// happens when SENTRY_AUTH_TOKEN is set (Vercel/CI); local builds skip it silently.
+export default withSentryConfig(withSerwist(nextConfig), {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  disableLogger: true,
+})

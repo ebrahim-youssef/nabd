@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Amiri, Aref_Ruqaa, Reem_Kufi, Tajawal } from 'next/font/google'
 import './globals.css'
@@ -86,6 +87,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col">
         <SyncProvider>{children}</SyncProvider>
         <UpdateNotifier />
+        <Analytics />
       </body>
     </html>
   )
