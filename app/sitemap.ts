@@ -1,0 +1,28 @@
+import type { MetadataRoute } from 'next'
+
+import { SITE_URL } from '@/lib/site'
+
+// /sitemap.xml (NBD-14). Lists the public, indexable routes. Grows as public pages are added
+// (adhkar/intentions libraries, etc.).
+export default function sitemap(): MetadataRoute.Sitemap {
+  return [
+    {
+      url: SITE_URL,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 1,
+    },
+    {
+      url: `${SITE_URL}/adhkar`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${SITE_URL}/niyyat`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+  ]
+}

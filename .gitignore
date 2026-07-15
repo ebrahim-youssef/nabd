@@ -38,3 +38,10 @@ blob-report/
 
 # TypeScript
 *.tsbuildinfo
+
+# Design system import material (raw handoff; source of truth is the Claude Design project, NBD-3)
+design-import/
+
+# Generated Serwist service worker bundle (build artifact)
+/public/sw.js
+/public/sw.js.map

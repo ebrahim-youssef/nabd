@@ -1,0 +1,12 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="nabd">
+  <rect width="512" height="512" rx="112" fill="#0e5a5a" />
+  <!-- Pulse line (نبض = heartbeat/pulse) -->
+  <path
+    d="M64 256 H168 L200 168 L256 344 L312 200 L344 256 H448"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="26"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
