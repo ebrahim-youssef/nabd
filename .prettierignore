@@ -6,3 +6,7 @@ playwright-report/
 test-results/
 next-env.d.ts
 components/ui/
+
+# Generated Serwist service worker bundle
+public/sw.js
+public/sw.js.map
