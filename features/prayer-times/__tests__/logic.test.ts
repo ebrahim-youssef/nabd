@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { AFTER_WINDOW_MS, formatDuration, statusLine, timelineStatus } from '../logic'
+import {
+  AFTER_WINDOW_MS,
+  formatDuration,
+  notificationMoments,
+  statusLine,
+  timelineStatus,
+} from '../logic'
 import type { TimePoint } from '../types'
 
 const MINUTE = 60_000
@@ -51,6 +57,43 @@ describe('formatDuration', () => {
 
   it('never shows zero minutes', () => {
     expect(formatDuration(1000)).toBe('١ دقيقة')
+  })
+})
+
+describe('notificationMoments (ADR-0009)', () => {
+  const times = { fajr: 4 * HOUR, sunrise: 7 * HOUR, dhuhr: 13 * HOUR }
+  const offsets = { fajr: 15, dhuhr: 15 }
+  const allOn = { beforeAdhan: true, atAdhan: true, atIqamah: true }
+
+  it('emits before/adhan/iqamah per prayer, sorted, sunrise excluded', () => {
+    const moments = notificationMoments(times, offsets, allOn, 15, 0)
+    expect(moments.map((m) => `${m.prayerId}:${m.kind}`)).toEqual([
+      'fajr:before',
+      'fajr:adhan',
+      'fajr:iqamah',
+      'dhuhr:before',
+      'dhuhr:adhan',
+      'dhuhr:iqamah',
+    ])
+    expect(moments[0].at).toBe(4 * HOUR - 15 * MINUTE)
+    expect(moments[2].at).toBe(4 * HOUR + 15 * MINUTE)
+  })
+
+  it('honors the per-moment toggles', () => {
+    const moments = notificationMoments(
+      times,
+      offsets,
+      { beforeAdhan: false, atAdhan: true, atIqamah: false },
+      15,
+      0,
+    )
+    expect(moments.every((m) => m.kind === 'adhan')).toBe(true)
+  })
+
+  it('drops moments already in the past', () => {
+    const moments = notificationMoments(times, offsets, allOn, 15, 5 * HOUR)
+    expect(moments.every((m) => m.at > 5 * HOUR)).toBe(true)
+    expect(moments.map((m) => m.prayerId)).toEqual(['dhuhr', 'dhuhr', 'dhuhr'])
   })
 })
 

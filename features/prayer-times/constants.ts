@@ -22,3 +22,21 @@ export const COPY = {
   enableLocation: 'فعّل الموقع لعرض مواقيت الصلاة',
   locationDenied: 'تعذّر الوصول إلى الموقع — لن تظهر مواقيت الصلاة.',
 } as const
+
+// Minutes before the adhan for the early reminder (ADR-0009).
+export const BEFORE_ADHAN_MINUTES = 15
+
+export const NOTIFICATION_COPY = {
+  before: (label: string) => ({
+    title: `اقترب وقت ${label}`,
+    body: `باقي ربع ساعة على أذان ${label}.`,
+  }),
+  adhan: (label: string) => ({
+    title: `حان وقت ${label}`,
+    body: `أذّن ${label} — حيّ على الصلاة.`,
+  }),
+  iqamah: (label: string) => ({
+    title: `إقامة ${label}`,
+    body: `حان وقت إقامة صلاة ${label}.`,
+  }),
+} as const

@@ -35,6 +35,45 @@ export function formatDuration(ms: number): string {
   return minutes === 0 ? hourPart : `${hourPart} و${toArabicIndic(minutes)} دقيقة`
 }
 
+// A scheduled notification instant (ADR-0009). `at` is epoch-ms; `kind` picks copy + tone.
+export type NotificationMoment = {
+  at: number
+  kind: 'before' | 'adhan' | 'iqamah'
+  prayerId: string
+}
+
+type MomentPrefs = { beforeAdhan: boolean; atAdhan: boolean; atIqamah: boolean }
+
+// The day's remaining notification instants for the five prayers (sunrise never notifies),
+// honoring the per-moment toggles and the fixed iqamah offsets. Pure: times, offsets, prefs,
+// and `now` all come in as data.
+export function notificationMoments(
+  prayerTimes: Record<string, number>,
+  iqamahOffsetsMinutes: Record<string, number>,
+  prefs: MomentPrefs,
+  beforeMinutes: number,
+  now: number,
+): NotificationMoment[] {
+  const moments: NotificationMoment[] = []
+  for (const [prayerId, adhanAt] of Object.entries(prayerTimes)) {
+    if (!(prayerId in iqamahOffsetsMinutes)) continue // sunrise and anything non-prayer
+    if (prefs.beforeAdhan) {
+      moments.push({ at: adhanAt - beforeMinutes * MS_PER_MINUTE, kind: 'before', prayerId })
+    }
+    if (prefs.atAdhan) {
+      moments.push({ at: adhanAt, kind: 'adhan', prayerId })
+    }
+    if (prefs.atIqamah) {
+      moments.push({
+        at: adhanAt + iqamahOffsetsMinutes[prayerId] * MS_PER_MINUTE,
+        kind: 'iqamah',
+        prayerId,
+      })
+    }
+  }
+  return moments.filter((moment) => moment.at > now).sort((a, b) => a.at - b.at)
+}
+
 // The full sub-header line for a status.
 export function statusLine(status: TimelineStatus): string | null {
   if (!status) return null

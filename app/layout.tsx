@@ -5,6 +5,7 @@ import './globals.css'
 
 import { BottomNav } from '@/components/shared/BottomNav'
 import { UpdateNotifier } from '@/components/shared/UpdateNotifier'
+import { NotificationScheduler } from '@/features/prayer-times/components/NotificationScheduler'
 import { SyncProvider } from '@/features/sync/components/SyncProvider'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site'
 
@@ -89,6 +90,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col pb-20">
         <SyncProvider>{children}</SyncProvider>
         <BottomNav />
+        <NotificationScheduler />
         <UpdateNotifier />
         <Analytics />
       </body>

@@ -35,6 +35,9 @@ const eslintConfig = defineConfig([
     // Generated Serwist service worker bundle (build artifact).
     'public/sw.js',
     'public/sw.js.map',
+    // Playwright artifacts (report + traces).
+    'playwright-report/**',
+    'test-results/**',
   ]),
 
   // console.* is banned everywhere; lib/logger.ts is the single allowed place (exempted below).
