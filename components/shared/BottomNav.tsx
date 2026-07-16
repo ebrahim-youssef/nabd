@@ -27,9 +27,10 @@ export function BottomNav() {
     <nav
       aria-label="التنقل الرئيسي"
       data-testid="bottom-nav"
-      className="bg-surface border-border fixed inset-x-0 bottom-0 z-40 border-t pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-3 z-40 px-4 pb-[env(safe-area-inset-bottom)]"
     >
-      <ul className="mx-auto flex w-full max-w-2xl items-stretch justify-around">
+      {/* Floating pill (design-notes-r3 §1); the active tab gets a filled chip. */}
+      <ul className="border-border bg-surface shadow-card mx-auto flex w-full max-w-md items-stretch justify-around rounded-chip border px-2 py-1">
         {NAV_ITEMS.map(({ href, label, icon: Icon, match }) => {
           const active = match.some((m) => (m === '/' ? pathname === '/' : pathname.startsWith(m)))
           return (
@@ -39,8 +40,8 @@ export function BottomNav() {
                 data-testid={`nav-${href === '/' ? 'home' : href.slice(1)}`}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center gap-1 py-2 text-label transition-colors',
-                  active ? 'text-primary' : 'text-muted-foreground',
+                  'flex flex-col items-center gap-0.5 rounded-chip px-3 py-1.5 text-label transition-colors',
+                  active ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
                 )}
               >
                 <Icon className="size-5" aria-hidden />

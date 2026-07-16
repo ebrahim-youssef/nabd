@@ -33,7 +33,7 @@ export function TodaySummary() {
 
   return (
     <div
-      className="bg-surface-2 flex items-center gap-5 rounded-card p-4"
+      className="bg-primary text-on-primary flex items-center gap-5 rounded-card p-5"
       data-testid="today-summary"
     >
       <svg
@@ -48,7 +48,7 @@ export function TodaySummary() {
           r={RING_RADIUS}
           fill="none"
           strokeWidth={RING_STROKE}
-          className="stroke-faint/40"
+          className="stroke-on-primary/25"
         />
         <circle
           cx={RING_CENTER}
@@ -60,17 +60,17 @@ export function TodaySummary() {
           strokeDasharray={RING_CIRCUMFERENCE}
           strokeDashoffset={dashOffset}
           transform={`rotate(-90 ${RING_CENTER} ${RING_CENTER})`}
-          className="stroke-primary transition-[stroke-dashoffset] duration-500"
+          className="stroke-gold transition-[stroke-dashoffset] duration-500"
         />
         <text
           x={RING_CENTER}
           y={RING_CENTER}
           textAnchor="middle"
           dominantBaseline="central"
-          className="fill-foreground font-display text-title"
+          className="fill-on-primary font-display text-title"
         >
           <tspan data-testid="summary-done">{toArabicIndic(done)}</tspan>
-          <tspan className="fill-muted-foreground text-small">
+          <tspan className="fill-on-primary/70 text-small">
             {'/'}
             <tspan data-testid="summary-total">{toArabicIndic(total)}</tspan>
           </tspan>
@@ -78,8 +78,8 @@ export function TodaySummary() {
       </svg>
 
       <div className="flex flex-col gap-1">
-        <span className="text-body text-foreground font-medium">إنجاز اليوم</span>
-        <span className="text-muted-foreground text-small">
+        <span className="font-display text-title">وِرد اليوم</span>
+        <span className="text-small opacity-90">
           بقي <span data-testid="summary-remaining">{toArabicIndic(remaining)}</span> من الوِرد
         </span>
         {voluntary.total > 0 && (
