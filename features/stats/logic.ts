@@ -1,5 +1,5 @@
-import { latestStateByItem, versionInForce } from '@/lib/pure/wird'
-import type { DayId, WirdEntry, WirdVersion } from '@/types/wird'
+import { isScheduledOn, latestStateByItem, versionInForce } from '@/lib/pure/wird'
+import type { DayId, WirdEntry, WirdItem, WirdVersion } from '@/types/wird'
 
 import type { AreaStat, DayCompletion, RangeSummary } from './types'
 
@@ -7,6 +7,13 @@ import type { AreaStat, DayCompletion, RangeSummary } from './types'
 // day (ADR-0006), which is what keeps history stable: adding a new version (effective later)
 // cannot change an earlier day's numbers, because that earlier day still resolves to its own
 // version. Data and days are passed in; no I/O, no clock.
+//
+// ADR-0008: a day's denominators count only items that are required (not تطوّع) and actually
+// scheduled on that day — a weekdays item outside its days can neither help nor hurt.
+
+function countableItems(items: WirdItem[], day: DayId): WirdItem[] {
+  return items.filter((item) => !item.optional && isScheduledOn(item, day))
+}
 
 function entriesOnDay(entries: WirdEntry[], day: DayId): WirdEntry[] {
   return entries.filter((entry) => entry.day === day)
@@ -22,9 +29,10 @@ export function dayCompletion(
   if (!version) return null
 
   const state = latestStateByItem(entriesOnDay(entries, day))
-  const total = version.definition.items.length
+  const items = countableItems(version.definition.items, day)
+  const total = items.length
   let done = 0
-  for (const item of version.definition.items) {
+  for (const item of items) {
     if (state.get(item.id)) done += 1
   }
   return { day, total, done }
@@ -57,7 +65,10 @@ export function dayAreaStats(
   return [...version.definition.areas]
     .sort((a, b) => a.order - b.order)
     .map((area) => {
-      const items = version.definition.items.filter((item) => item.areaId === area.id)
+      const items = countableItems(
+        version.definition.items.filter((item) => item.areaId === area.id),
+        day,
+      )
       const done = items.filter((item) => state.get(item.id)).length
       return { areaId: area.id, label: area.label, total: items.length, done }
     })
@@ -74,4 +85,30 @@ export function summarize(completions: DayCompletion[]): RangeSummary {
     if (completion.total > 0 && completion.done === completion.total) completedDays += 1
   }
   return { days: completions.length, total, done, completedDays }
+}
+
+function isComplete(completion: DayCompletion): boolean {
+  return completion.total > 0 && completion.done === completion.total
+}
+
+// Consecutive fully-completed days ending at the range's last day (NBD-31). The last day
+// gets grace while still in progress: an incomplete final day is skipped, not a streak
+// breaker — finishing yesterday keeps the flame lit until today ends.
+export function currentStreak(completions: DayCompletion[]): number {
+  let index = completions.length - 1
+  if (index >= 0 && !isComplete(completions[index])) index -= 1
+  let streak = 0
+  for (; index >= 0 && isComplete(completions[index]); index -= 1) streak += 1
+  return streak
+}
+
+// The longest run of fully-completed days anywhere in the range (NBD-31).
+export function bestStreak(completions: DayCompletion[]): number {
+  let best = 0
+  let run = 0
+  for (const completion of completions) {
+    run = isComplete(completion) ? run + 1 : 0
+    if (run > best) best = run
+  }
+  return best
 }

@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import type { WirdDefinition, WirdEntry, WirdVersion } from '@/types/wird'
 
-import { dayAreaStats, dayCompletion, rangeCompletion, summarize } from '../logic'
+import {
+  bestStreak,
+  currentStreak,
+  dayAreaStats,
+  dayCompletion,
+  rangeCompletion,
+  summarize,
+} from '../logic'
 
 const smallDef: WirdDefinition = {
   areas: [
@@ -90,6 +97,79 @@ describe('history stability (ADR-0006 core property)', () => {
       total: 4,
       done: 0,
     })
+  })
+})
+
+describe('schedules & optional items (ADR-0008)', () => {
+  const scheduledDef: WirdDefinition = {
+    areas: [{ id: 'prayers', label: 'الصلوات', order: 0 }],
+    items: [
+      { id: 'fajr', areaId: 'prayers', label: 'الفجر', kind: 'checkbox' },
+      { id: 'qiyam', areaId: 'prayers', label: 'قيام', kind: 'checkbox', optional: true },
+      {
+        id: 'fast-mon-thu',
+        areaId: 'prayers',
+        label: 'صيام الإثنين والخميس',
+        kind: 'checkbox',
+        // Monday(1) & Thursday(4).
+        schedule: { type: 'weekdays', days: [1, 4] },
+      },
+    ],
+  }
+  const vs: WirdVersion[] = [
+    { id: 'vs', effectiveFrom: '2026-07-01', definition: scheduledDef, createdAt: 1 },
+  ]
+
+  it('excludes optional items from a day’s totals', () => {
+    // 2026-07-14 is a Tuesday: fast item unscheduled → only fajr counts.
+    expect(dayCompletion(vs, [entry('2026-07-14', 'fajr', true, 10)], '2026-07-14')).toEqual({
+      day: '2026-07-14',
+      total: 1,
+      done: 1,
+    })
+  })
+
+  it('counts a weekdays item only on its scheduled days', () => {
+    // 2026-07-13 is a Monday: fajr + fast are countable.
+    expect(dayCompletion(vs, [], '2026-07-13')).toEqual({
+      day: '2026-07-13',
+      total: 2,
+      done: 0,
+    })
+  })
+
+  it('applies the same rules to per-area drill-down', () => {
+    expect(dayAreaStats(vs, [], '2026-07-13')).toEqual([
+      { areaId: 'prayers', label: 'الصلوات', total: 2, done: 0 },
+    ])
+    expect(dayAreaStats(vs, [], '2026-07-14')).toEqual([
+      { areaId: 'prayers', label: 'الصلوات', total: 1, done: 0 },
+    ])
+  })
+})
+
+describe('streaks (NBD-31)', () => {
+  const c = (day: string, done: number, total = 3) => ({ day, total, done })
+
+  it('counts consecutive complete days ending at the last day', () => {
+    expect(currentStreak([c('d1', 3), c('d2', 3), c('d3', 3)])).toBe(3)
+    expect(currentStreak([c('d1', 3), c('d2', 0), c('d3', 3)])).toBe(1)
+  })
+
+  it('gives the in-progress last day grace instead of breaking the streak', () => {
+    expect(currentStreak([c('d1', 3), c('d2', 3), c('d3', 1)])).toBe(2)
+    // …but an earlier incomplete day does break it.
+    expect(currentStreak([c('d1', 3), c('d2', 1), c('d3', 1)])).toBe(0)
+  })
+
+  it('is zero with no complete days and ignores empty totals', () => {
+    expect(currentStreak([])).toBe(0)
+    expect(currentStreak([c('d1', 0, 0)])).toBe(0)
+  })
+
+  it('finds the best run anywhere in the range', () => {
+    expect(bestStreak([c('d1', 3), c('d2', 3), c('d3', 0), c('d4', 3)])).toBe(2)
+    expect(bestStreak([])).toBe(0)
   })
 })
 

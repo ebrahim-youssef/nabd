@@ -1,15 +1,16 @@
-import type { WirdDefinition } from '@/types/wird'
+import type { WirdDefinition, WirdItem } from '@/types/wird'
 
 // The wird levels the onboarding questionnaire (NBD-6) places a new user in. Levels define
-// the difficulty and time commitment of the daily wird (spec §1). Four levels are planned;
-// the MVP launches with two (levels 3 and 4 are out of scope — docs/backlog.md "Later").
+// the difficulty and time commitment of the daily wird (spec §1). Three levels ship since
+// NBD-26; level 4 stays out of scope (docs/backlog.md "Later").
 //
-// Item ids are stable across levels (fajr, dhuhr, …) so statistics and e2e selectors keep
-// working whichever level seeded the wird. `import type` is erased at build, so this file
-// keeps zero runtime imports per the /content boundary (architecture.md).
+// Item ids are stable across levels (fajr, istighfar, …) so statistics and e2e selectors keep
+// working whichever level seeded the wird. Voluntary (تطوّع) deeds and periodic صيام use the
+// ADR-0008 vocabulary. `import type` is erased at build, so this file keeps zero runtime
+// imports per the /content boundary (architecture.md).
 
 export type WirdLevel = {
-  id: 'level-1' | 'level-2'
+  id: 'level-1' | 'level-2' | 'level-3'
   // Display order and questionnaire rank (higher = more demanding).
   rank: number
   title: string
@@ -19,50 +20,164 @@ export type WirdLevel = {
 
 export type LevelId = WirdLevel['id']
 
+const AREAS = [
+  { id: 'prayers', label: 'الصلوات', order: 0 },
+  { id: 'quran', label: 'القرآن', order: 1 },
+  { id: 'adhkar', label: 'الأذكار', order: 2 },
+  { id: 'tatawwu', label: 'التطوّع', order: 3 },
+]
+
+// The five prayers; جماعة is part of the commitment from level 2 up.
+function prayerItems(inCongregation: boolean): WirdItem[] {
+  const suffix = inCongregation ? ' (جماعة)' : ''
+  return [
+    { id: 'fajr', areaId: 'prayers', label: `الفجر${suffix}`, kind: 'checkbox' },
+    { id: 'dhuhr', areaId: 'prayers', label: `الظهر${suffix}`, kind: 'checkbox' },
+    { id: 'asr', areaId: 'prayers', label: `العصر${suffix}`, kind: 'checkbox' },
+    { id: 'maghrib', areaId: 'prayers', label: `المغرب${suffix}`, kind: 'checkbox' },
+    { id: 'isha', areaId: 'prayers', label: `العشاء${suffix}`, kind: 'checkbox' },
+  ]
+}
+
+// The five daily adhkar counters shared by every level — only the target grows.
+function dhikrCounters(target: number): WirdItem[] {
+  return [
+    {
+      id: 'istighfar',
+      areaId: 'adhkar',
+      label: 'الاستغفار — أستغفر الله العظيم',
+      kind: 'counter',
+      target,
+    },
+    {
+      id: 'habibatan',
+      areaId: 'adhkar',
+      label: 'الحبيبتان — سبحان الله وبحمده، سبحان الله العظيم',
+      kind: 'counter',
+      target,
+    },
+    {
+      id: 'baqiyat',
+      areaId: 'adhkar',
+      label: 'الباقيات الصالحات — سبحان الله والحمد لله ولا إله إلا الله والله أكبر',
+      kind: 'counter',
+      target,
+    },
+    {
+      id: 'tahlil',
+      areaId: 'adhkar',
+      label: 'التهليل — لا إله إلا الله وحده لا شريك له، له الملك وله الحمد وهو على كل شيء قدير',
+      kind: 'counter',
+      target,
+    },
+    {
+      id: 'salawat',
+      areaId: 'adhkar',
+      label: 'الصلاة على النبي ﷺ',
+      kind: 'counter',
+      target,
+    },
+  ]
+}
+
+const MORNING_EVENING: WirdItem[] = [
+  { id: 'morning-adhkar', areaId: 'adhkar', label: 'أذكار الصباح', kind: 'checkbox' },
+  { id: 'evening-adhkar', areaId: 'adhkar', label: 'أذكار المساء', kind: 'checkbox' },
+]
+
+// Voluntary deeds (ADR-0008): قيام + ضحى with minimums; صيام as a periodic goal.
+function tatawwuItems(qiyamMinimum: string, fasting: WirdItem): WirdItem[] {
+  return [
+    {
+      id: 'qiyam',
+      areaId: 'tatawwu',
+      label: 'قيام الليل',
+      kind: 'checkbox',
+      optional: true,
+      minimum: qiyamMinimum,
+    },
+    {
+      id: 'duha',
+      areaId: 'tatawwu',
+      label: 'صلاة الضحى',
+      kind: 'checkbox',
+      optional: true,
+      minimum: 'ركعتان',
+    },
+    fasting,
+  ]
+}
+
+const FASTING_MONTHLY: WirdItem = {
+  id: 'fasting',
+  areaId: 'tatawwu',
+  label: 'صيام ثلاثة أيام من الشهر',
+  kind: 'checkbox',
+  optional: true,
+  schedule: { type: 'monthly-goal', target: 3 },
+}
+
+// الإثنين (1) والخميس (4).
+const FASTING_MON_THU: WirdItem = {
+  id: 'fasting',
+  areaId: 'tatawwu',
+  label: 'صيام الإثنين والخميس',
+  kind: 'checkbox',
+  optional: true,
+  schedule: { type: 'weekdays', days: [1, 4] },
+}
+
 const LEVEL_1_WIRD: WirdDefinition = {
-  areas: [
-    { id: 'prayers', label: 'الصلوات', order: 0 },
-    { id: 'quran', label: 'القرآن', order: 1 },
-    { id: 'adhkar', label: 'الأذكار', order: 2 },
-  ],
+  areas: AREAS,
   items: [
-    { id: 'fajr', areaId: 'prayers', label: 'الفجر', kind: 'checkbox' },
-    { id: 'dhuhr', areaId: 'prayers', label: 'الظهر', kind: 'checkbox' },
-    { id: 'asr', areaId: 'prayers', label: 'العصر', kind: 'checkbox' },
-    { id: 'maghrib', areaId: 'prayers', label: 'المغرب', kind: 'checkbox' },
-    { id: 'isha', areaId: 'prayers', label: 'العشاء', kind: 'checkbox' },
+    ...prayerItems(false),
     { id: 'quran-pages', areaId: 'quran', label: 'قراءة صفحتين من القرآن', kind: 'checkbox' },
-    { id: 'morning-adhkar', areaId: 'adhkar', label: 'أذكار الصباح', kind: 'checkbox' },
-    { id: 'evening-adhkar', areaId: 'adhkar', label: 'أذكار المساء', kind: 'checkbox' },
-    { id: 'tasbih', areaId: 'adhkar', label: 'سبحان الله (٣٣)', kind: 'counter', target: 33 },
+    ...MORNING_EVENING,
+    ...dhikrCounters(10),
+    ...tatawwuItems('ركعة واحدة على الأقل', FASTING_MONTHLY),
   ],
 }
 
 const LEVEL_2_WIRD: WirdDefinition = {
-  areas: [
-    { id: 'prayers', label: 'الصلوات', order: 0 },
-    { id: 'quran', label: 'القرآن', order: 1 },
-    { id: 'adhkar', label: 'الأذكار', order: 2 },
-  ],
+  areas: AREAS,
   items: [
-    { id: 'fajr', areaId: 'prayers', label: 'الفجر', kind: 'checkbox' },
-    { id: 'dhuhr', areaId: 'prayers', label: 'الظهر', kind: 'checkbox' },
-    { id: 'asr', areaId: 'prayers', label: 'العصر', kind: 'checkbox' },
-    { id: 'maghrib', areaId: 'prayers', label: 'المغرب', kind: 'checkbox' },
-    { id: 'isha', areaId: 'prayers', label: 'العشاء', kind: 'checkbox' },
+    ...prayerItems(true),
     { id: 'rawatib', areaId: 'prayers', label: 'السنن الرواتب', kind: 'checkbox' },
-    { id: 'witr', areaId: 'prayers', label: 'الوتر', kind: 'checkbox' },
-    { id: 'quran-hizb', areaId: 'quran', label: 'قراءة حزب من القرآن', kind: 'checkbox' },
-    { id: 'morning-adhkar', areaId: 'adhkar', label: 'أذكار الصباح', kind: 'checkbox' },
-    { id: 'evening-adhkar', areaId: 'adhkar', label: 'أذكار المساء', kind: 'checkbox' },
-    { id: 'tasbih', areaId: 'adhkar', label: 'سبحان الله (٣٣)', kind: 'counter', target: 33 },
     {
-      id: 'istighfar',
-      areaId: 'adhkar',
-      label: 'الاستغفار (١٠٠)',
-      kind: 'counter',
-      target: 100,
+      id: 'after-prayer-adhkar',
+      areaId: 'prayers',
+      label: 'أذكار بعد الصلاة',
+      kind: 'checkbox',
     },
+    { id: 'quran-hizb', areaId: 'quran', label: 'قراءة حزب من القرآن', kind: 'checkbox' },
+    ...MORNING_EVENING,
+    ...dhikrCounters(50),
+    ...tatawwuItems('٣ ركعات على الأقل', FASTING_MONTHLY),
+  ],
+}
+
+const LEVEL_3_WIRD: WirdDefinition = {
+  areas: AREAS,
+  items: [
+    ...prayerItems(true),
+    { id: 'rawatib', areaId: 'prayers', label: 'السنن الرواتب', kind: 'checkbox' },
+    {
+      id: 'ghair-rawatib',
+      areaId: 'prayers',
+      label: 'غير الرواتب',
+      kind: 'checkbox',
+      minimum: '٤ قبل العصر، ٢ قبل المغرب، ٢ قبل العشاء، والظهر ٤ قبلها و٤ بعدها',
+    },
+    {
+      id: 'after-prayer-adhkar',
+      areaId: 'prayers',
+      label: 'أذكار بعد الصلاة',
+      kind: 'checkbox',
+    },
+    { id: 'quran-juz', areaId: 'quran', label: 'قراءة جزء من القرآن', kind: 'checkbox' },
+    ...MORNING_EVENING,
+    ...dhikrCounters(100),
+    ...tatawwuItems('٣ ركعات على الأقل', FASTING_MON_THU),
   ],
 }
 
@@ -71,14 +186,23 @@ export const WIRD_LEVELS: WirdLevel[] = [
     id: 'level-1',
     rank: 1,
     title: 'البداية',
-    description: 'المحافظة على الفرائض مع وردٍ يسير من القرآن والأذكار — نحو ربع ساعة يوميًا.',
+    description: 'الفرائض مع وردٍ يسير من القرآن والأذكار وتطوّعٍ خفيف — نحو ربع ساعة يوميًا.',
     wird: LEVEL_1_WIRD,
   },
   {
     id: 'level-2',
     rank: 2,
     title: 'المداومة',
-    description: 'الفرائض والرواتب والوتر مع حزبٍ من القرآن وأذكارٍ أوسع — نحو ساعة يوميًا.',
+    description:
+      'الجماعة والرواتب وأذكار بعد الصلاة مع حزبٍ من القرآن وأذكارٍ أوسع — نحو ساعة يوميًا.',
     wird: LEVEL_2_WIRD,
+  },
+  {
+    id: 'level-3',
+    rank: 3,
+    title: 'الاجتهاد',
+    description:
+      'الجماعة والرواتب وغيرها مع جزءٍ من القرآن ومئات الأذكار وصيام الإثنين والخميس — نحو ساعتين يوميًا.',
+    wird: LEVEL_3_WIRD,
   },
 ]

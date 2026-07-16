@@ -29,6 +29,12 @@ export async function getDayEntries(day: DayId): Promise<WirdEntry[]> {
   return db.wirdEntries.where('day').equals(day).toArray()
 }
 
+// All entries in calendar month `month` ('YYYY-MM') — feeds monthly-goal progress
+// (ADR-0008). DayIds sort lexicographically, so a prefix scan on the day index is exact.
+export async function getMonthEntries(month: string): Promise<WirdEntry[]> {
+  return db.wirdEntries.where('day').startsWith(`${month}-`).toArray()
+}
+
 // Creates a new immutable wird version and queues it for sync.
 export async function addVersion(
   effectiveFrom: DayId,

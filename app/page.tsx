@@ -1,14 +1,12 @@
-import Link from 'next/link'
-
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
 import { OnboardingGate } from '@/features/onboarding/components/OnboardingGate'
-import { WirdStats } from '@/features/stats/components/WirdStats'
+import { CompletionCelebration } from '@/features/wird/components/CompletionCelebration'
 import { TodaySummary } from '@/features/wird/components/TodaySummary'
 import { WirdChecklist } from '@/features/wird/components/WirdChecklist'
 
 export default function Home() {
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-16">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pt-4 pb-10 md:gap-8 md:px-6 md:pt-8">
       <header className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <h1 className="font-display text-display text-primary">نبض</h1>
@@ -26,17 +24,8 @@ export default function Home() {
       <OnboardingGate>
         <TodaySummary />
         <WirdChecklist />
-        <WirdStats />
+        <CompletionCelebration />
       </OnboardingGate>
-
-      <nav aria-label="المكتبات" className="flex items-center gap-6">
-        <Link href="/adhkar" className="text-primary text-body underline-offset-4 hover:underline">
-          مكتبة الأذكار
-        </Link>
-        <Link href="/niyyat" className="text-primary text-body underline-offset-4 hover:underline">
-          مكتبة النوايا
-        </Link>
-      </nav>
     </main>
   )
 }

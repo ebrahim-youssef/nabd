@@ -28,9 +28,16 @@ export function UpdateNotifier() {
       })
     })
 
-    // Reload once the freshly-activated worker takes control.
+    // Reload once a freshly-activated worker REPLACES the current one. controllerchange also
+    // fires when the very first worker claims the page seconds after a fresh visit — reloading
+    // then would yank a new user out of onboarding, so the first claim only arms the flag.
+    let hadController = Boolean(navigator.serviceWorker.controller)
     let refreshing = false
     const onControllerChange = () => {
+      if (!hadController) {
+        hadController = true
+        return
+      }
       if (refreshing) return
       refreshing = true
       window.location.reload()

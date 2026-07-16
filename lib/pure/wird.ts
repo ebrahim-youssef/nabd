@@ -1,6 +1,6 @@
-import type { DayId, WirdEntry, WirdVersion } from '@/types/wird'
+import type { DayId, WirdEntry, WirdItem, WirdVersion } from '@/types/wird'
 
-import { compareDayId } from './day'
+import { compareDayId, monthOf, weekdayOf } from './day'
 
 // Pure, feature-agnostic wird resolution shared by the wird checklist and the statistics
 // feature (a feature's logic.ts may not import another feature's logic, so the common bits live
@@ -23,6 +23,29 @@ export function versionInForce(versions: WirdVersion[], day: DayId): WirdVersion
     }
   }
   return best
+}
+
+// Whether `item` is due on `day` (ADR-0008): weekdays items exist only on their days;
+// everything else (daily, monthly-goal, no schedule) is due every day.
+export function isScheduledOn(item: WirdItem, day: DayId): boolean {
+  if (item.schedule?.type !== 'weekdays') return true
+  return item.schedule.days.includes(weekdayOf(day))
+}
+
+// Done-days for a monthly-goal item within `month` ('YYYY-MM'): per calendar day, the latest
+// event wins (ADR-0006 §3); a day counts when that final state is done.
+export function monthlyDoneDays(entries: WirdEntry[], itemId: string, month: string): number {
+  const latestByDay = new Map<string, { at: number; done: boolean }>()
+  for (const entry of entries) {
+    if (entry.itemId !== itemId || monthOf(entry.day) !== month) continue
+    const seen = latestByDay.get(entry.day)
+    if (!seen || entry.at > seen.at) latestByDay.set(entry.day, { at: entry.at, done: entry.done })
+  }
+  let done = 0
+  for (const state of latestByDay.values()) {
+    if (state.done) done += 1
+  }
+  return done
 }
 
 // Collapses append-only entry events to the current done-state per item: the latest event

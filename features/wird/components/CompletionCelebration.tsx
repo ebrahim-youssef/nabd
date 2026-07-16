@@ -1,0 +1,82 @@
+'use client'
+
+import { Award } from 'lucide-react'
+import { useEffect, useState } from 'react'
+
+import { Button } from '@/components/ui/button'
+import { today } from '@/lib/impure/clock'
+import { shareText } from '@/lib/impure/share'
+
+import { useWirdChecklist } from '../hooks/useWirdChecklist'
+import { summarizeChecklist } from '../logic'
+
+// Once per day: the last required check-off flips this key so a reload never re-celebrates.
+const CELEBRATED_KEY = 'nabd:celebrated-day'
+
+const COPY = {
+  title: 'أتمَمْتَ وِرْدَكَ اليوم',
+  hadith: '«أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ» — متفق عليه',
+  share: 'شارك إنجازك',
+  shareText: 'أتممتُ وِردي اليوم بفضل الله — نبض، رفيقك اليومي للوِرد.',
+  copied: 'نُسخ إلى الحافظة ✓',
+  dismiss: 'واصِل',
+} as const
+
+// Full-screen celebration when the day's required wird hits ١٠٠٪ (NBD-32, design-notes-r3
+// §7). Shows exactly once per day (device-local marker); voluntary تطوّع never gates it.
+export function CompletionCelebration() {
+  const [day] = useState(() => today())
+  const { areas, isLoading } = useWirdChecklist(day)
+  const [show, setShow] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const summary = summarizeChecklist(areas)
+  const complete = !isLoading && summary.total > 0 && summary.remaining === 0
+
+  useEffect(() => {
+    if (!complete) return
+    // Deferred a tick: localStorage is client-only (same pattern as the coords cache).
+    const timer = window.setTimeout(() => {
+      try {
+        if (window.localStorage.getItem(CELEBRATED_KEY) === day) return
+        window.localStorage.setItem(CELEBRATED_KEY, day)
+        setShow(true)
+      } catch {
+        // No marker storage just means no celebration — never block the checklist.
+      }
+    }, 0)
+    return () => window.clearTimeout(timer)
+  }, [complete, day])
+
+  if (!show) return null
+
+  return (
+    <div
+      role="dialog"
+      aria-label={COPY.title}
+      data-testid="completion-celebration"
+      className="bg-primary text-on-primary fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 px-6 text-center"
+    >
+      <span className="border-gold flex size-28 items-center justify-center rounded-full border-4">
+        <Award className="text-gold size-14" aria-hidden />
+      </span>
+      <h2 className="font-display text-display">{COPY.title}</h2>
+      <p className="font-scripture text-scripture opacity-90">{COPY.hadith}</p>
+      <div className="flex items-center gap-3">
+        <Button
+          variant="secondary"
+          onClick={() => {
+            void shareText(COPY.shareText).then((how) => setCopied(how === 'copied'))
+          }}
+          data-testid="celebration-share"
+        >
+          {COPY.share}
+        </Button>
+        <Button variant="ghost" onClick={() => setShow(false)} data-testid="celebration-dismiss">
+          {COPY.dismiss}
+        </Button>
+      </div>
+      {copied && <p className="text-small opacity-90">{COPY.copied}</p>}
+    </div>
+  )
+}

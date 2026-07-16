@@ -35,11 +35,34 @@ export const QUESTIONS: Question[] = [
 ]
 
 export const COPY = {
+  // Welcome / purpose screen (NBD-30): what the app is for, before any question.
+  welcomeBody:
+    'نبض رفيقك اليوميّ للوِرد: تتعهّد بوِردٍ يناسبك، تعلّم عليه يومًا بيوم، وتحاسب نفسك بإحصاءاتٍ تُريك أين أنت وأين تحتاج أن تجتهد.',
+  welcomePoints: [
+    'وِرد يومي على قدر حالك — صلوات وقرآن وأذكار وتطوّع',
+    'مواقيت الصلاة وتنبيهاتها على جهازك',
+    'إحصاءات ومحاسبة: ما التزمت به، وما فاتك، وأين تتقدّم',
+  ],
+  welcomeStart: 'لنبدأ',
   title: 'أهلًا بك في نبض',
   intro: 'أجب عن ثلاثة أسئلة قصيرة لنقترح عليك وِردًا يناسب حالك.',
   submit: 'اقترح لي وِردًا',
   recommendationTitle: 'نقترح لك هذا المستوى',
   otherLevels: 'أو اختر مستوى آخر:',
-  confirm: 'ابدأ وِردي',
+  confirm: 'متابعة',
   seedError: 'تعذّر إنشاء الوِرد. يُرجى المحاولة مرّة أخرى.',
+  // Permissions step (ADR-0009).
+  permissionsTitle: 'خطوة أخيرة',
+  locationHeading: 'الموقع — لمواقيت الصلاة',
+  locationBody: 'يُحسب الأذان على جهازك ولا يغادر موقعك الجهاز أبدًا. بدونه لن تظهر المواقيت.',
+  locationButton: 'تفعيل الموقع',
+  locationGranted: 'تم تفعيل الموقع ✓',
+  notificationsHeading: 'التنبيهات — اختياري',
+  notificationsBody: 'نُنبّهك قبل الأذان وعنده وعند الإقامة. قد لا تصل التنبيهات والتطبيق مغلق.',
+  notificationsToggle: 'تفعيل تنبيهات الصلاة',
+  notificationsDenied: 'رفض المتصفح إذن التنبيهات — يمكنك تفعيله لاحقًا من إعدادات المتصفح.',
+  momentBefore: 'قبل الأذان بربع ساعة',
+  momentAdhan: 'عند الأذان',
+  momentIqamah: 'عند الإقامة',
+  finish: 'ابدأ وِردي',
 } as const

@@ -1,6 +1,21 @@
 import { describe, expect, it } from 'vitest'
 
-import { compareDayId, isDayId, lastNDays, toDayId } from '@/lib/pure/day'
+import { compareDayId, isDayId, lastNDays, monthOf, toDayId, weekdayOf } from '@/lib/pure/day'
+
+describe('weekdayOf', () => {
+  it('maps known dates to 0=Sunday … 6=Saturday', () => {
+    expect(weekdayOf('2026-07-12')).toBe(0) // Sunday
+    expect(weekdayOf('2026-07-13')).toBe(1) // Monday
+    expect(weekdayOf('2026-07-16')).toBe(4) // Thursday
+    expect(weekdayOf('2026-07-18')).toBe(6) // Saturday
+  })
+})
+
+describe('monthOf', () => {
+  it('returns the YYYY-MM window', () => {
+    expect(monthOf('2026-07-14')).toBe('2026-07')
+  })
+})
 
 describe('toDayId', () => {
   it('formats a Date to local YYYY-MM-DD with zero-padding', () => {

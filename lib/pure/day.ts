@@ -25,6 +25,19 @@ export function compareDayId(a: DayId, b: DayId): number {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
+// Weekday of a DayId, 0=Sunday … 6=Saturday. Computed in UTC from the date parts, so it is
+// timezone- and DST-proof (a DayId is already the user's local calendar day).
+export function weekdayOf(day: DayId): number {
+  const [year, month, dayOfMonth] = day.split('-').map(Number)
+  return new Date(Date.UTC(year, month - 1, dayOfMonth)).getUTCDay()
+}
+
+// The calendar month of a DayId, as 'YYYY-MM' (the aggregation window for monthly goals,
+// ADR-0008).
+export function monthOf(day: DayId): string {
+  return day.slice(0, 7)
+}
+
 const MS_PER_DAY = 86_400_000
 
 // The `n` calendar days ending at `today`, oldest first (e.g. lastNDays('2026-07-14', 7) →

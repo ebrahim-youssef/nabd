@@ -4,7 +4,9 @@ import { useLiveQuery } from 'dexie-react-hooks'
 
 import type { DayId } from '@/types/wird'
 
-import { getDayEntries, listVersions } from '../db'
+import { monthOf } from '@/lib/pure/day'
+
+import { getDayEntries, getMonthEntries, listVersions } from '../db'
 import { buildChecklist, versionInForce } from '../logic'
 import type { ChecklistAreaView } from '../types'
 
@@ -21,8 +23,13 @@ type ChecklistState = {
 // seeded by the onboarding questionnaire (features/onboarding), never here.
 export function useWirdChecklist(day: DayId): ChecklistState {
   const data = useLiveQuery(async () => {
-    const [versions, entries] = await Promise.all([listVersions(), getDayEntries(day)])
-    return { versions, entries }
+    const [versions, entries, monthEntries] = await Promise.all([
+      listVersions(),
+      getDayEntries(day),
+      // Month window feeds monthly-goal progress (ADR-0008).
+      getMonthEntries(monthOf(day)),
+    ])
+    return { versions, entries, monthEntries }
   }, [day])
 
   if (!data) return { isLoading: true, areas: [], versionId: null }
@@ -32,7 +39,7 @@ export function useWirdChecklist(day: DayId): ChecklistState {
 
   return {
     isLoading: false,
-    areas: buildChecklist(version.definition, data.entries),
+    areas: buildChecklist(version.definition, data.entries, day, data.monthEntries),
     versionId: version.id,
   }
 }

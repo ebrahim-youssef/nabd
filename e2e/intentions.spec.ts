@@ -15,9 +15,10 @@ test('opening a deed reveals its intention text', async ({ page }) => {
   await expect(prayer.getByText('أنوي امتثال أمر الله وإقامة ذكره', { exact: false })).toBeVisible()
 })
 
-test('home page links to the intentions library', async ({ page }) => {
+test('bottom nav reaches the intentions library via the hub', async ({ page }) => {
   await page.goto('/')
 
-  await page.getByRole('link', { name: 'مكتبة النوايا' }).click()
+  await page.getByTestId('nav-libraries').click()
+  await page.getByRole('link', { name: /مكتبة النوايا/ }).click()
   await expect(page.getByTestId('intentions-library')).toBeVisible()
 })
