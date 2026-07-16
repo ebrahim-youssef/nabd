@@ -1,6 +1,9 @@
-// The intentions (نوايا) reference library (NBD-13): for each deed, the intentions worth
-// bringing to mind before it — النية الحاضرة تُحوِّل العادة عبادة. Authored static data —
-// zero runtime imports per the /content boundary (architecture.md).
+// The intentions (نوايا) reference library (NBD-13, expanded NBD-24): for each deed, the
+// intentions worth bringing to mind before it — النية الحاضرة تُحوِّل العادة عبادة.
+// The expansion follows the approach of كتاب «نوايا — دليل إلى نوايا الأعمال» لطلال فاخر
+// (intentions grounded in Quran/Sunnah per deed); the texts here are original compositions
+// in that spirit, not excerpts. Authored static data — zero runtime imports per the /content
+// boundary (architecture.md).
 
 export type DeedIntention = {
   id: string
@@ -50,5 +53,53 @@ export const INTENTIONS_LIBRARY: DeedIntention[] = [
     deed: 'صلة الرحم',
     intention:
       'أنوي امتثال أمر الله بوصل ما أمر به أن يوصل، وطلب البركة في العمر والرزق، وإدخال السرور على الأهل والقرابة.',
+  },
+  {
+    id: 'wudu',
+    deed: 'الوضوء',
+    intention:
+      'أنوي رفع الحدث والتطهّر لعبادة الله، وأن تخرج خطاياي مع قطر الماء، وأن أُبعث يوم القيامة غُرًّا محجّلًا من أثر الوضوء.',
+  },
+  {
+    id: 'masjid',
+    deed: 'المشي إلى المسجد',
+    intention:
+      'أنوي إجابة النداء وشهود الجماعة، وأحتسب خطاي إلى بيت الله — خطوةٌ ترفع درجة وأخرى تحطّ خطيئة — وانتظار الصلاة بعد الصلاة رباطًا.',
+  },
+  {
+    id: 'salam',
+    deed: 'إفشاء السلام',
+    intention:
+      'أنوي إحياء سنّة السلام ونشر المحبّة بين المسلمين، وطلب سبب دخول الجنة — «أفشوا السلام بينكم» — وأن أكون مفتاح خيرٍ لمن ألقاه.',
+  },
+  {
+    id: 'parents',
+    deed: 'برّ الوالدين',
+    intention:
+      'أنوي امتثال أمر الله المقرون بتوحيده، وطلب رضاه في رضاهما، وخفض جناح الذلّ من الرحمة، والوفاء لبعض حقّهما عليّ.',
+  },
+  {
+    id: 'work',
+    deed: 'العمل والسعي على الرزق',
+    intention:
+      'أنوي طلب الرزق الحلال والاستغناء عن سؤال الناس، والإنفاق على من أعول احتسابًا، وإتقان العمل الذي يحبّه الله.',
+  },
+  {
+    id: 'sleep',
+    deed: 'النوم',
+    intention:
+      'أنوي التقوّي بالراحة على طاعة الله، والنوم على ذكرٍ وطهارة، واحتساب نومي كما أحتسب قيامي.',
+  },
+  {
+    id: 'food',
+    deed: 'الطعام والشراب',
+    intention:
+      'أنوي التقوّي بالنعمة على العبادة، وشكر الله المُطعِم الساقي، واتّباع السنّة في التسمية والحمد والقصد.',
+  },
+  {
+    id: 'family-service',
+    deed: 'خدمة الأهل والسعي في حوائج الناس',
+    intention:
+      'أنوي الاقتداء بالنبي ﷺ الذي كان في مهنة أهله، وأن أكون في حاجة أخي فيكون الله في حاجتي، وإدخال السرور على قلب مسلم.',
   },
 ]

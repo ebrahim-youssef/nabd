@@ -19,6 +19,10 @@ export default function NiyyatPage() {
       </p>
 
       <IntentionsLibrary />
+
+      <p className="text-muted-foreground text-label">
+        على نهج كتاب «نوايا — دليل إلى نوايا الأعمال» لطلال فاخر.
+      </p>
     </main>
   )
 }
