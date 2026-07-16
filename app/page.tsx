@@ -17,9 +17,16 @@ export default function Home() {
         </p>
       </header>
 
-      <p className="font-scripture text-scripture text-foreground">
-        ﴿ إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا ﴾
-      </p>
+      <div className="flex flex-col items-center gap-3 text-center">
+        <p className="font-scripture text-scripture text-foreground">
+          ﴿ إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَوْقُوتًا ﴾
+        </p>
+        <span aria-hidden className="text-gold flex w-full items-center gap-3 text-small">
+          <span className="bg-border h-px flex-1" />
+          ۞
+          <span className="bg-border h-px flex-1" />
+        </span>
+      </div>
 
       <OnboardingGate>
         <TodaySummary />

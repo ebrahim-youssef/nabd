@@ -40,8 +40,10 @@ export function BottomNav() {
                 data-testid={`nav-${href === '/' ? 'home' : href.slice(1)}`}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'flex flex-col items-center gap-0.5 rounded-chip px-3 py-1.5 text-label transition-colors',
-                  active ? 'bg-primary/10 text-primary' : 'text-muted-foreground',
+                  'flex flex-col items-center gap-0.5 rounded-chip px-3 py-1.5 text-label transition-all duration-200',
+                  active
+                    ? 'bg-primary text-on-primary shadow-card-sm'
+                    : 'text-muted-foreground hover:text-primary',
                 )}
               >
                 <Icon className="size-5" aria-hidden />

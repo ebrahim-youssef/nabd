@@ -33,7 +33,7 @@ export function TodaySummary() {
 
   return (
     <div
-      className="bg-primary text-on-primary flex items-center gap-5 rounded-card p-5"
+      className="pattern-khatam text-on-primary shadow-card flex items-center gap-5 rounded-card p-5"
       data-testid="today-summary"
     >
       <svg
@@ -48,7 +48,7 @@ export function TodaySummary() {
           r={RING_RADIUS}
           fill="none"
           strokeWidth={RING_STROKE}
-          className="stroke-on-primary/25"
+          className="stroke-ring-track"
         />
         <circle
           cx={RING_CENTER}
@@ -77,8 +77,13 @@ export function TodaySummary() {
         </text>
       </svg>
 
-      <div className="flex flex-col gap-1">
-        <span className="font-display text-title">وِرد اليوم</span>
+      <div className="flex min-w-0 flex-col gap-1.5">
+        <span className="font-display text-title">
+          وِرد اليوم{' '}
+          <span aria-hidden className="text-gold text-small">
+            ✦
+          </span>
+        </span>
         <span className="text-small opacity-90">
           بقي <span data-testid="summary-remaining">{toArabicIndic(remaining)}</span> من الوِرد
         </span>

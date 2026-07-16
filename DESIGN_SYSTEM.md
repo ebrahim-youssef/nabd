@@ -138,7 +138,23 @@ Weights: `--fw-regular 400`, `--fw-medium 500`, `--fw-semibold 600`, `--fw-bold 
   ring 22.
 - **Elevation** — two soft, tinted levels: `shadow-card-sm`, `shadow-card`. Light is tinted
   toward the primary hue; dark is deeper. No hard black shadows in light.
+- **Card law (NBD-34).** In light, `--surface-2` equals `--bg`, so a card painted
+  `bg-surface-2` on the page background is invisible. Anything that should read as a card on
+  the page uses `bg-surface` + `border-border` + `shadow-card-sm` (`shadow-card` for hero
+  surfaces). `surface-2` is reserved for **nested wells** — progress tracks, inset list rows
+  inside an already-white card.
 - **Motion** — quiet: `--ease` `cubic-bezier(.22,.61,.36,1)`, `--dur` `.22s`. No bounce.
+  Check-offs may `animate-in zoom-in`; screens may `fade-in` — always ≤ 500ms, tw-animate-css
+  utilities only.
+
+## Ornament
+
+Deep-teal feature surfaces (hero ring card, adhkar active card, streak card, celebration)
+use the **`.pattern-khatam`** utility (`app/globals.css`): a khatam / eight-point-star
+lattice — the ۞ of the glyph set — drawn in `--on-primary` at whisper opacity over a quiet
+`--primary → --primary-deep` gradient. Pair it with `text-on-primary`; never place it under
+long body text. The ۞ and ✦ glyphs may also appear inline as gold accents (`text-gold`) —
+decoration only, always `aria-hidden`.
 
 ## Dark mode
 
@@ -175,10 +191,13 @@ rounded-l- rounded-r-`. Lint should flag these.
 
 ## Iconography
 
-No icon font, no bespoke SVGs. A curated set of unicode glyphs, rendered in the current text
-colour at ~20px inside `rounded-icon` containers: `☾` night · `✦` highlight · `◈` home ·
-`◔` time · `❋` dhikr · `↺` reset · `۞` qaḍāʾ/ornament · `✓` done. **No emoji.** There is no
-logo yet; the name «نبض» is set in the display font wherever a mark would go.
+**Functional icons are `lucide-react`** (the shipped reality since NBD-22/29/31: nav, check
+marks, chevrons, flame, bell…), rendered in the current text colour, usually inside a
+`rounded-icon` medallion (`bg-primary/10 text-primary`, or `bg-on-primary/10` on deep-teal).
+The curated **unicode glyphs** remain the ornament voice — `✦` highlight · `۞`
+qaḍāʾ/ornament · `☾` night — used decoratively (`aria-hidden`, `text-gold`/`text-faint`).
+**No emoji.** There is no logo yet; the name «نبض» is set in the display font wherever a
+mark would go.
 
 ## Signature
 

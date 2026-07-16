@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react'
 
+import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
 import type { DayId } from '@/types/wird'
 
@@ -29,22 +30,32 @@ export function DhikrCounter({ day, versionId, itemId, label, target, done }: Dh
       aria-pressed={done}
       data-testid={`dhikr-${itemId}`}
       className={cn(
-        'flex w-full items-center justify-between gap-3 rounded-card p-3 text-start transition-colors',
-        done ? 'bg-primary/10' : 'bg-surface-2 hover:bg-surface-2/70',
+        'relative flex w-full items-center justify-between gap-3 overflow-hidden rounded-card border p-3 text-start transition-all duration-200 active:scale-[0.99]',
+        done
+          ? 'border-primary/20 bg-primary/10'
+          : 'border-border bg-surface shadow-card-sm hover:border-accent/40',
       )}
     >
       <span className={cn('text-body', done && 'text-muted-foreground')}>{label}</span>
       {done ? (
-        <span className="border-primary bg-primary text-on-primary flex size-6 items-center justify-center rounded-full border">
-          <Check className="size-4" aria-hidden />
+        <span className="border-primary bg-primary text-on-primary flex size-6 shrink-0 items-center justify-center rounded-full border-2">
+          <Check className="animate-in zoom-in size-4 duration-200" aria-hidden />
         </span>
       ) : (
         <span
-          className="text-primary text-small tabular-nums"
+          className="bg-primary/10 text-primary rounded-chip px-2.5 py-0.5 text-small shrink-0 font-medium tabular-nums"
           data-testid={`dhikr-count-${itemId}`}
         >
-          {count}/{target}
+          {toArabicIndic(count)}/{toArabicIndic(target)}
         </span>
+      )}
+      {/* Tap-progress hairline: every tap visibly moves the row toward its target. */}
+      {!done && count > 0 && (
+        <span
+          aria-hidden
+          className="bg-accent absolute bottom-0 start-0 block h-0.5 rounded-full transition-[inline-size] duration-200"
+          style={{ inlineSize: `${Math.min((count / target) * 100, 100)}%` }}
+        />
       )}
     </button>
   )

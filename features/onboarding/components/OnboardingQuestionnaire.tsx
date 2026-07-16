@@ -1,6 +1,7 @@
 'use client'
 
-import { Bell, Check, MapPin } from 'lucide-react'
+import { BarChart3, Bell, Check, ListChecks, MapPin } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { WIRD_LEVELS } from '@/content/levels'
@@ -12,6 +13,10 @@ import { isComplete, recommendLevel } from '../logic'
 import type { Answers, LevelId } from '../types'
 import { useOnboarding } from '../hooks/useOnboarding'
 import { usePermissionsSetup } from '../hooks/usePermissionsSetup'
+
+// One glyph per welcome point (same order as COPY.welcomePoints): the wird itself, prayer
+// times, then accountability stats.
+const WELCOME_POINT_ICONS: LucideIcon[] = [ListChecks, Bell, BarChart3]
 
 // The first-entry flow (NBD-6 + NBD-28): three short questions recommend a level, the user
 // confirms (or picks another level), grants permissions (location for prayer times,
@@ -34,11 +39,25 @@ export function OnboardingQuestionnaire() {
           <p className="text-muted-foreground text-body">{COPY.welcomeBody}</p>
         </header>
         <ul className="flex flex-col gap-3">
-          {COPY.welcomePoints.map((point) => (
-            <li key={point} className="bg-surface-2 text-body rounded-card p-3">
-              {point}
-            </li>
-          ))}
+          {COPY.welcomePoints.map((point, index) => {
+            const Icon = WELCOME_POINT_ICONS[index]
+            return (
+              <li
+                key={point}
+                className="border-border bg-surface shadow-card-sm text-body flex items-center gap-3 rounded-card border p-3"
+              >
+                {Icon && (
+                  <span
+                    aria-hidden
+                    className="bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-icon"
+                  >
+                    <Icon className="size-5" />
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">{point}</span>
+              </li>
+            )
+          })}
         </ul>
         <Button onClick={() => setStep('questions')} data-testid="onboarding-begin">
           {COPY.welcomeStart}
@@ -66,8 +85,10 @@ export function OnboardingQuestionnaire() {
                 <label
                   key={option.id}
                   className={cn(
-                    'flex cursor-pointer items-center gap-3 rounded-card p-3 transition-colors',
-                    checked ? 'bg-primary/10' : 'bg-surface-2 hover:bg-surface-2/70',
+                    'flex cursor-pointer items-center gap-3 rounded-card border p-3 transition-all duration-200',
+                    checked
+                      ? 'border-primary bg-primary/10'
+                      : 'border-border bg-surface shadow-card-sm hover:border-accent/40',
                   )}
                 >
                   <input
@@ -76,10 +97,12 @@ export function OnboardingQuestionnaire() {
                     value={option.id}
                     checked={checked}
                     onChange={() => setAnswers((prev) => ({ ...prev, [question.id]: option.id }))}
-                    className="accent-primary size-4"
+                    className="accent-primary size-4 shrink-0"
                     data-testid={`onboarding-${question.id}-${option.id}`}
                   />
-                  <span className="text-body">{option.label}</span>
+                  <span className={cn('text-body', checked && 'text-primary font-medium')}>
+                    {option.label}
+                  </span>
                 </label>
               )
             })}
@@ -118,11 +141,20 @@ export function OnboardingQuestionnaire() {
                   aria-pressed={selected}
                   data-testid={`onboarding-level-${level.id}`}
                   className={cn(
-                    'flex flex-col gap-1 rounded-card border p-4 text-start transition-colors',
-                    selected ? 'border-primary bg-primary/10' : 'border-border bg-surface-2',
+                    'relative flex flex-col gap-1 overflow-hidden rounded-card border p-4 text-start transition-all duration-200',
+                    selected
+                      ? 'border-primary bg-primary/10 shadow-card'
+                      : 'border-border bg-surface shadow-card-sm hover:border-accent/40',
                   )}
                 >
-                  <span className="font-display text-title text-primary">{level.title}</span>
+                  <span className="flex items-center justify-between gap-3">
+                    <span className="font-display text-title text-primary">{level.title}</span>
+                    {selected && (
+                      <span className="border-primary bg-primary text-on-primary animate-in zoom-in flex size-6 shrink-0 items-center justify-center rounded-full border-2 duration-200">
+                        <Check className="size-4" aria-hidden />
+                      </span>
+                    )}
+                  </span>
                   <span className="text-muted-foreground text-body">{level.description}</span>
                 </button>
               )
@@ -140,9 +172,14 @@ export function OnboardingQuestionnaire() {
     <section className="flex flex-col gap-6" data-testid="onboarding-permissions">
       <h2 className="font-display text-title text-primary">{COPY.permissionsTitle}</h2>
 
-      <div className="bg-surface-2 flex flex-col gap-3 rounded-card p-4">
+      <div className="border-border bg-surface shadow-card-sm flex flex-col gap-3 rounded-card border p-4">
         <span className="text-body text-foreground flex items-center gap-2 font-medium">
-          <MapPin className="text-primary size-5" aria-hidden />
+          <span
+            aria-hidden
+            className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-icon"
+          >
+            <MapPin className="size-5" />
+          </span>
           {COPY.locationHeading}
         </span>
         <p className="text-muted-foreground text-small">{COPY.locationBody}</p>
@@ -162,9 +199,14 @@ export function OnboardingQuestionnaire() {
         )}
       </div>
 
-      <div className="bg-surface-2 flex flex-col gap-3 rounded-card p-4">
+      <div className="border-border bg-surface shadow-card-sm flex flex-col gap-3 rounded-card border p-4">
         <span className="text-body text-foreground flex items-center gap-2 font-medium">
-          <Bell className="text-primary size-5" aria-hidden />
+          <span
+            aria-hidden
+            className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-icon"
+          >
+            <Bell className="size-5" />
+          </span>
           {COPY.notificationsHeading}
         </span>
         <p className="text-muted-foreground text-small">{COPY.notificationsBody}</p>
