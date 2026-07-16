@@ -36,7 +36,9 @@ const LIBRARIES: LibraryCard[] = [
     href: '/niyyat',
     title: 'مكتبة النوايا',
     description: 'نيّة مستحضرة لكل عمل — إنما الأعمال بالنيات.',
-    count: `${toArabicIndic(INTENTIONS_LIBRARY.length)} نيّة`,
+    count: `${toArabicIndic(INTENTIONS_LIBRARY.length)} عملًا · ${toArabicIndic(
+      INTENTIONS_LIBRARY.reduce((sum, deed) => sum + deed.intentions.length, 0),
+    )} نيّة`,
     icon: HeartHandshake,
   },
 ]
