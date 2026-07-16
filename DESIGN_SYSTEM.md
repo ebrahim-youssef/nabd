@@ -23,8 +23,9 @@ nabd keeps **one** colour family and **one** font family always. Only three thin
 - Nav position (mobile bottom / web top) — a layout concern, not a token.
 
 Everything is **RTL** (`dir="rtl"`, Arabic-only) and every number is **Arabic-Indic**
-(٠١٢٣٤٥٦٧٨٩). Default at the root: `data-mode="classic" data-theme="light"`. A mode/theme
-switcher UI is a later ticket; NBD-3 only lands the tokens and the defaults.
+(٠١٢٣٤٥٦٧٨٩). Default at the root: `data-mode="classic" data-theme="light"`. The switcher UI
+shipped in NBD-37: theme toggles from the home header, mode from /settings; both persist per
+device in localStorage and are applied before first paint by the layout's inline script.
 
 ## Colour
 
