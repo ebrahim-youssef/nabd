@@ -47,3 +47,39 @@ test('deep link opens the requested tab', async ({ page }) => {
   await page.goto('/adhkar?tab=sleep')
   await expect(page.getByTestId('adhkar-tab-sleep')).toHaveAttribute('aria-selected', 'true')
 })
+
+// NBD-41 (r4 §7): the once-daily categories resume where they stopped, for the current day.
+
+test('a morning flow position survives a reload and a tab round-trip', async ({ page }) => {
+  await page.goto('/adhkar?tab=morning')
+  const card = page.getByTestId('flow-active-card')
+
+  // Dhikr 1 repeats once (tap advances); dhikr 2 repeats ×3 (two taps → count ٢).
+  await card.click()
+  await card.click()
+  await card.click()
+  await expect(page.getByTestId('flow-count')).toContainText('٢')
+  const activeText = await card.innerText()
+
+  await page.reload()
+  await expect(page.getByTestId('flow-count')).toContainText('٢')
+  expect(await card.innerText()).toBe(activeText)
+
+  // Leaving for another tab and coming back also resumes.
+  await page.getByTestId('adhkar-tab-evening').click()
+  await expect(page.getByTestId('flow-count')).toContainText('٠')
+  await page.getByTestId('adhkar-tab-morning').click()
+  await expect(page.getByTestId('flow-count')).toContainText('٢')
+})
+
+test('a repeatable category (بعد الصلاة) resets after a reload', async ({ page }) => {
+  await page.goto('/adhkar?tab=after-prayer')
+  const card = page.getByTestId('flow-active-card')
+
+  await card.click()
+  await card.click()
+  await card.click()
+
+  await page.reload()
+  await expect(page.getByTestId('flow-count')).toContainText('٠/')
+})
