@@ -16,7 +16,7 @@ test('beginner answers land on the level-1 wird', async ({ page }) => {
   // Voluntary deeds carry the تطوّع chip from level 1.
   await expect(page.getByTestId('wird-item-qiyam')).toBeVisible()
   // Level-2+ items must not be present.
-  await expect(page.getByTestId('wird-item-rawatib')).toHaveCount(0)
+  await expect(page.getByTestId('wird-item-rawatib-fajr-before')).toHaveCount(0)
 })
 
 test('middling answers land on the level-2 wird', async ({ page }) => {
@@ -25,10 +25,26 @@ test('middling answers land on the level-2 wird', async ({ page }) => {
   await completeOnboarding(page, { prayers: 'mostly', quran: 'pages', adhkar: 'sometimes' })
 
   await expect(page.getByTestId('wird-checklist')).toBeVisible()
-  await expect(page.getByTestId('wird-item-rawatib')).toBeVisible()
+  await expect(page.getByTestId('wird-item-rawatib-fajr-before')).toBeVisible()
   await expect(page.getByTestId('wird-item-quran-hizb')).toBeVisible()
   // Level-3-only items must not be present.
   await expect(page.getByTestId('wird-item-ghair-rawatib')).toHaveCount(0)
+
+  // NBD-40: the prayers area follows performance order — قبلية ← صلاة ← أذكار ← بعدية per prayer.
+  const prayerItems = page.getByTestId('area-items-prayers').locator('[data-testid^="wird-item-"]')
+  await expect(prayerItems.first()).toHaveAttribute('data-testid', 'wird-item-rawatib-fajr-before')
+  const ids = await prayerItems.evaluateAll((nodes) =>
+    nodes.map((node) => node.getAttribute('data-testid')),
+  )
+  expect(ids.slice(0, 7)).toEqual([
+    'wird-item-rawatib-fajr-before',
+    'wird-item-fajr',
+    'wird-item-prayer-adhkar-fajr',
+    'wird-item-rawatib-dhuhr-before',
+    'wird-item-dhuhr',
+    'wird-item-prayer-adhkar-dhuhr',
+    'wird-item-rawatib-dhuhr-after',
+  ])
 })
 
 test('established answers land on the level-3 wird', async ({ page }) => {

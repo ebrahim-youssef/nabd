@@ -29,11 +29,17 @@ const AREA_ICONS: Record<string, LucideIcon> = {
   tatawwu: HeartHandshake,
 }
 
-// Wird items that deep-link to their adhkar-library tab (NBD-29): the user can check off
-// directly here, or run the guided flow there — which marks the item back automatically.
+// Wird items that deep-link to their adhkar-library tab (NBD-29; per-prayer items NBD-40):
+// the user can check off directly here, or read/run the flow there — the once-daily tabs
+// mark the item back automatically.
 const ITEM_TO_ADHKAR_TAB: Record<string, string> = {
   'morning-adhkar': 'morning',
   'evening-adhkar': 'evening',
+  'prayer-adhkar-fajr': 'after-prayer',
+  'prayer-adhkar-dhuhr': 'after-prayer',
+  'prayer-adhkar-asr': 'after-prayer',
+  'prayer-adhkar-maghrib': 'after-prayer',
+  'prayer-adhkar-isha': 'after-prayer',
 }
 
 // The daily wird checklist (NBD-7). Reads live from Dexie so a check-off survives an offline

@@ -1,12 +1,14 @@
 'use client'
 
 import { useLiveQuery } from 'dexie-react-hooks'
+import { useEffect } from 'react'
 
+import { WIRD_LEVELS } from '@/content/levels'
 import type { DayId } from '@/types/wird'
 
 import { monthOf } from '@/lib/pure/day'
 
-import { getDayEntries, getMonthEntries, listVersions } from '../db'
+import { getDayEntries, getMonthEntries, listVersions, upgradeVersionToCurrentLevel } from '../db'
 import { buildChecklist, versionInForce } from '../logic'
 import type { ChecklistAreaView } from '../types'
 
@@ -22,6 +24,12 @@ type ChecklistState = {
 // offline source of truth) and resolves them into the grouped view. The first version is
 // seeded by the onboarding questionnaire (features/onboarding), never here.
 export function useWirdChecklist(day: DayId): ChecklistState {
+  // Self-healing (NBD-40): when the seeding level's definition evolved since this wird was
+  // created, append the upgraded version — the live query below picks it up automatically.
+  useEffect(() => {
+    void upgradeVersionToCurrentLevel(WIRD_LEVELS, day, Date.now())
+  }, [day])
+
   const data = useLiveQuery(async () => {
     const [versions, entries, monthEntries] = await Promise.all([
       listVersions(),

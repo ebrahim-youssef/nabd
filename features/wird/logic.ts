@@ -43,6 +43,30 @@ export function buildChecklist(
   }))
 }
 
+// Which level a stored definition was seeded from (NBD-40). Levels are told apart by their
+// dhikr-counter target (١٠/٥٠/١٠٠ — unique per level since NBD-26), which survives every
+// structural change to the item list. Null for a definition with no counters (custom wird —
+// a future case; the self-upgrade skips it).
+export function levelMatching<L extends { wird: WirdDefinition }>(
+  definition: WirdDefinition,
+  levels: L[],
+): L | null {
+  const target = definition.items.find((item) => item.kind === 'counter')?.target
+  if (target === undefined) return null
+  return (
+    levels.find((level) =>
+      level.wird.items.some((item) => item.kind === 'counter' && item.target === target),
+    ) ?? null
+  )
+}
+
+// Structural equality for wird definitions (NBD-40): both sides are built from literal object
+// shapes in content/levels.ts (stored snapshots included), so key order is stable and a
+// stringify compare is exact.
+export function sameDefinition(a: WirdDefinition, b: WirdDefinition): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
 // Rolls the resolved checklist up into today's counts (NBD-10). Required items drive
 // done/remaining (and the ring); optional (تطوّع) items are tallied separately so skipping
 // them never reads as failure (ADR-0008). Derived from the same view the checklist renders,

@@ -1,8 +1,11 @@
 import { db, type SyncTable } from '@/lib/db/db'
 import { newId } from '@/lib/db/ids'
+import { nextDay } from '@/lib/pure/day'
 import { logger } from '@/lib/logger'
 import type { Result } from '@/types/result'
 import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from '@/types/wird'
+
+import { levelMatching, sameDefinition, versionInForce } from './logic'
 
 // All Dexie access for the wird feature. Writes go through a transaction that also enqueues an
 // outbox row, so a local change is durable and queued for sync atomically. Time (`at`,
@@ -51,6 +54,52 @@ export async function addVersion(
   } catch (cause) {
     logger.error('wird.addVersion failed', cause, { effectiveFrom })
     return { ok: false, error: 'add_version_failed' }
+  }
+}
+
+// Single-flight guard: React StrictMode double-runs effects (and several consumers may
+// mount), but one session needs at most one upgrade pass.
+let upgradeRun: Promise<void> | null = null
+
+// Self-healing level upgrade (NBD-40): when the level definition in content/levels.ts evolves
+// (e.g. rawatib split into per-prayer items), an existing user's stored snapshot is superseded
+// by a new version — effective today if today is still untouched (no intra-day ambiguity,
+// ADR-0006 §2), otherwise tomorrow. Past days keep their old snapshot, so stats never move.
+// Idempotent: equal definitions (or an already-written equal version) short-circuit.
+export function upgradeVersionToCurrentLevel(
+  levels: { wird: WirdDefinition }[],
+  today: DayId,
+  now: number,
+): Promise<void> {
+  upgradeRun ??= runLevelUpgrade(levels, today, now)
+  return upgradeRun
+}
+
+async function runLevelUpgrade(
+  levels: { wird: WirdDefinition }[],
+  today: DayId,
+  now: number,
+): Promise<void> {
+  try {
+    const versions = await listVersions()
+    const current = versionInForce(versions, today)
+    if (!current) return
+
+    const level = levelMatching(current.definition, levels)
+    if (!level || sameDefinition(current.definition, level.wird)) return
+
+    // An equal version effective today or later means a previous run already upgraded.
+    const alreadyUpgraded = versions.some(
+      (version) => version.effectiveFrom >= today && sameDefinition(version.definition, level.wird),
+    )
+    if (alreadyUpgraded) return
+
+    const todayEntries = await getDayEntries(today)
+    const effectiveFrom = todayEntries.length === 0 ? today : nextDay(today)
+    await addVersion(effectiveFrom, level.wird, now)
+  } catch (cause) {
+    // Best-effort: the old snapshot keeps working; the next visit retries.
+    logger.error('wird.upgradeVersionToCurrentLevel failed', cause, { today })
   }
 }
 
