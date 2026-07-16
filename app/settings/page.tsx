@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageHeader } from '@/components/shared/PageHeader'
 import { AppearanceSettings } from '@/features/settings/components/AppearanceSettings'
+import { PrayerMethodSettings } from '@/features/settings/components/PrayerMethodSettings'
 
 export const metadata: Metadata = {
   title: 'الإعدادات',
@@ -17,6 +18,7 @@ export default function SettingsPage() {
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pb-10 md:px-6">
       <PageHeader title="الإعدادات" backHref="/" />
       <AppearanceSettings />
+      <PrayerMethodSettings />
     </main>
   )
 }

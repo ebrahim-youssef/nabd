@@ -1,6 +1,7 @@
 'use client'
 
 import { MapPin } from 'lucide-react'
+import Link from 'next/link'
 
 import { COPY } from '../constants'
 import { statusLine } from '../logic'
@@ -29,9 +30,14 @@ export function PrayerTimesBar() {
   const line = statusLine(status)
   if (!line) return null
 
+  // The line doubles as the door to the dedicated page (NBD-38).
   return (
-    <p className="text-primary text-small py-1 font-medium" data-testid="prayer-status">
+    <Link
+      href="/prayer-times"
+      className="text-primary hover:text-primary-deep text-small block py-1 font-medium transition-colors"
+      data-testid="prayer-status"
+    >
       {line}
-    </p>
+    </Link>
   )
 }
