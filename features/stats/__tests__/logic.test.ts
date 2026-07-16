@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import type { WirdDefinition, WirdEntry, WirdVersion } from '@/types/wird'
 
-import { dayAreaStats, dayCompletion, rangeCompletion, summarize } from '../logic'
+import {
+  bestStreak,
+  currentStreak,
+  dayAreaStats,
+  dayCompletion,
+  rangeCompletion,
+  summarize,
+} from '../logic'
 
 const smallDef: WirdDefinition = {
   areas: [
@@ -138,6 +145,31 @@ describe('schedules & optional items (ADR-0008)', () => {
     expect(dayAreaStats(vs, [], '2026-07-14')).toEqual([
       { areaId: 'prayers', label: 'الصلوات', total: 1, done: 0 },
     ])
+  })
+})
+
+describe('streaks (NBD-31)', () => {
+  const c = (day: string, done: number, total = 3) => ({ day, total, done })
+
+  it('counts consecutive complete days ending at the last day', () => {
+    expect(currentStreak([c('d1', 3), c('d2', 3), c('d3', 3)])).toBe(3)
+    expect(currentStreak([c('d1', 3), c('d2', 0), c('d3', 3)])).toBe(1)
+  })
+
+  it('gives the in-progress last day grace instead of breaking the streak', () => {
+    expect(currentStreak([c('d1', 3), c('d2', 3), c('d3', 1)])).toBe(2)
+    // …but an earlier incomplete day does break it.
+    expect(currentStreak([c('d1', 3), c('d2', 1), c('d3', 1)])).toBe(0)
+  })
+
+  it('is zero with no complete days and ignores empty totals', () => {
+    expect(currentStreak([])).toBe(0)
+    expect(currentStreak([c('d1', 0, 0)])).toBe(0)
+  })
+
+  it('finds the best run anywhere in the range', () => {
+    expect(bestStreak([c('d1', 3), c('d2', 3), c('d3', 0), c('d4', 3)])).toBe(2)
+    expect(bestStreak([])).toBe(0)
   })
 })
 

@@ -86,3 +86,29 @@ export function summarize(completions: DayCompletion[]): RangeSummary {
   }
   return { days: completions.length, total, done, completedDays }
 }
+
+function isComplete(completion: DayCompletion): boolean {
+  return completion.total > 0 && completion.done === completion.total
+}
+
+// Consecutive fully-completed days ending at the range's last day (NBD-31). The last day
+// gets grace while still in progress: an incomplete final day is skipped, not a streak
+// breaker — finishing yesterday keeps the flame lit until today ends.
+export function currentStreak(completions: DayCompletion[]): number {
+  let index = completions.length - 1
+  if (index >= 0 && !isComplete(completions[index])) index -= 1
+  let streak = 0
+  for (; index >= 0 && isComplete(completions[index]); index -= 1) streak += 1
+  return streak
+}
+
+// The longest run of fully-completed days anywhere in the range (NBD-31).
+export function bestStreak(completions: DayCompletion[]): number {
+  let best = 0
+  let run = 0
+  for (const completion of completions) {
+    run = isComplete(completion) ? run + 1 : 0
+    if (run > best) best = run
+  }
+  return best
+}
