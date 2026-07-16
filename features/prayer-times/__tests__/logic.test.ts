@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   AFTER_WINDOW_MS,
+  buildAlarmPayloads,
   formatDuration,
   notificationMoments,
   statusLine,
@@ -113,5 +114,50 @@ describe('statusLine', () => {
 
   it('is null for a null status', () => {
     expect(statusLine(null)).toBeNull()
+  })
+})
+
+describe('buildAlarmPayloads (NBD-46)', () => {
+  const labels = { fajr: 'الفجر', dhuhr: 'الظهر' }
+  const copy = {
+    before: (label: string) => ({ title: `اقترب وقت ${label}`, body: 'b' }),
+    adhan: (label: string) => ({ title: `حان وقت ${label}`, body: 'a' }),
+    iqamah: (label: string) => ({ title: `إقامة ${label}`, body: 'i' }),
+  }
+
+  it('maps moments to channel keys — fajr adhan gets its own channel', () => {
+    const payloads = buildAlarmPayloads(
+      [
+        { at: 60_000, kind: 'adhan', prayerId: 'fajr' },
+        { at: 120_000, kind: 'adhan', prayerId: 'dhuhr' },
+        { at: 180_000, kind: 'before', prayerId: 'dhuhr' },
+        { at: 240_000, kind: 'iqamah', prayerId: 'dhuhr' },
+      ],
+      labels,
+      copy,
+    )
+    expect(payloads.map((p) => p.channelKey)).toEqual(['adhanFajr', 'adhan', 'before', 'iqamah'])
+    expect(payloads[0].title).toBe('حان وقت الفجر')
+  })
+
+  it('ids are stable and collision-free across kinds in the same minute', () => {
+    const sameMinute = buildAlarmPayloads(
+      [
+        { at: 60_000, kind: 'before', prayerId: 'dhuhr' },
+        { at: 60_000, kind: 'adhan', prayerId: 'dhuhr' },
+        { at: 60_000, kind: 'iqamah', prayerId: 'dhuhr' },
+      ],
+      labels,
+      copy,
+    )
+    const ids = sameMinute.map((p) => p.id)
+    expect(new Set(ids).size).toBe(3)
+    // Stable: same input, same ids.
+    const again = buildAlarmPayloads(
+      [{ at: 60_000, kind: 'before', prayerId: 'dhuhr' }],
+      labels,
+      copy,
+    )
+    expect(again[0].id).toBe(sameMinute[0].id)
   })
 })

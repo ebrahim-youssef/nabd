@@ -32,6 +32,8 @@ const eslintConfig = defineConfig([
     'next-env.d.ts',
     // Raw design-system handoff (source material, not app code).
     'design-import/**',
+    // Capacitor Android project (NBD-46): native sources + Gradle build artifacts.
+    'android/**',
     // Generated Serwist service worker bundle (build artifact).
     'public/sw.js',
     'public/sw.js.map',

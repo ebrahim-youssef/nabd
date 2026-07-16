@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 
 import { readCachedCoords } from '@/lib/impure/location'
+import { isNativePlatform } from '@/lib/impure/native'
 import {
   notificationPermission,
   playMomentSound,
@@ -18,6 +19,7 @@ import {
   PRAYER_LABELS,
 } from '../constants'
 import { notificationMoments } from '../logic'
+import { armNativeAlarms } from '../native-alarms'
 
 // Re-plan the day's timers at most this often; covers midnight rollover and pref changes
 // made in another tab.
@@ -36,6 +38,14 @@ export function NotificationScheduler() {
 
       const prefs = readNotificationPrefs()
       const coords = readCachedCoords()
+
+      // Inside the Android shell (NBD-46) the system carries the alarms — exact, with the
+      // adhan on the channel, app closed or open. The plugin owns its permission check.
+      if (isNativePlatform()) {
+        if (coords) void armNativeAlarms(prefs, coords, Date.now())
+        return
+      }
+
       if (!prefs.enabled || !coords || notificationPermission() !== 'granted') return
 
       const now = Date.now()
