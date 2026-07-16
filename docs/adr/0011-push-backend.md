@@ -1,6 +1,6 @@
 # ADR-0011 — Push notification backend (app closed)
 
-- **Status:** proposed — awaiting owner acceptance
+- **Status:** proposed — **on hold** (owner decision 2026-07-16: keep in the backlog, not building now)
 - **Date:** 2026-07-16
 
 ## Context
