@@ -79,16 +79,21 @@ files touched, the intended changes, the alternatives considered, and the chosen
 | NBD-42 | ✅ done | **Three real notification sounds + push groundwork** (r4 §5, issue #120) — real recordings (اقتربت الصلاة chime / أذان الزهراني + فجر variant / إقامة مكّية) replace the WebAudio beeps; settings previews; SW push+click handlers; scheduler honors the picked calc method                                  | Foreground moments play the three distinct sounds (الفجر gets its own adhan); previews play from settings; SW shows a pushed payload    |
 | NBD-43 | ⏸ hold  | **Push backend** (ADR-0011 — _proposed, on hold by owner decision 2026-07-16_; needs acceptance + Google OAuth enabled when revisited) — push_schedule/push_subscriptions tables + RLS, VAPID edge function on pg_cron, client subscribe + daily schedule upload, opt-in copy stating times leave the device | An opted-in, signed-in user with the app closed receives the prayer notification on time                                                |
 
+## R5 — sync round (2026-07-16 intake)
+
+| ID     | Status  | Ticket                                                                                                                                                                                                                                             | Acceptance criterion                                                                              |
+| ------ | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| NBD-44 | ⬜ todo | **Google OAuth live** — enable the Google provider + redirect URL in the Supabase dashboard (manual, owner), then verify the full path in-app: prod sign-in, session across reloads, wird visible on a second device                               | A production user signs in with Google and sees the same wird and history on a second device      |
+| NBD-45 | ⬜ todo | **Sync everything to Supabase** (needs NBD-44) — qada_events table + RLS + per-table sync mappers (ADR-0010 §3); audit of remaining local data (adhkarFlow stays device-local by design; appearance/method/notification prefs are device settings) | A qada debt or payment made offline appears on a second device after reconnect, like wird entries |
+
 ## Later (out of scope for MVP)
 
 - Level 4 of the questionnaire / wird difficulty (level 3 ships in NBD-26).
 - **نوايا اليوم** (design §5): user-added/day-picked intentions on top of the fixed library.
-- Adhkar-page week/month planner.
+- Adhkar-page week/month planner (an r3-intake side note — awaiting owner keep/drop).
 - Per-user notification-sound customization (three fixed sounds ship in NBD-42).
 - The rule that a prayer checked after its window auto-counts as قضاء (NBD-39 ships the
   manual ledger; the auto-flag needs its own ADR discussion).
-- Sync the qada ledger to Supabase (ADR-0010 §3 — the append-only shape is sync-ready;
-  needs the table + RLS + per-table mappers in features/sync).
 
 ## Notes
 
