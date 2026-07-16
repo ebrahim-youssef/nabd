@@ -14,6 +14,25 @@ test('header theme toggle flips data-theme and persists across reload', async ({
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
 })
 
+test('sound previews are listed and playable without errors', async ({ page }) => {
+  await page.goto('/settings')
+
+  await expect(page.getByTestId('sound-settings')).toBeVisible()
+  for (const id of ['before', 'adhan', 'adhan-fajr', 'iqama']) {
+    await expect(page.getByTestId(`sound-preview-${id}`)).toBeVisible()
+  }
+
+  // Playing then stopping must not throw (audio itself is not assertable headlessly).
+  await page.getByTestId('sound-preview-before').click()
+  await page.getByTestId('sound-stop').click()
+
+  // The four sound files are actually served.
+  for (const file of ['before', 'adhan', 'adhan-fajr', 'iqama']) {
+    const response = await page.request.get(`/sounds/${file}.mp3`)
+    expect(response.status()).toBe(200)
+  }
+})
+
 test('settings mode switcher flips data-mode and persists across reload', async ({ page }) => {
   await page.goto('/')
   await page.getByTestId('settings-link').click()
