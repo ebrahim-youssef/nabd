@@ -1,5 +1,6 @@
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
 import { OnboardingGate } from '@/features/onboarding/components/OnboardingGate'
+import { CompletionCelebration } from '@/features/wird/components/CompletionCelebration'
 import { TodaySummary } from '@/features/wird/components/TodaySummary'
 import { WirdChecklist } from '@/features/wird/components/WirdChecklist'
 
@@ -23,6 +24,7 @@ export default function Home() {
       <OnboardingGate>
         <TodaySummary />
         <WirdChecklist />
+        <CompletionCelebration />
       </OnboardingGate>
     </main>
   )
