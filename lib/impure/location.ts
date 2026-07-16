@@ -1,6 +1,9 @@
-// Browser geolocation + local coordinate cache (ADR-0009). Coordinates never leave the
-// device: they live in localStorage (not Dexie, not synced) purely to recompute prayer
-// times offline on later visits.
+import { isNativePlatform } from './native'
+
+// Geolocation + local coordinate cache (ADR-0009). Coordinates never leave the device: they
+// live in localStorage (not Dexie, not synced) purely to recompute prayer times offline on
+// later visits. Inside the Android shell (NBD-46) the Capacitor plugin carries the native
+// permission flow; the browser path is unchanged.
 
 export type Coords = { latitude: number; longitude: number }
 
@@ -22,9 +25,36 @@ export function readCachedCoords(): Coords | null {
   }
 }
 
-// Prompts the browser permission dialog (must be called from a user gesture). Resolves null
-// when denied/unavailable — callers show the quiet prompt state, nothing throws.
+function cacheAndAnnounce(coords: Coords): void {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(coords))
+  } catch {
+    // Cache miss only costs a re-prompt next session.
+  }
+  window.dispatchEvent(new Event(COORDS_EVENT))
+}
+
+async function requestNativeCoords(): Promise<Coords | null> {
+  try {
+    const { Geolocation } = await import('@capacitor/geolocation')
+    const permission = await Geolocation.requestPermissions()
+    if (permission.location !== 'granted' && permission.coarseLocation !== 'granted') return null
+    const position = await Geolocation.getCurrentPosition()
+    const coords: Coords = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude,
+    }
+    cacheAndAnnounce(coords)
+    return coords
+  } catch {
+    return null
+  }
+}
+
+// Prompts the permission dialog (must be called from a user gesture). Resolves null when
+// denied/unavailable — callers show the quiet prompt state, nothing throws.
 export function requestCoords(): Promise<Coords | null> {
+  if (isNativePlatform()) return requestNativeCoords()
   return new Promise((resolve) => {
     if (!('geolocation' in navigator)) {
       resolve(null)
@@ -36,12 +66,7 @@ export function requestCoords(): Promise<Coords | null> {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         }
-        try {
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(coords))
-        } catch {
-          // Cache miss only costs a re-prompt next session.
-        }
-        window.dispatchEvent(new Event(COORDS_EVENT))
+        cacheAndAnnounce(coords)
         resolve(coords)
       },
       () => resolve(null),

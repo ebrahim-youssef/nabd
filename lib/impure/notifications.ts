@@ -1,3 +1,5 @@
+import { isNativePlatform } from './native'
+
 // Notification plumbing (ADR-0009): permission, device-local preferences, delivery, and the
 // per-moment foreground tones. Preferences are a device setting (like coordinates) — they
 // live in localStorage, never in Dexie, never synced.
@@ -38,8 +40,19 @@ export function writeNotificationPrefs(prefs: NotificationPrefs): void {
   }
 }
 
-// Must be called from a user gesture. Resolves the resulting permission state.
+// Must be called from a user gesture. Resolves the resulting permission state. Inside the
+// Android shell (NBD-46) the webview has no Notification API — the Capacitor plugin carries
+// the runtime POST_NOTIFICATIONS prompt instead.
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
+  if (isNativePlatform()) {
+    try {
+      const { LocalNotifications } = await import('@capacitor/local-notifications')
+      const result = await LocalNotifications.requestPermissions()
+      return result.display === 'granted' ? 'granted' : 'denied'
+    } catch {
+      return 'denied'
+    }
+  }
   if (!('Notification' in window)) return 'denied'
   if (Notification.permission !== 'default') return Notification.permission
   return Notification.requestPermission()

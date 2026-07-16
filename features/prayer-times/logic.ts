@@ -84,3 +84,43 @@ export function statusLine(status: TimelineStatus): string | null {
   const target = status.point.id === 'sunrise' ? 'الشروق' : status.point.label
   return `باقي ${formatDuration(status.ms)} على ${target}`
 }
+
+// One scheduled native alarm (NBD-46): the plugin-shaped payload the Android shell arms via
+// AlarmManager. `channelKey` maps to ALARM_CHANNELS in the impure scheduler.
+export type AlarmPayload = {
+  id: number
+  title: string
+  body: string
+  channelKey: 'before' | 'adhan' | 'adhanFajr' | 'iqamah'
+  at: number
+}
+
+// Android notification ids are int32; a minute-resolution slot + the moment kind keeps ids
+// stable (rescheduling the same moment overwrites, never duplicates) and collision-free.
+const KIND_SLOT: Record<NotificationMoment['kind'], number> = { before: 0, adhan: 1, iqamah: 2 }
+const ID_SLOTS = 4
+const INT32_SAFE = 2_000_000_000
+
+export function buildAlarmPayloads(
+  moments: NotificationMoment[],
+  labels: Record<string, string>,
+  copy: Record<NotificationMoment['kind'], (label: string) => { title: string; body: string }>,
+): AlarmPayload[] {
+  return moments.map((moment) => {
+    const label = labels[moment.prayerId] ?? moment.prayerId
+    const { title, body } = copy[moment.kind](label)
+    return {
+      id: ((Math.floor(moment.at / MS_PER_MINUTE) * ID_SLOTS + KIND_SLOT[moment.kind]) %
+        INT32_SAFE) as number,
+      title,
+      body,
+      channelKey:
+        moment.kind === 'adhan' && moment.prayerId === 'fajr'
+          ? 'adhanFajr'
+          : moment.kind === 'adhan'
+            ? 'adhan'
+            : moment.kind,
+      at: moment.at,
+    }
+  })
+}

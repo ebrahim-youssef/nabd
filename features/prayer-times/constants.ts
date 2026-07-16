@@ -26,6 +26,19 @@ export const COPY = {
 // Minutes before the adhan for the early reminder (ADR-0009).
 export const BEFORE_ADHAN_MINUTES = 15
 
+// Android notification channels for the native shell (NBD-46): the channel decides the
+// sound that plays with the app fully closed. Files live in android/.../res/raw.
+export const ALARM_CHANNELS = {
+  before: { id: 'prayer-before', name: 'اقتربت الصلاة', sound: 'before.mp3' },
+  adhan: { id: 'prayer-adhan', name: 'الأذان', sound: 'adhan.mp3' },
+  adhanFajr: { id: 'prayer-adhan-fajr', name: 'أذان الفجر', sound: 'adhan_fajr.mp3' },
+  iqamah: { id: 'prayer-iqamah', name: 'الإقامة', sound: 'iqama.mp3' },
+} as const
+
+// How far ahead the native shell schedules exact alarms (r4 §5): every launch re-arms the
+// window, which also covers Android dropping alarms on reboot.
+export const NATIVE_SCHEDULE_DAYS = 3
+
 export const NOTIFICATION_COPY = {
   before: (label: string) => ({
     title: `اقترب وقت ${label}`,
