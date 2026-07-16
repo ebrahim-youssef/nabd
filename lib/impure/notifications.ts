@@ -63,39 +63,42 @@ export async function showPrayerNotification(title: string, body: string): Promi
   new Notification(title, { body, dir: 'rtl', lang: 'ar' })
 }
 
-// Distinct foreground tone per moment (ADR-0009): before = one soft note, adhan = a rising
-// triad, iqamah = two quick notes. WebAudio — no bundled assets. Fixed for now; user-custom
-// sounds arrive with the push backend.
-const TONE_SEQUENCES: Record<NotificationMomentKind, { freq: number; at: number }[]> = {
-  before: [{ freq: 660, at: 0 }],
-  adhan: [
-    { freq: 523, at: 0 },
-    { freq: 659, at: 0.25 },
-    { freq: 784, at: 0.5 },
-  ],
-  iqamah: [
-    { freq: 784, at: 0 },
-    { freq: 784, at: 0.2 },
-  ],
+// Real per-moment sounds (NBD-42, r4 §5): a soft chime before, the adhan itself at adhan
+// time — الفجر gets its own recording («الصلاة خير من النوم») — and the iqama at iqama time.
+// Foreground-only: the Web Notification API has no cross-platform custom sound (ADR-0009);
+// with the app closed the OS default plays until the push backend (ADR-0011) exists.
+const SOUND_FILES: Record<NotificationMomentKind, string> = {
+  before: '/sounds/before.mp3',
+  adhan: '/sounds/adhan.mp3',
+  iqamah: '/sounds/iqama.mp3',
 }
 
-const TONE_DURATION_S = 0.18
-const TONE_GAIN = 0.04
+const FAJR_ADHAN_FILE = '/sounds/adhan-fajr.mp3'
+const FAJR_PRAYER_ID = 'fajr'
 
-export function playMomentTone(kind: NotificationMomentKind): void {
+export function soundFileFor(kind: NotificationMomentKind, prayerId?: string): string {
+  if (kind === 'adhan' && prayerId === FAJR_PRAYER_ID) return FAJR_ADHAN_FILE
+  return SOUND_FILES[kind]
+}
+
+// One shared element so a new moment (or a settings preview) replaces the playing sound
+// instead of overlapping it.
+let activeAudio: HTMLAudioElement | null = null
+
+export function playMomentSound(kind: NotificationMomentKind, prayerId?: string): void {
   if (document.visibilityState !== 'visible') return
   try {
-    const context = new AudioContext()
-    for (const { freq, at } of TONE_SEQUENCES[kind]) {
-      const oscillator = context.createOscillator()
-      const gain = context.createGain()
-      oscillator.frequency.value = freq
-      gain.gain.value = TONE_GAIN
-      oscillator.connect(gain).connect(context.destination)
-      oscillator.start(context.currentTime + at)
-      oscillator.stop(context.currentTime + at + TONE_DURATION_S)
-    }
+    activeAudio?.pause()
+    activeAudio = new Audio(soundFileFor(kind, prayerId))
+    void activeAudio.play().catch(() => {
+      // Autoplay may be blocked before any user gesture — silent degradation.
+    })
   } catch {
     // No audio is a silent degradation, literally.
   }
+}
+
+export function stopMomentSound(): void {
+  activeAudio?.pause()
+  activeAudio = null
 }

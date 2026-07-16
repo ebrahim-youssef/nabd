@@ -1,6 +1,7 @@
 'use client'
 
-import { BookOpen, Check, ChevronDown } from 'lucide-react'
+import { BookOpen, Check, ChevronDown, Clock, HeartHandshake, Sparkles } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
 
@@ -19,11 +20,26 @@ import type { ChecklistAreaView, ChecklistItemView } from '../types'
 // (ADR-0009). Matches the area id used by every level in content/levels.ts.
 const PRAYERS_AREA_ID = 'prayers'
 
-// Wird items that deep-link to their adhkar-library tab (NBD-29): the user can check off
-// directly here, or run the guided flow there — which marks the item back automatically.
+// One glyph per area (ids from content/levels.ts) so the four sections read at a glance;
+// BookOpen doubles as the adhkar-library link icon further down.
+const AREA_ICONS: Record<string, LucideIcon> = {
+  prayers: Clock,
+  quran: BookOpen,
+  adhkar: Sparkles,
+  tatawwu: HeartHandshake,
+}
+
+// Wird items that deep-link to their adhkar-library tab (NBD-29; per-prayer items NBD-40):
+// the user can check off directly here, or read/run the flow there — the once-daily tabs
+// mark the item back automatically.
 const ITEM_TO_ADHKAR_TAB: Record<string, string> = {
   'morning-adhkar': 'morning',
   'evening-adhkar': 'evening',
+  'prayer-adhkar-fajr': 'after-prayer',
+  'prayer-adhkar-dhuhr': 'after-prayer',
+  'prayer-adhkar-asr': 'after-prayer',
+  'prayer-adhkar-maghrib': 'after-prayer',
+  'prayer-adhkar-isha': 'after-prayer',
 }
 
 // The daily wird checklist (NBD-7). Reads live from Dexie so a check-off survives an offline
@@ -92,7 +108,7 @@ export function WirdChecklist() {
                         href={`/adhkar?tab=${ITEM_TO_ADHKAR_TAB[item.id]}`}
                         aria-label={`افتح ${item.label} في مكتبة الأذكار`}
                         data-testid={`adhkar-link-${item.id}`}
-                        className="bg-surface-2 text-primary hover:bg-surface-2/70 flex w-11 shrink-0 items-center justify-center rounded-card transition-colors"
+                        className="border-border bg-surface text-primary shadow-card-sm hover:border-gold/40 hover:text-gold flex w-11 shrink-0 items-center justify-center rounded-card border transition-colors"
                       >
                         <BookOpen className="size-5" aria-hidden />
                       </Link>
@@ -122,26 +138,56 @@ function AreaHeader({
   const required = area.items.filter((item) => !item.optional)
   const counted = required.length > 0 ? required : area.items
   const doneCount = counted.filter((item) => item.done).length
+  const complete = doneCount === counted.length
+  const Icon = AREA_ICONS[area.id]
   return (
     <button
       type="button"
       onClick={onToggle}
       aria-expanded={isOpen}
       data-testid={`area-header-${area.id}`}
-      className="flex w-full items-center justify-between gap-3 rounded-card py-1 text-start"
+      className="flex w-full flex-col gap-2 rounded-card py-1 text-start"
     >
-      <span className="flex items-center gap-2">
-        <h2 className="font-display text-title text-primary">{area.label}</h2>
-        <ChevronDown
-          aria-hidden
-          className={cn(
-            'text-muted-foreground size-5 transition-transform',
-            !isOpen && 'rotate-180',
+      <span className="flex w-full items-center justify-between gap-3">
+        <span className="flex min-w-0 items-center gap-2.5">
+          {Icon && (
+            <span
+              aria-hidden
+              className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-icon"
+            >
+              <Icon className="size-4.5" />
+            </span>
           )}
-        />
+          <h2 className="font-display text-title text-primary truncate">{area.label}</h2>
+          <ChevronDown
+            aria-hidden
+            className={cn(
+              'text-muted-foreground size-5 shrink-0 transition-transform',
+              !isOpen && 'rotate-180',
+            )}
+          />
+        </span>
+        <span
+          className={cn(
+            'rounded-chip border px-2.5 py-0.5 text-small shrink-0 transition-colors',
+            complete
+              ? 'border-gold/40 bg-gold-soft text-gold'
+              : 'border-border bg-surface text-muted-foreground shadow-card-sm',
+          )}
+          data-testid={`area-count-${area.id}`}
+        >
+          {toArabicIndic(doneCount)}/{toArabicIndic(counted.length)}
+        </span>
       </span>
-      <span className="text-muted-foreground text-small" data-testid={`area-count-${area.id}`}>
-        {toArabicIndic(doneCount)}/{toArabicIndic(counted.length)}
+      {/* Live completion hairline: the area's progress readable even when collapsed. */}
+      <span aria-hidden className="bg-border block h-1 w-full overflow-hidden rounded-full">
+        <span
+          className={cn(
+            'block h-full rounded-full transition-[inline-size] duration-500',
+            complete ? 'bg-gold' : 'bg-accent',
+          )}
+          style={{ inlineSize: `${counted.length > 0 ? (doneCount / counted.length) * 100 : 0}%` }}
+        />
       </span>
     </button>
   )
@@ -163,17 +209,21 @@ function ChecklistRow({
       onClick={onToggle}
       data-testid={`wird-item-${item.id}`}
       className={cn(
-        'flex w-full items-center gap-3 rounded-card p-3 text-start transition-colors',
-        item.done ? 'bg-primary/10' : 'bg-surface-2 hover:bg-surface-2/70',
+        'group flex w-full items-center gap-3 rounded-card border p-3 text-start transition-all duration-200 active:scale-[0.99]',
+        item.done
+          ? 'border-primary/20 bg-primary/10'
+          : 'border-border bg-surface shadow-card-sm hover:border-accent/40',
       )}
     >
       <span
         className={cn(
-          'flex size-6 shrink-0 items-center justify-center rounded-full border',
-          item.done ? 'border-primary bg-primary text-on-primary' : 'border-border',
+          'flex size-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors',
+          item.done
+            ? 'border-primary bg-primary text-on-primary'
+            : 'border-faint group-hover:border-accent',
         )}
       >
-        {item.done && <Check className="size-4" aria-hidden />}
+        {item.done && <Check className="animate-in zoom-in size-4 duration-200" aria-hidden />}
       </span>
       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
         <span className={cn('text-body', item.done && 'text-muted-foreground line-through')}>

@@ -1,8 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
+import { WIRD_LEVELS } from '@/content/levels'
 import type { WirdDefinition, WirdEntry, WirdVersion } from '@/types/wird'
 
-import { buildChecklist, latestStateByItem, summarizeChecklist, versionInForce } from '../logic'
+import {
+  buildChecklist,
+  latestStateByItem,
+  levelMatching,
+  sameDefinition,
+  summarizeChecklist,
+  versionInForce,
+} from '../logic'
 
 // 2026-07-14 is a Tuesday (weekday 2).
 const DAY = '2026-07-14'
@@ -162,5 +170,69 @@ describe('summarizeChecklist', () => {
       remaining: 0,
       voluntary: { total: 1, done: 0 },
     })
+  })
+})
+
+describe('levelMatching + sameDefinition (NBD-40 self-upgrade)', () => {
+  it('detects the seeding level by its unique counter target', () => {
+    for (const level of WIRD_LEVELS) {
+      expect(levelMatching(level.wird, WIRD_LEVELS)?.id).toBe(level.id)
+    }
+  })
+
+  it('returns null for a definition without counters', () => {
+    expect(levelMatching(definition, WIRD_LEVELS)).toBeNull()
+  })
+
+  it('sameDefinition distinguishes an old snapshot from the current level', () => {
+    const level2 = WIRD_LEVELS.find((level) => level.id === 'level-2')!
+    const oldSnapshot: WirdDefinition = {
+      areas: level2.wird.areas,
+      // The pre-NBD-40 shape: one combined rawatib item instead of the per-prayer sequence.
+      items: [
+        ...level2.wird.items.filter((item) => item.areaId !== 'prayers'),
+        { id: 'rawatib', areaId: 'prayers', label: 'السنن الرواتب', kind: 'checkbox' },
+      ],
+    }
+    expect(sameDefinition(level2.wird, level2.wird)).toBe(true)
+    expect(sameDefinition(oldSnapshot, level2.wird)).toBe(false)
+    // The old snapshot still resolves to level 2 (same counter target) — that pairing is
+    // exactly what triggers the upgrade.
+    expect(levelMatching(oldSnapshot, WIRD_LEVELS)?.id).toBe('level-2')
+  })
+})
+
+describe('levels content (NBD-40): the prayers area follows performance order', () => {
+  it.each(['level-2', 'level-3'] as const)('%s interleaves rawatib and adhkar', (levelId) => {
+    const level = WIRD_LEVELS.find((entry) => entry.id === levelId)!
+    const prayerIds = level.wird.items
+      .filter((item) => item.areaId === 'prayers')
+      .map((item) => item.id)
+    const expected = [
+      'rawatib-fajr-before',
+      'fajr',
+      'prayer-adhkar-fajr',
+      'rawatib-dhuhr-before',
+      'dhuhr',
+      'prayer-adhkar-dhuhr',
+      'rawatib-dhuhr-after',
+      'asr',
+      'prayer-adhkar-asr',
+      'maghrib',
+      'prayer-adhkar-maghrib',
+      'rawatib-maghrib-after',
+      'isha',
+      'prayer-adhkar-isha',
+      'rawatib-isha-after',
+    ]
+    expect(prayerIds.slice(0, expected.length)).toEqual(expected)
+  })
+
+  it('level 1 keeps the plain five prayers', () => {
+    const level1 = WIRD_LEVELS.find((level) => level.id === 'level-1')!
+    const prayerIds = level1.wird.items
+      .filter((item) => item.areaId === 'prayers')
+      .map((item) => item.id)
+    expect(prayerIds).toEqual(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'])
   })
 })

@@ -32,4 +32,37 @@ self.addEventListener('message', (event) => {
   }
 })
 
+// Push groundwork (NBD-42, ADR-0011 proposed): shows a pushed prayer notification even with
+// every tab closed. Inert until the backend that sends pushes exists.
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+  let payload: { title?: string; body?: string } = {}
+  try {
+    payload = event.data.json() as { title?: string; body?: string }
+  } catch {
+    payload = { body: event.data.text() }
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title ?? 'نبض', {
+      body: payload.body ?? '',
+      dir: 'rtl',
+      lang: 'ar',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
+    }),
+  )
+})
+
+// Tapping the notification focuses the app (or opens it fresh).
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      const existing = clients[0]
+      if (existing) return existing.focus()
+      return self.clients.openWindow('/')
+    }),
+  )
+})
+
 serwist.addEventListeners()

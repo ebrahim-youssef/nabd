@@ -7,6 +7,7 @@ import { BottomNav } from '@/components/shared/BottomNav'
 import { UpdateNotifier } from '@/components/shared/UpdateNotifier'
 import { NotificationScheduler } from '@/features/prayer-times/components/NotificationScheduler'
 import { SyncProvider } from '@/features/sync/components/SyncProvider'
+import { APPEARANCE_INIT_SCRIPT } from '@/lib/impure/appearance'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from '@/lib/site'
 
 // Body — Tajawal (both modes)
@@ -84,10 +85,14 @@ export default function RootLayout({
       dir="rtl"
       data-mode="classic"
       data-theme="light"
+      // The appearance script below mutates data-theme/data-mode before hydration (NBD-37).
+      suppressHydrationWarning
       className={`${fontVariables} h-full antialiased`}
     >
       {/* pb-20 keeps page content clear of the fixed bottom navbar. */}
       <body className="flex min-h-full flex-col pb-20">
+        {/* Applies the stored theme/mode before first paint — no flash of default appearance. */}
+        <script dangerouslySetInnerHTML={{ __html: APPEARANCE_INIT_SCRIPT }} />
         <SyncProvider>{children}</SyncProvider>
         <BottomNav />
         <NotificationScheduler />

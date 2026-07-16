@@ -10,7 +10,7 @@ export function PageHeader({ title, backHref }: { title: string; backHref: strin
         href={backHref}
         aria-label="رجوع"
         data-testid="page-back"
-        className="text-primary flex size-9 items-center justify-center rounded-full transition-colors hover:bg-surface-2"
+        className="border-border bg-surface text-primary shadow-card-sm hover:bg-primary hover:text-on-primary flex size-9 items-center justify-center rounded-full border transition-colors"
       >
         <ArrowRight className="size-5" aria-hidden />
       </Link>

@@ -15,7 +15,8 @@ export default function NiyyatPage() {
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pb-10 md:px-6">
       <PageHeader title="مكتبة النوايا" backHref="/libraries" />
       <p className="text-muted-foreground text-body">
-        إنما الأعمال بالنيات — افتح أيّ عمل لتستحضر نيّته قبل أن تبدأه.
+        إنما الأعمال بالنيات — افتح أيّ عمل لتستحضر نيّاته قبل أن تبدأه؛ فتعدّد النيات في العمل
+        الواحد يكثّر أجره.
       </p>
 
       <IntentionsLibrary />

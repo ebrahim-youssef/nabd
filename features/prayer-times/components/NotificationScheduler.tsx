@@ -5,11 +5,11 @@ import { useEffect } from 'react'
 import { readCachedCoords } from '@/lib/impure/location'
 import {
   notificationPermission,
-  playMomentTone,
+  playMomentSound,
   readNotificationPrefs,
   showPrayerNotification,
 } from '@/lib/impure/notifications'
-import { computeDayTimes } from '@/lib/impure/prayer'
+import { computeDayTimes, METHOD_EVENT, readCalculationMethodId } from '@/lib/impure/prayer'
 
 import {
   BEFORE_ADHAN_MINUTES,
@@ -40,7 +40,8 @@ export function NotificationScheduler() {
 
       const now = Date.now()
       const moments = notificationMoments(
-        { ...computeDayTimes(coords, new Date(now)) },
+        // The picked calculation method must drive the timers too (NBD-38 follow-up fix).
+        { ...computeDayTimes(coords, new Date(now), readCalculationMethodId()) },
         IQAMAH_OFFSET_MINUTES,
         prefs,
         BEFORE_ADHAN_MINUTES,
@@ -52,7 +53,7 @@ export function NotificationScheduler() {
             const label = PRAYER_LABELS[moment.prayerId]
             const { title, body } = NOTIFICATION_COPY[moment.kind](label)
             void showPrayerNotification(title, body)
-            playMomentTone(moment.kind)
+            playMomentSound(moment.kind, moment.prayerId)
           }, moment.at - now),
         )
       }
@@ -60,8 +61,11 @@ export function NotificationScheduler() {
 
     arm()
     const replanTimer = window.setInterval(arm, REPLAN_MS)
+    // A method change moves the day's times — re-arm immediately, not at the next replan.
+    window.addEventListener(METHOD_EVENT, arm)
     return () => {
       window.clearInterval(replanTimer)
+      window.removeEventListener(METHOD_EVENT, arm)
       for (const timer of timers) window.clearTimeout(timer)
     }
   }, [])

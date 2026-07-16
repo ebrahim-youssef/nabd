@@ -27,16 +27,61 @@ const AREAS = [
   { id: 'tatawwu', label: 'التطوّع', order: 3 },
 ]
 
-// The five prayers; جماعة is part of the commitment from level 2 up.
-function prayerItems(inCongregation: boolean): WirdItem[] {
+// The five prayers in performance order (NBD-40, r4 §6). With `withSunnahAndAdhkar` (levels
+// 2–3) every prayer becomes a sequence: سنة قبلية ← الصلاة ← أذكار الصلاة ← سنة بعدية, so the
+// user checks items in the order they perform them. The confirmed rawatib set: الفجر ٢ قبل،
+// الظهر ٤ قبل و٢ بعد، المغرب ٢ بعد، العشاء ٢ بعد (العصر لا راتبة مؤكدة له).
+const PRAYERS: {
+  id: string
+  label: string
+  before: string | null
+  after: string | null
+}[] = [
+  { id: 'fajr', label: 'الفجر', before: 'ركعتان', after: null },
+  { id: 'dhuhr', label: 'الظهر', before: '٤ ركعات', after: 'ركعتان' },
+  { id: 'asr', label: 'العصر', before: null, after: null },
+  { id: 'maghrib', label: 'المغرب', before: null, after: 'ركعتان' },
+  { id: 'isha', label: 'العشاء', before: null, after: 'ركعتان' },
+]
+
+function prayerItems(inCongregation: boolean, withSunnahAndAdhkar = false): WirdItem[] {
   const suffix = inCongregation ? ' (جماعة)' : ''
-  return [
-    { id: 'fajr', areaId: 'prayers', label: `الفجر${suffix}`, kind: 'checkbox' },
-    { id: 'dhuhr', areaId: 'prayers', label: `الظهر${suffix}`, kind: 'checkbox' },
-    { id: 'asr', areaId: 'prayers', label: `العصر${suffix}`, kind: 'checkbox' },
-    { id: 'maghrib', areaId: 'prayers', label: `المغرب${suffix}`, kind: 'checkbox' },
-    { id: 'isha', areaId: 'prayers', label: `العشاء${suffix}`, kind: 'checkbox' },
-  ]
+  const items: WirdItem[] = []
+  for (const prayer of PRAYERS) {
+    if (withSunnahAndAdhkar && prayer.before) {
+      items.push({
+        id: `rawatib-${prayer.id}-before`,
+        areaId: 'prayers',
+        label: `سنة ${prayer.label} القبلية`,
+        kind: 'checkbox',
+        minimum: prayer.before,
+      })
+    }
+    items.push({
+      id: prayer.id,
+      areaId: 'prayers',
+      label: `${prayer.label}${suffix}`,
+      kind: 'checkbox',
+    })
+    if (withSunnahAndAdhkar) {
+      items.push({
+        id: `prayer-adhkar-${prayer.id}`,
+        areaId: 'prayers',
+        label: `أذكار الصلاة (${prayer.label})`,
+        kind: 'checkbox',
+      })
+    }
+    if (withSunnahAndAdhkar && prayer.after) {
+      items.push({
+        id: `rawatib-${prayer.id}-after`,
+        areaId: 'prayers',
+        label: `سنة ${prayer.label} البعدية`,
+        kind: 'checkbox',
+        minimum: prayer.after,
+      })
+    }
+  }
+  return items
 }
 
 // The five daily adhkar counters shared by every level — only the target grows.
@@ -141,14 +186,7 @@ const LEVEL_1_WIRD: WirdDefinition = {
 const LEVEL_2_WIRD: WirdDefinition = {
   areas: AREAS,
   items: [
-    ...prayerItems(true),
-    { id: 'rawatib', areaId: 'prayers', label: 'السنن الرواتب', kind: 'checkbox' },
-    {
-      id: 'after-prayer-adhkar',
-      areaId: 'prayers',
-      label: 'أذكار بعد الصلاة',
-      kind: 'checkbox',
-    },
+    ...prayerItems(true, true),
     { id: 'quran-hizb', areaId: 'quran', label: 'قراءة حزب من القرآن', kind: 'checkbox' },
     ...MORNING_EVENING,
     ...dhikrCounters(50),
@@ -159,20 +197,13 @@ const LEVEL_2_WIRD: WirdDefinition = {
 const LEVEL_3_WIRD: WirdDefinition = {
   areas: AREAS,
   items: [
-    ...prayerItems(true),
-    { id: 'rawatib', areaId: 'prayers', label: 'السنن الرواتب', kind: 'checkbox' },
+    ...prayerItems(true, true),
     {
       id: 'ghair-rawatib',
       areaId: 'prayers',
       label: 'غير الرواتب',
       kind: 'checkbox',
       minimum: '٤ قبل العصر، ٢ قبل المغرب، ٢ قبل العشاء، والظهر ٤ قبلها و٤ بعدها',
-    },
-    {
-      id: 'after-prayer-adhkar',
-      areaId: 'prayers',
-      label: 'أذكار بعد الصلاة',
-      kind: 'checkbox',
     },
     { id: 'quran-juz', areaId: 'quran', label: 'قراءة جزء من القرآن', kind: 'checkbox' },
     ...MORNING_EVENING,

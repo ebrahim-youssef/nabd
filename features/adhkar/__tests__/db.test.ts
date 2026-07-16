@@ -9,7 +9,12 @@ vi.mock('@/lib/logger', () => ({
 import { WIRD_LEVELS } from '@/content/levels'
 import { db } from '@/lib/db/db'
 
-import { completeLinkedWirdItem } from '../db'
+import {
+  clearFlowProgress,
+  completeLinkedWirdItem,
+  readFlowProgress,
+  writeFlowProgress,
+} from '../db'
 
 beforeEach(async () => {
   await Promise.all([db.wirdVersions.clear(), db.wirdEntries.clear(), db.outbox.clear()])
@@ -48,5 +53,35 @@ describe('completeLinkedWirdItem', () => {
     const noItem = await completeLinkedWirdItem('2026-07-16', 'morning-adhkar', 2000)
     expect(noItem.ok && noItem.value).toBeNull()
     expect(await db.wirdEntries.count()).toBe(0)
+  })
+})
+
+describe('flow progress (NBD-41)', () => {
+  beforeEach(async () => {
+    await db.adhkarFlow.clear()
+  })
+
+  it('round-trips, overwrites, and clears a flow position', async () => {
+    await writeFlowProgress('morning', '2026-07-16', { index: 3, count: 2, finished: false })
+    expect(await readFlowProgress('morning')).toMatchObject({
+      categoryId: 'morning',
+      day: '2026-07-16',
+      index: 3,
+      count: 2,
+      finished: false,
+    })
+
+    await writeFlowProgress('morning', '2026-07-16', { index: 4, count: 0, finished: false })
+    expect((await readFlowProgress('morning'))?.index).toBe(4)
+
+    await clearFlowProgress('morning')
+    expect(await readFlowProgress('morning')).toBeUndefined()
+  })
+
+  it('keeps categories independent', async () => {
+    await writeFlowProgress('morning', '2026-07-16', { index: 1, count: 0, finished: false })
+    await writeFlowProgress('evening', '2026-07-16', { index: 9, count: 5, finished: false })
+    expect((await readFlowProgress('morning'))?.index).toBe(1)
+    expect((await readFlowProgress('evening'))?.index).toBe(9)
   })
 })

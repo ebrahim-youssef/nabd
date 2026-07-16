@@ -1,9 +1,11 @@
-import { db } from '@/lib/db/db'
+import { db, type AdhkarFlowRow } from '@/lib/db/db'
 import { newId } from '@/lib/db/ids'
 import { logger } from '@/lib/logger'
 import { versionInForce } from '@/lib/pure/wird'
 import type { Result } from '@/types/result'
 import type { DayId, WirdEntry } from '@/types/wird'
+
+import type { FlowState } from './logic'
 
 // Marks the linked wird item (أذكار الصباح/المساء) complete when the guided flow finishes a
 // category (NBD-29). Goes straight to the Dexie handle — cross-feature repository imports
@@ -30,5 +32,38 @@ export async function completeLinkedWirdItem(
   } catch (cause) {
     logger.error('adhkar.completeLinkedWirdItem failed', cause, { day, itemId })
     return { ok: false, error: 'complete_failed' }
+  }
+}
+
+// Flow-position persistence for the once-daily categories (NBD-41). Local-only rows — the
+// synced, durable record stays the wird entry above. All best-effort: losing a row only
+// costs re-counting a dhikr.
+
+export async function readFlowProgress(categoryId: string): Promise<AdhkarFlowRow | undefined> {
+  try {
+    return await db.adhkarFlow.get(categoryId)
+  } catch (cause) {
+    logger.error('adhkar.readFlowProgress failed', cause, { categoryId })
+    return undefined
+  }
+}
+
+export async function writeFlowProgress(
+  categoryId: string,
+  day: DayId,
+  state: FlowState,
+): Promise<void> {
+  try {
+    await db.adhkarFlow.put({ categoryId, day, ...state })
+  } catch (cause) {
+    logger.error('adhkar.writeFlowProgress failed', cause, { categoryId, day })
+  }
+}
+
+export async function clearFlowProgress(categoryId: string): Promise<void> {
+  try {
+    await db.adhkarFlow.delete(categoryId)
+  } catch (cause) {
+    logger.error('adhkar.clearFlowProgress failed', cause, { categoryId })
   }
 }

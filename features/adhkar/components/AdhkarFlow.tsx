@@ -19,7 +19,7 @@ export function AdhkarFlow({ category }: { category: AdhkarCategory }) {
   if (state.finished) {
     return (
       <div
-        className="bg-primary text-on-primary flex flex-col items-center gap-3 rounded-card p-6 text-center"
+        className="pattern-khatam text-on-primary shadow-card animate-in fade-in zoom-in-95 flex flex-col items-center gap-3 rounded-card p-6 text-center duration-300"
         data-testid="flow-finished"
       >
         <p className="text-body font-medium">{COPY.finished}</p>
@@ -45,12 +45,22 @@ export function AdhkarFlow({ category }: { category: AdhkarCategory }) {
         type="button"
         onClick={tap}
         data-testid="flow-active-card"
-        className="bg-primary text-on-primary flex flex-col items-center gap-4 rounded-card p-6 text-center transition-transform active:scale-[0.99]"
+        className="pattern-khatam text-on-primary shadow-card flex flex-col items-center gap-4 rounded-card p-6 text-center transition-transform active:scale-[0.99]"
       >
         <p className="font-scripture text-scripture">{active.text}</p>
         <span className="font-display text-display" data-testid="flow-count">
           {toArabicIndic(state.count)}
           <span className="text-title opacity-75">/{toArabicIndic(active.repeat)}</span>
+        </span>
+        {/* Repetition track: the tap's effect is visible as motion, not just a number. */}
+        <span
+          aria-hidden
+          className="bg-ring-track block h-1.5 w-full max-w-56 overflow-hidden rounded-full"
+        >
+          <span
+            className="bg-gold block h-full rounded-full transition-[inline-size] duration-200"
+            style={{ inlineSize: `${Math.min((state.count / active.repeat) * 100, 100)}%` }}
+          />
         </span>
         <span className="text-small opacity-75">{COPY.tapHint}</span>
       </button>
@@ -60,11 +70,11 @@ export function AdhkarFlow({ category }: { category: AdhkarCategory }) {
           {nextUp.map((dhikr) => (
             <li
               key={dhikr.id}
-              className="bg-surface-2 w-40 shrink-0 snap-start rounded-card p-3"
+              className="border-border bg-surface shadow-card-sm flex w-40 shrink-0 snap-start flex-col justify-between gap-2 rounded-card border p-3"
               data-testid={`flow-next-${dhikr.id}`}
             >
-              <p className="text-small text-foreground line-clamp-3">{dhikr.text}</p>
-              <span className="text-gold text-label font-medium">
+              <p className="text-small text-muted-foreground line-clamp-3">{dhikr.text}</p>
+              <span className="bg-gold-soft text-gold rounded-chip self-start px-2 py-0.5 text-label font-medium">
                 ×{toArabicIndic(dhikr.repeat)}
               </span>
             </li>

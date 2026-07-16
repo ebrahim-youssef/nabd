@@ -4,9 +4,11 @@ import { completeOnboarding } from './helpers'
 
 // NBD-27: with location granted, every prayer shows its adhan time and the live sub-header
 // announces/counts down. Cairo coordinates.
+const CAIRO = { latitude: 30.0444, longitude: 31.2357 }
+
 test.use({
   permissions: ['geolocation'],
-  geolocation: { latitude: 30.0444, longitude: 31.2357 },
+  geolocation: CAIRO,
 })
 
 test('prayer times appear after enabling location', async ({ page }) => {
@@ -47,4 +49,47 @@ test('the sub-header stays visible while the prayers accordion is collapsed', as
   await page.getByTestId('area-header-prayers').click()
   await expect(page.getByTestId('area-items-prayers')).toHaveCount(0)
   await expect(page.getByTestId('prayer-status')).toBeVisible()
+})
+
+// NBD-38: the dedicated مواقيت الصلاة page + the calculation-method picker. Coordinates are
+// seeded straight into the device cache — the page needs no onboarding and no prompt.
+test.describe('dedicated page + method picker', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript((coords) => {
+      window.localStorage.setItem('nabd:coords', JSON.stringify(coords))
+    }, CAIRO)
+  })
+
+  test('the page lists the six day points with times', async ({ page }) => {
+    await page.goto('/prayer-times')
+
+    await expect(page.getByTestId('prayer-times-today')).toBeVisible()
+    for (const id of ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha']) {
+      const row = page.getByTestId(`time-row-${id}`)
+      await expect(row).toBeVisible()
+      // Arabic-Indic wall time like ٤:١٢ ص.
+      await expect(row).toContainText(/[٠-٩]+:[٠-٩]+/)
+    }
+  })
+
+  test('changing the calculation method changes the computed fajr and persists', async ({
+    page,
+  }) => {
+    await page.goto('/prayer-times')
+    const fajrBefore = await page.getByTestId('time-row-fajr').innerText()
+
+    await page.goto('/settings')
+    await page.getByTestId('method-umm_al_qura').click()
+    await expect(page.getByTestId('method-umm_al_qura')).toHaveAttribute('aria-pressed', 'true')
+
+    await page.goto('/prayer-times')
+    await expect(page.getByTestId('time-row-fajr')).toBeVisible()
+    const fajrAfter = await page.getByTestId('time-row-fajr').innerText()
+    expect(fajrAfter).not.toBe(fajrBefore)
+
+    // Persisted: a reload keeps the picked method.
+    await page.reload()
+    await expect(page.getByTestId('time-row-fajr')).toBeVisible()
+    expect(await page.getByTestId('time-row-fajr').innerText()).toBe(fajrAfter)
+  })
 })

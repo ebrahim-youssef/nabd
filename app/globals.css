@@ -282,3 +282,19 @@
     line-height: 1.7;
   }
 }
+
+/* ── Ornament (NBD-34) ──────────────────────────────────────────
+   Khatam (eight-point star, the ۞ of the glyph set) lattice for
+   deep-teal surfaces — hero ring card, adhkar active card, streak
+   card, celebration. The ink is --on-primary (#EAF2F0 in BOTH
+   themes — a data-URI cannot read CSS variables, so the value is
+   inlined; keep in sync with the token) at a whisper opacity.
+   ─────────────────────────────────────────────────────────────── */
+.pattern-khatam {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23EAF2F0' stroke-opacity='0.07'%3E%3Crect x='21' y='21' width='30' height='30'/%3E%3Crect x='21' y='21' width='30' height='30' transform='rotate(45 36 36)'/%3E%3Ccircle cx='36' cy='36' r='4.5'/%3E%3C/g%3E%3C/svg%3E"),
+    linear-gradient(to bottom, var(--primary), var(--primary-deep));
+  background-size:
+    72px 72px,
+    auto;
+}

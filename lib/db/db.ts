@@ -26,11 +26,33 @@ export type SyncMetaRow = {
   value: string
 }
 
+// Where a once-daily guided adhkar flow (صباح/مساء) stopped today (NBD-41). Local-only —
+// never synced: the durable record is the wird entry; this is positional state for resuming
+// on this device. One row per category, `day` invalidates yesterday's leftovers.
+export type AdhkarFlowRow = {
+  categoryId: string
+  day: string
+  index: number
+  count: number
+  finished: boolean
+}
+
+// One append-only qada ledger event (ADR-0010): +N days of debt or a −1 payment for one
+// prayer. Local-only for now — the shape mirrors WirdEntry so future sync stays mechanical.
+export type QadaEvent = {
+  id: string
+  prayerId: string
+  delta: number
+  at: number
+}
+
 export const db = new Dexie('nabd') as Dexie & {
   wirdVersions: EntityTable<WirdVersion, 'id'>
   wirdEntries: EntityTable<WirdEntry, 'id'>
   outbox: EntityTable<OutboxRow, 'seq'>
   syncMeta: EntityTable<SyncMetaRow, 'key'>
+  adhkarFlow: EntityTable<AdhkarFlowRow, 'categoryId'>
+  qadaEvents: EntityTable<QadaEvent, 'id'>
 }
 
 db.version(1).stores({
@@ -39,4 +61,14 @@ db.version(1).stores({
   wirdEntries: 'id, day, versionId, [day+itemId], checkedAt',
   outbox: '++seq, createdAt',
   syncMeta: 'key',
+})
+
+// v2 (NBD-41): adds the local-only adhkarFlow store — additive, no data migration.
+db.version(2).stores({
+  adhkarFlow: 'categoryId',
+})
+
+// v3 (NBD-39): adds the local-only qadaEvents ledger (ADR-0010) — additive, no migration.
+db.version(3).stores({
+  qadaEvents: 'id, prayerId',
 })

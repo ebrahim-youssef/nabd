@@ -46,10 +46,15 @@ export function WirdStats() {
   return (
     <section className="flex flex-col gap-5" data-testid="wird-stats">
       <div
-        className="bg-primary text-on-primary flex items-center gap-4 rounded-card p-4"
+        className="pattern-khatam text-on-primary shadow-card flex items-center gap-4 rounded-card p-4"
         data-testid="streak-card"
       >
-        <Flame className="text-gold size-8 shrink-0" aria-hidden />
+        <span
+          aria-hidden
+          className="bg-on-primary/10 flex size-14 shrink-0 items-center justify-center rounded-icon"
+        >
+          <Flame className="text-gold size-8" />
+        </span>
         <div className="flex flex-col">
           <span className="font-display text-title">
             {toArabicIndic(streak)} {streak === 1 ? 'يوم' : 'أيام'} متتالية
@@ -62,19 +67,23 @@ export function WirdStats() {
 
       <div className="grid grid-cols-2 gap-3">
         <div
-          className="bg-surface-2 flex flex-col gap-1 rounded-card p-4"
+          className="border-border bg-surface shadow-card-sm flex flex-col gap-1 rounded-card border p-4"
           data-testid="tile-completion"
         >
-          <span className="font-display text-title text-primary">
-            {toArabicIndic(percent(summary.done, summary.total))}٪
+          <span className="font-display text-display text-primary">
+            {toArabicIndic(percent(summary.done, summary.total))}
+            <span className="text-gold text-title">٪</span>
           </span>
           <span className="text-muted-foreground text-small">إتمام الوِرد — آخر شهر</span>
         </div>
         <div
-          className="bg-surface-2 flex flex-col gap-1 rounded-card p-4"
+          className="border-border bg-surface shadow-card-sm flex flex-col gap-1 rounded-card border p-4"
           data-testid="tile-best-streak"
         >
-          <span className="font-display text-title text-primary">{toArabicIndic(best)}</span>
+          <span className="font-display text-display text-primary">
+            {toArabicIndic(best)}
+            <span className="text-gold text-title"> ✦</span>
+          </span>
           <span className="text-muted-foreground text-small">أفضل سلسلة أيام مكتملة</span>
         </div>
       </div>
@@ -118,22 +127,37 @@ export function WirdStats() {
 // completion fraction (a hairline base keeps empty days visible).
 function WeekChart({ completions }: { completions: DayCompletion[] }) {
   return (
-    <div className="bg-surface-2 rounded-card p-4" data-testid="week-chart">
+    <div
+      className="border-border bg-surface shadow-card-sm rounded-card border p-4"
+      data-testid="week-chart"
+    >
       <div className="flex h-28 items-end justify-between gap-2">
-        {completions.map((completion) => {
+        {completions.map((completion, index) => {
           const pct = percent(completion.done, completion.total)
           const complete = completion.total > 0 && completion.done === completion.total
+          const isToday = index === completions.length - 1
           return (
             <div
               key={completion.day}
-              className="flex h-full flex-1 flex-col items-center justify-end gap-1"
+              className="flex h-full flex-1 flex-col items-center justify-end gap-1.5"
             >
-              <div
-                className={cn('w-full rounded-t-sm', complete ? 'bg-gold' : 'bg-primary')}
-                style={{ blockSize: `${Math.max(pct, 3)}%` }}
-                data-testid={`bar-${completion.day}`}
-              />
-              <span className="text-muted-foreground text-label">
+              {/* Full-height track — empty days read as beads on a string, not missing data. */}
+              <div className="bg-surface-2 relative flex h-full w-full max-w-6 items-end overflow-hidden rounded-full">
+                <div
+                  className={cn(
+                    'w-full rounded-full transition-[block-size] duration-500',
+                    complete ? 'bg-gold' : 'bg-primary',
+                  )}
+                  style={{ blockSize: `${Math.max(pct, 6)}%` }}
+                  data-testid={`bar-${completion.day}`}
+                />
+              </div>
+              <span
+                className={cn(
+                  'text-label',
+                  isToday ? 'text-primary font-bold' : 'text-muted-foreground',
+                )}
+              >
                 {WEEKDAY_FORMAT.format(new Date(`${completion.day}T12:00:00Z`))}
               </span>
             </div>
@@ -146,20 +170,24 @@ function WeekChart({ completions }: { completions: DayCompletion[] }) {
 
 function AreaBar({ area }: { area: AreaStat }) {
   const pct = percent(area.done, area.total)
+  const complete = area.total > 0 && area.done === area.total
   return (
-    <>
+    <div className="border-border bg-surface shadow-card-sm flex flex-col gap-2 rounded-card border p-3">
       <div className="flex items-center justify-between text-small">
-        <span className="text-foreground">{area.label}</span>
+        <span className="text-foreground font-medium">{area.label}</span>
         <span className="text-muted-foreground" data-testid={`stat-${area.areaId}`}>
           {toArabicIndic(area.done)}/{toArabicIndic(area.total)}
         </span>
       </div>
       <div className="bg-surface-2 h-2 w-full overflow-hidden rounded-full">
         <div
-          className="bg-primary h-full rounded-full transition-all"
+          className={cn(
+            'h-full rounded-full transition-all duration-500',
+            complete ? 'bg-gold' : 'bg-primary',
+          )}
           style={{ inlineSize: `${pct}%` }}
         />
       </div>
-    </>
+    </div>
   )
 }

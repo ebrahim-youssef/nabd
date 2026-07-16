@@ -55,13 +55,18 @@ export function CompletionCelebration() {
       role="dialog"
       aria-label={COPY.title}
       data-testid="completion-celebration"
-      className="bg-primary text-on-primary fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 px-6 text-center"
+      className="pattern-khatam text-on-primary animate-in fade-in fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 px-6 text-center duration-300"
     >
-      <span className="border-gold flex size-28 items-center justify-center rounded-full border-4">
+      <span className="border-gold animate-in zoom-in-75 fade-in relative flex size-28 items-center justify-center rounded-full border-4 duration-500">
+        <span aria-hidden className="border-on-primary/20 absolute -inset-2 rounded-full border" />
         <Award className="text-gold size-14" aria-hidden />
       </span>
-      <h2 className="font-display text-display">{COPY.title}</h2>
-      <p className="font-scripture text-scripture opacity-90">{COPY.hadith}</p>
+      <h2 className="font-display text-display animate-in fade-in slide-in-from-bottom-2 duration-500">
+        {COPY.title}
+      </h2>
+      <p className="font-scripture text-scripture animate-in fade-in max-w-md opacity-90 duration-700">
+        {COPY.hadith}
+      </p>
       <div className="flex items-center gap-3">
         <Button
           variant="secondary"

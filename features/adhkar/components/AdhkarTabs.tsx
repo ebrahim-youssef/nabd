@@ -1,5 +1,6 @@
 'use client'
 
+import { ChevronDown } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 
@@ -37,8 +38,10 @@ export function AdhkarTabs() {
               onClick={() => setSelected(entry.id)}
               data-testid={`adhkar-tab-${entry.id}`}
               className={cn(
-                'shrink-0 rounded-chip px-4 py-1.5 text-small font-medium transition-colors',
-                active ? 'bg-primary text-on-primary' : 'bg-surface-2 text-muted-foreground',
+                'shrink-0 rounded-chip border px-4 py-1.5 text-small font-medium transition-all duration-200',
+                active
+                  ? 'border-primary bg-primary text-on-primary shadow-card-sm'
+                  : 'border-border bg-surface text-muted-foreground hover:border-accent/40 hover:text-primary',
               )}
             >
               {entry.title}
@@ -49,13 +52,23 @@ export function AdhkarTabs() {
 
       <AdhkarFlow key={category.id} category={category} />
 
-      <details className="group bg-surface-2 rounded-card" data-testid="adhkar-full-list">
-        <summary className="cursor-pointer list-none p-4 text-body font-medium">
+      <details
+        className="group border-border bg-surface shadow-card-sm rounded-card border"
+        data-testid="adhkar-full-list"
+      >
+        <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-body font-medium [&::-webkit-details-marker]:hidden">
           كل أذكار القسم ({toArabicIndic(category.items.length)})
+          <ChevronDown
+            aria-hidden
+            className="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
+          />
         </summary>
         <ul className="flex flex-col gap-3 px-4 pb-4">
           {category.items.map((dhikr) => (
-            <li key={dhikr.id} className="bg-surface flex flex-col gap-2 rounded-card p-4">
+            <li
+              key={dhikr.id}
+              className="bg-surface-2/60 border-border flex flex-col gap-2 rounded-card border p-4"
+            >
               <p className="font-scripture text-scripture text-foreground">{dhikr.text}</p>
               <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-small">
                 {dhikr.repeat > 1 && (

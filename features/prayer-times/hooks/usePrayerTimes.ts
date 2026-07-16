@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { COORDS_EVENT, readCachedCoords, requestCoords, type Coords } from '@/lib/impure/location'
-import { computeDayTimes } from '@/lib/impure/prayer'
+import {
+  computeDayTimes,
+  DEFAULT_METHOD_ID,
+  METHOD_EVENT,
+  readCalculationMethodId,
+  type CalculationMethodId,
+} from '@/lib/impure/prayer'
 
 import { PRAYER_LABELS } from '../constants'
 import { timelineStatus } from '../logic'
@@ -26,19 +32,26 @@ type PrayerTimesState = {
 // permission flow), adhan.js math, and a minute-level tick for the sub-header status.
 export function usePrayerTimes(): PrayerTimesState {
   const [coords, setCoords] = useState<Coords | null>(null)
+  const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
   const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
     // Deferred a tick: localStorage is client-only and the deferral keeps SSR markup and the
     // first client render identical (same pattern as the sync feature's initial kick).
-    const timer = window.setTimeout(() => setCoords(readCachedCoords()), 0)
+    const timer = window.setTimeout(() => {
+      setCoords(readCachedCoords())
+      setMethodId(readCalculationMethodId())
+    }, 0)
     // A grant anywhere (the status bar, onboarding) reaches every mounted instance — the
-    // per-prayer badges must not need a remount to show times.
+    // per-prayer badges must not need a remount to show times. Same for the method picker.
     const onCoords = () => setCoords(readCachedCoords())
+    const onMethod = () => setMethodId(readCalculationMethodId())
     window.addEventListener(COORDS_EVENT, onCoords)
+    window.addEventListener(METHOD_EVENT, onMethod)
     return () => {
       window.clearTimeout(timer)
       window.removeEventListener(COORDS_EVENT, onCoords)
+      window.removeEventListener(METHOD_EVENT, onMethod)
     }
   }, [])
 
@@ -56,8 +69,8 @@ export function usePrayerTimes(): PrayerTimesState {
   const computed = useMemo(() => {
     if (!coords) return null
     const today = new Date(now)
-    const dayTimes = computeDayTimes(coords, today)
-    const tomorrow = computeDayTimes(coords, new Date(now + MS_PER_DAY))
+    const dayTimes = computeDayTimes(coords, today, methodId)
+    const tomorrow = computeDayTimes(coords, new Date(now + MS_PER_DAY), methodId)
     const points: TimePoint[] = [
       ...Object.entries(dayTimes).map(([id, at]) => ({ id, label: PRAYER_LABELS[id], at })),
       // Tomorrow's fajr closes the timeline so the post-عشاء countdown has a target.
@@ -66,7 +79,7 @@ export function usePrayerTimes(): PrayerTimesState {
     return { dayTimes, points }
     // `now` ticks every 30s but the day's times only change at midnight; recomputing on tick
     // is cheap (<1ms) and keeps the midnight rollover automatic.
-  }, [coords, now])
+  }, [coords, methodId, now])
 
   return {
     hasLocation: coords !== null,
