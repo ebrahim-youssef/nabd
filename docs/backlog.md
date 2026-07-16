@@ -75,7 +75,7 @@ files touched, the intended changes, the alternatives considered, and the chosen
 | NBD-38 | ✅ done | **مواقيت الصلاة page + calculation-method picker** (r4 §§2–3, issue #112) — dedicated prayer-times view; method picker in settings feeding adhan.js (needs NBD-37)                                                  | The page shows today's five times with the current/next indicator; changing the method in settings changes the computed times           |
 | NBD-40 | ✅ done | **Wird restructure — rawatib + أذكار الصلاة per prayer** (r4 §6, issue #114) — rawatib as separate ordered checkboxes around each prayer; أذكار الصلاة after every prayer (wird versioning keeps old stats correct) | On L2/L3 the checklist lists سنة قبلية → صلاة → سنة بعدية → أذكار الصلاة in order for each prayer; past days' stats unchanged           |
 | NBD-41 | ✅ done | **Adhkar flow persistence for صباح/مساء** (r4 §7, issue #116) — per-day flow position (dhikr index + tap count) persisted in Dexie for the two once-daily categories only                                           | Interrupting أذكار الصباح mid-flow and reloading resumes at the same dhikr and count; بعد الصلاة/النوم keep resetting                   |
-| NBD-39 | ⬜ todo | **قضاء الفوائت page** (r4 §4, needs ADR-0010) — five prayers with remaining qada counts; إضافة فوائت modal (سنين/شهور/أيام → days → added to every prayer); تم قضاء صلاة decrements                                 | Adding ٣ days shows ٣ next to each prayer; one تم القضاء tap drops that prayer to ٢; state survives offline reload                      |
+| NBD-39 | ✅ done | **قضاء الفوائت page** (r4 §4, ADR-0010, issue #118) — five prayers with remaining qada counts; إضافة فوائت modal (سنين/شهور/أيام → days → added to every prayer); تم قضاء صلاة decrements                           | Adding ٣ days shows ٣ next to each prayer; one تم القضاء tap drops that prayer to ٢; state survives offline reload                      |
 | NBD-42 | ⬜ todo | **Push notifications (app closed) + three sounds** (r4 §5, ADR-0009 upgrade) — web push via backend; sounds: اقتربت الصلاة / أذان (+فجر variant) / إقامة, license-clean; honest UI copy about OS sound limits       | An opted-in user with the app closed receives the prayer notification; foreground moments play the three distinct sounds                |
 
 ## Later (out of scope for MVP)
@@ -86,6 +86,8 @@ files touched, the intended changes, the alternatives considered, and the chosen
 - Per-user notification-sound customization (three fixed sounds ship in NBD-42).
 - The rule that a prayer checked after its window auto-counts as قضاء (NBD-39 ships the
   manual ledger; the auto-flag needs its own ADR discussion).
+- Sync the qada ledger to Supabase (ADR-0010 §3 — the append-only shape is sync-ready;
+  needs the table + RLS + per-table mappers in features/sync).
 
 ## Notes
 
