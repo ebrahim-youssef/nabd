@@ -22,9 +22,30 @@ export function OnboardingQuestionnaire() {
   const permissions = usePermissionsSetup()
   const [answers, setAnswers] = useState<Answers>({})
   const [selectedLevel, setSelectedLevel] = useState<LevelId | null>(null)
-  const [step, setStep] = useState<'questions' | 'level' | 'permissions'>('questions')
+  const [step, setStep] = useState<'welcome' | 'questions' | 'level' | 'permissions'>('welcome')
 
   const answered = isComplete(QUESTIONS, answers)
+
+  if (step === 'welcome') {
+    return (
+      <section className="flex flex-col gap-6" data-testid="onboarding-welcome">
+        <header className="flex flex-col gap-2">
+          <h2 className="font-display text-title text-primary">{COPY.title}</h2>
+          <p className="text-muted-foreground text-body">{COPY.welcomeBody}</p>
+        </header>
+        <ul className="flex flex-col gap-3">
+          {COPY.welcomePoints.map((point) => (
+            <li key={point} className="bg-surface-2 text-body rounded-card p-3">
+              {point}
+            </li>
+          ))}
+        </ul>
+        <Button onClick={() => setStep('questions')} data-testid="onboarding-begin">
+          {COPY.welcomeStart}
+        </Button>
+      </section>
+    )
+  }
 
   if (step === 'questions') {
     return (

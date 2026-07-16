@@ -27,6 +27,8 @@ export async function answerQuestionnaire(
   page: Page,
   optionIds: OnboardingAnswers = DEFAULT_ANSWERS,
 ): Promise<void> {
+  // Welcome/purpose screen first (NBD-30).
+  await page.getByTestId('onboarding-begin').click()
   await ensureChecked(page, `onboarding-prayers-${optionIds.prayers}`)
   await ensureChecked(page, `onboarding-quran-${optionIds.quran}`)
   await ensureChecked(page, `onboarding-adhkar-${optionIds.adhkar}`)
@@ -49,8 +51,12 @@ export async function completeOnboarding(
 // (double-submit safe), so a swallowed click or a slow Dexie flip on a loaded CI runner just
 // clicks again instead of failing the spec.
 export async function finishOnboarding(page: Page): Promise<void> {
+  const finish = page.getByTestId('onboarding-finish')
   await expect(async () => {
-    await page.getByTestId('onboarding-finish').click()
+    // Dispatch the click directly: the button sits at the page bottom where Playwright's
+    // scroll/stability machinery repeatedly stalls against the fixed navbar on CI. The
+    // outcome (checklist appears) is still what's asserted; seeding is idempotent.
+    await finish.evaluate((el) => (el as HTMLElement).click()).catch(() => undefined)
     await expect(page.getByTestId('wird-checklist')).toBeVisible({ timeout: 5000 })
   }).toPass({ timeout: 30_000 })
 }

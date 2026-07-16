@@ -5,6 +5,9 @@ const BASE_URL = `http://localhost:${PORT}`
 
 export default defineConfig({
   testDir: './e2e',
+  // Specs walk the full onboarding flow before their assertions; CI runners need headroom
+  // over the 30s default.
+  timeout: 60_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // Local parallel workers share one `next start`; a slow response can lose a pre-hydration

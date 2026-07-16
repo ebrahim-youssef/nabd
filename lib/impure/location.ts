@@ -6,6 +6,10 @@ export type Coords = { latitude: number; longitude: number }
 
 const STORAGE_KEY = 'nabd:coords'
 
+// Fired on window after a successful grant so every mounted consumer (status bar, per-prayer
+// badges) picks the coordinates up without a remount.
+export const COORDS_EVENT = 'nabd:coords'
+
 export function readCachedCoords(): Coords | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
@@ -37,6 +41,7 @@ export function requestCoords(): Promise<Coords | null> {
         } catch {
           // Cache miss only costs a re-prompt next session.
         }
+        window.dispatchEvent(new Event(COORDS_EVENT))
         resolve(coords)
       },
       () => resolve(null),

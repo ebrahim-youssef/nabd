@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { readCachedCoords, requestCoords, type Coords } from '@/lib/impure/location'
+import { COORDS_EVENT, readCachedCoords, requestCoords, type Coords } from '@/lib/impure/location'
 import { computeDayTimes } from '@/lib/impure/prayer'
 
 import { PRAYER_LABELS } from '../constants'
@@ -32,7 +32,14 @@ export function usePrayerTimes(): PrayerTimesState {
     // Deferred a tick: localStorage is client-only and the deferral keeps SSR markup and the
     // first client render identical (same pattern as the sync feature's initial kick).
     const timer = window.setTimeout(() => setCoords(readCachedCoords()), 0)
-    return () => window.clearTimeout(timer)
+    // A grant anywhere (the status bar, onboarding) reaches every mounted instance — the
+    // per-prayer badges must not need a remount to show times.
+    const onCoords = () => setCoords(readCachedCoords())
+    window.addEventListener(COORDS_EVENT, onCoords)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener(COORDS_EVENT, onCoords)
+    }
   }, [])
 
   useEffect(() => {

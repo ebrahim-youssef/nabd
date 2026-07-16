@@ -27,11 +27,13 @@ test('checked item persists across a fully offline reload', async ({ page, conte
   await page.goto('/')
   await completeOnboarding(page)
 
-  // Wait until the service worker is controlling the page, so an offline reload can be served
-  // from its cache.
+  // Wait until the service worker is controlling the page, then load once THROUGH it so the
+  // navigation lands in its runtime cache — the same shape as a real returning visitor.
+  // (The first document load predates the worker and never passes through it.)
   await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, {
     timeout: 20_000,
   })
+  await page.reload()
 
   const fajr = page.getByTestId('wird-item-fajr')
   await fajr.click()
