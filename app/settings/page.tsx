@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 
 import { PageHeader } from '@/components/shared/PageHeader'
-import { AlarmDebug } from '@/features/prayer-times/components/AlarmDebug'
 import { AppearanceSettings } from '@/features/settings/components/AppearanceSettings'
 import { LocationSettings } from '@/features/settings/components/LocationSettings'
 import { PrayerMethodSettings } from '@/features/settings/components/PrayerMethodSettings'
@@ -24,8 +23,6 @@ export default function SettingsPage() {
       <LocationSettings />
       <PrayerMethodSettings />
       <SoundSettings />
-      {/* NBD-49 (temporary): native-only alarm diagnostics; renders nothing on the web. */}
-      <AlarmDebug />
     </main>
   )
 }
