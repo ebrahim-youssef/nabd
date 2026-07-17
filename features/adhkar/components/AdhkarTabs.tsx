@@ -8,7 +8,9 @@ import { ADHKAR_LIBRARY } from '@/content/adhkar'
 import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
 
+import { LIST_CATEGORIES } from '../constants'
 import { AdhkarFlow } from './AdhkarFlow'
+import { AdhkarList } from './AdhkarList'
 
 // The adhkar page as tabs (NBD-29, design-notes-r3 §4): one tab per category; each tab runs
 // the guided counter flow with the full reference list underneath. `?tab=<id>` deep-links a
@@ -50,38 +52,46 @@ export function AdhkarTabs() {
         })}
       </div>
 
-      <AdhkarFlow key={category.id} category={category} />
+      {/* بعد الصلاة/النوم are an independent per-dhikr counter list (NBD-52); صباح/مساء keep the
+          guided flow with the full reference underneath. */}
+      {LIST_CATEGORIES.has(category.id) ? (
+        <AdhkarList key={category.id} category={category} />
+      ) : (
+        <>
+          <AdhkarFlow key={category.id} category={category} />
 
-      <details
-        className="group border-border bg-surface shadow-card-sm rounded-card border"
-        data-testid="adhkar-full-list"
-      >
-        <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-body font-medium [&::-webkit-details-marker]:hidden">
-          كل أذكار القسم ({toArabicIndic(category.items.length)})
-          <ChevronDown
-            aria-hidden
-            className="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
-          />
-        </summary>
-        <ul className="flex flex-col gap-3 px-4 pb-4">
-          {category.items.map((dhikr) => (
-            <li
-              key={dhikr.id}
-              className="bg-surface-2/60 border-border flex flex-col gap-2 rounded-card border p-4"
-            >
-              <p className="font-scripture text-scripture text-foreground">{dhikr.text}</p>
-              <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-small">
-                {dhikr.repeat > 1 && (
-                  <span className="text-gold shrink-0 font-medium">
-                    ×{toArabicIndic(dhikr.repeat)}
-                  </span>
-                )}
-                {dhikr.virtue && <span>{dhikr.virtue}</span>}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </details>
+          <details
+            className="group border-border bg-surface shadow-card-sm rounded-card border"
+            data-testid="adhkar-full-list"
+          >
+            <summary className="flex cursor-pointer items-center justify-between gap-3 p-4 text-body font-medium [&::-webkit-details-marker]:hidden">
+              كل أذكار القسم ({toArabicIndic(category.items.length)})
+              <ChevronDown
+                aria-hidden
+                className="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
+              />
+            </summary>
+            <ul className="flex flex-col gap-3 px-4 pb-4">
+              {category.items.map((dhikr) => (
+                <li
+                  key={dhikr.id}
+                  className="bg-surface-2/60 border-border flex flex-col gap-2 rounded-card border p-4"
+                >
+                  <p className="font-scripture text-scripture text-foreground">{dhikr.text}</p>
+                  <div className="text-muted-foreground flex flex-wrap items-center gap-3 text-small">
+                    {dhikr.repeat > 1 && (
+                      <span className="text-gold shrink-0 font-medium">
+                        ×{toArabicIndic(dhikr.repeat)}
+                      </span>
+                    )}
+                    {dhikr.virtue && <span>{dhikr.virtue}</span>}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </>
+      )}
     </div>
   )
 }

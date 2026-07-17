@@ -12,6 +12,7 @@ import { db } from '@/lib/db/db'
 import {
   clearFlowProgress,
   completeLinkedWirdItem,
+  isWirdItemDoneToday,
   readFlowProgress,
   writeFlowProgress,
 } from '../db'
@@ -53,6 +54,34 @@ describe('completeLinkedWirdItem', () => {
     const noItem = await completeLinkedWirdItem('2026-07-16', 'morning-adhkar', 2000)
     expect(noItem.ok && noItem.value).toBeNull()
     expect(await db.wirdEntries.count()).toBe(0)
+  })
+})
+
+describe('isWirdItemDoneToday (NBD-51)', () => {
+  const entry = (id: string, itemId: string, done: boolean, at: number) => ({
+    id,
+    day: '2026-07-16',
+    versionId: 'v1',
+    itemId,
+    done,
+    at,
+  })
+
+  it('reflects the latest wird entry state for the day', async () => {
+    expect(await isWirdItemDoneToday('2026-07-16', 'evening-adhkar')).toBe(false)
+
+    await db.wirdEntries.add(entry('e1', 'evening-adhkar', true, 1))
+    expect(await isWirdItemDoneToday('2026-07-16', 'evening-adhkar')).toBe(true)
+
+    // A later uncheck event wins (latest `at` per item).
+    await db.wirdEntries.add(entry('e2', 'evening-adhkar', false, 2))
+    expect(await isWirdItemDoneToday('2026-07-16', 'evening-adhkar')).toBe(false)
+  })
+
+  it('scopes to the given day and item', async () => {
+    await db.wirdEntries.add({ ...entry('e3', 'morning-adhkar', true, 1), day: '2026-07-15' })
+    expect(await isWirdItemDoneToday('2026-07-16', 'morning-adhkar')).toBe(false)
+    expect(await isWirdItemDoneToday('2026-07-16', 'evening-adhkar')).toBe(false)
   })
 })
 

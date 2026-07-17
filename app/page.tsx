@@ -1,6 +1,3 @@
-import { Settings } from 'lucide-react'
-import Link from 'next/link'
-
 import { ThemeToggle } from '@/components/shared/ThemeToggle'
 import { AuthStatus } from '@/features/auth/components/AuthStatus'
 import { OnboardingGate } from '@/features/onboarding/components/OnboardingGate'
@@ -14,16 +11,10 @@ export default function Home() {
       <header className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <h1 className="font-display text-display text-primary">نبض</h1>
+          {/* مواقيت الصلاة and الإعدادات live in the bottom nav (r6 §2-amendment) — the header
+              keeps only the theme toggle and the auth chip. */}
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            <Link
-              href="/settings"
-              aria-label="الإعدادات"
-              data-testid="settings-link"
-              className="border-border bg-surface text-primary shadow-card-sm hover:bg-primary hover:text-on-primary flex size-9 shrink-0 items-center justify-center rounded-full border transition-colors"
-            >
-              <Settings className="size-5" aria-hidden />
-            </Link>
             <AuthStatus />
           </div>
         </div>

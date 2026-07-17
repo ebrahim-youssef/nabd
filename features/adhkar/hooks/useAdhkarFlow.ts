@@ -9,6 +9,7 @@ import { CATEGORY_TO_WIRD_ITEM, ONCE_DAILY_CATEGORIES } from '../constants'
 import {
   clearFlowProgress,
   completeLinkedWirdItem,
+  isWirdItemDoneToday,
   readFlowProgress,
   writeFlowProgress,
 } from '../db'
@@ -26,14 +27,29 @@ export function useAdhkarFlow(categoryId: string, items: Dhikr[]) {
   useEffect(() => {
     if (!persisted) return
     let cancelled = false
-    void readFlowProgress(categoryId).then((row) => {
-      if (cancelled || !row || row.day !== today()) return
-      const resumed: FlowState = { index: row.index, count: row.count, finished: row.finished }
-      // Apply only while untouched — a tap that raced the read wins over the stored position.
-      setState((prev) => (prev === INITIAL_FLOW ? resumed : prev))
-      // A finished flow already marked its wird item when it finished.
-      if (row.finished) setMarkedInWird(true)
-    })
+    const linkedItem = CATEGORY_TO_WIRD_ITEM[categoryId]
+    const day = today()
+    void (async () => {
+      const row = await readFlowProgress(categoryId)
+      if (cancelled) return
+      if (row && row.day === day) {
+        const resumed: FlowState = { index: row.index, count: row.count, finished: row.finished }
+        // Apply only while untouched — a tap that raced the read wins over the stored position.
+        setState((prev) => (prev === INITIAL_FLOW ? resumed : prev))
+        // A finished flow already marked its wird item when it finished.
+        if (row.finished) {
+          setMarkedInWird(true)
+          return
+        }
+      }
+      // Home ↔ library sync (NBD-51): if the linked wird item is already done today, show the
+      // section finished — the mirror of the flow auto-marking the item. Derived on read; a
+      // resumed mid-flow position above wins (this only fires from a clean start).
+      if (!linkedItem) return
+      const done = await isWirdItemDoneToday(day, linkedItem)
+      if (cancelled || !done) return
+      setState((prev) => (prev === INITIAL_FLOW ? { index: 0, count: 0, finished: true } : prev))
+    })()
     return () => {
       cancelled = true
     }

@@ -13,3 +13,9 @@ export async function getVersions(): Promise<WirdVersion[]> {
 export async function getEntriesInRange(fromDay: DayId, toDay: DayId): Promise<WirdEntry[]> {
   return db.wirdEntries.where('day').between(fromDay, toDay, true, true).toArray()
 }
+
+// Every entry across all history. The per-item drill-down (NBD-47) reckons streaks and misses
+// over the item's whole lifetime, so it reads the full table (bounded by the user's tenure).
+export async function getAllEntries(): Promise<WirdEntry[]> {
+  return db.wirdEntries.toArray()
+}

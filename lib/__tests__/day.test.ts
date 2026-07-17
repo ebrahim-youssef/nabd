@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { compareDayId, isDayId, lastNDays, monthOf, toDayId, weekdayOf } from '@/lib/pure/day'
+import {
+  compareDayId,
+  daysInRange,
+  isDayId,
+  lastNDays,
+  monthOf,
+  toDayId,
+  weekdayOf,
+} from '@/lib/pure/day'
 
 describe('weekdayOf', () => {
   it('maps known dates to 0=Sunday … 6=Saturday', () => {
@@ -55,5 +63,21 @@ describe('lastNDays', () => {
 
   it('steps across month boundaries', () => {
     expect(lastNDays('2026-03-02', 3)).toEqual(['2026-02-28', '2026-03-01', '2026-03-02'])
+  })
+})
+
+describe('daysInRange', () => {
+  it('lists every day inclusive, oldest first, across a month boundary', () => {
+    expect(daysInRange('2026-02-27', '2026-03-02')).toEqual([
+      '2026-02-27',
+      '2026-02-28',
+      '2026-03-01',
+      '2026-03-02',
+    ])
+  })
+
+  it('returns a single day when from === to, and [] for a reversed range', () => {
+    expect(daysInRange('2026-07-14', '2026-07-14')).toEqual(['2026-07-14'])
+    expect(daysInRange('2026-07-15', '2026-07-14')).toEqual([])
   })
 })

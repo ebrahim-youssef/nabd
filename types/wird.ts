@@ -38,6 +38,10 @@ export type WirdItem = {
   optional?: boolean
   // ADR-0008: display-only minimum for the deed to count (e.g. "٣ ركعات على الأقل").
   minimum?: string
+  // NBD-54 (r6 §6): recommended weekday(s) for a voluntary deed (0=Sun … 6=Sat), e.g. صيام
+  // الإثنين والخميس = [1, 4]. A soft target — display + attainment only; it does NOT gate
+  // scheduling (unlike `weekdays`), so the item still shows and counts on every day.
+  targetDays?: number[]
 }
 
 // The full wird as a single snapshot (whole-wird versioning, ADR-0006 §1).

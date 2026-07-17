@@ -67,3 +67,19 @@ export function lastNDays(today: DayId, n: number): DayId[] {
   }
   return days
 }
+
+// Every calendar day from `from` to `to` inclusive, oldest first (feeds NBD-47 per-item
+// history). Returns [] for a reversed range. Steps via nextDay so it is DST-safe; a hard cap
+// (~11 years) guards a pathological range from looping unbounded.
+const MAX_RANGE_DAYS = 4000
+
+export function daysInRange(from: DayId, to: DayId): DayId[] {
+  if (compareDayId(from, to) > 0) return []
+  const days: DayId[] = []
+  let day = from
+  for (let i = 0; i < MAX_RANGE_DAYS && compareDayId(day, to) <= 0; i += 1) {
+    days.push(day)
+    day = nextDay(day)
+  }
+  return days
+}

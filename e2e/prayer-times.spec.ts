@@ -51,6 +51,15 @@ test('the sub-header stays visible while the prayers accordion is collapsed', as
   await expect(page.getByTestId('prayer-status')).toBeVisible()
 })
 
+// NBD-50 (r6 §2, amended): the dedicated page is reachable from its own bottom-nav tab,
+// even before location is granted.
+test('the bottom nav links to the dedicated prayer-times page', async ({ page }) => {
+  await page.goto('/')
+  await page.getByTestId('nav-prayer-times').click()
+  await expect(page).toHaveURL(/\/prayer-times$/)
+  await expect(page.getByRole('heading', { name: 'مواقيت الصلاة' })).toBeVisible()
+})
+
 // NBD-38: the dedicated مواقيت الصلاة page + the calculation-method picker. Coordinates are
 // seeded straight into the device cache — the page needs no onboarding and no prompt.
 test.describe('dedicated page + method picker', () => {

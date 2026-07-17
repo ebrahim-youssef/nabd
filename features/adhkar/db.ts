@@ -1,7 +1,7 @@
 import { db, type AdhkarFlowRow } from '@/lib/db/db'
 import { newId } from '@/lib/db/ids'
 import { logger } from '@/lib/logger'
-import { versionInForce } from '@/lib/pure/wird'
+import { latestStateByItem, versionInForce } from '@/lib/pure/wird'
 import type { Result } from '@/types/result'
 import type { DayId, WirdEntry } from '@/types/wird'
 
@@ -32,6 +32,20 @@ export async function completeLinkedWirdItem(
   } catch (cause) {
     logger.error('adhkar.completeLinkedWirdItem failed', cause, { day, itemId })
     return { ok: false, error: 'complete_failed' }
+  }
+}
+
+// Whether a wird item's latest state today is `done` (NBD-51). Mirrors completeLinkedWirdItem
+// the other way: checking أذكار الصباح/المساء in the wird lets the library flow show the
+// category finished. A derived read — no positional state is written here; the durable truth
+// stays the append-only wird entries.
+export async function isWirdItemDoneToday(day: DayId, itemId: string): Promise<boolean> {
+  try {
+    const entries = await db.wirdEntries.where('day').equals(day).toArray()
+    return latestStateByItem(entries).get(itemId) ?? false
+  } catch (cause) {
+    logger.error('adhkar.isWirdItemDoneToday failed', cause, { day, itemId })
+    return false
   }
 }
 

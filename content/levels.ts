@@ -162,15 +162,53 @@ const FASTING_MONTHLY: WirdItem = {
   schedule: { type: 'monthly-goal', target: 3 },
 }
 
-// الإثنين (1) والخميس (4).
+// الإثنين (1) والخميس (4) are the recommended target days — but a soft target, not a hard
+// schedule (r6 §6 / NBD-54): the item shows every day and a fast on any day still counts;
+// الإثنين/الخميس are only highlighted as المستحب. Voluntary, so a non-fasted day is never a
+// miss (ADR-0008). `targetDays` is display + attainment only — it does not gate scheduling.
 const FASTING_MON_THU: WirdItem = {
   id: 'fasting',
   areaId: 'tatawwu',
   label: 'صيام الإثنين والخميس',
   kind: 'checkbox',
   optional: true,
-  schedule: { type: 'weekdays', days: [1, 4] },
+  targetDays: [1, 4],
 }
+
+// غير الرواتب — the non-mu'akkadah nawāfil, split into individual checklist items (NBD-53,
+// r6 §5) instead of one lumped item, so each is tracked on its own (feeds NBD-47 per-item
+// stats). Stable ids: a later level change re-versions the wird and keeps past stats correct
+// (ADR-0006). Grouped after the five prayers' sequences, as the lumped item was.
+const GHAIR_RAWATIB: WirdItem[] = [
+  {
+    id: 'ghair-rawatib-dhuhr',
+    areaId: 'prayers',
+    label: 'أربع قبل الظهر وأربع بعدها',
+    kind: 'checkbox',
+    minimum: '٨ ركعات',
+  },
+  {
+    id: 'ghair-rawatib-asr',
+    areaId: 'prayers',
+    label: 'أربع ركعات قبل العصر',
+    kind: 'checkbox',
+    minimum: '٤ ركعات',
+  },
+  {
+    id: 'ghair-rawatib-maghrib',
+    areaId: 'prayers',
+    label: 'ركعتان قبل المغرب',
+    kind: 'checkbox',
+    minimum: 'ركعتان',
+  },
+  {
+    id: 'ghair-rawatib-isha',
+    areaId: 'prayers',
+    label: 'ركعتان قبل العشاء',
+    kind: 'checkbox',
+    minimum: 'ركعتان',
+  },
+]
 
 const LEVEL_1_WIRD: WirdDefinition = {
   areas: AREAS,
@@ -198,13 +236,7 @@ const LEVEL_3_WIRD: WirdDefinition = {
   areas: AREAS,
   items: [
     ...prayerItems(true, true),
-    {
-      id: 'ghair-rawatib',
-      areaId: 'prayers',
-      label: 'غير الرواتب',
-      kind: 'checkbox',
-      minimum: '٤ قبل العصر، ٢ قبل المغرب، ٢ قبل العشاء، والظهر ٤ قبلها و٤ بعدها',
-    },
+    ...GHAIR_RAWATIB,
     { id: 'quran-juz', areaId: 'quran', label: 'قراءة جزء من القرآن', kind: 'checkbox' },
     ...MORNING_EVENING,
     ...dhikrCounters(100),
