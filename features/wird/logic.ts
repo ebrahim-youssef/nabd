@@ -1,5 +1,5 @@
 import { isScheduledOn, latestStateByItem, monthlyDoneDays, versionInForce } from '@/lib/pure/wird'
-import { monthOf } from '@/lib/pure/day'
+import { monthOf, weekdayOf } from '@/lib/pure/day'
 import type { DayId, WirdDefinition, WirdEntry } from '@/types/wird'
 
 import type { ChecklistAreaView, TodaySummary } from './types'
@@ -39,6 +39,8 @@ export function buildChecklist(
           item.schedule?.type === 'monthly-goal'
             ? { done: monthlyDoneDays(monthEntries, item.id, month), target: item.schedule.target }
             : undefined,
+        // NBD-54: highlight today when it is one of a voluntary deed's recommended days.
+        targetToday: item.targetDays ? item.targetDays.includes(weekdayOf(day)) : undefined,
       })),
   }))
 }

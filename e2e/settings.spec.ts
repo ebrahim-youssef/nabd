@@ -33,9 +33,17 @@ test('sound previews are listed and playable without errors', async ({ page }) =
   }
 })
 
+// NBD-48 (r6 §1): a user who skipped location in onboarding can grant it from Settings.
+test('settings expose a location enable control when no location is cached', async ({ page }) => {
+  await page.goto('/settings')
+  await expect(page.getByTestId('location-settings')).toBeVisible()
+  await expect(page.getByTestId('enable-location-settings')).toBeVisible()
+})
+
 test('settings mode switcher flips data-mode and persists across reload', async ({ page }) => {
   await page.goto('/')
-  await page.getByTestId('settings-link').click()
+  // الإعدادات is a bottom-nav tab since r6 §2-amendment.
+  await page.getByTestId('nav-settings').click()
   await expect(page).toHaveURL(/\/settings$/)
 
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'classic')

@@ -15,6 +15,9 @@ export type ChecklistItemView = {
   minimum?: string
   // ADR-0008: month progress for a monthly-goal item (done-days vs target).
   monthlyProgress?: { done: number; target: number }
+  // NBD-54 (r6 §6): true when today is one of a voluntary deed's recommended target days
+  // (e.g. صيام on الإثنين/الخميس) — highlighted as المستحب, never enforced.
+  targetToday?: boolean
 }
 
 export type ChecklistAreaView = {

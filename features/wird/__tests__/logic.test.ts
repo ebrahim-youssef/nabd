@@ -125,6 +125,28 @@ describe('buildChecklist — schedules (ADR-0008)', () => {
     expect(monday[0].items.map((i) => i.id)).toContain('fast-mon-thu')
   })
 
+  it('shows a targetDays item every day and flags targetToday only on its days (NBD-54)', () => {
+    const withTarget: WirdDefinition = {
+      areas: [{ id: 'tatawwu', label: 'التطوّع', order: 0 }],
+      items: [
+        {
+          id: 'fasting',
+          areaId: 'tatawwu',
+          label: 'صيام الإثنين والخميس',
+          kind: 'checkbox',
+          optional: true,
+          targetDays: [1, 4],
+        },
+      ],
+    }
+    // 2026-07-13 = Monday (a target day); 2026-07-14 = Tuesday (not) — but still shown, unlike
+    // a weekdays item, since a targetDays deed is checkable any day.
+    const monday = buildChecklist(withTarget, [], '2026-07-13')[0].items[0]
+    expect(monday).toMatchObject({ id: 'fasting', targetToday: true })
+    const tuesday = buildChecklist(withTarget, [], '2026-07-14')[0].items[0]
+    expect(tuesday).toMatchObject({ id: 'fasting', targetToday: false })
+  })
+
   it('computes monthly-goal progress from the month entries, latest-per-day wins', () => {
     const monthEntries = [
       entry('fast-monthly', true, 100, '2026-07-01'),

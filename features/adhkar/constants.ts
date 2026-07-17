@@ -11,6 +11,11 @@ export const CATEGORY_TO_WIRD_ITEM: Record<string, string> = {
 // on purpose — deliberately separate from CATEGORY_TO_WIRD_ITEM, which is about auto-marking.
 export const ONCE_DAILY_CATEGORIES: ReadonlySet<string> = new Set(['morning', 'evening'])
 
+// Categories rendered as an independent per-dhikr counter list (NBD-52, r6 §4) rather than the
+// guided single-card flow: they repeat many times a day and mark no wird item, so each dhikr is
+// its own re-countable card with its own state. صباح/مساء keep the guided flow + celebration.
+export const LIST_CATEGORIES: ReadonlySet<string> = new Set(['after-prayer', 'sleep'])
+
 // How many upcoming mini-cards the strip shows (design-notes-r3 §4).
 export const STRIP_VISIBLE_COUNT = 3
 
@@ -19,4 +24,7 @@ export const COPY = {
   markedInWird: 'وعُلّمت في وِردك تلقائيًا ✓',
   restart: 'إعادة',
   tapHint: 'اضغط البطاقة للعدّ',
+  // Per-dhikr counter list (NBD-52).
+  done: 'تمّ',
+  reset: 'إعادة العدّ',
 } as const

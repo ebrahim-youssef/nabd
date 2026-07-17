@@ -243,6 +243,14 @@ function ChecklistRow({
         )}
       </span>
       {showPrayerTime && <PrayerTimeBadge prayerId={item.id} />}
+      {item.targetToday && (
+        <span
+          data-testid={`target-today-${item.id}`}
+          className="border-primary/40 bg-primary/10 text-primary rounded-chip border px-2 py-0.5 text-label shrink-0"
+        >
+          اليوم مستحب
+        </span>
+      )}
       {item.optional && (
         <span className="bg-gold-soft text-gold rounded-chip px-2 py-0.5 text-label shrink-0">
           تطوّع

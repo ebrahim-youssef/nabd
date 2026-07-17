@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WirdDefinition, WirdEntry, WirdVersion } from '@/types/wird'
+import type { WirdDefinition, WirdEntry, WirdItem, WirdVersion } from '@/types/wird'
 
 import {
   bestStreak,
   currentStreak,
   dayAreaStats,
   dayCompletion,
+  itemStat,
+  itemStats,
   rangeCompletion,
   summarize,
 } from '../logic'
@@ -194,5 +196,134 @@ describe('rangeCompletion + summarize', () => {
     ]
     const completions = rangeCompletion([v1], fullDay, ['2026-07-06'])
     expect(summarize(completions).completedDays).toBe(1)
+  })
+})
+
+describe('itemStat (per-item history, NBD-47)', () => {
+  const areas = [{ id: 'a', label: 'أ', order: 0 }]
+  const item = (id: string, extra: Partial<WirdItem> = {}): WirdItem => ({
+    id,
+    areaId: 'a',
+    label: id,
+    kind: 'checkbox',
+    ...extra,
+  })
+  const ver = (id: string, effectiveFrom: string, items: WirdItem[]): WirdVersion => ({
+    id,
+    effectiveFrom,
+    definition: { areas, items },
+    createdAt: Number(effectiveFrom.replace(/-/g, '')),
+  })
+
+  it('computes consistency, streak, and misses over the due days', () => {
+    const fajr = item('fajr')
+    const versions = [ver('v1', '2026-07-01', [fajr])]
+    const days = ['2026-07-01', '2026-07-02', '2026-07-03', '2026-07-04', '2026-07-05']
+    const rows = [
+      entry('2026-07-01', 'fajr', true, 1),
+      entry('2026-07-02', 'fajr', true, 1),
+      entry('2026-07-03', 'fajr', true, 1),
+      // 2026-07-04 missed — no entry.
+      entry('2026-07-05', 'fajr', true, 1),
+    ]
+    expect(itemStat(versions, rows, fajr, days, '2026-07-05')).toMatchObject({
+      itemId: 'fajr',
+      optional: false,
+      activeDays: 5,
+      doneDays: 4,
+      missedDays: 1,
+      currentStreak: 1,
+      longestStreak: 3,
+      currentMissStreak: 0,
+      attainment: null,
+    })
+  })
+
+  it('bridges an absence: dropping then re-adding an item never breaks its streak nor fabricates misses', () => {
+    const asr = item('asr')
+    const versions = [
+      ver('v1', '2026-07-01', [asr]), // present
+      ver('v2', '2026-07-03', []), // asr dropped (level down)
+      ver('v3', '2026-07-05', [asr]), // asr re-added (same stable id)
+    ]
+    const days = [
+      '2026-07-01',
+      '2026-07-02',
+      '2026-07-03',
+      '2026-07-04',
+      '2026-07-05',
+      '2026-07-06',
+    ]
+    const rows = [
+      entry('2026-07-01', 'asr', true, 1),
+      entry('2026-07-02', 'asr', true, 1),
+      // 07-03, 07-04: asr absent from the wird → N/A, not misses.
+      entry('2026-07-05', 'asr', true, 1),
+      entry('2026-07-06', 'asr', true, 1),
+    ]
+    expect(itemStat(versions, rows, asr, days, '2026-07-06')).toMatchObject({
+      activeDays: 4, // only the 4 present days
+      doneDays: 4,
+      missedDays: 0, // the 2 absent days are not misses
+      currentStreak: 4, // bridged across the gap
+      longestStreak: 4,
+    })
+  })
+
+  it('gives an unfinished today grace — not a miss, not a streak break', () => {
+    const fajr = item('fajr')
+    const versions = [ver('v1', '2026-07-01', [fajr])]
+    const days = ['2026-07-01', '2026-07-02', '2026-07-03']
+    const pending = [
+      entry('2026-07-01', 'fajr', true, 1),
+      entry('2026-07-02', 'fajr', true, 1),
+      // today (2026-07-03) not done yet.
+    ]
+    expect(itemStat(versions, pending, fajr, days, '2026-07-03')).toMatchObject({
+      activeDays: 2,
+      doneDays: 2,
+      missedDays: 0,
+      currentStreak: 2,
+      currentMissStreak: 0,
+    })
+    // Once today is done, it counts.
+    const doneToday = [...pending, entry('2026-07-03', 'fajr', true, 2)]
+    expect(itemStat(versions, doneToday, fajr, days, '2026-07-03')).toMatchObject({
+      activeDays: 3,
+      doneDays: 3,
+      currentStreak: 3,
+    })
+  })
+
+  it('reports attainment for a voluntary target-day deed, never a miss', () => {
+    const fasting = item('fasting', { optional: true, targetDays: [1, 4] })
+    const versions = [ver('v1', '2026-07-01', [fasting])]
+    // Mon 13, Tue 14, Wed 15, Thu 16.
+    const days = ['2026-07-13', '2026-07-14', '2026-07-15', '2026-07-16']
+    const rows = [
+      entry('2026-07-13', 'fasting', true, 1), // Monday (a target day) — hit
+      entry('2026-07-15', 'fasting', true, 1), // Wednesday — off-target, still counts as done
+    ]
+    expect(itemStat(versions, rows, fasting, days, '2026-07-16')).toMatchObject({
+      optional: true,
+      doneDays: 2,
+      missedDays: 0,
+      currentMissStreak: 0,
+      attainment: { done: 1, window: 2 }, // Mon hit; Thu (target) not done → 1 of 2
+    })
+  })
+
+  it('itemStats maps over the given items', () => {
+    const fajr = item('fajr')
+    const versions = [ver('v1', '2026-07-01', [fajr])]
+    const stats = itemStats(
+      versions,
+      [entry('2026-07-01', 'fajr', true, 1)],
+      [fajr],
+      ['2026-07-01'],
+      '2026-07-01',
+    )
+    expect(stats).toHaveLength(1)
+    expect(stats[0]).toMatchObject({ itemId: 'fajr', doneDays: 1, currentStreak: 1 })
   })
 })

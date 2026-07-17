@@ -53,7 +53,8 @@ test('established answers land on the level-3 wird', async ({ page }) => {
   await completeOnboarding(page, { prayers: 'always', quran: 'hizb', adhkar: 'daily' })
 
   await expect(page.getByTestId('wird-checklist')).toBeVisible()
-  await expect(page.getByTestId('wird-item-ghair-rawatib')).toBeVisible()
+  // غير الرواتب is split into individual items on L3 (NBD-53) — the ٢ قبل العشاء is one of them.
+  await expect(page.getByTestId('wird-item-ghair-rawatib-isha')).toBeVisible()
   await expect(page.getByTestId('wird-item-quran-juz')).toBeVisible()
 })
 

@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger'
+
 import { isNativePlatform } from './native'
 
 // Geolocation + local coordinate cache (ADR-0009). Coordinates never leave the device: they
@@ -38,7 +40,15 @@ async function requestNativeCoords(): Promise<Coords | null> {
   try {
     const { Geolocation } = await import('@capacitor/geolocation')
     const permission = await Geolocation.requestPermissions()
-    if (permission.location !== 'granted' && permission.coarseLocation !== 'granted') return null
+    if (permission.location !== 'granted' && permission.coarseLocation !== 'granted') {
+      // A breadcrumb (not an error): the user declined the native prompt. Distinguishes a
+      // denial from a plugin/GPS failure when diagnosing the "button does nothing" report.
+      logger.warn('location.requestNativeCoords: permission not granted', {
+        location: permission.location,
+        coarseLocation: permission.coarseLocation,
+      })
+      return null
+    }
     const position = await Geolocation.getCurrentPosition()
     const coords: Coords = {
       latitude: position.coords.latitude,
@@ -46,7 +56,8 @@ async function requestNativeCoords(): Promise<Coords | null> {
     }
     cacheAndAnnounce(coords)
     return coords
-  } catch {
+  } catch (cause) {
+    logger.error('location.requestNativeCoords failed', cause, {})
     return null
   }
 }
@@ -57,6 +68,7 @@ export function requestCoords(): Promise<Coords | null> {
   if (isNativePlatform()) return requestNativeCoords()
   return new Promise((resolve) => {
     if (!('geolocation' in navigator)) {
+      logger.warn('location.requestCoords: geolocation API unavailable', {})
       resolve(null)
       return
     }
@@ -69,7 +81,13 @@ export function requestCoords(): Promise<Coords | null> {
         cacheAndAnnounce(coords)
         resolve(coords)
       },
-      () => resolve(null),
+      (error) => {
+        logger.warn('location.requestCoords: getCurrentPosition error', {
+          code: error.code,
+          message: error.message,
+        })
+        resolve(null)
+      },
     )
   })
 }

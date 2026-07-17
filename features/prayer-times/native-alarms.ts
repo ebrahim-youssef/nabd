@@ -22,6 +22,11 @@ import { buildAlarmPayloads, notificationMoments } from './logic'
 
 const MS_PER_DAY = 86_400_000
 
+// A high, fixed id kept clear of the scheduled prayer-window ids so a test never collides with,
+// or is mistaken for, a real alarm (NBD-49). Lives up here because armNativeAlarms must spare it
+// when it clears the window — otherwise the 15-minute replan would silently eat a pending test.
+const DEBUG_ALARM_ID = 990_099
+
 let channelsReady = false
 
 async function ensureChannels(): Promise<void> {
@@ -67,10 +72,13 @@ export async function armNativeAlarms(
 
     await ensureChannels()
 
+    // Clear the previous window but spare a pending debug test alarm (NBD-49) — the periodic
+    // replan must not swallow it before it fires.
     const pending = await LocalNotifications.getPending()
-    if (pending.notifications.length > 0) {
+    const stale = pending.notifications.filter((notification) => notification.id !== DEBUG_ALARM_ID)
+    if (stale.length > 0) {
       await LocalNotifications.cancel({
-        notifications: pending.notifications.map((notification) => ({ id: notification.id })),
+        notifications: stale.map((notification) => ({ id: notification.id })),
       })
     }
 
@@ -94,6 +102,60 @@ export async function armNativeAlarms(
     })
   } catch (cause) {
     logger.error('prayer-times.armNativeAlarms failed', cause, {})
+  }
+}
+
+// --- Debug tooling (NBD-49, r6 §7) — TEMPORARY. Lets the owner confirm the native alarm
+// actually fires (with its adhan sound) without waiting for a real prayer, and inspect what is
+// scheduled. Remove once alarms are verified on-device (DEBUG_ALARM_ID sits above with the
+// module constants because armNativeAlarms references it). ---
+
+export type PendingAlarm = { id: number; title: string; at: string | null }
+
+// Schedules a one-off test notification on the adhan channel at `at` (epoch ms), requesting the
+// notification permission if needed. Returns false on denial/failure so the UI can say so.
+export async function scheduleTestAlarm(at: number): Promise<boolean> {
+  try {
+    let permission = await LocalNotifications.checkPermissions()
+    if (permission.display !== 'granted') {
+      permission = await LocalNotifications.requestPermissions()
+      if (permission.display !== 'granted') return false
+    }
+    await ensureChannels()
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: DEBUG_ALARM_ID,
+          title: 'تجربة الأذان',
+          body: 'إشعار تجريبي للتأكد من عمل المنبّه — يُفترض أن يصدر صوت الأذان.',
+          channelId: ALARM_CHANNELS.adhan.id,
+          schedule: { at: new Date(at), allowWhileIdle: true },
+        },
+      ],
+    })
+    return true
+  } catch (cause) {
+    logger.error('prayer-times.scheduleTestAlarm failed', cause, { at })
+    return false
+  }
+}
+
+// The currently scheduled native alarms (prayer window + any debug test), for the debug panel.
+// Empty on web / failure.
+export async function listPendingAlarms(): Promise<PendingAlarm[]> {
+  try {
+    const pending = await LocalNotifications.getPending()
+    return pending.notifications.map((notification) => {
+      const at = notification.schedule?.at
+      return {
+        id: notification.id,
+        title: notification.title ?? '',
+        at: at ? new Date(at).toISOString() : null,
+      }
+    })
+  } catch (cause) {
+    logger.error('prayer-times.listPendingAlarms failed', cause, {})
+    return []
   }
 }
 

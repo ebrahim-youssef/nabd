@@ -72,14 +72,28 @@ test('a morning flow position survives a reload and a tab round-trip', async ({ 
   await expect(page.getByTestId('flow-count')).toContainText('٢')
 })
 
-test('a repeatable category (بعد الصلاة) resets after a reload', async ({ page }) => {
+// NBD-52 (r6 §4): بعد الصلاة/النوم are an independent per-dhikr counter list (not the guided
+// flow) — each card counts and resets on its own; the list resets every visit.
+test('بعد الصلاة is a counter list — count, reset, and reload clears', async ({ page }) => {
   await page.goto('/adhkar?tab=after-prayer')
-  const card = page.getByTestId('flow-active-card')
 
-  await card.click()
-  await card.click()
-  await card.click()
+  const list = page.getByTestId('adhkar-list')
+  await expect(list).toBeVisible()
+  // No guided flow for this category.
+  await expect(page.getByTestId('flow-active-card')).toHaveCount(0)
 
+  const firstCount = list.locator('[data-testid^="list-count-"]').first()
+  await expect(firstCount).toContainText('٠/')
+  await firstCount.click()
+  await expect(firstCount).toContainText('١/')
+
+  // The adjacent reset zeroes just that card.
+  await list.locator('[data-testid^="list-reset-"]').first().click()
+  await expect(firstCount).toContainText('٠/')
+
+  // Counts are in-memory: a reload clears them (this category resets every visit by design).
+  await firstCount.click()
+  await expect(firstCount).toContainText('١/')
   await page.reload()
-  await expect(page.getByTestId('flow-count')).toContainText('٠/')
+  await expect(list.locator('[data-testid^="list-count-"]').first()).toContainText('٠/')
 })

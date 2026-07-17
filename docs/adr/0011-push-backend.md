@@ -1,6 +1,8 @@
 # ADR-0011 — Push notification backend (app closed)
 
-- **Status:** proposed — **on hold** (owner decision 2026-07-16: keep in the backlog, not building now)
+- **Status:** **superseded by ADR-0012** (owner decision 2026-07-16, R6 §9): the native
+  AlarmManager shell (NBD-46) delivers prayer notifications with the app closed, so a web-push
+  backend is redundant. This ADR is retained for history; NBD-43 is closed as won't-do.
 - **Date:** 2026-07-16
 
 ## Context

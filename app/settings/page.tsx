@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
 
 import { PageHeader } from '@/components/shared/PageHeader'
+import { AlarmDebug } from '@/features/prayer-times/components/AlarmDebug'
 import { AppearanceSettings } from '@/features/settings/components/AppearanceSettings'
+import { LocationSettings } from '@/features/settings/components/LocationSettings'
 import { PrayerMethodSettings } from '@/features/settings/components/PrayerMethodSettings'
 import { SoundSettings } from '@/features/settings/components/SoundSettings'
 
@@ -19,8 +21,11 @@ export default function SettingsPage() {
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 pb-10 md:px-6">
       <PageHeader title="الإعدادات" backHref="/" />
       <AppearanceSettings />
-      <SoundSettings />
+      <LocationSettings />
       <PrayerMethodSettings />
+      <SoundSettings />
+      {/* NBD-49 (temporary): native-only alarm diagnostics; renders nothing on the web. */}
+      <AlarmDebug />
     </main>
   )
 }

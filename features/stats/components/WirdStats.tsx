@@ -1,6 +1,6 @@
 'use client'
 
-import { Download, Flame } from 'lucide-react'
+import { ChevronDown, Download, Flame } from 'lucide-react'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -9,10 +9,11 @@ import { lastNDays } from '@/lib/pure/day'
 import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
 
+import { useItemStats } from '../hooks/useItemStats'
 import { useStats } from '../hooks/useStats'
 import { useStatsExport } from '../hooks/useStatsExport'
 import { bestStreak, currentStreak } from '../logic'
-import type { AreaStat, DayCompletion } from '../types'
+import type { AreaStat, DayCompletion, ItemStat } from '../types'
 
 // The stats window: streaks and the summary read a month back; the bar chart shows the last
 // week of it (design-notes-r3 §6).
@@ -98,6 +99,8 @@ export function WirdStats() {
           ))}
         </ul>
       </div>
+
+      <ItemStatsSection />
 
       <div className="flex items-center gap-3">
         <Download className="text-muted-foreground size-4 shrink-0" aria-hidden />
@@ -188,6 +191,96 @@ function AreaBar({ area }: { area: AreaStat }) {
           style={{ inlineSize: `${pct}%` }}
         />
       </div>
+    </div>
+  )
+}
+
+// Per-item accountability (NBD-47): each current wird item's own history — consistency, streak,
+// and misses for required items; times-done + attainment for تطوّع. Collapsed by default so the
+// long list stays out of the way; every item is one expand away from its history.
+function ItemStatsSection() {
+  const { isLoading, stats } = useItemStats()
+  if (isLoading || stats.length === 0) return null
+  return (
+    <details
+      className="group border-border bg-surface shadow-card-sm rounded-card border"
+      data-testid="item-stats"
+    >
+      <summary className="font-display text-title text-primary flex cursor-pointer items-center justify-between gap-3 p-4 [&::-webkit-details-marker]:hidden">
+        محاسبة العناصر ({toArabicIndic(stats.length)})
+        <ChevronDown
+          aria-hidden
+          className="text-muted-foreground size-5 shrink-0 transition-transform group-open:rotate-180"
+        />
+      </summary>
+      <ul className="flex flex-col gap-2 px-4 pb-4">
+        {stats.map((stat) => (
+          <li key={stat.itemId}>
+            <ItemStatRow stat={stat} />
+          </li>
+        ))}
+      </ul>
+    </details>
+  )
+}
+
+function ItemStatRow({ stat }: { stat: ItemStat }) {
+  const consistencyPct = percent(stat.doneDays, stat.activeDays)
+  return (
+    <div
+      className="border-border bg-surface-2/40 flex flex-col gap-1.5 rounded-card border p-3"
+      data-testid={`item-stat-${stat.itemId}`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-body text-foreground min-w-0 truncate">{stat.label}</span>
+        {stat.optional ? (
+          <span className="bg-gold-soft text-gold rounded-chip px-2 py-0.5 text-label shrink-0">
+            تطوّع
+          </span>
+        ) : (
+          <span
+            className="text-primary text-small shrink-0 font-medium tabular-nums"
+            data-testid={`item-consistency-${stat.itemId}`}
+          >
+            {toArabicIndic(consistencyPct)}٪
+          </span>
+        )}
+      </div>
+
+      {stat.optional ? (
+        <span className="text-muted-foreground text-small">
+          أُدّيت {toArabicIndic(stat.doneDays)} — أطول تتابع {toArabicIndic(stat.longestStreak)}
+          {/* Hidden while the window is empty (deed added mid-week) — «٠/٠» reads as noise. */}
+          {stat.attainment &&
+            stat.attainment.window > 0 &&
+            ` — أيام الاستهداف ${toArabicIndic(stat.attainment.done)}/${toArabicIndic(
+              stat.attainment.window,
+            )}`}
+        </span>
+      ) : (
+        <span className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-0.5 text-small">
+          <span className="flex items-center gap-1">
+            <Flame className="text-gold size-3.5" aria-hidden />
+            {toArabicIndic(stat.currentStreak)} متتالية
+          </span>
+          <span data-testid={`item-missed-${stat.itemId}`}>
+            فات {toArabicIndic(stat.missedDays)}
+            {stat.currentMissStreak > 1 && ` (${toArabicIndic(stat.currentMissStreak)} متتالية)`}
+          </span>
+          <span>
+            {toArabicIndic(stat.doneDays)}/{toArabicIndic(stat.activeDays)} يوم
+          </span>
+        </span>
+      )}
+
+      {!stat.optional && (
+        <span aria-hidden className="bg-surface-2 mt-0.5 h-1.5 w-full overflow-hidden rounded-full">
+          <span
+            className="bg-primary block h-full rounded-full transition-[inline-size] duration-500"
+            style={{ inlineSize: `${consistencyPct}%` }}
+          />
+        </span>
+      )}
     </div>
   )
 }
