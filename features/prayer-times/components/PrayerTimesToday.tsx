@@ -1,7 +1,9 @@
 'use client'
 
 import { MapPin, Sunrise } from 'lucide-react'
+import { useState } from 'react'
 
+import { LOCATION_FAILURE_COPY, type LocationFailure } from '@/lib/impure/location'
 import { cn } from '@/lib/utils'
 
 import { COPY, PRAYER_LABELS } from '../constants'
@@ -18,26 +20,39 @@ const DAY_POINTS = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as con
 // highlighted from the same timeline the checklist sub-header uses.
 export function PrayerTimesToday() {
   const { hasLocation, times, status, enableLocation } = usePrayerTimes()
+  // Why the last enable attempt failed (NBD-48 follow-up: GPS off ≠ permission denied).
+  const [failure, setFailure] = useState<LocationFailure | null>(null)
 
   if (!hasLocation || !times) {
+    const enable = async () => {
+      const result = await enableLocation()
+      setFailure(result.ok ? null : result.reason)
+    }
     return (
-      <button
-        type="button"
-        onClick={() => void enableLocation()}
-        data-testid="enable-location-page"
-        className="border-border bg-surface shadow-card-sm hover:border-accent/40 flex flex-col items-center gap-3 rounded-card border p-8 text-center transition-all"
-      >
-        <span
-          aria-hidden
-          className="bg-primary/10 text-primary flex size-14 items-center justify-center rounded-icon"
+      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => void enable()}
+          data-testid="enable-location-page"
+          className="border-border bg-surface shadow-card-sm hover:border-accent/40 flex flex-col items-center gap-3 rounded-card border p-8 text-center transition-all"
         >
-          <MapPin className="size-6" />
-        </span>
-        <span className="text-body text-foreground font-medium">{COPY.enableLocation}</span>
-        <span className="text-muted-foreground text-small">
-          الموقع يُحفظ على جهازك فقط، ولا يغادر المتصفح.
-        </span>
-      </button>
+          <span
+            aria-hidden
+            className="bg-primary/10 text-primary flex size-14 items-center justify-center rounded-icon"
+          >
+            <MapPin className="size-6" />
+          </span>
+          <span className="text-body text-foreground font-medium">{COPY.enableLocation}</span>
+          <span className="text-muted-foreground text-small">
+            الموقع يُحفظ على جهازك فقط، ولا يغادر المتصفح.
+          </span>
+        </button>
+        {failure && (
+          <p className="text-gold text-small text-center" data-testid="location-failure-page">
+            {LOCATION_FAILURE_COPY[failure]}
+          </p>
+        )}
+      </div>
     )
   }
 

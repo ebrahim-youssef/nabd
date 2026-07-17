@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react'
 
-import { requestCoords } from '@/lib/impure/location'
+import { requestCoords, type LocationFailure } from '@/lib/impure/location'
 import {
   DEFAULT_PREFS,
   notificationPermission,
@@ -13,6 +13,9 @@ import {
 
 type PermissionsSetup = {
   locationGranted: boolean
+  // Why the last location attempt failed (GPS off ≠ denied — NBD-48 follow-up); null before
+  // any attempt and after a success.
+  locationError: LocationFailure | null
   // null until the user touches the notifications toggle; 'denied' disables the toggles.
   notificationPermission: NotificationPermission | null
   prefs: NotificationPrefs
@@ -28,12 +31,14 @@ type PermissionsSetup = {
 // notifications are opt-in with per-moment toggles.
 export function usePermissionsSetup(): PermissionsSetup {
   const [locationGranted, setLocationGranted] = useState(false)
+  const [locationError, setLocationError] = useState<LocationFailure | null>(null)
   const [permission, setPermission] = useState<NotificationPermission | null>(null)
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS)
 
   const requestLocation = useCallback(async () => {
-    const coords = await requestCoords()
-    setLocationGranted(coords !== null)
+    const result = await requestCoords()
+    setLocationGranted(result.ok)
+    setLocationError(result.ok ? null : result.reason)
   }, [])
 
   const toggleNotifications = useCallback(async () => {
@@ -63,6 +68,7 @@ export function usePermissionsSetup(): PermissionsSetup {
 
   return {
     locationGranted,
+    locationError,
     notificationPermission: permission,
     prefs,
     requestLocation,

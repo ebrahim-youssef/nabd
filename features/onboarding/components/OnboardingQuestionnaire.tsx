@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 import { WIRD_LEVELS } from '@/content/levels'
 import { Button } from '@/components/ui/button'
+import { LOCATION_FAILURE_COPY } from '@/lib/impure/location'
 import { cn } from '@/lib/utils'
 
 import { COPY, QUESTIONS } from '../constants'
@@ -189,13 +190,21 @@ export function OnboardingQuestionnaire() {
             {COPY.locationGranted}
           </span>
         ) : (
-          <Button
-            variant="secondary"
-            onClick={() => void permissions.requestLocation()}
-            data-testid="onboarding-location"
-          >
-            {COPY.locationButton}
-          </Button>
+          <>
+            <Button
+              variant="secondary"
+              onClick={() => void permissions.requestLocation()}
+              data-testid="onboarding-location"
+            >
+              {COPY.locationButton}
+            </Button>
+            {/* GPS off vs denied read differently for the user (NBD-48 follow-up). */}
+            {permissions.locationError && (
+              <p className="text-gold text-small" data-testid="onboarding-location-error">
+                {LOCATION_FAILURE_COPY[permissions.locationError]}
+              </p>
+            )}
+          </>
         )}
       </div>
 

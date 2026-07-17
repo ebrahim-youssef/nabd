@@ -12,8 +12,6 @@ next-env.d.ts
 dist/
 
 # Env — never commit real values (see .env.example)
-.env
-.env.*
 !.env.example
 
 # Test & coverage artifacts
@@ -45,3 +43,4 @@ design-import/
 # Generated Serwist service worker bundle (build artifact)
 /public/sw.js
 /public/sw.js.map
+config.bat

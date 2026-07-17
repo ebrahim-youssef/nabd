@@ -3,7 +3,13 @@
 import { Check, MapPin } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { COORDS_EVENT, readCachedCoords, requestCoords } from '@/lib/impure/location'
+import {
+  COORDS_EVENT,
+  LOCATION_FAILURE_COPY,
+  readCachedCoords,
+  requestCoords,
+  type LocationFailure,
+} from '@/lib/impure/location'
 
 // تحديد الموقع section (NBD-48, r6 §1): lets a user who skipped location in onboarding grant
 // it later. Same one-tap flow as onboarding and the prayer-times page, reading the shared
@@ -15,14 +21,13 @@ const COPY = {
   enable: 'تفعيل تحديد الموقع',
   retry: 'إعادة المحاولة',
   granted: 'الموقع مُفعّل',
-  denied:
-    'تعذّر الحصول على الموقع — تأكد من منح التطبيق صلاحية الموقع من إعدادات النظام ثم أعد المحاولة.',
 } as const
 
 export function LocationSettings() {
   const [hasLocation, setHasLocation] = useState(false)
-  // null before any attempt; true once a request resolved with no coordinates (denied/failed).
-  const [failed, setFailed] = useState(false)
+  // Why the last attempt failed — GPS off, denied, or environmental (NBD-48 follow-up: the
+  // owner's device had the system-wide Location toggle off, which a generic message hid).
+  const [failure, setFailure] = useState<LocationFailure | null>(null)
 
   useEffect(() => {
     // Deferred a tick: localStorage is client-only and the deferral keeps SSR and the first
@@ -37,9 +42,9 @@ export function LocationSettings() {
   }, [])
 
   const enable = async () => {
-    const coords = await requestCoords()
-    setHasLocation(coords !== null)
-    setFailed(coords === null)
+    const result = await requestCoords()
+    setHasLocation(result.ok)
+    setFailure(result.ok ? null : result.reason)
   }
 
   return (
@@ -73,11 +78,11 @@ export function LocationSettings() {
               className="border-primary/40 bg-primary/10 text-primary hover:bg-primary hover:text-on-primary flex items-center justify-center gap-2 rounded-card border p-3 text-body font-medium transition-colors"
             >
               <MapPin className="size-4.5" aria-hidden />
-              {failed ? COPY.retry : COPY.enable}
+              {failure ? COPY.retry : COPY.enable}
             </button>
-            {failed && (
-              <p className="text-gold text-small" data-testid="location-denied">
-                {COPY.denied}
+            {failure && (
+              <p className="text-gold text-small" data-testid={`location-failure-${failure}`}>
+                {LOCATION_FAILURE_COPY[failure]}
               </p>
             )}
           </>

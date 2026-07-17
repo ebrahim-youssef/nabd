@@ -2,7 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { COORDS_EVENT, readCachedCoords, requestCoords, type Coords } from '@/lib/impure/location'
+import {
+  COORDS_EVENT,
+  readCachedCoords,
+  requestCoords,
+  type Coords,
+  type LocationRequest,
+} from '@/lib/impure/location'
 import {
   computeDayTimes,
   DEFAULT_METHOD_ID,
@@ -24,8 +30,9 @@ type PrayerTimesState = {
   // Epoch-ms per prayer id for today (fajr…isha) when located.
   times: Record<string, number> | null
   status: TimelineStatus
-  // Must be called from a user gesture (browser permission prompt). Resolves false on denial.
-  enableLocation: () => Promise<boolean>
+  // Must be called from a user gesture (browser permission prompt). Resolves the full result
+  // so callers can show the failure reason (GPS off vs denied — NBD-48 follow-up).
+  enableLocation: () => Promise<LocationRequest>
 }
 
 // Live prayer times for today (ADR-0009): coordinates from the local cache (or a one-tap
@@ -61,9 +68,9 @@ export function usePrayerTimes(): PrayerTimesState {
   }, [])
 
   const enableLocation = useCallback(async () => {
-    const granted = await requestCoords()
-    if (granted) setCoords(granted)
-    return granted !== null
+    const result = await requestCoords()
+    if (result.ok) setCoords(result.coords)
+    return result
   }, [])
 
   const computed = useMemo(() => {
