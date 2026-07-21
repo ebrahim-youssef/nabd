@@ -16,6 +16,9 @@ export const ONCE_DAILY_CATEGORIES: ReadonlySet<string> = new Set(['morning', 'e
 // its own re-countable card with its own state. صباح/مساء keep the guided flow + celebration.
 export const LIST_CATEGORIES: ReadonlySet<string> = new Set(['after-prayer', 'sleep'])
 
+// Category ID for the live five daily adhkar list (NBD-60).
+export const DAILY_CATEGORY_ID = 'daily'
+
 // How many upcoming mini-cards the strip shows (design-notes-r3 §4).
 export const STRIP_VISIBLE_COUNT = 3
 

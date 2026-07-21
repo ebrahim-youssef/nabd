@@ -3,6 +3,8 @@
 // The adhkar reference library (NBD-12, expanded NBD-23): browsable independent of the
 // user's wird. Zero runtime imports per the /content boundary (architecture.md).
 
+import { DAILY_ADHKAR_CATEGORY } from './daily-adhkar'
+
 export type Dhikr = {
   id: string
   text: string
@@ -514,4 +516,5 @@ export const ADHKAR_LIBRARY: AdhkarCategory[] = [
       },
     ],
   },
+  DAILY_ADHKAR_CATEGORY,
 ]

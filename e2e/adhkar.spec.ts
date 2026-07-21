@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
 
+import { completeOnboarding } from './helpers'
+
 // NBD-12 + NBD-29: the adhkar page is browsable without a wird, organized as tabs, and runs
 // the guided counter flow — tap the active card to count; hitting the target auto-advances
 // and resets the counter.
@@ -96,4 +98,68 @@ test('بعد الصلاة is a counter list — count, reset, and reload clears'
   await expect(firstCount).toContainText('١/')
   await page.reload()
   await expect(list.locator('[data-testid^="list-count-"]').first()).toContainText('٠/')
+})
+
+// NBD-60: daily dhikr syncing between home checklist and الأذكار اليومية tab, plus settings level change.
+
+test('daily dhikr checked on home shows done in الأذكار اليومية tab', async ({ page }) => {
+  await page.goto('/')
+  await completeOnboarding(page)
+
+  const istighfarHome = page.getByTestId('wird-item-istighfar')
+  await expect(istighfarHome).toBeVisible()
+  await istighfarHome.click()
+  await expect(istighfarHome).toHaveAttribute('aria-pressed', 'true')
+
+  await page.goto('/adhkar?tab=daily')
+  await expect(page.getByTestId('adhkar-tab-daily')).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByTestId('daily-item-istighfar')).toBeVisible()
+  await expect(page.getByTestId('daily-done-istighfar')).toBeVisible()
+})
+
+test('counting daily dhikr card to target checks home item and persists offline', async ({
+  page,
+  context,
+}) => {
+  await page.goto('/')
+  // Level 1 → the five daily adhkar target ١٠, so the card completes in a bounded tap count.
+  await completeOnboarding(page, { prayers: 'struggling', quran: 'rarely', adhkar: 'rarely' })
+
+  await page.goto('/adhkar?tab=daily')
+  const countButton = page.getByTestId('daily-count-istighfar')
+  await expect(countButton).toBeVisible()
+
+  const done = page.getByTestId('daily-done-istighfar')
+  for (let tap = 0; tap < 15 && !(await done.isVisible()); tap += 1) {
+    await countButton.click()
+  }
+  await expect(done).toBeVisible()
+
+  await page.goto('/')
+  const istighfarHome = page.getByTestId('wird-item-istighfar')
+  await expect(istighfarHome).toHaveAttribute('aria-pressed', 'true')
+
+  await context.setOffline(true)
+  await page.reload()
+  await expect(page.getByTestId('wird-item-istighfar')).toHaveAttribute('aria-pressed', 'true')
+  await context.setOffline(false)
+})
+
+test('changing wird level in settings does not alter todays checklist', async ({ page }) => {
+  await page.goto('/')
+  await completeOnboarding(page)
+
+  const fajr = page.getByTestId('wird-item-fajr')
+  await expect(fajr).toBeVisible()
+  await fajr.click()
+  await expect(fajr).toHaveAttribute('aria-pressed', 'true')
+
+  await page.goto('/settings')
+  const select = page.getByTestId('wird-level-select')
+  await expect(select).toBeVisible()
+  await select.selectOption('level-3')
+  await expect(page.getByTestId('level-hint')).toBeVisible()
+
+  await page.goto('/')
+  await expect(page.getByTestId('wird-item-fajr')).toHaveAttribute('aria-pressed', 'true')
 })

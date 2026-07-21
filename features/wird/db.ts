@@ -124,3 +124,20 @@ export async function appendEntry(
     return { ok: false, error: 'append_entry_failed' }
   }
 }
+
+// Appends a new version effective nextDay(today) for a manually selected wird level (NBD-60).
+// Today's in-force version remains unchanged. No-op if the chosen level is already equal
+// to the level in force tomorrow.
+export async function setWirdLevel(
+  definition: WirdDefinition,
+  today: DayId,
+  now: number,
+): Promise<Result<WirdVersion | null>> {
+  const versions = await listVersions()
+  const tomorrow = nextDay(today)
+  const tomorrowVersion = versionInForce(versions, tomorrow)
+  if (tomorrowVersion && sameDefinition(tomorrowVersion.definition, definition)) {
+    return { ok: true, value: tomorrowVersion }
+  }
+  return addVersion(tomorrow, definition, now)
+}

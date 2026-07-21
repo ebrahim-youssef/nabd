@@ -33,3 +33,27 @@ export function upcoming(state: FlowState, items: Dhikr[], visible: number): Dhi
   if (state.finished) return []
   return items.slice(state.index + 1, state.index + 1 + visible)
 }
+
+export type DailyItemState = {
+  target: number
+  count: number
+  done: boolean
+}
+
+// Pure target and count resolution for the five daily adhkar cards (NBD-60).
+// If a local tap count exists, it drives the count and done state. Otherwise,
+// if the wird item is done today on home, the card seeds to full (count = target).
+export function computeDailyItemState(
+  localCount: number | undefined,
+  wirdTarget: number | undefined,
+  wirdDone: boolean | undefined,
+  defaultRepeat: number,
+): DailyItemState {
+  const target = wirdTarget ?? defaultRepeat
+  if (localCount !== undefined) {
+    const count = Math.min(Math.max(0, localCount), target)
+    return { target, count, done: count >= target }
+  }
+  const done = wirdDone ?? false
+  return { target, count: done ? target : 0, done }
+}

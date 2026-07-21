@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { Dhikr } from '@/content/adhkar'
 
-import { INITIAL_FLOW, tap, upcoming } from '../logic'
+import { computeDailyItemState, INITIAL_FLOW, tap, upcoming } from '../logic'
 
 const items: Dhikr[] = [
   { id: 'a', text: 'أ', repeat: 1 },
@@ -36,5 +36,30 @@ describe('upcoming', () => {
       'c',
     ])
     expect(upcoming({ index: 2, count: 0, finished: true }, items, 3)).toEqual([])
+  })
+})
+
+describe('computeDailyItemState', () => {
+  it('seeds to full when wird item is done and no local tap count is present', () => {
+    const res = computeDailyItemState(undefined, 50, true, 10)
+    expect(res).toEqual({ target: 50, count: 50, done: true })
+  })
+
+  it('defaults to 0 count when wird item is not done and no local tap count is present', () => {
+    const res = computeDailyItemState(undefined, 50, false, 10)
+    expect(res).toEqual({ target: 50, count: 0, done: false })
+  })
+
+  it('uses local tap count when present and calculates done status against live target', () => {
+    const resPartial = computeDailyItemState(25, 50, false, 10)
+    expect(resPartial).toEqual({ target: 50, count: 25, done: false })
+
+    const resFull = computeDailyItemState(50, 50, false, 10)
+    expect(resFull).toEqual({ target: 50, count: 50, done: true })
+  })
+
+  it('falls back to defaultRepeat when target is undefined', () => {
+    const res = computeDailyItemState(undefined, undefined, false, 10)
+    expect(res).toEqual({ target: 10, count: 0, done: false })
   })
 })

@@ -6,7 +6,8 @@ import { completeOnboarding } from './helpers'
 
 test('finishing the required wird celebrates once', async ({ page }) => {
   await page.goto('/')
-  // Level 1: 5 prayers + صفحتان + صباح/مساء checkboxes, five ×10 counters; تطوّع stays open.
+  // Level 1: 5 prayers + صفحتان + صباح/مساء + the five daily adhkar — all checkbox rows now
+  // (NBD-60: the five are checkbox + counter-button, no longer inline tap-counters); تطوّع stays open.
   await completeOnboarding(page, { prayers: 'struggling', quran: 'rarely', adhkar: 'rarely' })
 
   for (const id of [
@@ -18,17 +19,14 @@ test('finishing the required wird celebrates once', async ({ page }) => {
     'quran-pages',
     'morning-adhkar',
     'evening-adhkar',
+    'istighfar',
+    'habibatan',
+    'baqiyat',
+    'tahlil',
+    'salawat',
   ]) {
     await page.getByTestId(`wird-item-${id}`).click()
     await expect(page.getByTestId(`wird-item-${id}`)).toHaveAttribute('aria-pressed', 'true')
-  }
-
-  for (const counter of ['istighfar', 'habibatan', 'baqiyat', 'tahlil', 'salawat']) {
-    const button = page.getByTestId(`dhikr-${counter}`)
-    await button.scrollIntoViewIfNeeded()
-    for (let tap = 0; tap < 10; tap += 1) {
-      await button.click()
-    }
   }
 
   const celebration = page.getByTestId('completion-celebration')

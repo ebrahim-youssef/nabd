@@ -8,9 +8,10 @@ import { ADHKAR_LIBRARY } from '@/content/adhkar'
 import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
 
-import { LIST_CATEGORIES } from '../constants'
+import { DAILY_CATEGORY_ID, LIST_CATEGORIES } from '../constants'
 import { AdhkarFlow } from './AdhkarFlow'
 import { AdhkarList } from './AdhkarList'
+import { DailyAdhkarList } from './DailyAdhkarList'
 
 // The adhkar page as tabs (NBD-29, design-notes-r3 §4): one tab per category; each tab runs
 // the guided counter flow with the full reference list underneath. `?tab=<id>` deep-links a
@@ -52,9 +53,9 @@ export function AdhkarTabs() {
         })}
       </div>
 
-      {/* بعد الصلاة/النوم are an independent per-dhikr counter list (NBD-52); صباح/مساء keep the
-          guided flow with the full reference underneath. */}
-      {LIST_CATEGORIES.has(category.id) ? (
+      {category.id === DAILY_CATEGORY_ID ? (
+        <DailyAdhkarList key={category.id} category={category} />
+      ) : LIST_CATEGORIES.has(category.id) ? (
         <AdhkarList key={category.id} category={category} />
       ) : (
         <>

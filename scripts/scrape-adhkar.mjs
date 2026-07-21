@@ -100,6 +100,8 @@ async function main() {
   )
   lines.push("// user's wird. Zero runtime imports per the /content boundary (architecture.md).")
   lines.push('')
+  lines.push("import { DAILY_ADHKAR_CATEGORY } from './daily-adhkar'")
+  lines.push('')
   lines.push('export type Dhikr = {')
   lines.push('  id: string')
   lines.push('  text: string')
@@ -132,6 +134,7 @@ async function main() {
     lines.push('    ],')
     lines.push('  },')
   }
+  lines.push('  DAILY_ADHKAR_CATEGORY,')
   lines.push(']')
   lines.push('')
 

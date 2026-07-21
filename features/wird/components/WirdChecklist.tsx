@@ -40,6 +40,11 @@ const ITEM_TO_ADHKAR_TAB: Record<string, string> = {
   'prayer-adhkar-asr': 'after-prayer',
   'prayer-adhkar-maghrib': 'after-prayer',
   'prayer-adhkar-isha': 'after-prayer',
+  istighfar: 'daily',
+  habibatan: 'daily',
+  baqiyat: 'daily',
+  tahlil: 'daily',
+  salawat: 'daily',
 }
 
 // The daily wird checklist (NBD-7). Reads live from Dexie so a check-off survives an offline
@@ -86,7 +91,7 @@ export function WirdChecklist() {
                 {area.items.map((item) => (
                   <li key={item.id} className="flex items-stretch gap-2">
                     <div className="min-w-0 flex-1">
-                      {item.kind === 'counter' && item.target ? (
+                      {item.kind === 'counter' && item.target && !ITEM_TO_ADHKAR_TAB[item.id] ? (
                         <DhikrCounter
                           day={day}
                           versionId={versionId}
