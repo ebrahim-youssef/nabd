@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 
 import { PageHeader } from '@/components/shared/PageHeader'
 import { AppearanceSettings } from '@/features/settings/components/AppearanceSettings'
+import { BatterySettings } from '@/features/settings/components/BatterySettings'
 import { LocationSettings } from '@/features/settings/components/LocationSettings'
 import { PrayerMethodSettings } from '@/features/settings/components/PrayerMethodSettings'
 import { SoundSettings } from '@/features/settings/components/SoundSettings'
@@ -23,6 +24,7 @@ export default function SettingsPage() {
       <LocationSettings />
       <PrayerMethodSettings />
       <SoundSettings />
+      <BatterySettings />
     </main>
   )
 }

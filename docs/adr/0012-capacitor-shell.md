@@ -1,6 +1,6 @@
 # ADR-0012 — Capacitor Android shell (exact prayer alarms)
 
-- **Status:** accepted (owner decision 2026-07-16)
+- **Status:** accepted (owner decision 2026-07-16); §1 superseded by ADR-0013 (bundled static export) — §2–§4 stand
 - **Date:** 2026-07-16
 
 ## Context
@@ -42,6 +42,13 @@ SCHEDULE_EXACT_ALARM (declared; on some Android 14+ installs the user must grant
 reminders" in settings — surfacing that toggle in-app is a follow-up; `USE_EXACT_ALARM` is
 an option for Play review as an alarm-core app, owner's call at submission), and location
 via `@capacitor/geolocation` (native branch in lib/impure/location.ts).
+
+**Update (NBD-58/59, 2026-07-20):** `USE_EXACT_ALARM` is now declared (auto-granted, fixes the
+Android-14 default-deny; `SCHEDULE_EXACT_ALARM` kept as the pre-13 fallback) — the alarm-core
+use case is declared in the Play listing. `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` is also
+declared and requested from a user gesture in the onboarding "power" step
+(`lib/impure/battery.ts`), because OEM battery savers throttle background AlarmManager even with
+an exact alarm scheduled — the real cause of late/missed alarms in the field.
 
 ### 4. Scope
 

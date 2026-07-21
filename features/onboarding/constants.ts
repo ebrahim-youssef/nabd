@@ -64,5 +64,16 @@ export const COPY = {
   momentBefore: 'قبل الأذان بربع ساعة',
   momentAdhan: 'عند الأذان',
   momentIqamah: 'عند الإقامة',
+  // Battery-saver step (NBD-58, native only): some phones silence background alarms to save
+  // power, so the adhan may not fire with the app closed. This step asks the user to exempt نبض.
+  powerTitle: 'حماية التنبيهات',
+  powerBody:
+    'بعض الأجهزة توقف التطبيقات في الخلفية لتوفير البطارية، فقد لا يصلك الأذان والتطبيق مغلق. فعّل الحماية لتصل التنبيهات في وقتها.',
+  powerSteps: [
+    'اضغط «تفعيل الحماية» ثم اسمح لنبض بتجاهل توفير البطارية',
+    'إن لم يظهر الإذن: الإعدادات ← البطارية ← نبض ← «غير مُقيَّد»',
+    'على بعض الأجهزة (شاومي/أوبو/هواوي): فعّل «التشغيل التلقائي» لنبض',
+  ],
+  powerButton: 'تفعيل الحماية',
   finish: 'ابدأ وِردي',
 } as const

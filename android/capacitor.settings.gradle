@@ -2,8 +2,17 @@
 include ':capacitor-android'
 project(':capacitor-android').projectDir = new File('../node_modules/.pnpm/@capacitor+android@6.2.1_@capacitor+core@6.2.1/node_modules/@capacitor/android/capacitor')
 
+include ':capacitor-app'
+project(':capacitor-app').projectDir = new File('../node_modules/.pnpm/@capacitor+app@6.0.3_@capacitor+core@6.2.1/node_modules/@capacitor/app/android')
+
+include ':capacitor-browser'
+project(':capacitor-browser').projectDir = new File('../node_modules/.pnpm/@capacitor+browser@6.0.6_@capacitor+core@6.2.1/node_modules/@capacitor/browser/android')
+
 include ':capacitor-geolocation'
 project(':capacitor-geolocation').projectDir = new File('../node_modules/.pnpm/@capacitor+geolocation@6.1.1_@capacitor+core@6.2.1/node_modules/@capacitor/geolocation/android')
 
 include ':capacitor-local-notifications'
 project(':capacitor-local-notifications').projectDir = new File('../node_modules/.pnpm/@capacitor+local-notifications@6.1.3_@capacitor+core@6.2.1/node_modules/@capacitor/local-notifications/android')
+
+include ':capawesome-team-capacitor-android-battery-optimization'
+project(':capawesome-team-capacitor-android-battery-optimization').projectDir = new File('../node_modules/.pnpm/@capawesome-team+capacitor-android-battery-optimization@6.0.0_@capacitor+core@6.2.1/node_modules/@capawesome-team/capacitor-android-battery-optimization/android')

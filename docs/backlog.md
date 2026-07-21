@@ -105,6 +105,31 @@ Build order: NBD-48 → NBD-50 → NBD-51 → NBD-52 → NBD-53 → NBD-54 → N
 | NBD-53 | ✅ done | **Split غير الرواتب into individual items** (r6 §5, pairs with NBD-47) — L3 lumped item → per-sunnah checkboxes with stable ids; self-upgrade makes a new version, past stats unchanged                                                                                                                                                                                                                                                | L3 lists the non-raatibah sunan as separate ordered items; an existing L3 user's past stats are unchanged after the auto-upgrade                                   |
 | NBD-54 | ✅ done | **Weekly fasting as a soft target** (r6 §6, amends ADR-0008) — صيام الإثنين/الخميس checkable any day, target days highlighted, any fast counts, never a miss                                                                                                                                                                                                                                                                           | صيام shows every day; fasting on a non-target day counts; الإثنين/الخميس marked as target; no miss recorded for a non-fasted day                                   |
 
+## R7 — offline native shell (2026-07-19 intake, ADR-0013)
+
+Research verdict: the remote-URL shell (ADR-0012 §1) cannot be reliably offline — service
+workers are unreliable in the Capacitor WebView (capacitor#3205) and `server.url` is a dev
+feature. The APK now bundles a static export; no OTA — every native release is a rebuilt APK
+(`docs/release-android.md`). Build order: NBD-55 → NBD-56 → NBD-57.
+
+| ID     | Status  | Ticket                                                                                                                                                                                                                                                                            | Acceptance criterion                                                                                                                                    |
+| ------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NBD-55 | ✅ done | **Client-side auth callback** — `/auth/callback` becomes a client page calling `exchangeCodeForSession` via the browser client (Supabase SPA pattern); deletes the route handler and `lib/db/supabase/server.ts`, the only static-export blockers; web session refresh unchanged  | The Google sign-in roundtrip completes on the web build and the session survives reloads; no route handlers remain in `app/`                            |
+| NBD-56 | ✅ done | **Bundled static-export shell** (ADR-0013) — `NEXT_PUBLIC_BUILD_TARGET=native` → `output: 'export'`; `webDir: 'out'`, `server.url` removed; Serwist + update prompt + Analytics off in the native build; `build:native`/`cap:sync` scripts; release checklist doc                 | An APK built via `pnpm cap:sync` cold-starts in airplane mode straight to the wird checklist with data from Dexie; the web build and e2e stay unchanged |
+| NBD-57 | ✅ done | **Native OAuth deep link** — native sign-in opens the system browser (`@capacitor/browser`), Supabase redirects to `nabd://auth/callback` (intent-filter + `@capacitor/app` listener), PKCE singleton client exchanges the code; needs the redirect URL in the Supabase dashboard | Signing in inside the APK returns to the app via the deep link with the account visible in the header; web sign-in path untouched                       |
+
+## R8 — background-alarm reliability & Play Store readiness (2026-07-20 intake)
+
+Research verdict: a prayer/azan app is a legitimate **alarm/reminder app** under Google Play
+policy, so it qualifies for `USE_EXACT_ALARM` and the battery-optimization exemption prompt —
+permissions a generic app is rejected for. Cloud sync already works (native → Supabase directly,
+Dexie→outbox; Vercel is web-only), so no sync work here.
+
+| ID     | Status  | Ticket                                                                                                                                                                                                                                                                             | Acceptance criterion                                                                                                                            |
+| ------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| NBD-58 | ✅ done | **Battery-saver onboarding step** — native-only step after permissions (`@capawesome-team/capacitor-android-battery-optimization` + `lib/impure/battery.ts`, `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`); "تفعيل الحماية" opens the OS exemption dialog; also a settings re-access row | On a battery-saver OEM, after granting the exemption the adhan fires with the app force-stopped; step is hidden on web; skip still finishes     |
+| NBD-59 | 🔜 next | **Play Store readiness** — switch to `USE_EXACT_ALARM` (auto-granted, Android-14 default-deny fix; `SCHEDULE_EXACT_ALARM` kept as fallback) ✅; bump `targetSdk` 34→35 via Capacitor 6→7 upgrade (mandatory since Aug 2025) — owner tasks: signing, dev account, privacy policy    | `aapt dump badging` shows `targetSdkVersion='35'` + `USE_EXACT_ALARM`; a signed AAB builds; native checklist (`docs/release-android.md`) passes |
+
 ## Later (out of scope for MVP)
 
 - Level 4 of the questionnaire / wird difficulty (level 3 ships in NBD-26).

@@ -5,6 +5,7 @@ import './globals.css'
 
 import { BottomNav } from '@/components/shared/BottomNav'
 import { UpdateNotifier } from '@/components/shared/UpdateNotifier'
+import { NativeAuthListener } from '@/features/auth/components/NativeAuthListener'
 import { NotificationScheduler } from '@/features/prayer-times/components/NotificationScheduler'
 import { SyncProvider } from '@/features/sync/components/SyncProvider'
 import { APPEARANCE_INIT_SCRIPT } from '@/lib/impure/appearance'
@@ -43,6 +44,11 @@ const reemKufi = Reem_Kufi({
 })
 
 const fontVariables = `${tajawal.variable} ${amiri.variable} ${arefRuqaa.variable} ${reemKufi.variable}`
+
+// Web-only chrome is skipped in the native APK build (ADR-0013): there is no service worker
+// to prompt updates for, and Vercel Analytics would post to a nonexistent endpoint on the
+// https://localhost WebView origin. Build-time constant, so the export drops the code.
+const isNativeBuild = process.env.NEXT_PUBLIC_BUILD_TARGET === 'native'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -96,8 +102,13 @@ export default function RootLayout({
         <SyncProvider>{children}</SyncProvider>
         <BottomNav />
         <NotificationScheduler />
-        <UpdateNotifier />
-        <Analytics />
+        <NativeAuthListener />
+        {!isNativeBuild && (
+          <>
+            <UpdateNotifier />
+            <Analytics />
+          </>
+        )}
       </body>
     </html>
   )

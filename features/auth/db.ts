@@ -1,39 +1,67 @@
+import { Browser } from '@capacitor/browser'
 import type { User } from '@supabase/supabase-js'
 
 import { createClient } from '@/lib/db/supabase/client'
+import { isNativePlatform } from '@/lib/impure/native'
 import { logger } from '@/lib/logger'
 import type { Result } from '@/types/result'
 
-import { AUTH_CALLBACK_PATH, AUTH_ERROR, OAUTH_PROVIDER } from './constants'
+import { AUTH_CALLBACK_PATH, AUTH_ERROR, NATIVE_AUTH_CALLBACK, OAUTH_PROVIDER } from './constants'
 import type { AuthUser } from './types'
 
-// All Supabase auth access for the browser lives here (the repository seam). Server-side code
-// paths — the callback route's code exchange, session reads in Server Components — use the
-// server client directly from `@/lib/db/supabase/server`, since a repository imported by
-// client hooks must not pull in `next/headers`.
+// All Supabase auth access lives here (the repository seam). Everything runs in the browser —
+// sign-in redirect, code exchange on the callback page, session reads — via the browser
+// client; there is no server-side auth path (the proxy only refreshes the session cookies).
 
 function toAuthUser(user: User): AuthUser {
   return { id: user.id, email: user.email ?? null }
 }
 
-// Starts the OAuth round-trip. On success the browser is redirected to the provider, so a
-// resolved `ok` result here only means the redirect was initiated; a real error is one that
-// stopped the flow before it left the page.
+// Starts the OAuth round-trip. On the web the browser is redirected to the provider, so a
+// resolved `ok` result only means the redirect was initiated. On native (ADR-0013) the flow
+// opens the system browser and returns via the nabd:// deep link (NativeAuthListener); a real
+// error is one that stopped the flow before it left the app.
 export async function signInWithOAuth(origin: string): Promise<Result<void>> {
   try {
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithOAuth({
+    const native = isNativePlatform()
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: OAUTH_PROVIDER,
-      options: { redirectTo: `${origin}${AUTH_CALLBACK_PATH}` },
+      options: native
+        ? { redirectTo: NATIVE_AUTH_CALLBACK, skipBrowserRedirect: true }
+        : { redirectTo: `${origin}${AUTH_CALLBACK_PATH}` },
     })
-    if (error) {
-      logger.error('auth.signInWithOAuth failed', error, { provider: OAUTH_PROVIDER })
+    if (error || (native && !data.url)) {
+      logger.error('auth.signInWithOAuth failed', error ?? new Error('missing redirect url'), {
+        provider: OAUTH_PROVIDER,
+      })
       return { ok: false, error: AUTH_ERROR.signIn }
+    }
+    if (native && data.url) {
+      await Browser.open({ url: data.url })
     }
     return { ok: true, value: undefined }
   } catch (cause) {
     logger.error('auth.signInWithOAuth threw', cause, { provider: OAUTH_PROVIDER })
     return { ok: false, error: AUTH_ERROR.signIn }
+  }
+}
+
+// Completes the OAuth round-trip: exchanges the `code` the provider redirected back with for
+// a session. Must run in the same browser context that started the sign-in — the client reads
+// the PKCE verifier it stored then and persists the resulting session.
+export async function exchangeCodeForSession(code: string): Promise<Result<void>> {
+  try {
+    const supabase = createClient()
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) {
+      logger.error('auth.exchangeCodeForSession failed', error)
+      return { ok: false, error: AUTH_ERROR.codeExchange }
+    }
+    return { ok: true, value: undefined }
+  } catch (cause) {
+    logger.error('auth.exchangeCodeForSession threw', cause)
+    return { ok: false, error: AUTH_ERROR.codeExchange }
   }
 }
 

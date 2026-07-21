@@ -1,5 +1,8 @@
 import type { MetadataRoute } from 'next'
 
+// Required for the native static export (ADR-0013); the route is static on web anyway.
+export const dynamic = 'force-static'
+
 // Web app manifest (NBD-15, icons NBD-35) — makes nabd installable. RTL, Arabic, standalone.
 // PNG set generated from the brand mark (khatam + pulse); the maskable variants keep the motif
 // inside the 80% safe zone, and the SVG scales for anything else.

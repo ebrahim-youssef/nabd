@@ -1,12 +1,14 @@
 'use client'
 
-import { BarChart3, Bell, Check, ListChecks, MapPin } from 'lucide-react'
+import { BarChart3, BatteryCharging, Bell, Check, ListChecks, MapPin } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
 import { WIRD_LEVELS } from '@/content/levels'
 import { Button } from '@/components/ui/button'
+import { requestBatteryExemption } from '@/lib/impure/battery'
 import { LOCATION_FAILURE_COPY } from '@/lib/impure/location'
+import { isNativePlatform } from '@/lib/impure/native'
 import { cn } from '@/lib/utils'
 
 import { COPY, QUESTIONS } from '../constants'
@@ -28,7 +30,9 @@ export function OnboardingQuestionnaire() {
   const permissions = usePermissionsSetup()
   const [answers, setAnswers] = useState<Answers>({})
   const [selectedLevel, setSelectedLevel] = useState<LevelId | null>(null)
-  const [step, setStep] = useState<'welcome' | 'questions' | 'level' | 'permissions'>('welcome')
+  const [step, setStep] = useState<'welcome' | 'questions' | 'level' | 'permissions' | 'power'>(
+    'welcome',
+  )
 
   const answered = isComplete(QUESTIONS, answers)
 
@@ -169,6 +173,48 @@ export function OnboardingQuestionnaire() {
     )
   }
 
+  if (step === 'power') {
+    return (
+      <section className="flex flex-col gap-6" data-testid="onboarding-power">
+        <h2 className="font-display text-title text-primary">{COPY.powerTitle}</h2>
+
+        <div className="border-border bg-surface shadow-card-sm flex flex-col gap-3 rounded-card border p-4">
+          <span className="text-body text-foreground flex items-center gap-2 font-medium">
+            <span
+              aria-hidden
+              className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-icon"
+            >
+              <BatteryCharging className="size-5" />
+            </span>
+            {COPY.powerTitle}
+          </span>
+          <p className="text-muted-foreground text-small">{COPY.powerBody}</p>
+          <ol className="text-muted-foreground text-small flex list-decimal flex-col gap-1 ps-5">
+            {COPY.powerSteps.map((hint) => (
+              <li key={hint}>{hint}</li>
+            ))}
+          </ol>
+          <Button
+            variant="secondary"
+            onClick={() => void requestBatteryExemption()}
+            data-testid="onboarding-power-enable"
+          >
+            {COPY.powerButton}
+          </Button>
+        </div>
+
+        {hasError && <p className="text-body text-destructive">{COPY.seedError}</p>}
+
+        <Button
+          onClick={() => selectedLevel && void complete(selectedLevel)}
+          data-testid="onboarding-finish"
+        >
+          {COPY.finish}
+        </Button>
+      </section>
+    )
+  }
+
   return (
     <section className="flex flex-col gap-6" data-testid="onboarding-permissions">
       <h2 className="font-display text-title text-primary">{COPY.permissionsTitle}</h2>
@@ -261,11 +307,14 @@ export function OnboardingQuestionnaire() {
       <Button
         onClick={() => {
           permissions.persist()
-          if (selectedLevel) void complete(selectedLevel)
+          // Native gets one more step: exempt نبض from battery optimization so the adhan fires
+          // with the app closed (NBD-58). On web there's no such setting — finish here.
+          if (isNativePlatform()) setStep('power')
+          else if (selectedLevel) void complete(selectedLevel)
         }}
         data-testid="onboarding-finish"
       >
-        {COPY.finish}
+        {isNativePlatform() ? COPY.confirm : COPY.finish}
       </Button>
     </section>
   )

@@ -1,5 +1,8 @@
 import type { MetadataRoute } from 'next'
 
+// Required for the native static export (ADR-0013); the route is static on web anyway.
+export const dynamic = 'force-static'
+
 import { SITE_URL } from '@/lib/site'
 
 // /sitemap.xml (NBD-14). Lists the public, indexable routes. Grows as public pages are added

@@ -1,11 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getCurrentUser, onUserChange, signInWithOAuth, signOut } from '../db'
+import {
+  exchangeCodeForSession,
+  getCurrentUser,
+  onUserChange,
+  signInWithOAuth,
+  signOut,
+} from '../db'
 import { AUTH_CALLBACK_PATH, AUTH_ERROR, OAUTH_PROVIDER } from '../constants'
 
 // Fake Supabase auth surface — each method is a spy we configure per test.
 const auth = {
   signInWithOAuth: vi.fn(),
+  exchangeCodeForSession: vi.fn(),
   signOut: vi.fn(),
   getUser: vi.fn(),
   onAuthStateChange: vi.fn(),
@@ -51,6 +58,33 @@ describe('signInWithOAuth', () => {
     const result = await signInWithOAuth('https://nabd.app')
 
     expect(result).toEqual({ ok: false, error: AUTH_ERROR.signIn })
+  })
+})
+
+describe('exchangeCodeForSession', () => {
+  it('exchanges the callback code and resolves ok', async () => {
+    auth.exchangeCodeForSession.mockResolvedValue({ error: null })
+
+    const result = await exchangeCodeForSession('code-123')
+
+    expect(result).toEqual({ ok: true, value: undefined })
+    expect(auth.exchangeCodeForSession).toHaveBeenCalledWith('code-123')
+  })
+
+  it('returns the exchange error code when Supabase reports an error', async () => {
+    auth.exchangeCodeForSession.mockResolvedValue({ error: new Error('expired') })
+
+    const result = await exchangeCodeForSession('code-123')
+
+    expect(result).toEqual({ ok: false, error: AUTH_ERROR.codeExchange })
+  })
+
+  it('returns the exchange error code when the call throws', async () => {
+    auth.exchangeCodeForSession.mockRejectedValue(new Error('network'))
+
+    const result = await exchangeCodeForSession('code-123')
+
+    expect(result).toEqual({ ok: false, error: AUTH_ERROR.codeExchange })
   })
 })
 
