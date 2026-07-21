@@ -38,11 +38,17 @@ export function formatDuration(ms: number): string {
 // A scheduled notification instant (ADR-0009). `at` is epoch-ms; `kind` picks copy + tone.
 export type NotificationMoment = {
   at: number
-  kind: 'before' | 'adhan' | 'iqamah'
+  kind: 'before' | 'adhan' | 'iqamah' | 'adhkar'
   prayerId: string
 }
 
-type MomentPrefs = { beforeAdhan: boolean; atAdhan: boolean; atIqamah: boolean }
+type MomentPrefs = {
+  beforeAdhan: boolean
+  atAdhan: boolean
+  atIqamah: boolean
+  morningAdhkar: boolean
+  eveningAdhkar: boolean
+}
 
 // The day's remaining notification instants for the five prayers (sunrise never notifies),
 // honoring the per-moment toggles and the fixed iqamah offsets. Pure: times, offsets, prefs,
@@ -52,6 +58,7 @@ export function notificationMoments(
   iqamahOffsetsMinutes: Record<string, number>,
   prefs: MomentPrefs,
   beforeMinutes: number,
+  adhkarReminderMinutes: number,
   now: number,
 ): NotificationMoment[] {
   const moments: NotificationMoment[] = []
@@ -70,6 +77,23 @@ export function notificationMoments(
         prayerId,
       })
     }
+  }
+  // Adhkar reminders: ~30 min after the iqama of the base prayer (NBD-61).
+  const fajrAt = prayerTimes.fajr
+  if (prefs.morningAdhkar && fajrAt != null && 'fajr' in iqamahOffsetsMinutes) {
+    moments.push({
+      at: fajrAt + (iqamahOffsetsMinutes.fajr + adhkarReminderMinutes) * MS_PER_MINUTE,
+      kind: 'adhkar',
+      prayerId: 'morning',
+    })
+  }
+  const asrAt = prayerTimes.asr
+  if (prefs.eveningAdhkar && asrAt != null && 'asr' in iqamahOffsetsMinutes) {
+    moments.push({
+      at: asrAt + (iqamahOffsetsMinutes.asr + adhkarReminderMinutes) * MS_PER_MINUTE,
+      kind: 'adhkar',
+      prayerId: 'evening',
+    })
   }
   return moments.filter((moment) => moment.at > now).sort((a, b) => a.at - b.at)
 }
@@ -91,13 +115,18 @@ export type AlarmPayload = {
   id: number
   title: string
   body: string
-  channelKey: 'before' | 'adhan' | 'adhanFajr' | 'iqamah'
+  channelKey: 'before' | 'adhan' | 'adhanFajr' | 'iqamah' | 'adhkarReminder'
   at: number
 }
 
 // Android notification ids are int32; a minute-resolution slot + the moment kind keeps ids
 // stable (rescheduling the same moment overwrites, never duplicates) and collision-free.
-const KIND_SLOT: Record<NotificationMoment['kind'], number> = { before: 0, adhan: 1, iqamah: 2 }
+const KIND_SLOT: Record<NotificationMoment['kind'], number> = {
+  before: 0,
+  adhan: 1,
+  iqamah: 2,
+  adhkar: 3,
+}
 const ID_SLOTS = 4
 const INT32_SAFE = 2_000_000_000
 
@@ -119,7 +148,9 @@ export function buildAlarmPayloads(
           ? 'adhanFajr'
           : moment.kind === 'adhan'
             ? 'adhan'
-            : moment.kind,
+            : moment.kind === 'adhkar'
+              ? 'adhkarReminder'
+              : moment.kind,
       at: moment.at,
     }
   })

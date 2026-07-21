@@ -7,16 +7,18 @@ import { isNativePlatform } from '@/lib/impure/native'
 import {
   notificationPermission,
   playMomentSound,
+  PREFS_EVENT,
   readNotificationPrefs,
   showPrayerNotification,
 } from '@/lib/impure/notifications'
 import { computeDayTimes, METHOD_EVENT, readCalculationMethodId } from '@/lib/impure/prayer'
 
 import {
+  ADHKAR_REMINDER_MINUTES,
   BEFORE_ADHAN_MINUTES,
   IQAMAH_OFFSET_MINUTES,
+  MOMENT_LABELS,
   NOTIFICATION_COPY,
-  PRAYER_LABELS,
 } from '../constants'
 import { notificationMoments } from '../logic'
 import { armNativeAlarms } from '../native-alarms'
@@ -55,12 +57,13 @@ export function NotificationScheduler() {
         IQAMAH_OFFSET_MINUTES,
         prefs,
         BEFORE_ADHAN_MINUTES,
+        ADHKAR_REMINDER_MINUTES,
         now,
       )
       for (const moment of moments) {
         timers.push(
           window.setTimeout(() => {
-            const label = PRAYER_LABELS[moment.prayerId]
+            const label = MOMENT_LABELS[moment.prayerId]
             const { title, body } = NOTIFICATION_COPY[moment.kind](label)
             void showPrayerNotification(title, body)
             playMomentSound(moment.kind, moment.prayerId)
@@ -73,9 +76,12 @@ export function NotificationScheduler() {
     const replanTimer = window.setInterval(arm, REPLAN_MS)
     // A method change moves the day's times — re-arm immediately, not at the next replan.
     window.addEventListener(METHOD_EVENT, arm)
+    // A pref change re-arms immediately so the user's toggle takes effect (NBD-61).
+    window.addEventListener(PREFS_EVENT, arm)
     return () => {
       window.clearInterval(replanTimer)
       window.removeEventListener(METHOD_EVENT, arm)
+      window.removeEventListener(PREFS_EVENT, arm)
       for (const timer of timers) window.clearTimeout(timer)
     }
   }, [])

@@ -6,6 +6,7 @@ import { BatterySettings } from '@/features/settings/components/BatterySettings'
 import { LevelSettings } from '@/features/settings/components/LevelSettings'
 import { LocationSettings } from '@/features/settings/components/LocationSettings'
 import { PrayerMethodSettings } from '@/features/settings/components/PrayerMethodSettings'
+import { NotificationSettings } from '@/features/settings/components/NotificationSettings'
 import { SoundSettings } from '@/features/settings/components/SoundSettings'
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default function SettingsPage() {
       <AppearanceSettings />
       <LocationSettings />
       <PrayerMethodSettings />
+      <NotificationSettings />
       <SoundSettings />
       <BatterySettings />
     </main>

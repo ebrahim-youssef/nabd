@@ -285,6 +285,8 @@ export function OnboardingQuestionnaire() {
                 ['beforeAdhan', COPY.momentBefore],
                 ['atAdhan', COPY.momentAdhan],
                 ['atIqamah', COPY.momentIqamah],
+                ['morningAdhkar', COPY.momentMorningAdhkar],
+                ['eveningAdhkar', COPY.momentEveningAdhkar],
               ] as const
             ).map(([key, label]) => (
               <label key={key} className="flex cursor-pointer items-center gap-3">

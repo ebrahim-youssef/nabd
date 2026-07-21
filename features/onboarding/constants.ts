@@ -64,6 +64,8 @@ export const COPY = {
   momentBefore: 'قبل الأذان بربع ساعة',
   momentAdhan: 'عند الأذان',
   momentIqamah: 'عند الإقامة',
+  momentMorningAdhkar: 'تذكير أذكار الصباح',
+  momentEveningAdhkar: 'تذكير أذكار المساء',
   // Battery-saver step (NBD-58, native only): some phones silence background alarms to save
   // power, so the adhan may not fire with the app closed. This step asks the user to exempt نبض.
   powerTitle: 'حماية التنبيهات',

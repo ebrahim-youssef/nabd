@@ -61,13 +61,22 @@ describe('formatDuration', () => {
   })
 })
 
-describe('notificationMoments (ADR-0009)', () => {
+describe('notificationMoments (ADR-0009 + NBD-61)', () => {
   const times = { fajr: 4 * HOUR, sunrise: 7 * HOUR, dhuhr: 13 * HOUR }
+  const timesFull = { ...times, asr: 16 * HOUR }
   const offsets = { fajr: 15, dhuhr: 15 }
-  const allOn = { beforeAdhan: true, atAdhan: true, atIqamah: true }
+  const offsetsFull = { ...offsets, asr: 15 }
+  const allOn = {
+    beforeAdhan: true,
+    atAdhan: true,
+    atIqamah: true,
+    morningAdhkar: false,
+    eveningAdhkar: false,
+  }
+  const ADHKAR = 30
 
   it('emits before/adhan/iqamah per prayer, sorted, sunrise excluded', () => {
-    const moments = notificationMoments(times, offsets, allOn, 15, 0)
+    const moments = notificationMoments(times, offsets, allOn, 15, 0, 0)
     expect(moments.map((m) => `${m.prayerId}:${m.kind}`)).toEqual([
       'fajr:before',
       'fajr:adhan',
@@ -84,17 +93,85 @@ describe('notificationMoments (ADR-0009)', () => {
     const moments = notificationMoments(
       times,
       offsets,
-      { beforeAdhan: false, atAdhan: true, atIqamah: false },
+      {
+        beforeAdhan: false,
+        atAdhan: true,
+        atIqamah: false,
+        morningAdhkar: false,
+        eveningAdhkar: false,
+      },
       15,
+      0,
       0,
     )
     expect(moments.every((m) => m.kind === 'adhan')).toBe(true)
   })
 
   it('drops moments already in the past', () => {
-    const moments = notificationMoments(times, offsets, allOn, 15, 5 * HOUR)
+    const moments = notificationMoments(times, offsets, allOn, 15, 0, 5 * HOUR)
     expect(moments.every((m) => m.at > 5 * HOUR)).toBe(true)
     expect(moments.map((m) => m.prayerId)).toEqual(['dhuhr', 'dhuhr', 'dhuhr'])
+  })
+
+  it('emits adhkar moments when morningAdhkar/eveningAdhkar are on', () => {
+    const moments = notificationMoments(
+      timesFull,
+      offsetsFull,
+      {
+        beforeAdhan: false,
+        atAdhan: false,
+        atIqamah: false,
+        morningAdhkar: true,
+        eveningAdhkar: true,
+      },
+      ADHKAR,
+      ADHKAR,
+      0,
+    )
+    expect(moments).toHaveLength(2)
+    expect(moments[0].kind).toBe('adhkar')
+    expect(moments[0].prayerId).toBe('morning')
+    expect(moments[0].at).toBe(4 * HOUR + (15 + ADHKAR) * MINUTE)
+    expect(moments[1].kind).toBe('adhkar')
+    expect(moments[1].prayerId).toBe('evening')
+    expect(moments[1].at).toBe(16 * HOUR + (15 + ADHKAR) * MINUTE)
+  })
+
+  it('omits adhkar moments when toggled off', () => {
+    const moments = notificationMoments(
+      timesFull,
+      offsetsFull,
+      {
+        beforeAdhan: false,
+        atAdhan: false,
+        atIqamah: false,
+        morningAdhkar: false,
+        eveningAdhkar: false,
+      },
+      ADHKAR,
+      ADHKAR,
+      0,
+    )
+    expect(moments.some((m) => m.kind === 'adhkar')).toBe(false)
+  })
+
+  it('filters past adhkar moments', () => {
+    const moments = notificationMoments(
+      timesFull,
+      offsetsFull,
+      {
+        beforeAdhan: false,
+        atAdhan: false,
+        atIqamah: false,
+        morningAdhkar: true,
+        eveningAdhkar: true,
+      },
+      ADHKAR,
+      ADHKAR,
+      4 * HOUR + (15 + ADHKAR + 1) * MINUTE,
+    )
+    expect(moments).toHaveLength(1)
+    expect(moments[0].prayerId).toBe('evening')
   })
 })
 
@@ -117,12 +194,13 @@ describe('statusLine', () => {
   })
 })
 
-describe('buildAlarmPayloads (NBD-46)', () => {
+describe('buildAlarmPayloads (NBD-46 + NBD-61)', () => {
   const labels = { fajr: 'الفجر', dhuhr: 'الظهر' }
   const copy = {
     before: (label: string) => ({ title: `اقترب وقت ${label}`, body: 'b' }),
     adhan: (label: string) => ({ title: `حان وقت ${label}`, body: 'a' }),
     iqamah: (label: string) => ({ title: `إقامة ${label}`, body: 'i' }),
+    adhkar: (label: string) => ({ title: `تذكير ${label}`, body: '' }),
   }
 
   it('maps moments to channel keys — fajr adhan gets its own channel', () => {
@@ -159,5 +237,48 @@ describe('buildAlarmPayloads (NBD-46)', () => {
       copy,
     )
     expect(again[0].id).toBe(sameMinute[0].id)
+  })
+
+  it('adhkar moment gets adhkarReminder channel and the correct label', () => {
+    const labelsWithAdhkar = { ...labels, morning: 'أذكار الصباح', evening: 'أذكار المساء' }
+    const copyWithAdhkar = {
+      ...copy,
+      adhkar: (label: string) => ({
+        title: `تذكير ${label}`,
+        body: `حان وقت ${label} — لا تنسَ وِردك.`,
+      }),
+    }
+    const payloads = buildAlarmPayloads(
+      [
+        { at: 300_000, kind: 'adhkar', prayerId: 'morning' },
+        { at: 360_000, kind: 'adhkar', prayerId: 'evening' },
+      ],
+      labelsWithAdhkar,
+      copyWithAdhkar,
+    )
+    expect(payloads.map((p) => p.channelKey)).toEqual(['adhkarReminder', 'adhkarReminder'])
+    expect(payloads[0].title).toBe('تذكير أذكار الصباح')
+    expect(payloads[1].title).toBe('تذكير أذكار المساء')
+  })
+
+  it('adhkar id uses slot 3 and is distinct from other kinds at same minute', () => {
+    const labelsWith = { ...labels, morning: 'أذكار الصباح' }
+    const copyWith = {
+      ...copy,
+      adhkar: (label: string) => ({ title: `تذكير ${label}`, body: '' }),
+    }
+    const payloads = buildAlarmPayloads(
+      [
+        { at: 60_000, kind: 'before', prayerId: 'dhuhr' },
+        { at: 60_000, kind: 'adhkar', prayerId: 'morning' },
+      ],
+      labelsWith,
+      copyWith,
+    )
+    const ids = payloads.map((p) => p.id)
+    expect(new Set(ids).size).toBe(2)
+    // Slot 3 means the adhkar id ≡ 3 (mod 4), before is 0
+    expect(ids[0]! % 4).toBe(0)
+    expect(ids[1]! % 4).toBe(3)
   })
 })

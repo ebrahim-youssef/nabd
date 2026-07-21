@@ -6,12 +6,13 @@ import type { Coords } from '@/lib/impure/location'
 import type { NotificationPrefs } from '@/lib/impure/notifications'
 
 import {
+  ADHKAR_REMINDER_MINUTES,
   ALARM_CHANNELS,
   BEFORE_ADHAN_MINUTES,
   IQAMAH_OFFSET_MINUTES,
+  MOMENT_LABELS,
   NATIVE_SCHEDULE_DAYS,
   NOTIFICATION_COPY,
-  PRAYER_LABELS,
 } from './constants'
 import { buildAlarmPayloads, notificationMoments } from './logic'
 
@@ -48,6 +49,7 @@ function upcomingMoments(coords: Coords, prefs: NotificationPrefs, now: number) 
       IQAMAH_OFFSET_MINUTES,
       prefs,
       BEFORE_ADHAN_MINUTES,
+      ADHKAR_REMINDER_MINUTES,
       now,
     ),
   ).flat()
@@ -78,7 +80,7 @@ export async function armNativeAlarms(
 
     const payloads = buildAlarmPayloads(
       upcomingMoments(coords, prefs, now),
-      PRAYER_LABELS,
+      MOMENT_LABELS,
       NOTIFICATION_COPY,
     )
     if (payloads.length === 0) return

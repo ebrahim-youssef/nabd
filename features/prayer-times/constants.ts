@@ -26,6 +26,9 @@ export const COPY = {
 // Minutes before the adhan for the early reminder (ADR-0009).
 export const BEFORE_ADHAN_MINUTES = 15
 
+// Minutes after iqama for the adhkar reminder (NBD-61).
+export const ADHKAR_REMINDER_MINUTES = 30
+
 // Android notification channels for the native shell (NBD-46): the channel decides the
 // sound that plays with the app fully closed. Files live in android/.../res/raw.
 export const ALARM_CHANNELS = {
@@ -33,6 +36,7 @@ export const ALARM_CHANNELS = {
   adhan: { id: 'prayer-adhan', name: 'الأذان', sound: 'adhan.mp3' },
   adhanFajr: { id: 'prayer-adhan-fajr', name: 'أذان الفجر', sound: 'adhan_fajr.mp3' },
   iqamah: { id: 'prayer-iqamah', name: 'الإقامة', sound: 'iqama.mp3' },
+  adhkarReminder: { id: 'adhkar-reminder', name: 'تذكير الأذكار', sound: 'before.mp3' },
 } as const
 
 // How far ahead the native shell schedules exact alarms (r4 §5): every launch re-arms the
@@ -52,4 +56,15 @@ export const NOTIFICATION_COPY = {
     title: `إقامة ${label}`,
     body: `حان وقت إقامة صلاة ${label}.`,
   }),
+  adhkar: (label: string) => ({
+    title: `تذكير ${label}`,
+    body: `حان وقت ${label} — لا تنسَ وِردك.`,
+  }),
 } as const
+
+// Merged label map for all notification moments (prayers + adhkar). Used by both schedulers.
+export const MOMENT_LABELS: Record<string, string> = {
+  ...PRAYER_LABELS,
+  morning: 'أذكار الصباح',
+  evening: 'أذكار المساء',
+}

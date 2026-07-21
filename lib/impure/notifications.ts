@@ -9,9 +9,11 @@ export type NotificationPrefs = {
   beforeAdhan: boolean
   atAdhan: boolean
   atIqamah: boolean
+  morningAdhkar: boolean
+  eveningAdhkar: boolean
 }
 
-export type NotificationMomentKind = 'before' | 'adhan' | 'iqamah'
+export type NotificationMomentKind = 'before' | 'adhan' | 'iqamah' | 'adhkar'
 
 const STORAGE_KEY = 'nabd:notification-prefs'
 
@@ -20,6 +22,8 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   beforeAdhan: true,
   atAdhan: true,
   atIqamah: true,
+  morningAdhkar: true,
+  eveningAdhkar: true,
 }
 
 export function readNotificationPrefs(): NotificationPrefs {
@@ -32,9 +36,15 @@ export function readNotificationPrefs(): NotificationPrefs {
   }
 }
 
+// Dispatched when notification prefs change, so the scheduler can re-arm immediately.
+export const PREFS_EVENT = 'nabd:notification-prefs'
+
 export function writeNotificationPrefs(prefs: NotificationPrefs): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs))
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event(PREFS_EVENT))
+    }
   } catch {
     // Losing the cache only costs re-choosing the toggles.
   }
@@ -84,6 +94,7 @@ const SOUND_FILES: Record<NotificationMomentKind, string> = {
   before: '/sounds/before.mp3',
   adhan: '/sounds/adhan.mp3',
   iqamah: '/sounds/iqama.mp3',
+  adhkar: '/sounds/before.mp3',
 }
 
 const FAJR_ADHAN_FILE = '/sounds/adhan-fajr.mp3'

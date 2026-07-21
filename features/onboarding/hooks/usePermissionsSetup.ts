@@ -21,7 +21,7 @@ type PermissionsSetup = {
   prefs: NotificationPrefs
   requestLocation: () => Promise<void>
   toggleNotifications: () => Promise<void>
-  setMoment: (key: 'beforeAdhan' | 'atAdhan' | 'atIqamah', value: boolean) => void
+  setMoment: (key: keyof NotificationPrefs, value: boolean) => void
   // Persists the chosen prefs; called once when onboarding finishes.
   persist: () => void
 }
@@ -58,7 +58,7 @@ export function usePermissionsSetup(): PermissionsSetup {
     if (result === 'granted') setPrefs((prev) => ({ ...prev, enabled: true }))
   }, [prefs.enabled])
 
-  const setMoment = useCallback((key: 'beforeAdhan' | 'atAdhan' | 'atIqamah', value: boolean) => {
+  const setMoment = useCallback((key: keyof NotificationPrefs, value: boolean) => {
     setPrefs((prev) => ({ ...prev, [key]: value }))
   }, [])
 
