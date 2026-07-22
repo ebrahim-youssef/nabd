@@ -1,7 +1,10 @@
+"use client"
+
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 import { Slot } from "radix-ui"
 
+import { hapticTap } from "@/lib/impure/haptics"
 import { cn } from "@/lib/utils"
 
 const buttonVariants = cva(
@@ -46,6 +49,7 @@ function Button({
   variant = "default",
   size = "default",
   asChild = false,
+  onClick,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
@@ -53,12 +57,20 @@ function Button({
   }) {
   const Comp = asChild ? Slot.Root : "button"
 
+  // Every button press gets a light native tap (no-op on web, NBD-73). Runs before the
+  // handler so the feedback feels immediate even if onClick navigates.
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    hapticTap()
+    onClick?.(event)
+  }
+
   return (
     <Comp
       data-slot="button"
       data-variant={variant}
       data-size={size}
       className={cn(buttonVariants({ variant, size, className }))}
+      onClick={handleClick}
       {...props}
     />
   )

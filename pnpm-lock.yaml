@@ -25,6 +25,9 @@ importers:
       '@capacitor/geolocation':
         specifier: ^7
         version: 7.1.8(@capacitor/core@7.6.8)
+      '@capacitor/haptics':
+        specifier: ^7.0.5
+        version: 7.0.5(@capacitor/core@7.6.8)
       '@capacitor/local-notifications':
         specifier: ^7
         version: 7.0.7(@capacitor/core@7.6.8)
@@ -359,6 +362,11 @@ packages:
 
   '@capacitor/geolocation@7.1.8':
     resolution: {integrity: sha512-x/rJieD2N2zlGvXFRD3ru4ArJWTwXAIYmyhfo5zg4F1DKGos7mCCOvIOSVMdfQmt14SCsmJeO9Qe8EtDGNGCrw==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/haptics@7.0.5':
+    resolution: {integrity: sha512-ujXuUkL8UG1YLhuJo/q+jiHr0K5JmclGZHmV1RttmiUBRG1XpC4Fc4gXUJyEX+6IoyfwWhgtPvJFRUB31HYnRQ==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
@@ -5917,6 +5925,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 7.6.8
       '@capacitor/synapse': 1.0.4
+
+  '@capacitor/haptics@7.0.5(@capacitor/core@7.6.8)':
+    dependencies:
+      '@capacitor/core': 7.6.8
 
   '@capacitor/local-notifications@7.0.7(@capacitor/core@7.6.8)':
     dependencies:

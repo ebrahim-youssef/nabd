@@ -2,6 +2,7 @@
 
 import { Check } from 'lucide-react'
 
+import { hapticTap, hapticToggle } from '@/lib/impure/haptics'
 import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
 import type { DayId } from '@/types/wird'
@@ -26,7 +27,12 @@ export function DhikrCounter({ day, versionId, itemId, label, target, done }: Dh
   return (
     <button
       type="button"
-      onClick={tap}
+      onClick={() => {
+        // A bead-like tap per count; a firmer buzz on the tap that reaches the target (NBD-73).
+        if (!done && count + 1 >= target) hapticToggle()
+        else hapticTap()
+        tap()
+      }}
       aria-pressed={done}
       data-testid={`dhikr-${itemId}`}
       className={cn(

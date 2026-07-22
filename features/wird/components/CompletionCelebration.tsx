@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { today } from '@/lib/impure/clock'
+import { hapticSuccess } from '@/lib/impure/haptics'
 import { shareText } from '@/lib/impure/share'
 
 import { useWirdChecklist } from '../hooks/useWirdChecklist'
@@ -41,6 +42,7 @@ export function CompletionCelebration() {
         if (window.localStorage.getItem(CELEBRATED_KEY) === day) return
         window.localStorage.setItem(CELEBRATED_KEY, day)
         setShow(true)
+        hapticSuccess()
       } catch {
         // No marker storage just means no celebration — never block the checklist.
       }

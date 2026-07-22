@@ -4,6 +4,7 @@ import { BarChart3, Clock, Home, LibraryBig, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { hapticTap } from '@/lib/impure/haptics'
 import { cn } from '@/lib/utils'
 
 // Fixed bottom navigation (NBD-22; five items since r6 §2-amendment — the owner moved
@@ -41,6 +42,7 @@ export function BottomNav() {
             <li key={href} className="flex-1">
               <Link
                 href={href}
+                onClick={hapticTap}
                 data-testid={`nav-${href === '/' ? 'home' : href.slice(1)}`}
                 aria-current={active ? 'page' : undefined}
                 className={cn(

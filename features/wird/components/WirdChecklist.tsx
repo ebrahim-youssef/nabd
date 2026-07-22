@@ -9,6 +9,7 @@ import { DhikrCounter } from '@/features/counter/components/DhikrCounter'
 import { PrayerTimeBadge } from '@/features/prayer-times/components/PrayerTimeBadge'
 import { PrayerTimesBar } from '@/features/prayer-times/components/PrayerTimesBar'
 import { today } from '@/lib/impure/clock'
+import { hapticTap, hapticToggle } from '@/lib/impure/haptics'
 import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
 
@@ -148,7 +149,10 @@ function AreaHeader({
   return (
     <button
       type="button"
-      onClick={onToggle}
+      onClick={() => {
+        hapticTap()
+        onToggle()
+      }}
       aria-expanded={isOpen}
       data-testid={`area-header-${area.id}`}
       className="flex w-full flex-col gap-2 rounded-card py-1 text-start"
@@ -211,7 +215,12 @@ function ChecklistRow({
     <button
       type="button"
       aria-pressed={item.done}
-      onClick={onToggle}
+      onClick={() => {
+        // Firmer tap when marking done, light tap when clearing it (NBD-73).
+        if (item.done) hapticTap()
+        else hapticToggle()
+        onToggle()
+      }}
       data-testid={`wird-item-${item.id}`}
       className={cn(
         'group flex w-full items-center gap-3 rounded-card border p-3 text-start transition-all duration-200 active:scale-[0.99]',
