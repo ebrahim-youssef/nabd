@@ -82,7 +82,15 @@ async function requestNativeCoords(): Promise<LocationRequest> {
       })
       return { ok: false, reason: 'denied' }
     }
-    const position = await Geolocation.getCurrentPosition()
+    // enableHighAccuracy selects the GPS provider, which gets a fix with no internet — the default
+    // (false) uses Android's network provider, which stalls offline and made the button dead-end at
+    // "activate GPS" while services were actually on (NBD-68). maximumAge lets the OS hand back a
+    // recent cached fix instantly.
+    const position = await Geolocation.getCurrentPosition({
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 600000,
+    })
     const coords: Coords = {
       latitude: position.coords.latitude,
       longitude: position.coords.longitude,
@@ -91,6 +99,19 @@ async function requestNativeCoords(): Promise<LocationRequest> {
     return { ok: true, coords }
   } catch (cause) {
     const reason = classifyNativeGeoError(cause)
+    // An offline GPS fix can still time out (no network assist). Rather than dead-end the button,
+    // fall back to the coordinates we last cached so the user keeps working offline (NBD-68). A
+    // real GPS-off or denied state is actionable, so those reasons still surface to the user.
+    if (reason === 'unavailable') {
+      const cached = readCachedCoords()
+      if (cached) {
+        logger.warn(
+          'location.requestNativeCoords: using cached coords after an offline failure',
+          {},
+        )
+        return { ok: true, coords: cached }
+      }
+    }
     logger.error('location.requestNativeCoords failed', cause, { reason })
     return { ok: false, reason }
   }

@@ -21,18 +21,24 @@ Every piece of work — feature, fix, refactor — follows the 8-phase loop in
 [`docs/workflow.md`](./docs/workflow.md), from spec intake to verified production deploy.
 **Read it at the start of every session.** No shortcuts, no reordering.
 
+**How to execute it (default, no need to ask):** plan non-trivial work first and research it
+before writing code; use Explore/subagents for the research sweep so the main context stays lean;
+delegate token-heavy coding to opencode/agy from a precise brief — the orchestrator reviews the
+diff, runs the gates, and commits (the delegate never commits). This is the standing default;
+the user should not have to restate it per task.
+
 ## Where decisions live (do not re-litigate locked ones)
 
-| Question | Source of truth |
-| --- | --- |
-| What the app does and why | `docs/product/spec.md` |
-| Stack details & code patterns | `docs/stack.md` |
+| Question                         | Source of truth                   |
+| -------------------------------- | --------------------------------- |
+| What the app does and why        | `docs/product/spec.md`            |
+| Stack details & code patterns    | `docs/stack.md`                   |
 | Architecture & module boundaries | `docs/architecture.md` + ADR-0002 |
-| Code conventions | `CONVENTIONS.md` |
-| Visual tokens & UX rules | `DESIGN_SYSTEM.md` |
-| All locked decisions & rationale | `docs/adr/` |
-| Tickets & backlog | `docs/backlog.md` |
-| How to run locally | `docs/run-locally.md` |
+| Code conventions                 | `CONVENTIONS.md`                  |
+| Visual tokens & UX rules         | `DESIGN_SYSTEM.md`                |
+| All locked decisions & rationale | `docs/adr/`                       |
+| Tickets & backlog                | `docs/backlog.md`                 |
+| How to run locally               | `docs/run-locally.md`             |
 
 If a design question is not answered in any of the above, it has not been decided:
 that is a conversation with the user (and likely a new ADR) — never an assumption to
