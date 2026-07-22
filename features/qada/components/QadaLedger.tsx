@@ -129,8 +129,15 @@ export function QadaLedger() {
         ref={dialogRef}
         data-testid="qada-modal"
         onClose={() => setModalOpen(false)}
-        className="bg-surface text-foreground shadow-card m-auto w-full max-w-sm rounded-card p-6 backdrop:bg-black/40"
+        // A bottom sheet, not a centered web modal (NBD-77): rises from the bottom edge with a
+        // grab handle and dismisses on a backdrop tap. Stays a native <dialog> so focus-trap,
+        // Escape, and the NBD-75 back-dismiss all keep working.
+        onClick={(event) => {
+          if (event.target === dialogRef.current) dialogRef.current?.close()
+        }}
+        className="bg-surface text-foreground shadow-card fixed inset-x-0 bottom-0 top-auto mx-auto my-0 max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-card rounded-b-none p-6 pt-3 backdrop:bg-black/50 motion-safe:animate-in motion-safe:slide-in-from-bottom-4 motion-safe:fade-in motion-safe:duration-200"
       >
+        <span aria-hidden className="bg-border mx-auto mb-3 block h-1 w-10 shrink-0 rounded-full" />
         <form
           method="dialog"
           className="flex flex-col gap-4"
