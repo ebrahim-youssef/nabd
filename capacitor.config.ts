@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli'
+import type { KeyboardResize } from '@capacitor/keyboard'
 
 // Capacitor Android shell (ADR-0013): a bundled static export. `pnpm cap:sync` builds the app
 // with `output: 'export'` into `out/` and copies it into the APK, so the WebView boots
@@ -30,6 +31,14 @@ const config: CapacitorConfig = {
       showSpinner: false,
       splashFullScreen: true,
       splashImmersive: true,
+    },
+    // Keyboard (NBD-79): resize the WebView when the keyboard opens so a focused input is
+    // never hidden behind it; NativeChrome also scrolls the focused field into view.
+    Keyboard: {
+      // 'native' is KeyboardResize.Native; cast avoids importing the plugin runtime into the
+      // Node config.
+      resize: 'native' as KeyboardResize,
+      resizeOnFullScreen: true,
     },
   },
 }

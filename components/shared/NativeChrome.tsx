@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 import { exitApp, onHardwareBack } from '@/lib/impure/back-button'
+import { initKeyboard } from '@/lib/impure/keyboard'
 import { isNativePlatform } from '@/lib/impure/native'
 import { hideSplash } from '@/lib/impure/splash'
 import { initStatusBar, syncStatusBarStyle } from '@/lib/impure/status-bar'
@@ -44,10 +45,14 @@ export function NativeChrome() {
     if (!isNativePlatform()) return
     hideSplash()
     void initStatusBar(currentTheme())
+    const stopKeyboard = initKeyboard()
     const root = document.documentElement
     const observer = new MutationObserver(() => syncStatusBarStyle(currentTheme()))
     observer.observe(root, { attributes: true, attributeFilter: ['data-theme'] })
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+      stopKeyboard()
+    }
   }, [])
 
   // Hardware back button.

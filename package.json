@@ -32,6 +32,7 @@
     "@capacitor/core": "^7",
     "@capacitor/geolocation": "^7",
     "@capacitor/haptics": "^7.0.5",
+    "@capacitor/keyboard": "^7.0.6",
     "@capacitor/local-notifications": "^7",
     "@capacitor/splash-screen": "^7.0.5",
     "@capacitor/status-bar": "^7.0.6",
