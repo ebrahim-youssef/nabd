@@ -4,6 +4,7 @@ import { Award } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useBackDismiss } from '@/components/shared/useBackDismiss'
 import { today } from '@/lib/impure/clock'
 import { hapticSuccess } from '@/lib/impure/haptics'
 import { shareText } from '@/lib/impure/share'
@@ -49,6 +50,9 @@ export function CompletionCelebration() {
     }, 0)
     return () => window.clearTimeout(timer)
   }, [complete, day])
+
+  // Android back dismisses the celebration instead of navigating away (NBD-75).
+  useBackDismiss(show, () => setShow(false))
 
   if (!show) return null
 

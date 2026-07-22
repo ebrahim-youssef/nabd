@@ -3,6 +3,7 @@
 import { Check, Plus } from 'lucide-react'
 import { useRef, useState } from 'react'
 
+import { useBackDismiss } from '@/components/shared/useBackDismiss'
 import { toArabicIndic } from '@/lib/pure/format'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +40,7 @@ const COPY = {
 export function QadaLedger() {
   const { isLoading, hasAny, remaining, addDebt, payPrayer } = useQada()
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const [modalOpen, setModalOpen] = useState(false)
   const [years, setYears] = useState('')
   const [months, setMonths] = useState('')
   const [days, setDays] = useState('')
@@ -49,8 +51,12 @@ export function QadaLedger() {
     setYears('')
     setMonths('')
     setDays('')
+    setModalOpen(true)
     dialogRef.current?.showModal()
   }
+
+  // Android back closes the estimate dialog before it would navigate away (NBD-75).
+  useBackDismiss(modalOpen, () => dialogRef.current?.close())
 
   const confirm = async () => {
     await addDebt(totalDays)
@@ -122,6 +128,7 @@ export function QadaLedger() {
       <dialog
         ref={dialogRef}
         data-testid="qada-modal"
+        onClose={() => setModalOpen(false)}
         className="bg-surface text-foreground shadow-card m-auto w-full max-w-sm rounded-card p-6 backdrop:bg-black/40"
       >
         <form
