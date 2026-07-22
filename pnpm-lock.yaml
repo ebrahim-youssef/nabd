@@ -31,6 +31,9 @@ importers:
       '@capacitor/local-notifications':
         specifier: ^7
         version: 7.0.7(@capacitor/core@7.6.8)
+      '@capacitor/status-bar':
+        specifier: ^7.0.6
+        version: 7.0.6(@capacitor/core@7.6.8)
       '@capawesome-team/capacitor-android-battery-optimization':
         specifier: ^7
         version: 7.0.0(@capacitor/core@7.6.8)
@@ -372,6 +375,11 @@ packages:
 
   '@capacitor/local-notifications@7.0.7':
     resolution: {integrity: sha512-3qSpa8PpVMONHqBOaJ4RbA/lB5vOdEngtep0myGmP3S56gShPScDCotbw7dwmQy3NCdY4Up9nH3ySrGvUh2jZg==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capacitor/status-bar@7.0.6':
+    resolution: {integrity: sha512-7AVqj46b26QikImQzWfsJmzG8NUJZBGkrVSuoeTo+SX/YH3hXH0MqwwFgMqMGHfa/BICDgSvTjM9miVFlq0+RQ==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
@@ -5931,6 +5939,10 @@ snapshots:
       '@capacitor/core': 7.6.8
 
   '@capacitor/local-notifications@7.0.7(@capacitor/core@7.6.8)':
+    dependencies:
+      '@capacitor/core': 7.6.8
+
+  '@capacitor/status-bar@7.0.6(@capacitor/core@7.6.8)':
     dependencies:
       '@capacitor/core': 7.6.8
 

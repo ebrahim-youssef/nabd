@@ -10,6 +10,16 @@ const config: CapacitorConfig = {
   appId: 'com.nabd.app',
   appName: 'نبض',
   webDir: 'out',
+  plugins: {
+    // Edge-to-edge status bar (NBD-74): draw the WebView behind a transparent bar from the
+    // first frame so there's no opaque system band, then NativeChrome tunes the icon style to
+    // the active theme. `style: LIGHT` = dark icons for the default light theme.
+    StatusBar: {
+      overlaysWebView: true,
+      style: 'LIGHT',
+      backgroundColor: '#00000000',
+    },
+  },
 }
 
 export default config

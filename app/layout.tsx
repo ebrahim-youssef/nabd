@@ -4,6 +4,7 @@ import { Amiri, Aref_Ruqaa, Reem_Kufi, Tajawal } from 'next/font/google'
 import './globals.css'
 
 import { BottomNav } from '@/components/shared/BottomNav'
+import { NativeChrome } from '@/components/shared/NativeChrome'
 import { UpdateNotifier } from '@/components/shared/UpdateNotifier'
 import { NativeAuthListener } from '@/features/auth/components/NativeAuthListener'
 import { NotificationScheduler } from '@/features/prayer-times/components/NotificationScheduler'
@@ -104,6 +105,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_INIT_SCRIPT }} />
         <SyncProvider>{children}</SyncProvider>
         <BottomNav />
+        <NativeChrome />
         <NotificationScheduler />
         <NativeAuthListener />
         {!isNativeBuild && (

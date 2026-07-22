@@ -33,6 +33,7 @@
     "@capacitor/geolocation": "^7",
     "@capacitor/haptics": "^7.0.5",
     "@capacitor/local-notifications": "^7",
+    "@capacitor/status-bar": "^7.0.6",
     "@capawesome-team/capacitor-android-battery-optimization": "^7",
     "@sentry/nextjs": "^10.65.0",
     "@serwist/next": "^9.5.11",
