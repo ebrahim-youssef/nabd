@@ -13,12 +13,14 @@ cd android && ./gradlew assembleDebug    # or assembleRelease (needs signing con
 The debug APK lands in `android/app/build/outputs/apk/debug/app-debug.apk`. Signing and
 release upload happen on the owner's machine, outside this repo (ADR-0012 §4).
 
-**JDK 17 or 21 required.** The Gradle wrapper is 8.2.1 (bundled with Capacitor 6) and rejects
-newer JDKs with `Unsupported class file major version …`. If your default `java` is newer
-(e.g. 26), point the build at a supported JDK for that command only:
+**JDK 21 required.** Capacitor 7's `:capacitor-android` module compiles at source level 21, so
+the Gradle launcher JDK must be 21 (JDK 17 fails with `invalid source release: 21`; a too-new
+JDK like 26 fails with `Unsupported class file major version …`). `android/settings.gradle`
+applies the foojay toolchain resolver, so Gradle auto-downloads a JDK 21 for plugin compilation —
+but the launching `JAVA_HOME` itself must also be 21. Point the build at a JDK 21 for that command:
 
 ```bash
-JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew assembleDebug
+JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew assembleDebug
 ```
 
 ## Per-release checklist
@@ -40,7 +42,8 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk ./gradlew assembleDebug
 
 The debug APK above is for sideloading/testing only. To publish on Play:
 
-1. **targetSdk 35** (Android 15) is mandatory for new/updated apps since 31 Aug 2025 (NBD-59).
+1. **targetSdk 35** (Android 15) is mandatory for new/updated apps since 31 Aug 2025 — ✅ done in
+   NBD-59 (Capacitor 6→7 bump: compileSdk/targetSdk 35, minSdk 23, Gradle 8.11.1, AGP 8.7.2).
 2. **Developer account** ($25 one-time) + **government-ID verification** (now required before a
    first publish).
 3. **Signing**: create an upload keystore, enable **Play App Signing**, and build a signed
