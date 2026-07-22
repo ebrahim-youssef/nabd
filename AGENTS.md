@@ -63,3 +63,8 @@ code around.
   design tokens for every color/size/shadow.
 - **Green before push.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` all exit 0
   locally before any push. Never `git add -A`, never `--no-verify`.
+- **Plan device features fully; security-review before merge.** Any feature touching a device/OS
+  capability (location, notifications, alarms, camera, filesystem, background work) is specced
+  against the full state matrix first — see "Native / device-feature planning" in `docs/workflow.md`.
+  Before squash-merging any PR, scan the diff for security issues (XSS, injection, secrets, authz) —
+  `docs/workflow.md` Phase 7.

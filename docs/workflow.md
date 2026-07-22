@@ -48,6 +48,35 @@ confirmation of the brief before Phase 2.
 4. All user-facing copy is Arabic (no i18n layer) — keep it out of scattered JSX literals;
    put reused strings in the feature's constants.
 
+### Native / device-feature planning (do this in Phase 1–2 for any device capability)
+
+Before writing ANY feature that touches a device/OS capability — location, notifications, alarms,
+camera, filesystem, background work, permissions — spec the **full state matrix first**, not just the
+happy path. (Lesson from the location feature, which churned across three rounds — NBD-48/63/68 —
+because it was specced happy-path-only.) Cover every axis:
+
+1. **Permission state** — not-asked / granted / denied / denied-forever (the last needs a settings
+   deep-link, not a re-prompt).
+2. **Device toggle** — the OS switch (GPS, notifications, DND) is _separate_ from the app permission;
+   handle both.
+3. **Connectivity** — does the API silently need a network? (Android geolocation's network provider,
+   reverse-geocode). Test offline explicitly.
+4. **Accuracy / mode flags** — the defaults are often wrong (`enableHighAccuracy`, fg vs bg, timeout,
+   maximumAge). Set them deliberately.
+5. **OEM skin** — Xiaomi/Samsung/OnePlus/Huawei battery-savers throttle/kill background work; plan the
+   exemption path.
+6. **API level** — behavior shifts by Android version (exact alarms A14, notif permission A13, FGS
+   types, edge-to-edge).
+7. **App lifecycle** — foreground / background / killed / after-reboot: does the feature survive each?
+8. **Failure = actionable** — every failure branch gives the user a real next step, never a dead-end.
+9. **Real-device verify** — CI cannot cover native runtime; an on-device check by the owner is the
+   merge gate. Say so in the PR.
+
+Meta-note: official Capacitor plugins are deliberately minimal — decide up front whether a **small
+custom native plugin** is needed (e.g. Play Services `SettingsClient` for the enable-GPS dialog)
+rather than discovering it mid-build. The canonical, cross-project copy of this checklist lives in
+`~/.claude/caveats.md`.
+
 ## Phase 3 — Implementation (piece by piece)
 
 Never start a piece before the one it depends on type-checks clean. Per-piece rules live in
@@ -101,17 +130,20 @@ fix root causes.
 2. Wait for ALL CI checks green: `lint`, `typecheck`, `test`, `e2e`, `build`,
    `colocated-test-check`.
 3. Self-review the full diff once, hunting bugs only (not style).
-4. Squash-merge; PR title = the commit → must be Conventional-Commits valid.
-5. Merge auto-deploys `dev` to staging.
+4. **Security review (before merge).** One focused pass over the added/changed code for: XSS
+   (`dangerouslySetInnerHTML`, unsanitized HTML/URLs), injection (SQL/command), committed
+   secrets/keys, auth/authz gaps, unsafe deserialization, SSRF, path traversal. Fix before merging.
+5. Squash-merge; PR title = the commit → must be Conventional-Commits valid.
+6. Merge auto-deploys `dev` to staging.
 
 ## Phase 8 — Production deploy (dev → master)
 
 1. Smoke-test the STAGING URL in a real browser against the acceptance criteria.
 2. Release PR `dev` → `master` with a changelog since last release. All CI checks again.
 3. Squash-merge → auto-deploy to production.
-4. Open the PRODUCTION URL, run the project success check: *I can log in, answer the
+4. Open the PRODUCTION URL, run the project success check: _I can log in, answer the
    questionnaire, check off a wird item, go offline and reload and it is still checked, then
-   reconnect and see it synced and reflected in the statistics.*
+   reconnect and see it synced and reflected in the statistics._
 5. Mark the ticket done in `docs/backlog.md` (same commit as any release notes). New ideas
    discovered during the work → add as new backlog rows, never as silent scope creep.
 6. Not done until step 4 passes.
