@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { exitApp, onHardwareBack } from '@/lib/impure/back-button'
 import { isNativePlatform } from '@/lib/impure/native'
+import { hideSplash } from '@/lib/impure/splash'
 import { initStatusBar, syncStatusBarStyle } from '@/lib/impure/status-bar'
 
 // Mounts the native-shell chrome that has no web equivalent (NBD-74/75): the edge-to-edge
@@ -37,9 +38,11 @@ export function NativeChrome() {
     pathnameRef.current = pathname
   }, [pathname])
 
-  // Status bar: overlay + theme-tracked icon contrast.
+  // Status bar: overlay + theme-tracked icon contrast. Also hides the cold-start splash now
+  // that the app has mounted and painted, bridging the WebView-boot white flash (NBD-76).
   useEffect(() => {
     if (!isNativePlatform()) return
+    hideSplash()
     void initStatusBar(currentTheme())
     const root = document.documentElement
     const observer = new MutationObserver(() => syncStatusBarStyle(currentTheme()))

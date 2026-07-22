@@ -19,6 +19,18 @@ const config: CapacitorConfig = {
       style: 'LIGHT',
       backgroundColor: '#00000000',
     },
+    // Cold-start splash (NBD-76): hold a branded teal screen over the WebView-boot gap so
+    // there's no white flash. launchAutoHide:false lets JS hide it the moment the app mounts
+    // (lib/impure/splash.ts); launchShowDuration is only a backstop if that hide never runs.
+    SplashScreen: {
+      launchAutoHide: false,
+      launchShowDuration: 3000,
+      backgroundColor: '#0e5a5a',
+      androidScaleType: 'CENTER_CROP',
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true,
+    },
   },
 }
 
