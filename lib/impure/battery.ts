@@ -14,6 +14,24 @@ async function loadPlugin() {
   return BatteryOptimization
 }
 
+// Capacitor throws "<method> is not implemented on android" when the running APK was built without
+// the native plugin (a stale build predating the plugin wiring — the case behind NBD-69). That is
+// expected on old installs, not a code fault, so it should be a warn, not a Sentry error.
+function isUnimplemented(cause: unknown): boolean {
+  const message = (cause instanceof Error ? cause.message : String(cause)).toLowerCase()
+  return message.includes('not implemented') || message.includes('unimplemented')
+}
+
+// One place to grade a plugin failure: an unimplemented method (stale APK) is a warn; anything
+// else is a real error worth Sentry. Keeps callers simple and the noise policy in one spot.
+function logPluginFailure(context: string, cause: unknown): void {
+  if (isUnimplemented(cause)) {
+    logger.warn(`${context}: native plugin unavailable (stale build?)`, {})
+  } else {
+    logger.error(`${context} failed`, cause, {})
+  }
+}
+
 // Whether the OS is currently battery-optimizing نبض (i.e. alarms are at risk). false on web
 // or on any error — callers treat it as "nothing to prompt".
 export async function isBatteryOptimized(): Promise<boolean> {
@@ -23,8 +41,19 @@ export async function isBatteryOptimized(): Promise<boolean> {
     const { enabled } = await plugin.isBatteryOptimizationEnabled()
     return enabled
   } catch (cause) {
-    logger.error('battery.isBatteryOptimized failed', cause, {})
+    logPluginFailure('battery.isBatteryOptimized', cause)
     return false
+  }
+}
+
+// Opens the OS battery-optimization settings list so the user can whitelist the app manually.
+// Best-effort fallback for the direct-exemption dialog — never throws.
+async function openBatterySettingsFallback(): Promise<void> {
+  try {
+    const plugin = await loadPlugin()
+    await plugin.openBatteryOptimizationSettings()
+  } catch (cause) {
+    logPluginFailure('battery.openBatteryOptimizationSettings', cause)
   }
 }
 
@@ -38,12 +67,8 @@ export async function requestBatteryExemption(): Promise<void> {
     const plugin = await loadPlugin()
     await plugin.requestIgnoreBatteryOptimization()
   } catch (cause) {
-    logger.error('battery.requestBatteryExemption failed', cause, {})
-    try {
-      const plugin = await loadPlugin()
-      await plugin.openBatteryOptimizationSettings()
-    } catch (fallbackCause) {
-      logger.error('battery.openBatteryOptimizationSettings failed', fallbackCause, {})
-    }
+    logPluginFailure('battery.requestBatteryExemption', cause)
+    // Some OEM skins reject the direct-exemption intent — fall back to the settings list.
+    await openBatterySettingsFallback()
   }
 }
