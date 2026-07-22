@@ -18,16 +18,23 @@ public class CountdownNotificationPlugin extends Plugin {
 
     private static final String PREFS_NAME = "nabd.countdown";
     private static final String KEY_BOUNDARIES = "boundaries";
+    private static final String KEY_CITY = "city";
     private static final String WORK_NAME = "nabd-countdown";
 
     @PluginMethod
     public void enable(PluginCall call) {
         String boundaries = call.getArray("boundaries").toString();
-        getContext()
+        String city = call.getString("city", null);
+        SharedPreferences.Editor editor = getContext()
             .getSharedPreferences(PREFS_NAME, 0)
             .edit()
-            .putString(KEY_BOUNDARIES, boundaries)
-            .apply();
+            .putString(KEY_BOUNDARIES, boundaries);
+        if (city != null) {
+            editor.putString(KEY_CITY, city);
+        } else {
+            editor.remove(KEY_CITY);
+        }
+        editor.apply();
 
         CountdownFormatter.post(getContext());
 
@@ -43,7 +50,7 @@ public class CountdownNotificationPlugin extends Plugin {
     public void disable(PluginCall call) {
         WorkManager.getInstance(getContext()).cancelUniqueWork(WORK_NAME);
         CountdownFormatter.cancel(getContext());
-        getContext().getSharedPreferences(PREFS_NAME, 0).edit().remove(KEY_BOUNDARIES).apply();
+        getContext().getSharedPreferences(PREFS_NAME, 0).edit().remove(KEY_BOUNDARIES).remove(KEY_CITY).apply();
         call.resolve();
     }
 }

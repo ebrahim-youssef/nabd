@@ -8,6 +8,7 @@ import { computeDayTimes, readCalculationMethodId } from './prayer'
 import type { Coords } from './location'
 import { AFTER_WINDOW_MS } from '@/features/prayer-times/logic'
 import { PRAYER_LABELS } from '@/features/prayer-times/constants'
+import { resolveCityLabel } from './reverse-geocode'
 
 export interface CountdownBoundary {
   at: number
@@ -16,7 +17,7 @@ export interface CountdownBoundary {
 }
 
 export interface CountdownNotificationPlugin {
-  enable(options: { boundaries: CountdownBoundary[] }): Promise<void>
+  enable(options: { boundaries: CountdownBoundary[]; city: string | null }): Promise<void>
   disable(): Promise<void>
 }
 
@@ -58,7 +59,8 @@ export async function syncCountdownNotification(
     }
 
     boundaries.sort((a, b) => a.at - b.at)
-    await CountdownNotification.enable({ boundaries })
+    const city = await resolveCityLabel(coords)
+    await CountdownNotification.enable({ boundaries, city })
   } catch (error) {
     logger.error('Failed to sync countdown notification', error)
   }

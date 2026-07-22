@@ -15,6 +15,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.time.chrono.HijrahChronology;
+import java.time.chrono.HijrahDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+
 public final class CountdownFormatter {
 
     private static final String CHANNEL_ID = "prayer-countdown";
@@ -23,6 +28,7 @@ public final class CountdownFormatter {
 
     private static final String PREFS_NAME = "nabd.countdown";
     private static final String KEY_BOUNDARIES = "boundaries";
+    private static final String KEY_CITY = "city";
 
     private static final String[] ARABIC_DIGITS = {
         "٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"
@@ -51,13 +57,13 @@ public final class CountdownFormatter {
             return;
         }
 
-        String title;
+        String countdown;
         try {
-            title = text(new JSONArray(json), System.currentTimeMillis());
+            countdown = text(new JSONArray(json), System.currentTimeMillis());
         } catch (Exception e) {
-            title = null;
+            countdown = null;
         }
-        if (title == null) {
+        if (countdown == null) {
             cancel(ctx);
             return;
         }
@@ -71,21 +77,64 @@ public final class CountdownFormatter {
                 new Intent(ctx, MainActivity.class),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        String header = buildTitle(ctx);
         NotificationCompat.Builder builder =
             new NotificationCompat.Builder(ctx, CHANNEL_ID)
                 .setSmallIcon(ctx.getApplicationInfo().icon)
-                .setContentTitle(title)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setShowWhen(false)
                 .setContentIntent(contentIntent)
                 .setPriority(NotificationCompat.PRIORITY_LOW);
 
+        if (header != null) {
+            builder.setContentTitle(header)
+                   .setContentText(countdown)
+                   .setStyle(new NotificationCompat.BigTextStyle().bigText(countdown));
+        } else {
+            builder.setContentTitle(countdown);
+        }
+
         NotificationManagerCompat.from(ctx).notify(NOTIFICATION_ID, builder.build());
     }
 
     public static void cancel(Context ctx) {
         NotificationManagerCompat.from(ctx).cancel(NOTIFICATION_ID);
+    }
+
+    static String hijriToday() {
+        if (Build.VERSION.SDK_INT < 26) return null;
+        try {
+            HijrahDate today = HijrahDate.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", new Locale("ar"))
+                .withChronology(HijrahChronology.INSTANCE);
+            return normalizeDigits(today.format(formatter));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    static String buildTitle(Context ctx) {
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, 0);
+        String city = prefs.getString(KEY_CITY, null);
+        String hijri = hijriToday();
+        if (hijri != null && city != null) return hijri + " | " + city;
+        if (hijri != null) return hijri;
+        if (city != null) return city;
+        return null;
+    }
+
+    private static String normalizeDigits(String s) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c >= '0' && c <= '9') {
+                sb.append(ARABIC_DIGITS[c - '0']);
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
     }
 
     static String text(JSONArray boundaries, long now) throws JSONException {

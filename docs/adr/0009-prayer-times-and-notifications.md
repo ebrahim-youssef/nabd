@@ -14,7 +14,8 @@ offline-first PWA with no backend of its own beyond Supabase.
 - Library: **`adhan`** (adhan.js) — pure calculation, works offline, no API.
 - Location: browser Geolocation API, asked during onboarding (and on demand from the prayers
   header). Coordinates cached locally (Dexie `syncMeta`-style local record; not synced). No
-  reverse geocoding, no location leaves the device.
+  reverse geocoding, no location leaves the device. **(Narrowed 2026-07-22 — see Amendment 1:
+  one scoped, opt-in reverse-geocode for the countdown-notification city label.)**
 - Calculation method default: **Egyptian General Authority**, madhab **Shafi**. Stored as a
   local setting; a method picker is a later ticket.
 - **Denied/unavailable location ⇒ no times.** The prayers header shows a quiet prompt to
@@ -63,3 +64,22 @@ Preferences (set in onboarding, editable later): master enable + per-moment togg
 - Notification reliability is best-effort until a push backend lands (future ADR).
 - `logic.ts` stays pure: time-point math takes `now` + computed times as parameters;
   adhan.js calls live in `lib/impure/` behind a provider.
+
+## Amendment 1 — scoped reverse-geocode for the countdown city label (2026-07-22)
+
+- **Status:** accepted (2026-07-22, owner-approved). Narrows the original "no reverse geocoding,
+  no location leaves the device" rule for one specific, opt-in surface.
+- **What changed:** the permanent countdown notification (NBD-65) may show a city name beside the
+  Hijri date (like the reference layout). To resolve a name, `lib/impure/reverse-geocode.ts` sends
+  the cached coordinates **once** to a keyless public reverse geocoder (BigDataCloud
+  `reverse-geocode-client`, `localityLanguage=ar`) and caches the returned city string in
+  `localStorage['nabd:city']`.
+- **Bounded exactly as follows:**
+  - Only ever called from the native countdown path, i.e. **only when the user has opted into the
+    permanent-countdown notification.** With it off, no coordinates ever leave the device — the
+    original rule still holds for every other surface (prayer times, onboarding, settings).
+  - Sends coordinates, not identity; result is a coarse city label, cached locally; offline or on
+    failure it falls back to the cached label or shows the Hijri date alone.
+- **Rationale:** the owner explicitly asked for the city label and accepted this trade-off. It is
+  the only place a coordinate leaves the device, and it is user-initiated. If a fully offline city
+  name is wanted later, revisit with an on-device geocoder (no clean cross-OEM option today).
