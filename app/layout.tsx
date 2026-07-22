@@ -78,6 +78,9 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: '#0e5a5a',
+  // Draw into the notch/cutout region so env(safe-area-inset-*) resolves to real
+  // values; the shell consumes those insets once it goes edge-to-edge (NBD-72/74).
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({

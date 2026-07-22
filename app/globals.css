@@ -276,10 +276,42 @@
     @apply font-sans;
     /* Keep scrolled-into-view targets clear of the fixed bottom navbar (NBD-22). */
     scroll-padding-bottom: 6rem;
+    /* ── Native feel (NBD-72) ──
+       Stop the mobile browser auto-inflating text on rotate/reflow, and drop the
+       grey tap-flash — both are dead giveaways of a WebView. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+    /* Don't chain document scroll to the WebView shell: no rubber-band glow at the
+       edges and no accidental pull-to-refresh. */
+    overscroll-behavior: none;
   }
   body {
     @apply bg-background text-foreground;
     line-height: 1.7;
+    /* Clear the status bar once the shell draws edge-to-edge (NBD-74); resolves to
+       0 until then, so no visual change on web or the current APK. */
+    padding-top: env(safe-area-inset-top);
+  }
+  /* Interactive chrome shouldn't be text-selectable, flash on tap, or wait on the
+     double-tap-zoom delay. Body copy stays selectable below so duʿāʾ / āyāt can be
+     long-pressed and copied. */
+  button,
+  a,
+  [role='button'],
+  summary,
+  label {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: manipulation;
+  }
+  /* Real inputs must stay selectable/editable. */
+  input,
+  textarea,
+  [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 
