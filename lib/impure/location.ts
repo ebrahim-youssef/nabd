@@ -19,8 +19,7 @@ export type LocationRequest = { ok: true; coords: Coords } | { ok: false; reason
 // Per-reason user-facing copy, shared by every surface with an enable button (settings,
 // prayer-times page, onboarding) so the same failure never reads differently across the app.
 export const LOCATION_FAILURE_COPY: Record<LocationFailure, string> = {
-  'services-disabled':
-    'خدمة الموقع (GPS) مغلقة في جهازك — فعّلها من إعدادات الجهاز ثم أعد المحاولة.',
+  'services-disabled': 'خدمة الموقع (GPS) مغلقة — فعّلها عند ظهور التنبيه ثم أعد المحاولة.',
   denied: 'تم رفض صلاحية الموقع — امنح التطبيق صلاحية الموقع ثم أعد المحاولة.',
   unavailable: 'تعذّر الحصول على الموقع — أعد المحاولة لاحقًا.',
 }
@@ -65,6 +64,14 @@ export function classifyNativeGeoError(cause: unknown): LocationFailure {
 async function requestNativeCoords(): Promise<LocationRequest> {
   try {
     const { Geolocation } = await import('@capacitor/geolocation')
+    // Turn on device location (GPS) with an in-app dialog first if it's off, so the button
+    // does the whole job instead of dead-ending on "go enable it in settings" (NBD-63).
+    const { promptEnableLocation } = await import('./location-enabler')
+    const locationOn = await promptEnableLocation()
+    if (!locationOn) {
+      logger.warn('location.requestNativeCoords: user declined the enable-location dialog', {})
+      return { ok: false, reason: 'services-disabled' }
+    }
     const permission = await Geolocation.requestPermissions()
     if (permission.location !== 'granted' && permission.coarseLocation !== 'granted') {
       // A breadcrumb (not an error): the user declined the native prompt. Distinguishes a
