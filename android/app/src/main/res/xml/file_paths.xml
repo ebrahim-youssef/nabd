@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
-    <external-path name="my_images" path="." />
-    <cache-path name="my_cache_images" path="." />
+    <!-- Scoped to a dedicated share subdir instead of the whole external/cache root (audit F8).
+         No installed plugin currently uses this provider; keeping the exposure minimal. -->
+    <external-path name="shared" path="shared/" />
+    <cache-path name="shared_cache" path="shared/" />
 </paths>

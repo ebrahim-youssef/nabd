@@ -12,8 +12,13 @@ export async function resolveCityLabel(coords: {
   }
 
   try {
+    // Send only city-level precision (~1km) to the third-party geocoder instead of the exact
+    // fix — enough to resolve a city name, without disclosing the user's precise location
+    // (audit F6, data minimization).
+    const latitude = coords.latitude.toFixed(2)
+    const longitude = coords.longitude.toFixed(2)
     const res = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${coords.latitude}&longitude=${coords.longitude}&localityLanguage=ar`,
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=ar`,
     )
     if (!res.ok) return cached
     const data = await res.json()

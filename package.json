@@ -3,6 +3,13 @@
   "version": "0.48.1",
   "private": true,
   "packageManager": "pnpm@10.29.3",
+  "pnpm": {
+    "overrides": {
+      "sharp": ">=0.35.0",
+      "postcss": ">=8.5.10",
+      "fast-uri": ">=3.1.4"
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
