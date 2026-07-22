@@ -27,6 +27,8 @@ const COPY = {
   disabledNote: 'فعّل التنبيهات أعلاه لاختيار الأنواع.',
   silentTitle: 'التنبيه ولو كان الجهاز صامتًا',
   silentBody: 'يشغّل الأذان عبر قناة المنبّه فيُسمع رغم الوضع الصامت أو الاهتزاز.',
+  countdownTitle: 'إشعار العدّ التنازلي الدائم',
+  countdownBody: 'إشعار مستمر يعرض ما مضى على الصلاة السابقة والوقت الباقي للصلاة التالية.',
 } as const
 
 export function NotificationSettings() {
@@ -107,6 +109,27 @@ export function NotificationSettings() {
           <span className="flex min-w-0 flex-col gap-0.5">
             <span className="text-body text-foreground font-medium">{COPY.silentTitle}</span>
             <span className="text-muted-foreground text-small">{COPY.silentBody}</span>
+          </span>
+        </label>
+      )}
+
+      {enabled && isNativePlatform() && (
+        <label
+          className={cn(
+            'border-border bg-surface shadow-card-sm flex cursor-pointer items-start gap-3 rounded-card border p-4 transition-all duration-200',
+            prefs.permanentCountdown && 'border-primary bg-primary/10',
+          )}
+        >
+          <input
+            type="checkbox"
+            checked={prefs.permanentCountdown === true}
+            onChange={(event) => setMoment('permanentCountdown', event.target.checked)}
+            className="accent-primary mt-0.5 size-5"
+            data-testid="notification-permanent-countdown"
+          />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-body text-foreground font-medium">{COPY.countdownTitle}</span>
+            <span className="text-muted-foreground text-small">{COPY.countdownBody}</span>
           </span>
         </label>
       )}

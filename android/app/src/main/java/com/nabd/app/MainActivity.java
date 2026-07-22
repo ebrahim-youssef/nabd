@@ -11,6 +11,8 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(LocationEnablerPlugin.class);
         // App-local plugin: alarm-usage channels so the adhan plays on silent (NBD-64).
         registerPlugin(AlarmAudioPlugin.class);
+        // App-local plugin: ongoing prayer countdown notification (NBD-65).
+        registerPlugin(CountdownNotificationPlugin.class);
         super.onCreate(savedInstanceState);
     }
 }

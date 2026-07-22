@@ -21,6 +21,7 @@ import {
   NOTIFICATION_COPY,
 } from '../constants'
 import { notificationMoments } from '../logic'
+import { syncCountdownNotification } from '@/lib/impure/countdown-notification'
 import { armNativeAlarms } from '../native-alarms'
 
 // Re-plan the day's timers at most this often; covers midnight rollover and pref changes
@@ -44,7 +45,10 @@ export function NotificationScheduler() {
       // Inside the Android shell (NBD-46) the system carries the alarms — exact, with the
       // adhan on the channel, app closed or open. The plugin owns its permission check.
       if (isNativePlatform()) {
-        if (coords) void armNativeAlarms(prefs, coords, Date.now())
+        if (coords) {
+          void armNativeAlarms(prefs, coords, Date.now())
+          void syncCountdownNotification(prefs, coords, Date.now())
+        }
         return
       }
 

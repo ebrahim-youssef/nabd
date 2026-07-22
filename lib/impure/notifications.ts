@@ -14,6 +14,9 @@ export type NotificationPrefs = {
   // Native-only: route alarms through the phone's alarm audio channel so they play through
   // silent/vibrate (NBD-64). No DND override. Off by default — respects the user's ringer.
   alarmOnSilent: boolean
+  // Native-only: persistent ongoing notification showing time since last prayer / time until
+  // next prayer (NBD-65). Off by default.
+  permanentCountdown: boolean
 }
 
 export type NotificationMomentKind = 'before' | 'adhan' | 'iqamah' | 'adhkar'
@@ -28,6 +31,7 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   morningAdhkar: true,
   eveningAdhkar: true,
   alarmOnSilent: false,
+  permanentCountdown: false,
 }
 
 export function readNotificationPrefs(): NotificationPrefs {
