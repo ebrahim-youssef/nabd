@@ -20,7 +20,7 @@ const PREVIEWS: {
   {
     id: 'before',
     label: 'اقتربت الصلاة',
-    description: 'نغمة قصيرة قبل الأذان بربع ساعة.',
+    description: 'تكبير قصير للتنبيه قبل الأذان بربع ساعة.',
     kind: 'before',
   },
   {
