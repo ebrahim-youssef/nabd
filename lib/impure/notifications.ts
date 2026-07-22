@@ -11,6 +11,9 @@ export type NotificationPrefs = {
   atIqamah: boolean
   morningAdhkar: boolean
   eveningAdhkar: boolean
+  // Native-only: route alarms through the phone's alarm audio channel so they play through
+  // silent/vibrate (NBD-64). No DND override. Off by default — respects the user's ringer.
+  alarmOnSilent: boolean
 }
 
 export type NotificationMomentKind = 'before' | 'adhan' | 'iqamah' | 'adhkar'
@@ -24,6 +27,7 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   atIqamah: true,
   morningAdhkar: true,
   eveningAdhkar: true,
+  alarmOnSilent: false,
 }
 
 export function readNotificationPrefs(): NotificationPrefs {

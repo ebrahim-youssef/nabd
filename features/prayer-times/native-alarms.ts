@@ -23,7 +23,36 @@ import { buildAlarmPayloads, notificationMoments } from './logic'
 
 const MS_PER_DAY = 86_400_000
 
+// Suffix for the parallel alarm-usage channels (NBD-64). Kept distinct from the normal
+// channels because a channel's audio usage is fixed once created.
+const ALARM_CHANNEL_SUFFIX = '-alarm'
+
 let channelsReady = false
+
+// Creates the alarm-usage channels (USAGE_ALARM) so the sound plays on silent, via the
+// app-local AlarmAudio plugin. Best-effort: on web / an older APK the plugin is absent, so a
+// failure is swallowed and the schedule falls back to the normal channels.
+async function ensureAlarmChannels(): Promise<void> {
+  try {
+    const { AlarmAudio } = await import('@/lib/impure/alarm-audio')
+    await AlarmAudio.ensureAlarmChannels({
+      channels: Object.values(ALARM_CHANNELS).map((channel) => ({
+        id: channel.id + ALARM_CHANNEL_SUFFIX,
+        name: `${channel.name} (منبّه)`,
+        sound: channel.sound.replace(/\.mp3$/, ''),
+      })),
+    })
+  } catch (cause) {
+    logger.warn('prayer-times.ensureAlarmChannels failed; using normal channels', { cause })
+  }
+}
+
+// The channel a payload is scheduled onto: the alarm-usage variant when the user wants sound
+// on silent (NBD-64), otherwise the normal channel.
+function channelIdFor(channelKey: keyof typeof ALARM_CHANNELS, alarmOnSilent: boolean): string {
+  const base = ALARM_CHANNELS[channelKey].id
+  return alarmOnSilent ? base + ALARM_CHANNEL_SUFFIX : base
+}
 
 async function ensureChannels(): Promise<void> {
   if (channelsReady) return
@@ -68,6 +97,7 @@ export async function armNativeAlarms(
     if (permission.display !== 'granted') return
 
     await ensureChannels()
+    if (prefs.alarmOnSilent) await ensureAlarmChannels()
 
     const pending = await LocalNotifications.getPending()
     if (pending.notifications.length > 0) {
@@ -90,7 +120,7 @@ export async function armNativeAlarms(
         id: payload.id,
         title: payload.title,
         body: payload.body,
-        channelId: ALARM_CHANNELS[payload.channelKey].id,
+        channelId: channelIdFor(payload.channelKey, prefs.alarmOnSilent),
         schedule: { at: new Date(payload.at), allowWhileIdle: true },
       })),
     })

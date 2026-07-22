@@ -8,6 +8,7 @@ import {
   writeNotificationPrefs,
   type NotificationPrefs,
 } from '@/lib/impure/notifications'
+import { isNativePlatform } from '@/lib/impure/native'
 import { cn } from '@/lib/utils'
 
 const MOMENTS: {
@@ -24,6 +25,8 @@ const MOMENTS: {
 const COPY = {
   title: 'التنبيهات',
   disabledNote: 'فعّل التنبيهات أعلاه لاختيار الأنواع.',
+  silentTitle: 'التنبيه ولو كان الجهاز صامتًا',
+  silentBody: 'يشغّل الأذان عبر قناة المنبّه فيُسمع رغم الوضع الصامت أو الاهتزاز.',
 } as const
 
 export function NotificationSettings() {
@@ -86,6 +89,27 @@ export function NotificationSettings() {
           </label>
         ))}
       </div>
+
+      {enabled && isNativePlatform() && (
+        <label
+          className={cn(
+            'border-border bg-surface shadow-card-sm flex cursor-pointer items-start gap-3 rounded-card border p-4 transition-all duration-200',
+            prefs.alarmOnSilent && 'border-primary bg-primary/10',
+          )}
+        >
+          <input
+            type="checkbox"
+            checked={prefs.alarmOnSilent === true}
+            onChange={(event) => setMoment('alarmOnSilent', event.target.checked)}
+            className="accent-primary mt-0.5 size-5"
+            data-testid="notification-alarm-on-silent"
+          />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-body text-foreground font-medium">{COPY.silentTitle}</span>
+            <span className="text-muted-foreground text-small">{COPY.silentBody}</span>
+          </span>
+        </label>
+      )}
 
       {!enabled && <p className="text-muted-foreground text-label ps-7">{COPY.disabledNote}</p>}
     </section>
