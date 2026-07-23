@@ -10,8 +10,18 @@ pnpm cap:sync                      # build:native (static export, SW off) + capa
 cd android && ./gradlew assembleDebug    # or assembleRelease (needs signing config)
 ```
 
-The debug APK lands in `android/app/build/outputs/apk/debug/app-debug.apk`. Signing and
-release upload happen on the owner's machine, outside this repo (ADR-0012 §4).
+The debug APK lands in `android/app/build/outputs/apk/debug/app-debug.apk`.
+
+**Signing is now scaffolded in-repo.** `android/app/build.gradle` reads an untracked
+`android/keystore.properties` (see `keystore.properties.example`). Drop the upload keystore
+and that properties file on the release machine and `bundleRelease` produces a signed AAB;
+without the file, debug builds are unaffected. The keystore itself never enters the repo
+(gitignored).
+
+**Launcher icon + splash** are the brand mark (adaptive icon on a deep-teal backdrop,
+matching the favicon/PWA icon). They are generated from `public/icon.svg` by
+`node scripts/android-icons.mjs` — rerun it whenever the brand mark changes, then
+`pnpm cap:sync`.
 
 **JDK 21 required.** Capacitor 7's `:capacitor-android` module compiles at source level 21, so
 the Gradle launcher JDK must be 21 (JDK 17 fails with `invalid source release: 21`; a too-new
@@ -40,14 +50,18 @@ JAVA_HOME=/usr/lib/jvm/java-21-openjdk ./gradlew assembleDebug
 
 ## Google Play submission (owner, outside this repo)
 
-The debug APK above is for sideloading/testing only. To publish on Play:
+The debug APK above is for sideloading/testing only. Listing copy, Data-safety / permission
+answers, content rating, and the ready-made graphic assets are in
+[`play-store-listing.md`](./play-store-listing.md) + [`store-assets/`](../store-assets/).
+To publish on Play:
 
 1. **targetSdk 35** (Android 15) is mandatory for new/updated apps since 31 Aug 2025 — ✅ done in
    NBD-59 (Capacitor 6→7 bump: compileSdk/targetSdk 35, minSdk 23, Gradle 8.11.1, AGP 8.7.2).
 2. **Developer account** ($25 one-time) + **government-ID verification** (now required before a
    first publish).
-3. **Signing**: create an upload keystore, enable **Play App Signing**, and build a signed
-   **AAB** — `JAVA_HOME=… ./gradlew bundleRelease` — not the debug APK.
+3. **Signing**: create an upload keystore, copy `keystore.properties.example` to
+   `android/keystore.properties` and fill it in, enable **Play App Signing**, and build a
+   signed **AAB** with `JAVA_HOME=… ./gradlew bundleRelease` (not the debug APK).
 4. **Privacy policy URL** (required: the app uses location + notifications) and the Play
    **Data safety** form. Reuse the onboarding wording: location is computed on-device and never
    leaves it.

@@ -1,8 +1,29 @@
 apply plugin: 'com.android.application'
 
+// Release signing (NBD-59): credentials live in an untracked keystore.properties
+// (see keystore.properties.example) so no secret enters the repo. When the file
+// is absent — CI, fresh clones, debug builds — the release config is simply not
+// wired up and `assembleDebug` still works. The owner drops the upload keystore
+// + properties on their machine to produce a signed AAB (`./gradlew bundleRelease`).
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+
 android {
     namespace "com.nabd.app"
     compileSdk rootProject.ext.compileSdkVersion
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile file(keystoreProps['storeFile'])
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            }
+        }
+    }
     defaultConfig {
         applicationId "com.nabd.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -18,6 +39,9 @@ android {
     }
     buildTypes {
         release {
+            if (keystorePropsFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
