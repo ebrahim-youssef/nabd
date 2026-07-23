@@ -115,6 +115,12 @@ structured, named, or styled? Then update `CONVENTIONS.md` / `docs/architecture.
 `DESIGN_SYSTEM.md` in the same PR — docs that lie are worse than no docs. Never `--no-verify`;
 fix root causes.
 
+Did this PR change what the app _does_ or what it _runs on_ — a new user-facing feature or
+page, a new platform (native/PWA), or a stack swap? Then refresh both READMEs (`README.md`
+Arabic + `README.en.md` English) in the same PR so they keep describing reality; keep the two
+in step and match the house style (natural Arabic, no AI tells, no em-dashes). Smaller changes
+don't touch the READMEs; when in doubt, glance at them and move on.
+
 ## Phase 6 — Version bump, commit & push
 
 1. Bump version per the table in `CONVENTIONS.md` (feat=MINOR, fix/perf/refactor=PATCH,
@@ -166,7 +172,7 @@ fix root causes.
 
 - [ ] All quality-gate commands exit 0 locally
 - [ ] Acceptance criteria verified by hand in a live local browser (Phase 5b)
-- [ ] Docs updated if reality changed (conventions / architecture / design system)
+- [ ] Docs updated if reality changed (conventions / architecture / design system; both READMEs if features or platform changed)
 - [ ] All CI checks green
 - [ ] Works on staging URL (acceptance criteria met)
 - [ ] Works on production URL (success check passes)
