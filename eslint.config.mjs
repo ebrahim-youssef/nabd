@@ -30,6 +30,10 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
+    // New pnpm workspace packages (SPA/native/shared migration, ADR-0014): each has its own
+    // package.json + lint config and runs its own gate, not this Next.js-flavored one.
+    'apps/**',
+    'packages/**',
     // Raw design-system handoff (source material, not app code).
     'design-import/**',
     // Capacitor Android project (NBD-46): native sources + Gradle build artifacts.
