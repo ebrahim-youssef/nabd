@@ -45,7 +45,16 @@ Alternatives rejected: staying on Next.js with a client-first refactor — its s
 proposition benefits a Capacitor-wrapped, fully client application not at all, and fighting that
 mismatch costs more long-term than a one-time migration; keeping Capacitor instead of a full React
 Native rewrite — deliberately reverses ADR-0012/0013's earlier owner decision rejecting React
-Native, rather than overlooking it.
+Native, rather than overlooking it; unifying web and native into one React Native Web / Expo
+Router codebase — rejected on long-term maintenance grounds, not migration cost: it would discard
+the already-shipped, actively-maintained Radix/shadcn web UI (Radix/shadcn cannot render in an
+RN/RNW tree, so unifying means rebuilding the web UI from RN primitives too, permanently trading
+away that ecosystem's accessibility/interaction maintenance for hand-rolled equivalents), adds a
+third framework (react-native-web) to keep compatible on every future Expo/RN upgrade, tends to
+decay into per-platform `.web.tsx`/`Platform.select` branching for an interaction- and RTL-heavy
+app rather than staying genuinely single-codebase, and is not a stronger SEO story for the one page
+that needs it (`/`, already a standalone static artifact regardless of framework) than the SPA's
+static-site tooling.
 
 ## Consequences
 
@@ -53,8 +62,10 @@ Native, rather than overlooking it.
   old Capacitor/Dexie application.
 - The SPA is not installable as a PWA and has no offline-reload guarantee; native is the sole
   offline-first surface.
-- Expo `AsyncStorage` is the native persistence engine. Its key-value JSON model requires the
-  event-sourced wird/qada ledger in ADR-0010 to rebuild an in-memory view from JSON rather than
-  issue SQL-style queries; this is flagged for performance validation, not a migration blocker.
+- Expo `expo-sqlite` is the native persistence engine (revised from an initial `AsyncStorage`
+  choice — AsyncStorage is persistent but flat key-value with no query/index support; SQLite
+  matches the query/indexing model the event-sourced wird/qada ledger in ADR-0010 already needs,
+  and keeps native's persistence mental model in parity with the SPA's Dexie/IndexedDB rather than
+  requiring an in-memory JSON-rebuild pattern).
 - The SPA deploys independently until an explicit Phase 5 root-domain cutover; that cutover does
   not retire the old application.
