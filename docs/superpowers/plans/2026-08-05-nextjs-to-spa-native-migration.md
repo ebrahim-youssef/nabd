@@ -77,7 +77,7 @@ _capability_, not forcing identical implementations where the platform doesn't s
 | Capability                                               | SPA (web)                                                                       | Native (Expo)                                                                                                                                                             |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Core wird/adhkar/niyyat/qada UI & logic                  | Full — via `packages/shared` pure logic                                         | Full — via `packages/shared` pure logic                                                                                                                                   |
-| Local persistence                                        | Dexie/IndexedDB (unchanged engine)                                              | Expo-side storage (engine TBD, Phase 2 spike — candidates: `expo-sqlite`, `react-native-mmkv`)                                                                            |
+| Local persistence                                        | Dexie/IndexedDB (unchanged engine)                                              | `expo-sqlite`                                                                                                                                                             |
 | Offline usage                                            | **Not supported** (no SW, no PWA)                                               | **Required** — primary offline surface                                                                                                                                    |
 | Notifications                                            | Foreground/browser Notification API only, best-effort, no reliability guarantee | Full — background delivery, exact alarms, custom notification channels/audio (ports current `lib/impure/notifications.ts`, `countdown-notification.ts`, `alarm-audio.ts`) |
 | Location                                                 | Browser Geolocation API                                                         | Expo Location, plus reverse-geocode + location-enabler flow ported from `lib/impure/reverse-geocode.ts`, `location-enabler.ts`                                            |
@@ -103,8 +103,9 @@ presentation components.
    typically expects a JS/TS Tailwind config to share values with RN. Needs a single
    source-of-truth token format (JSON or TS object in `packages/shared`) that both the web `@theme`
    CSS and the NativeWind config generate from or read from — not two hand-maintained copies.
-2. **RN local storage engine** — **resolved: Expo `AsyncStorage`** (owner decision, see
-   "Owner decisions" below). No further spike work needed; Phase 2 implements against it directly.
+2. **RN local storage engine** — **resolved: `expo-sqlite`** (owner decision, revised from an
+   initial AsyncStorage pick — see "Owner decisions" below). No further spike work needed; Phase 2
+   implements against it directly.
 3. **RN test tooling** _(resolve in Phase 2)_. Unit/component test runner (Jest + RN Testing
    Library, likely) and an on-device/E2E tool (Detox vs Maestro) — pick one, wire a CI gate.
 4. **iOS scope** — **resolved: deferred, Android-only** (owner decision, see "Owner decisions"
@@ -150,10 +151,11 @@ on a real Android build.
 
 - `apps/native`: Expo app, onboarding flow, then a bare "congratulations, you're onboarded" screen,
   real icon/splash/app name (نبض / nabd), running on Android device/emulator.
-- Resolve spikes #2 and #3 (storage engine, test tooling) — needed because the vertical slice below
-  requires both to prove itself, not just static screens.
-- Vertical slice: onboarding → persisted local state → confirm the chosen storage engine actually
-  round-trips data on a real Android build.
+- Storage engine already resolved (`expo-sqlite`, see Owner decisions); resolve spike #3 (test
+  tooling) here — needed because the vertical slice below needs it to prove itself, not just static
+  screens.
+- Vertical slice: onboarding → persisted local state → confirm `expo-sqlite` actually round-trips
+  data on a real Android build.
 - `packages/shared` consumption proven from the native side too (same tokens/logic as `apps/spa`,
   no divergence).
 - CI: add native gate (lint/typecheck/unit + Android build) alongside existing gates.
@@ -223,12 +225,25 @@ production cutover; report handed to owner for manual sign-off.
 - Deleting the old Next.js app (source + Capacitor/`android/`) — owner-gated, happens after this
   plan's Phase 5 report.
 
-## Owner decisions (resolved 2026-08-05)
+## Owner decisions (resolved 2026-08-05, storage revised same day)
 
-1. **RN local storage engine:** Expo `AsyncStorage`. Note: AsyncStorage is plain async key-value,
-   no native query support — the event-sourced wird/qada ledger (ADR-0010) will need an
-   in-memory-rebuild-from-JSON-blob pattern (or a thin indexed-JSON layer) rather than SQL-style
-   queries. Flagged, not blocking; revisit only if it proves too slow in practice.
+1. **RN local storage engine:** `expo-sqlite` (revised from an initial AsyncStorage pick after
+   weighing long-term fit, not migration cost). AsyncStorage is persistent but flat key-value, no
+   query/index support; SQLite matches the query/indexing model the event-sourced wird/qada ledger
+   (ADR-0010) needs, and keeps native's persistence mental model in parity with the SPA's
+   Dexie/IndexedDB instead of requiring an in-memory JSON-rebuild pattern.
 2. **iOS:** deferred. Phase 4 ships Android only; spike #4 closed as "not in scope for this
    migration."
 3. **App id:** keep `com.nabd.app`.
+4. **Codebase unification (React Native Web / Expo Router single codebase):** considered and
+   rejected on long-term maintenance + SEO grounds, not migration cost. Storage still diverges
+   either way (not a deciding factor). Deciding factors: unifying would discard the already-shipped
+   Radix/shadcn web UI (incompatible with an RN/RNW component tree — Radix/shadcn are DOM-only),
+   permanently trading that ecosystem's maintained accessibility/interaction work for hand-rolled
+   RN-primitive equivalents on both platforms going forward; it adds a third framework
+   (react-native-web) to keep compatible on every future Expo/RN upgrade; it tends to decay into
+   per-platform `.web.tsx`/`Platform.select` branching for an interaction- and RTL-heavy app rather
+   than staying genuinely single-codebase; and it's not a stronger SEO story for the one page that
+   needs it (`/`, already planned as a standalone static artifact regardless of framework) than the
+   SPA's own static-site tooling. Two-codebase split (`apps/spa` + `apps/native` +
+   `packages/shared`) stands as planned.
