@@ -1,0 +1,39 @@
+name: spa-ci
+on:
+  pull_request:
+    branches: [dev, master]
+  push:
+    branches: [dev, master]
+concurrency:
+  group: spa-ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: shared lint
+            run: pnpm --filter @nabd/shared lint
+          - name: shared typecheck
+            run: pnpm --filter @nabd/shared typecheck
+          - name: shared test
+            run: pnpm --filter @nabd/shared test
+          - name: spa lint
+            run: pnpm --filter apps-spa lint
+          - name: spa typecheck
+            run: pnpm --filter apps-spa typecheck
+          - name: spa test
+            run: pnpm --filter apps-spa test
+          - name: spa build
+            run: pnpm --filter apps-spa build
+    name: ${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: ${{ matrix.run }}
