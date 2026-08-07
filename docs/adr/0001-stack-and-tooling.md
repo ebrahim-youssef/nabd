@@ -1,6 +1,6 @@
 # ADR-0001 — Stack & tooling
 
-- **Status:** accepted
+- **Status:** accepted; superseded by ADR-0014 for the go-forward client architecture
 - **Date:** 2026-07-13
 
 ## Context
@@ -26,7 +26,7 @@ is the Vite-native default); Netlify/Cloudflare/self-host (Vercel is zero-config
 ## Consequences
 
 - The building AI uses `docs/stack.md` §1 as the exact bootstrap sequence; `pnpm lint &&
-  pnpm typecheck && pnpm test && pnpm build` is the green bar.
+pnpm typecheck && pnpm test && pnpm build` is the green bar.
 - Supabase owns identity; a logged-in user's wird syncs across devices. Auth choice is settled
   (no separate auth library).
 - Serwist means service-worker updates are deliberate (opt-in), never silent mid-session.

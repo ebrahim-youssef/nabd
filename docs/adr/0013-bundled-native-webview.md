@@ -1,6 +1,6 @@
 # ADR-0013 — Bundled native WebView (static export in the APK)
 
-- **Status:** accepted (owner decision 2026-07-19)
+- **Status:** accepted (owner decision 2026-07-19); superseded by ADR-0014
 - **Date:** 2026-07-19
 
 ## Context
