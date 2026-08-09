@@ -237,7 +237,10 @@ device. The owner must choose a durability path before the old application is de
 Current facts:
 
 - Android declares `android:allowBackup="false"` in
-  [the manifest](../../android/app/src/main/AndroidManifest.xml).
+  [the manifest](../../android/app/src/main/AndroidManifest.xml). This arrived with the original
+  Capacitor scaffold in NBD-46 (`0fbfb0a`) as a template default, not from the security hardening
+  pass in #149. Enabling backup is therefore a fresh decision, not the reversal of a deliberate
+  security choice, though it still needs its own review of what the backup set may contain.
 - The application never calls `navigator.storage.persist()`.
 - [The JSON export](../../features/stats/hooks/useStatsExport.ts) exports a selected week or month
   range of entries and derived statistics. There is no import path, and it is not a complete
