@@ -2,6 +2,30 @@
 
 Instructions for any AI coding agent working in this repo. Read this first, every session.
 
+## Migration in progress — read before trusting this file
+
+The repository is mid-migration from the Next.js application at the root to a Vite SPA
+(`apps/spa`) plus an Expo Android application (`apps/native`), sharing `packages/shared`.
+
+[`docs/adr/0014-spa-native-split.md`](./docs/adr/0014-spa-native-split.md) and its 2026-08-09
+amendment supersede parts of this file. When working in `apps/*` or `packages/shared`, that ADR
+wins over anything here. Specifically, these statements below apply **only to the Next.js
+application at the root**, not to the new workspaces:
+
+- PWA, installable, offline-first, and the Serwist service worker. The SPA has none of these;
+  offline belongs to native only.
+- Supabase sync and auth. Neither new application has a backend or sign-in.
+- The `sync→stats` and offline-persistence e2e paths, and `@sentry/nextjs`. The SPA uses
+  `@sentry/react`, native uses `@sentry/react-native`.
+
+Still binding everywhere, root and workspaces alike: the 8-phase loop, pure-logic separation,
+RTL-first with logical properties only, central Logger, no magic values, tests shipping with the
+code, green gates before push, and security review before merge.
+
+The execution contract for the remaining work is
+[`docs/superpowers/plans/2026-08-09-migration-execution-brief.md`](./docs/superpowers/plans/2026-08-09-migration-execution-brief.md).
+This file is rewritten in full when the Next.js application is removed.
+
 ## What this is
 
 Daily wird (ورد) companion for Muslims — helps you commit to a daily devotional routine,
