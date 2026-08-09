@@ -9,8 +9,17 @@ Owner decision required before the SPA's `/app/*` routes are built.
 ## Why this was reopened
 
 The owner asked for a reassessment of whether the planned four-PR migration is the right fit for
-the goal. The review was done twice, independently, and both passes landed on the same place: the
-delivery units are too large, and the architecture rests on a factual error.
+the goal. It was reviewed by two independent passes.
+
+They converged on two things: the delivery units are too large to review, and two of the facts
+ADR-0014 reasoned from are wrong.
+
+They did **not** converge on the architecture, and the disagreement is worth knowing about. The
+second pass initially ranked SPA + Capacitor first. It moved Capacitor to last only after being
+shown the NBD-72 to NBD-79 sequence below, which was put to it as the strongest counter-evidence
+to its own position. A reviewer that reverses after one piece of evidence is presented
+one-sidedly is not an independent confirmation, so this memo does not claim consensus. It sets
+out the options and asks for an experiment instead.
 
 ## Two facts ADR-0014 got wrong about this repository
 
@@ -33,10 +42,25 @@ That asset does not exist.
 | Component library size                  | `components/` is 376 lines across 6 tsx files                                                             |
 
 What actually exists is 7,152 lines of plain Tailwind React in `features/`. That is a real asset,
-but it is not an accessible-component ecosystem, and porting it to RN primitives is a cost that
-the unified option and the split option pay equally.
+but it is not an accessible-component ecosystem.
 
-The strongest stated argument against unifying is therefore void.
+What this does and does not change: the ADR's claim that unifying means rebuilding the web UI
+from RN primitives is **true**, and stays true, because DOM React cannot render in an RN tree
+regardless of which component library it uses. What is void is only the premium the ADR attached
+to that loss, the "ecosystem's accessibility/interaction maintenance" being traded away for
+"hand-rolled equivalents". There is no such ecosystem here to lose. The argument narrows; it does
+not disappear.
+
+So the port cost is real, and it is **not** symmetric between the options:
+
+|              | What happens to the 7,152 lines                                   |
+| ------------ | ----------------------------------------------------------------- |
+| A. Capacitor | Reused as-is. Next to Vite is mostly mechanical.                  |
+| B. Split     | Reused for the web app; a second RN tree is written alongside it. |
+| C. Unified   | Discarded, rebuilt from RN primitives, plus RNW's own web risk.   |
+
+C is strictly the most up-front work. Its advantage is one tree instead of two afterwards. That
+is a genuine trade between up-front cost and long-term maintenance, not a free win.
 
 ### 2. "Expo managed" cannot host what this app already does
 
@@ -63,13 +87,19 @@ haptics, NBD-74 edge-to-edge status bar, NBD-75 hardware back button, NBD-76 col
 NBD-77 bottom sheet presentation, NBD-78 route transitions, NBD-79 keyboard-aware inputs. Two
 weeks later the same owner wrote ADR-0014 choosing React Native.
 
-Read as revealed preference, that is the real reason ADR-0014 exists, and it is a better reason
-than the one the ADR wrote down. It says the dissatisfaction was not one missing plugin. It
-spanned visual feel, navigation, system chrome, touch feedback, keyboard behavior, modal
-presentation and lifecycle, which are structural WebView seams.
+This memo cannot tell you what that sequence meant, and will not try. It reads two ways. It could
+be evidence that the WebView substrate kept costing effort across visual feel, navigation, system
+chrome, touch feedback, keyboard behavior, modal presentation and lifecycle, which are structural
+WebView seams. It could equally be successful polish on a shipping product, finished and behind
+you.
 
-It does not prove React Native would feel better on its own. Every one of those eight concerns
-still has to be implemented deliberately in RN.
+The ADR does not say either way. Its stated driver is the Next.js server-first mismatch, which
+the SPA alone resolves. So the question goes back to the owner: **was WebView feel an actual
+driver of ADR-0014?** If yes, option A is largely ruled out no matter what it costs. If it was
+finished work rather than a running sore, A is back on the table as the cheapest path.
+
+Either way, none of those eight concerns comes free in React Native. Each still has to be
+implemented there deliberately.
 
 ## The three architectures
 
@@ -87,11 +117,15 @@ preference the eight PRs revealed, and keeps the app's data in WebView browser s
 
 Two applications, two UI trees, shared logic in `packages/shared`.
 
-This pays the full native re-implementation cost **and** commits to maintaining two presentation
-systems forever. The roadmap makes that explicit: "NativeWind v4 + hand-built RN components
-mirroring shadcn visually". With no Radix/shadcn asset to protect, the duplication is hard to
-justify, and it sits badly against the owner's own decision that no code should be duplicated
-between the apps and that both should be easy to add features to.
+The existing web UI is reused for `apps/spa`, so the web side is comparatively cheap. The native
+side is written from nothing, and the two then evolve in parallel forever. The roadmap makes the
+duplication explicit: "NativeWind v4 + hand-built RN components mirroring shadcn visually".
+
+That permanent duplication sits badly against the owner's own decision that no code should be
+duplicated between the apps, and against "easy to add features to", since every future feature is
+built twice. It is worth noting that the no-duplication gate as written covers logic, tokens,
+types and copy but explicitly not presentation, so this architecture does not violate the gate. It
+just means the gate never covered the expensive half.
 
 ### C. Unified Expo/React Native Web + a separate static landing page
 
@@ -117,9 +151,11 @@ That question is identical for options B and C, and answering it collapses the t
 
 - **If the spike fails or is unreasonably painful**, both React Native options die and option A
   wins by default. We would have learned that in days rather than months.
-- **If the spike succeeds**, the RN substrate is viable, and the remaining choice is B versus C,
-  which is a user-interface question. With the Radix objection void, C is the stronger of the two
-  unless a follow-up RNW spike shows its web story is unacceptable for an Arabic RTL app.
+- **If the spike succeeds**, the RN substrate is viable, and the remaining choice is B versus C.
+  That one is a straight trade: B reuses the existing web UI and pays for two trees forever, C
+  rebuilds the web UI once and maintains one tree. It should be decided by a second, smaller RNW
+  spike proving Arabic RTL, fonts, responsive layout and web accessibility for this app, not by
+  argument either.
 
 ## Recommendation
 
@@ -141,9 +177,12 @@ That question is identical for options B and C, and answering it collapses the t
 
 ## Decisions this memo asks for
 
-1. Approve or reject running the Expo device-capability spike before further SPA product work.
-2. Confirm that `/app/*` porting is paused until the spike reports.
-3. Choose a durability path from section F of the parity ledger, or explicitly defer it with a
+1. **Was WebView feel an actual driver of ADR-0014?** Only the owner can answer this, and it is
+   the single input that most narrows the choice. If yes, option A is out regardless of cost.
+2. Approve or reject running the Expo device-capability spike before further SPA product work.
+3. Confirm that `/app/*` porting is paused until the spike reports. The landing page, SEO and
+   branding work is not paused; it is safe under all three.
+4. Choose a durability path from section F of the parity ledger, or explicitly defer it with a
    date. It is currently unowned, and after migration there is no recovery path for multi-year
    devotional history.
 
