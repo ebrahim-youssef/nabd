@@ -96,6 +96,9 @@ The ADR merge this PR originally called for already happened in PR #160. What re
 
 Phase 1 verification + Phase 3.
 
+- **First, rebase `ibrahim/phase1-spa-scaffold` onto `dev`.** It branched before the ADR merge
+  and is now 3 behind (`8bd742f` plus PR 0's two commits). Without the rebase, PR 1's diff
+  reintroduces the ADR and its `AGENTS.md` base predates the migration pointer.
 - Verify Phase 1 acceptance before building on it.
 - Port every current `app/*` route under `/app/*`: home/today, adhkar, niyyat, libraries,
   stats, settings, prayer-times, qada — built on `packages/shared` pure logic.
@@ -160,9 +163,18 @@ definitions"; reuse that as the check and wire it into CI if practical.
 nabd is **pnpm**, not npm. Vitest, not Jest (until native adds its own runner).
 
 Root: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm test:e2e`, `pnpm check:colocated`,
-`pnpm format:check`.
-Per workspace: `pnpm --filter apps-spa <lint|typecheck|test|build>`,
-`pnpm --filter @nabd/shared <lint|typecheck|test>`.
+`pnpm build`.
+
+Two local-only traps, both verified on 2026-08-09 and neither a real failure:
+
+- `pnpm format:check` already fails on `dev` across 159 files and is not in CI. Do not treat a
+  red run as a regression. Format the files you touch; leave the rest.
+- `pnpm lint` goes red locally if `apps/spa/dist` is on disk (leftover build artifact, 15
+  `no-console` errors in the minified bundle). Root eslint does not ignore `apps/**` on `dev`
+  yet; commit `5740038` on `ibrahim/phase1-spa-scaffold` fixes it and lands with PR 1. CI is
+  clean because the directory does not exist there.
+  Per workspace: `pnpm --filter apps-spa <lint|typecheck|test|build>`,
+  `pnpm --filter @nabd/shared <lint|typecheck|test>`.
 
 CI workflows: `build.yml`, `colocated-test-check.yml`, `e2e.yml`, `lint.yml`, `spa-ci.yml`,
 `test.yml`, `typecheck.yml`.
