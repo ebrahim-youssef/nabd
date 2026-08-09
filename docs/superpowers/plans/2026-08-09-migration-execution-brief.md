@@ -12,6 +12,17 @@ listed under "New owner decisions" below; ADR-0014's 2026-08-09 amendment record
 > **Correction, 2026-08-09 (PR 0).** This brief was written believing ADR-0014 and the phase
 > roadmap were unmerged. They are not: both landed on `dev` in commit `8bd742f` (PR #160). The
 > repo-state table and the PR 0 scope below have been corrected. PR 0 is docs-only.
+>
+> **Reassessment, 2026-08-09.** The plan was reviewed against the goal, twice and independently.
+> Two of ADR-0014's premises are wrong, PR 1 and PR 2 are too large to review, and the sequence
+> risks porting the product UI twice. Read alongside this brief:
+>
+> - `docs/migration/architecture-reassessment.md` — the three architectures now on the table and
+>   the spike that decides between them. Owner decision required.
+> - `docs/migration/parity-ledger.md` — the behavioral contract the migration must not silently
+>   break. Applies under every architecture.
+>
+> Where this brief and the reassessment disagree about PR 1 and PR 2, the reassessment is newer.
 
 ---
 
@@ -38,9 +49,24 @@ b3788dd feat(shared): scaffold packages/shared with ported pure logic, tokens, c
 5740038 chore: scope root gates to exclude apps/ and packages/ workspaces
 ```
 
-**Phase 1 has not been verified.** Its acceptance criteria (landing page on a preview URL,
-shared package consumed with no duplicated token/logic definitions, SPA CI gate green) are
-unconfirmed. Verify before declaring it finished — "finish Phase 1" may mean fixing it.
+**Phase 1 was audited on 2026-08-09. It is a working scaffold, not a landing surface.**
+
+The branch was 2 commits ahead of origin and unpushed; those commits are now pushed, so origin
+and local agree. What genuinely landed: `packages/shared` with logic (day/format/wird), tokens,
+copy, types and two test files; a Vite + React Router app that really does consume
+`@nabd/shared`; `apps/spa/public/favicon.ico` and `apple-icon.png`; a title, description and icon
+links in `index.html`; and `spa-ci.yml`.
+
+What did not land, despite the commit titled "build landing page from shared copy, real
+metadata":
+
+- No CSS or Tailwind anywhere in `apps/spa`. The landing route is a 16-line unstyled component
+  that renders the primary colour's hex value as body text.
+- No SPA tests. `apps/spa` runs `vitest run --passWithNoTests`, so its CI gate is green on zero
+  tests.
+- No Open Graph, no canonical, no sitemap, no robots.
+
+So "finish Phase 1" means finishing tasks 4 and 5, not verifying them.
 
 ---
 
@@ -96,17 +122,26 @@ The ADR merge this PR originally called for already happened in PR #160. What re
 
 Phase 1 verification + Phase 3.
 
-- **First, rebase `ibrahim/phase1-spa-scaffold` onto `dev`.** It branched before the ADR merge
-  and is now 3 behind (`8bd742f` plus PR 0's two commits). Without the rebase, PR 1's diff
-  reintroduces the ADR and its `AGENTS.md` base predates the migration pointer.
+> **Paused pending the architecture decision.** See
+> `docs/migration/architecture-reassessment.md`. Two of ADR-0014's premises turned out to be
+> wrong, and the route-porting half of this PR is the work most at risk of being thrown away if
+> the architecture changes. The landing page, SEO and branding half is safe under every option
+> and can proceed. Do not port `/app/*` until the Expo device-capability spike reports.
+
+- **First, rebase `ibrahim/phase1-spa-scaffold` onto `dev`.** It branched before the ADR merge.
+  Without the rebase, PR 1's diff reintroduces the ADR and its `AGENTS.md` base predates the
+  migration pointer.
 - Verify Phase 1 acceptance before building on it.
 - Port every current `app/*` route under `/app/*`: home/today, adhkar, niyyat, libraries,
   stats, settings, prayer-times, qada — built on `packages/shared` pure logic.
-- Dexie/IndexedDB persistence. Database name must be nabd-specific, not a default.
+- Dexie/IndexedDB persistence. The database name is already nabd-specific in the current app
+  (`new Dexie('nabd')`, `lib/db/db.ts:49`), so this is a carry-forward, not a change. The store
+  and index contract is in `docs/migration/parity-ledger.md` section B, including the dead
+  `checkedAt` index that should not be carried forward as-is.
 - Landing page (`/`) at production quality: real brand assets, full SEO/meta (sitemap,
   robots, OG, canonical), performance pass. `/app/*` explicitly excluded from indexing.
-- Favicon + apple-icon: `apps/spa/public/` already has both — **confirm they are the real
-  brand assets and not Vite/Next defaults** before shipping.
+- Favicon + apple-icon: `apps/spa/public/` has both, sourced from the existing `app/favicon.ico`
+  and `app/apple-icon.png` brand assets rather than regenerated. Confirmed 2026-08-09.
 - Settings page structured and clear (explicit owner request).
 - Sentry via `@sentry/react`. No Vercel Analytics.
 - Tests: Vitest units per feature, Playwright e2e rewritten against the SPA's routing.
@@ -115,6 +150,17 @@ Phase 1 verification + Phase 3.
 ### PR 2 — native Expo app + APK → `dev`
 
 Phase 2 + Phase 4. This is the bulk of the remaining work.
+
+> **Not a reviewable unit as scoped, and blocked on the architecture decision.** As written this
+> PR combines Expo build tooling, a new persistence layer and schema, a complete second UI, every
+> device integration, native test tooling, CI, branding and release signing. That is a program of
+> work, and one giant native PR followed by one owner test makes review ceremonial. Whatever
+> architecture wins, it splits into: a feasibility and build PR; a device-capability go/no-go
+> spike verified on the owner's device; onboarding and settings; the daily-wird slice; content
+> flows; the prayer-times slice; then stats, qada and export. Each ends in a runnable build.
+>
+> The device-capability spike comes first and is the gate for everything else. See
+> `docs/migration/architecture-reassessment.md`.
 
 - Scaffold `apps/native` (Expo managed, Android-only, app id `com.nabd.app`).
 - Onboarding → persisted state vertical slice on `expo-sqlite`, proven on a real Android
