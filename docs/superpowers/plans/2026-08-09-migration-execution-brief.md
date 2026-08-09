@@ -122,11 +122,12 @@ The ADR merge this PR originally called for already happened in PR #160. What re
 
 Phase 1 verification + Phase 3.
 
-> **Paused pending the architecture decision.** See
+> **A reassessment of the architecture is open**, in
 > `docs/migration/architecture-reassessment.md`. Two of ADR-0014's premises turned out to be
-> wrong, and the route-porting half of this PR is the work most at risk of being thrown away if
+> wrong. It proposes pausing the `/app/*` porting half of this PR until an Expo
+> device-capability spike reports, because that is the work most at risk of being thrown away if
 > the architecture changes. The landing page, SEO and branding half is safe under every option
-> and can proceed. Do not port `/app/*` until the Expo device-capability spike reports.
+> either way. If the owner declines the reassessment, this PR proceeds as originally scoped.
 
 - **First, rebase `ibrahim/phase1-spa-scaffold` onto `dev`.** It branched before the ADR merge.
   Without the rebase, PR 1's diff reintroduces the ADR and its `AGENTS.md` base predates the
@@ -151,16 +152,14 @@ Phase 1 verification + Phase 3.
 
 Phase 2 + Phase 4. This is the bulk of the remaining work.
 
-> **Not a reviewable unit as scoped, and blocked on the architecture decision.** As written this
-> PR combines Expo build tooling, a new persistence layer and schema, a complete second UI, every
-> device integration, native test tooling, CI, branding and release signing. That is a program of
-> work, and one giant native PR followed by one owner test makes review ceremonial. Whatever
-> architecture wins, it splits into: a feasibility and build PR; a device-capability go/no-go
-> spike verified on the owner's device; onboarding and settings; the daily-wird slice; content
-> flows; the prayer-times slice; then stats, qada and export. Each ends in a runnable build.
->
-> The device-capability spike comes first and is the gate for everything else. See
-> `docs/migration/architecture-reassessment.md`.
+> **Not a reviewable unit as scoped.** This holds regardless of which architecture wins. As
+> written the PR combines Expo build tooling, a new persistence layer and schema, a complete
+> second UI, every device integration, native test tooling, CI, branding and release signing.
+> That is a program of work, and one giant native PR followed by one owner test makes review
+> ceremonial. It splits into: a feasibility and build PR; a device-capability go/no-go spike
+> verified on the owner's device; onboarding and settings; the daily-wird slice; content flows;
+> the prayer-times slice; then stats, qada and export. Each ends in a runnable build, and the
+> device-capability spike comes first.
 
 - Scaffold `apps/native` (Expo managed, Android-only, app id `com.nabd.app`).
 - Onboarding → persisted state vertical slice on `expo-sqlite`, proven on a real Android
