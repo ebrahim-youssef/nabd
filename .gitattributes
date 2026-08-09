@@ -1,0 +1,32 @@
+# Normalize line endings. Without this the repo mixes CRLF and LF, and prettier
+# (run by lint-staged on every commit) rewrites a whole file the first time it is
+# touched, burying the real change in the diff.
+* text=auto eol=lf
+
+# Windows batch files break if checked out with LF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Shell scripts must stay LF even on a Windows checkout.
+*.sh text eol=lf
+android/gradlew text eol=lf
+
+# Binary assets — never normalized, never diffed as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.mp3 binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.jar binary
+*.keystore binary
+*.aab binary
+*.apk binary
+
+# Lockfile: generated, no point reviewing line by line.
+pnpm-lock.yaml -diff linguist-generated
