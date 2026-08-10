@@ -1,4 +1,4 @@
-name: native-debug-apk
+name: native-release-apk
 
 on:
   workflow_dispatch:
@@ -9,8 +9,11 @@ on:
       - '.github/workflows/native-apk.yml'
 
 concurrency:
-  group: native-debug-apk-${{ github.ref }}
+  group: native-release-apk-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   apk:

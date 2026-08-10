@@ -6,12 +6,32 @@ const PURE_LOGIC_RESTRICTED_IMPORTS = [
   'react-dom',
   'react/*',
   'react-dom/*',
+  'react-native',
+  'react-native/*',
+  'expo',
+  'expo/*',
+  'expo-*',
+  '@expo/*',
+  '@capacitor/*',
   'dexie',
   'dexie-react-hooks',
   '@supabase/*',
   '@supabase/**',
+  '@sentry/*',
   'next',
   'next/*',
+  'node:*',
+  'fs',
+  'fs/*',
+  'path',
+  'path/*',
+  'http',
+  'https',
+  'net',
+  'tls',
+  'child_process',
+  'worker_threads',
+  'axios',
   'dom',
   'dom/*',
   'jsdom',
@@ -38,6 +58,15 @@ const DOM_GLOBALS = [
   'Node',
   'Event',
   'CustomEvent',
+  'XMLHttpRequest',
+  'WebSocket',
+  'fetch',
+  'process',
+  'Buffer',
+  'require',
+  'module',
+  '__dirname',
+  '__filename',
 ]
 
 export default defineConfig([
@@ -51,7 +80,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['src/logic/**/*.ts'],
+    files: ['src/{logic,types,content,copy,contracts,constants}/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -67,6 +96,18 @@ export default defineConfig([
       'no-restricted-globals': [
         'error',
         ...DOM_GLOBALS.map((name) => ({ name, message: MSG_LOGIC_NO_PLATFORM })),
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']",
+          message: 'Shared domain modules receive time as a parameter; Date.now() is forbidden.',
+        },
+        {
+          selector: "CallExpression[callee.object.name='Math'][callee.property.name='random']",
+          message:
+            'Shared domain modules receive generated values as parameters; Math.random() is forbidden.',
+        },
       ],
     },
   },
