@@ -7,6 +7,11 @@ on:
       - 'apps/native/**'
       - 'packages/shared/**'
       - '.github/workflows/native-apk.yml'
+      # Dependency and resolution changes break the native build without touching native code.
+      # A bad lockfile and an unpinned react-dom both shipped green because this job never ran.
+      - 'pnpm-lock.yaml'
+      - 'package.json'
+      - '.npmrc'
 
 concurrency:
   group: native-debug-apk-${{ github.ref }}
