@@ -8,17 +8,25 @@ import { openMigratedDatabase } from '../db/database'
 
 export type DiagnosticScreenProps = {
   loadSchemaVersion?: () => Promise<number>
+  sdkVersion?: string
 }
 
 const defaultLoadSchemaVersion = async () => (await openMigratedDatabase()).version
 
+// Shown when the SDK version cannot be read. This screen exists to tell the truth about a build,
+// so an unknown version must read as unknown; a hardcoded fallback would report a version the
+// build does not have.
+const UNKNOWN_SDK_VERSION = 'غير معروف'
+
+const defaultSdkVersion = () => Constants.expoConfig?.sdkVersion ?? UNKNOWN_SDK_VERSION
+
 export function DiagnosticScreen({
   loadSchemaVersion = defaultLoadSchemaVersion,
+  sdkVersion = defaultSdkVersion(),
 }: DiagnosticScreenProps) {
   const [schemaVersion, setSchemaVersion] = useState<string>('جارٍ الفحص…')
   const locale = Localization.getLocales()[0]?.languageTag ?? 'ar'
   const direction = I18nManager.isRTL ? 'RTL' : 'LTR'
-  const sdkVersion = Constants.expoConfig?.sdkVersion ?? '55'
 
   useEffect(() => {
     let active = true
