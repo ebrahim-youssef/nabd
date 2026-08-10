@@ -20,7 +20,6 @@ export function LandingPage() {
           className="mx-auto grid max-w-5xl items-center gap-8 px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-12 lg:grid-cols-2 lg:gap-12 lg:px-8 lg:pb-20 lg:pt-16"
         >
           <div className="text-start">
-            <p className="mb-3 text-small font-semibold text-primary">{landingCopy.appName}</p>
             <h1
               className="m-0 max-w-xl font-display text-display font-bold text-primary-deep"
               id="landing-title"
@@ -36,28 +35,12 @@ export function LandingPage() {
             aria-hidden="true"
             className="relative mx-auto flex aspect-square w-full max-w-sm items-center justify-center rounded-ring bg-primary shadow-card"
           >
-            <div className="flex size-3/4 items-center justify-center rounded-ring border border-on-primary/20">
-              <div className="flex size-3/4 items-center justify-center rounded-ring border border-on-primary/30 font-display text-display font-bold text-on-primary">
-                {landingCopy.appName}
-              </div>
-            </div>
+            <img alt="" aria-hidden="true" className="size-full" src="/icon-foreground.svg" />
           </div>
         </section>
 
-        <section aria-labelledby="features-title" className="bg-surface-2 py-12 sm:py-16 lg:py-20">
+        <div className="bg-surface-2 py-12 sm:py-16 lg:py-20">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-8 text-start sm:mb-10">
-              <span aria-hidden="true" className="text-title text-gold">
-                ۞
-              </span>
-              <h2
-                className="mt-2 font-display text-title font-bold text-primary-deep"
-                id="features-title"
-              >
-                {landingCopy.appName}
-              </h2>
-            </div>
-
             <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
               {landingCopy.valueProps.map((valueProp, index) => (
                 <li
@@ -75,7 +58,7 @@ export function LandingPage() {
               ))}
             </ul>
           </div>
-        </section>
+        </div>
       </main>
 
       <footer className="border-t border-border bg-surface py-6 text-center text-small text-muted-foreground">
