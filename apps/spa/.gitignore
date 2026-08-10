@@ -1,0 +1,4 @@
+# Deterministic outputs from scripts/generate-assets.mjs.
+/public/robots.txt
+/public/sitemap.xml
+/src/generated-theme.css
