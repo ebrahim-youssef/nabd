@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "نبض",
+    "slug": "nabd",
+    "version": "0.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nabd",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "platforms": ["android"],
+    "plugins": ["expo-router", "expo-localization", "expo-sqlite", "@sentry/react-native/expo"],
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#eaf2f0"
+    },
+    "android": {
+      "package": "com.nabd.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#eaf2f0"
+      }
+    },
+    "extra": {
+      "supportsRTL": true,
+      "forcesRTL": true,
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}
