@@ -27,6 +27,12 @@ jobs:
             run: pnpm --filter apps-spa test
           - name: spa build
             run: pnpm --filter apps-spa build
+          - name: native lint
+            run: pnpm --filter apps-native lint
+          - name: native typecheck
+            run: pnpm --filter apps-native typecheck
+          - name: native test
+            run: pnpm --filter apps-native test
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
