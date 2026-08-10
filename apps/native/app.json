@@ -9,7 +9,13 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "platforms": ["android"],
-    "plugins": ["expo-router", "expo-localization", "expo-sqlite", "@sentry/react-native/expo"],
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-sqlite",
+      "@sentry/react-native/expo",
+      "./plugins/withNabdDeviceCapabilities"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
