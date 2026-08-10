@@ -122,12 +122,12 @@ The ADR merge this PR originally called for already happened in PR #160. What re
 
 Phase 1 verification + Phase 3.
 
-> **A reassessment of the architecture is open**, in
-> `docs/migration/architecture-reassessment.md`. Two of ADR-0014's premises turned out to be
-> wrong. It proposes pausing the `/app/*` porting half of this PR until an Expo
-> device-capability spike reports, because that is the work most at risk of being thrown away if
-> the architecture changes. The landing page, SEO and branding half is safe under every option
-> either way. If the owner declines the reassessment, this PR proceeds as originally scoped.
+> **Unblocked 2026-08-10.** The architecture reassessment is resolved: the owner wanted native
+> capabilities the WebView could not provide, so Capacitor is rejected and ADR-0014's split is
+> confirmed. The SPA keeps its own presentation tree, so `/app/*` porting is no longer at risk of
+> being thrown away and proceeds as originally scoped.
+>
+> The landing page, SEO and branding half is already done and shipped separately.
 
 - **First, rebase `ibrahim/phase1-spa-scaffold` onto `dev`.** It branched before the ADR merge.
   Without the rebase, PR 1's diff reintroduces the ADR and its `AGENTS.md` base predates the
@@ -161,7 +161,8 @@ Phase 2 + Phase 4. This is the bulk of the remaining work.
 > the prayer-times slice; then stats, qada and export. Each ends in a runnable build, and the
 > device-capability spike comes first.
 
-- Scaffold `apps/native` (Expo managed, Android-only, app id `com.nabd.app`).
+- Scaffold `apps/native` (Expo **with config plugins and a development build**, not managed — see
+  ADR-0014 amendment A8; Android-only, app id `com.nabd.app`).
 - Onboarding → persisted state vertical slice on `expo-sqlite`, proven on a real Android
   build. Onboarding quality is an explicit owner request.
 - Every screen at parity, on `packages/shared` pure logic + native presentation.
