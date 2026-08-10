@@ -1,5 +1,5 @@
-import { DiagnosticScreen } from '../src/diagnostics/DiagnosticScreen'
+import { OnboardingGate } from '../src/onboarding/OnboardingGate'
 
 export default function IndexRoute() {
-  return <DiagnosticScreen />
+  return <OnboardingGate now={() => new Date()} />
 }

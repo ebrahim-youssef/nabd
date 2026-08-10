@@ -3,7 +3,7 @@
   "compilerOptions": {
     "strict": true,
     "noEmit": true,
-    "types": ["jest", "nativewind/types"]
+    "types": ["jest", "node", "nativewind/types"]
   },
   "include": ["app", "src", "*.ts", "*.tsx", "nativewind-env.d.ts"]
 }
