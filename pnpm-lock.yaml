@@ -45,6 +45,9 @@ importers:
       '@capawesome-team/capacitor-android-battery-optimization':
         specifier: ^7
         version: 7.0.0(@capacitor/core@7.6.8)
+      '@nabd/shared':
+        specifier: workspace:*
+        version: link:packages/shared
       '@sentry/nextjs':
         specifier: ^10.65.0
         version: 10.65.0(@opentelemetry/core@2.9.0(@opentelemetry/api@1.9.1))(@opentelemetry/sdk-trace-base@2.9.0(@opentelemetry/api@1.9.1))(next@16.2.10(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.61.1)(@types/node@20.19.43)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.4(react@19.2.3))(react@19.2.3))(react@19.2.3)(webpack@5.108.4)
