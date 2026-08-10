@@ -1,5 +1,10 @@
 # Stack — nabd
 
+> Migration scope: the stack below describes the legacy root application. The replacement
+> architecture is Vite + React Router + Dexie for `apps/spa`, Expo + SQLite for `apps/native`, and
+> platform-neutral code in `packages/shared`. See ADR-0014 and
+> `docs/migration/2026-08-10-execution-plan.md` before applying this file to new work.
+
 Next.js (App Router) + TypeScript strict + Tailwind v4 + shadcn/ui + Vitest + Playwright +
 pnpm + Vercel. Data: Dexie (local-first, offline source of truth) synced to Supabase
 (Postgres + Auth). UI state: Zustand. PWA: Serwist. No i18n layer (Arabic-only).

@@ -1,5 +1,10 @@
 # Architecture — nabd
 
+> Migration scope: the feature folders and Next.js route map below describe the legacy root
+> application. Their pure-logic and I/O boundaries remain parity requirements, while the
+> replacement folder and repository boundaries are governed by ADR-0014 and
+> `docs/migration/2026-08-10-execution-plan.md`.
+
 ## The one rule
 
 **Pure logic never touches I/O.** Every feature's calculations live in a pure `logic.ts`
