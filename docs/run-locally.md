@@ -56,7 +56,12 @@ pnpm --filter apps-spa build
 pnpm --filter apps-native lint
 pnpm --filter apps-native typecheck
 pnpm --filter apps-native test
+pnpm --filter apps-native build
 ```
+
+The native onboarding slice is covered by a real SQLite file close/reopen integration test plus
+rendered remount tests. Its final physical Android cold-restart check is intentionally held for the
+end-of-migration owner gate; Expo Go is not a target for this project.
 
 First-time Playwright setup (once): `pnpm dlx playwright install chromium`.
 

@@ -22,6 +22,12 @@ The root app's former pure/content modules are transitional compatibility re-exp
 modules receive data, dates, time, and generated values as parameters and cannot import a
 framework, storage library, device API, network client, Node API, or browser global.
 
+Native opens the named SQLite database at the root `SQLiteProvider`, which applies ordered schema
+migrations before routes render. Native feature repositories keep parameterized SQLite access under
+`apps/native/src/<feature>/db.ts`; the onboarding slice links its singleton completion state to the
+immutable initial wird version in one exclusive transaction. Versions have no mutable `active` flag:
+the version in force is always derived from `effectiveFrom` and `createdAt` per ADR-0006.
+
 ## The one rule
 
 **Pure logic never touches I/O.** Every feature's calculations live in a pure `logic.ts`
