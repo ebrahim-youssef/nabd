@@ -7,10 +7,12 @@ Instructions for any AI coding agent working in this repo. Read this first, ever
 The repository is mid-migration from the Next.js application at the root to a Vite SPA
 (`apps/spa`) plus an Expo Android application (`apps/native`), sharing `packages/shared`.
 
-[`docs/adr/0014-spa-native-split.md`](./docs/adr/0014-spa-native-split.md) and its 2026-08-09
-amendment supersede parts of this file. When working in `apps/*` or `packages/shared`, that ADR
-wins over anything here. Specifically, these statements below apply **only to the Next.js
-application at the root**, not to the new workspaces:
+[`docs/adr/0014-spa-native-split.md`](./docs/adr/0014-spa-native-split.md), including its
+2026-08-10 amendment, and
+[`docs/migration/2026-08-10-execution-plan.md`](./docs/migration/2026-08-10-execution-plan.md)
+supersede parts of this file. When working in `apps/*` or `packages/shared`, those decisions win
+over anything here. Specifically, these statements below apply **only to the Next.js application
+at the root**, not to the new workspaces:
 
 - PWA, installable, offline-first, and the Serwist service worker. The SPA has none of these;
   offline belongs to native only.
@@ -23,8 +25,9 @@ RTL-first with logical properties only, central Logger, no magic values, tests s
 code, green gates before push, and security review before merge.
 
 The execution contract for the remaining work is
-[`docs/superpowers/plans/2026-08-09-migration-execution-brief.md`](./docs/superpowers/plans/2026-08-09-migration-execution-brief.md).
-This file is rewritten in full when the Next.js application is removed.
+[`docs/migration/2026-08-10-execution-plan.md`](./docs/migration/2026-08-10-execution-plan.md).
+The 2026-08-09 brief is retained only as historical context. Rewrite this file in full only if a
+later, separately approved ticket removes the legacy application.
 
 ## What this is
 

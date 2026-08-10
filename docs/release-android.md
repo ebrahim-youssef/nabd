@@ -1,5 +1,9 @@
 # Android release (bundled APK — ADR-0013)
 
+> Legacy release path only. ADR-0014 supersedes Capacitor with the Expo application under
+> `apps/native`. Its release APK and verification procedure are delivered by NBD-87 and NBD-89;
+> do not use the commands below for the replacement app.
+
 The APK bundles a static export of the app (`out/`). There is no OTA: every native release
 is a rebuilt APK. Web deploys on Vercel do not reach installed apps.
 

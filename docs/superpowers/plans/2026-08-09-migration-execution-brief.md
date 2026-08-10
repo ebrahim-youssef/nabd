@@ -6,6 +6,13 @@ Next.js → SPA + native migration. It sits on top of, and does not replace:
 - `docs/adr/0014-spa-native-split.md`
 - `docs/superpowers/plans/2026-08-05-nextjs-to-spa-native-migration.md` (phase roadmap)
 
+> **Superseded delivery grouping, 2026-08-10.** The owner replaced this brief's PR 0-3 grouping
+> with the smaller NBD-80 through NBD-89 issue sequence in
+> `docs/migration/2026-08-10-execution-plan.md`. That plan also withdraws deletion of the legacy
+> source from the migration, requires strict design parity, targets Cloudflare instead of Vercel,
+> chooses Maestro, and defines the release APK plus final owner device test as the native gate.
+> Keep the sections below as historical context; execute the 2026-08-10 plan.
+
 Read both before executing. Where this brief and ADR-0014 disagree, the disagreements are
 listed under "New owner decisions" below; ADR-0014's 2026-08-09 amendment records them.
 

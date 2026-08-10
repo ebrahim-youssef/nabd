@@ -1,6 +1,6 @@
 # ADR-0014 — SPA + native client split
 
-- **Status:** accepted (owner decision 2026-08-05), amended 2026-08-09 (see "Amendment")
+- **Status:** accepted (owner decision 2026-08-05), amended 2026-08-09 and 2026-08-10
 - **Date:** 2026-08-05
 
 ## Context
@@ -200,3 +200,56 @@ The owner closed it on 2026-08-10: they wanted native capabilities the WebView c
   from RN primitives is required under a unified tree whatever component library the web app uses.
 
 The reasoning is in `docs/migration/architecture-reassessment.md`.
+
+## Amendment (2026-08-10)
+
+- **Status:** accepted (owner decision 2026-08-10)
+
+This amendment supersedes A1 through A4 only where stated below. A5 through A9 remain in force.
+The detailed ticket sequence is `docs/migration/2026-08-10-execution-plan.md`.
+
+### A10 - legacy deletion returns to a separate owner gate
+
+A1 and A2 authorized deleting the Next.js and Capacitor source as part of the migration. The owner
+revised that decision on 2026-08-10.
+
+- The SPA production cutover retires the old deployment, not the source tree.
+- The legacy source remains available as the implementation reference and rollback record after
+  migration completion.
+- Deleting the legacy source requires another explicit owner decision after production soak.
+- Git history alone is not treated as the operational rollback path.
+
+Read A1 and A2 as historical authorization that this amendment withdraws.
+
+### A11 - Cloudflare replaces Vercel
+
+A3 described `master` as auto-deploying the current application through Vercel. The replacement
+SPA is prepared for Cloudflare instead.
+
+- Cloudflare configuration includes SPA history fallback for direct `/app/*` requests.
+- The migration produces a verified Cloudflare build and deployment runbook; it does not deploy or
+  move the production domain.
+- Vercel workflows, configuration files, Analytics integration, and deployment documentation are
+  removed before migration completion.
+- Sentry remains the application error-reporting service.
+- Cloudflare deployment credentials and the production-domain change remain an owner-operated
+  release action outside this migration.
+
+### A12 - parity excludes redesign
+
+A4 required production quality but did not settle whether the port could change the design. It
+cannot. The migration preserves the reference behavior and visual system. Platform-native
+interaction differences are allowed only where the platform requires them; design changes need
+their own ticket and owner decision.
+
+### A13 - final device verification gate
+
+The owner will perform the full real-device matrix after all migration code is complete. Native
+device work may therefore accumulate on an integration stack, but it cannot merge into `dev`
+until that final APK verification passes. Maestro provides automated Android flow coverage before
+the owner gate; it does not replace the owner test.
+
+### A14 - native artifact
+
+The native migration deliverable is a release APK. A signed Play-uploadable AAB and Play Store
+publication are deferred.
