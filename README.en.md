@@ -9,6 +9,15 @@ hold yourself to account (محاسبة), and look back over your worship as the 
 
 The interface is entirely in Arabic, right to left.
 
+## Migration status
+
+The currently working product is the root Next.js application and Capacitor shell. Two parity
+replacements are being built without redesigning the product: a Vite and React Router web client
+in `apps/spa`, and an Expo Android client in `apps/native`. All three clients now compile against
+the canonical domain rules and Arabic content in `packages/shared`.
+
+The replacement clients do not yet have full feature parity and are not production releases.
+
 ## What it does
 
 - **Daily wird**: a single page that lays out today's wird as a checklist you tick off:
@@ -35,22 +44,23 @@ The interface is entirely in Arabic, right to left.
 
 ## Works offline
 
-nabd is offline-first. Your data lives on your device first, so the app runs in full even when
-the connection drops, then syncs to your account once you sign in so you find it on all your
-devices.
+The current application is offline-first: it stores data locally, then syncs it to an account.
+In the replacement architecture, full offline behavior belongs to the Android client. The new
+web client does not promise offline operation and does not include sync or sign-in in this phase.
 
 ## Where it runs
 
-- **Installable web app (PWA)**: opens in the browser and installs to the home screen.
-- **Native Android app**: built on Capacitor, with exact prayer notifications that fire while
-  the app is closed, and a native feel in touch, motion, and appearance.
+- **Current release**: an installable web app with a Capacitor Android shell.
+- **Replacement in progress**: a regular web client in `apps/spa` and an Expo Android client in
+  `apps/native`; neither is approved for production yet.
 
 ## Tech
 
-Next.js (App Router) and TypeScript, Tailwind with shadcn/ui, Dexie for local storage with
-Supabase for sync and sign-in, Zustand for state, a service worker via Serwist, prayer-time
-calculation with the adhan library, and an Android shell via Capacitor. Tests run on Vitest and
-Playwright, deploys go to Vercel, and monitoring is through Sentry and Vercel Analytics.
+The current client uses Next.js, Dexie, Supabase, Serwist, and Capacitor. The replacement uses
+Vite and React Router for web, Expo and SQLite for Android, and a platform-neutral shared
+TypeScript package. The SPA will be prepared for Cloudflare, while Sentry remains the error
+monitor. Verification spans Vitest, Playwright, React Native tests, and Maestro before the final
+owner device check.
 
 ## Run locally
 

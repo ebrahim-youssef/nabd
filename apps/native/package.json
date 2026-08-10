@@ -1,0 +1,50 @@
+{
+  "name": "apps-native",
+  "version": "0.0.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "generate:assets": "node scripts/generate-assets.mjs",
+    "prestart": "pnpm generate:assets",
+    "start": "expo start --dev-client --android",
+    "prebuild": "pnpm generate:assets",
+    "build": "expo export --platform android",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "pretest": "pnpm generate:assets",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@nabd/shared": "workspace:*",
+    "@sentry/react-native": "~7.11.0",
+    "expo": "~57.0.11",
+    "expo-constants": "~57.0.9",
+    "expo-localization": "~57.0.1",
+    "expo-router": "~57.0.11",
+    "expo-splash-screen": "~57.0.5",
+    "expo-sqlite": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.2",
+    "nativewind": "^4.2.6",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-reanimated": "4.5.1",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.2",
+    "react-native-worklets": "0.10.1",
+    "tailwindcss": "^3.4.19"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/jest": "^29.5.14",
+    "@types/react": "~19.2.2",
+    "@typescript-eslint/parser": "^8.64.0",
+    "babel-preset-expo": "~57.0.0",
+    "eslint": "^9",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "jest": "^29.7.0",
+    "jest-expo": "~57.0.3",
+    "typescript": "^6.0.3"
+  }
+}
