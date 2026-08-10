@@ -31,12 +31,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter apps-native generate:assets
       - run: pnpm --filter apps-native exec expo prebuild --platform android --no-install
-      - name: Assemble debug APK
+      # Release, not debug. A debug React Native APK contains no JS bundle: it expects a Metro
+      # dev server on the same network, so installing one standalone shows a red error screen.
+      # Release embeds the bundle. Expo's template signs release with the debug keystore, which
+      # is fine for owner test builds and is never a Play Store upload key.
+      - name: Assemble release APK
         working-directory: apps/native/android
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: nabd-debug-${{ github.run_number }}-${{ github.sha }}
-          path: apps/native/android/app/build/outputs/apk/debug/app-debug.apk
+          name: nabd-apk-${{ github.run_number }}-${{ github.sha }}
+          path: apps/native/android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 14
