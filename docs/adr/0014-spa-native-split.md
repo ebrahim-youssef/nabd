@@ -160,3 +160,43 @@ The repository docs that describe the Next.js application (`AGENTS.md`, `docs/ar
 application they describe. Until then `AGENTS.md` carries a migration-status pointer to this
 ADR, so that agents working in `apps/*` and `packages/shared` do not follow its superseded PWA
 and Supabase statements.
+
+### A8 — Expo with config plugins, not Expo managed (2026-08-10)
+
+Correction. This ADR and the phase roadmap both describe the native application as "Expo managed".
+Managed Expo cannot host what the application already does. The current Android project carries
+463 lines of bespoke Java that has no managed equivalent:
+
+| File                               | Lines | What it does                                                                   |
+| ---------------------------------- | ----: | ------------------------------------------------------------------------------ |
+| `CountdownFormatter.java`          |   208 | Boundary formatting and `SharedPreferences` state for the ongoing notification |
+| `LocationEnablerPlugin.java`       |    84 | Google Play Services in-app resolution for the device GPS switch               |
+| `AlarmAudioPlugin.java`            |    77 | Parallel `USAGE_ALARM` channels so the adhan plays on silent                   |
+| `CountdownNotificationPlugin.java` |    56 | WorkManager-driven persistent countdown                                        |
+| `CountdownWorker.java`             |    20 | The periodic worker itself                                                     |
+
+`apps/native` is therefore Expo with config plugins and a development build, using `prebuild` to
+generate the Android project. Expo Go is not a target. Read every "Expo managed" in this ADR and in
+the phase roadmap as that.
+
+### A9 — the architecture question was reopened and closed (2026-08-10)
+
+Two of this ADR's premises were found to be wrong about the repository: the Radix/shadcn UI it
+declines to discard does not exist here beyond a single `Slot` import, and the managed-Expo
+assumption corrected in A8. That reopened the choice between this split, a unified React Native Web
+tree, and keeping Capacitor with the new SPA.
+
+The owner closed it on 2026-08-10: they wanted native capabilities the WebView could not provide.
+
+- Capacitor is rejected on that requirement. This is the repository-specific technical argument
+  this ADR originally lacked; its "Alternatives rejected" note declines Capacitor mainly by
+  observing that choosing it would reverse ADR-0012/0013, which records lineage rather than
+  fitness. Treat A9 as the actual reason.
+- The split stands. A unified React Native Web tree would rebuild the web UI from RN primitives,
+  which works against this ADR's own requirement that `/` and the web application be fast and
+  search-visible, in exchange for single-tree maintenance that was not a stated goal.
+- The Radix/shadcn sentence under "Alternatives rejected" is factually wrong about this repository
+  and should be read as void. The surrounding argument does not depend on it: rebuilding the web UI
+  from RN primitives is required under a unified tree whatever component library the web app uses.
+
+The reasoning is in `docs/migration/architecture-reassessment.md`.
