@@ -1,10 +1,41 @@
 # Architecture reassessment, 2026-08-09
 
-Status: open. This memo does not decide anything. It records that two of the facts ADR-0014
-reasoned from are wrong, sets out the three architectures now on the table, and proposes one
-cheap experiment that settles the choice with evidence instead of argument.
+Status: **resolved 2026-08-10.** Kept as the record of how the question was asked and answered.
+The rest of this memo is the analysis as written on 2026-08-09, unchanged.
 
-Owner decision required before the SPA's `/app/*` routes are built.
+## Decision (2026-08-10)
+
+The owner answered the memo's first question directly: they wanted native capabilities the WebView
+could not provide.
+
+That settles it, and it settles it on a requirement rather than on decision lineage, which is what
+ADR-0014 was missing.
+
+- **Option A, SPA + Capacitor, is rejected.** Not on cost, and not because reversing it would
+  contradict an earlier ADR, but because the WebView substrate does not deliver a stated
+  requirement. This is the repository-specific argument against Capacitor that ADR-0014 never
+  made.
+- **Option B, the split in ADR-0014, is confirmed.** The owner wants both a fast, SEO-strong web
+  app and real native capability. Option C would rebuild the web UI from React Native Web
+  primitives, trading away the first to buy single-tree maintenance that was never asked for, and
+  it carries the highest up-front cost of the three. B keeps the existing DOM and Tailwind UI for
+  the web and spends the effort where the requirement actually is.
+- **One correction to ADR-0014 still stands**, recorded as A8 of its amendment: the app is Expo
+  with config plugins and a development build, not Expo managed. Managed cannot host the existing
+  alarm-audio channels, the WorkManager countdown, or the Play Services location resolution.
+
+The device-capability spike is still the next step, but its status changes. It is no longer a
+three-way tiebreaker. It is now a feasibility gate on the confirmed architecture: it must prove
+Expo can reproduce what the Capacitor app already does, and the answer decides schedule and scope,
+not direction.
+
+`/app/*` porting is unblocked. Under the confirmed split the SPA keeps its own presentation tree,
+so that work is no longer at risk of being thrown away.
+
+**Still open, and now the highest-value unknown:** which native capabilities the WebView could not
+provide. If there are capabilities the owner wanted and never got, they are requirements the parity
+ledger does not contain, because the ledger describes what exists rather than what was wanted. They
+need capturing before native feature work is called complete.
 
 ## Why this was reopened
 
