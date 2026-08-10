@@ -12,8 +12,6 @@ next-env.d.ts
 dist/
 
 # Env — never commit real values (see .env.example)
-.env
-.env.*
 !.env.example
 
 # Test & coverage artifacts

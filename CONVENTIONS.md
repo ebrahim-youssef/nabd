@@ -64,6 +64,17 @@ Before writing anything new, search first:
 
 Only create once the search comes up empty.
 
+## Shared domain ownership during migration
+
+- Put platform-neutral domain types, Arabic product content, pure calculations, repository
+  contracts, and cross-platform tokens in `packages/shared` first.
+- Root `lib/pure`, `content`, and feature `logic.ts` compatibility files may re-export
+  `@nabd/shared`; do not copy the implementation back into a client.
+- Repository contracts live in shared, but Dexie, SQLite, Supabase, browser, Expo, and device I/O
+  implementations stay in their client.
+- Shared logic receives dates, times, ids, and data as parameters. `Date.now()`, `Math.random()`,
+  platform globals, and framework/I/O imports are lint errors.
+
 ## Commits & versioning
 
 **Conventional Commits**, scope = the feature or module most affected, enforced by commitlint.

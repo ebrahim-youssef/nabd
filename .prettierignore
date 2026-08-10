@@ -7,6 +7,14 @@ test-results/
 next-env.d.ts
 components/ui/
 
+# Legacy documentation keeps its existing line endings and house formatting.
+CONVENTIONS.md
+README.md
+README.en.md
+docs/architecture.md
+docs/backlog.md
+docs/run-locally.md
+
 # Generated Serwist service worker bundle
 public/sw.js
 public/sw.js.map

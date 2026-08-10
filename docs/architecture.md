@@ -5,6 +5,23 @@
 > replacement folder and repository boundaries are governed by ADR-0014 and
 > `docs/migration/2026-08-10-execution-plan.md`.
 
+## Replacement shared-domain boundary
+
+`packages/shared` is the canonical owner of platform-neutral product code used by the root,
+SPA, and native clients:
+
+- `src/types`: domain and view-result shapes.
+- `src/content` and `src/copy`: Arabic product content and reusable copy.
+- `src/logic`: pure calculations and state transitions.
+- `src/contracts`: repository interfaces only, never storage implementations.
+- `src/tokens`: cross-platform design-token values.
+
+The root app's former pure/content modules are transitional compatibility re-exports from
+`@nabd/shared`; they must not acquire a second implementation. Dexie stays in root feature
+`db.ts` files, SQLite stays under `apps/native`, and SPA storage stays under `apps/spa`. Shared
+modules receive data, dates, time, and generated values as parameters and cannot import a
+framework, storage library, device API, network client, Node API, or browser global.
+
 ## The one rule
 
 **Pure logic never touches I/O.** Every feature's calculations live in a pure `logic.ts`
