@@ -1,0 +1,54 @@
+name: native-release-apk
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'apps/native/**'
+      - 'packages/shared/**'
+      - '.github/workflows/native-apk.yml'
+
+concurrency:
+  group: native-release-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter apps-native generate:assets
+      - run: pnpm --filter apps-native exec expo prebuild --platform android --no-install
+      # Release, not debug. A debug React Native APK contains no JS bundle: it expects a Metro
+      # dev server on the same network, so installing one standalone shows a red error screen.
+      # Release embeds the bundle. Expo's template signs release with the debug keystore, which
+      # is fine for owner test builds and is never a Play Store upload key.
+      - name: Assemble release APK
+        working-directory: apps/native/android
+        # Sentry's gradle integration uploads source maps on release builds. There is no auth
+        # token in CI and these are owner test builds, so turn the upload off rather than let it
+        # fail the build.
+        env:
+          SENTRY_DISABLE_AUTO_UPLOAD: 'true'
+        run: ./gradlew assembleRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nabd-apk-${{ github.run_number }}-${{ github.sha }}
+          path: apps/native/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+@import './generated-theme.css';
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply scroll-smooth font-sans;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply m-0 min-h-screen bg-background text-foreground antialiased;
+  }
+
+  a {
+    @apply focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

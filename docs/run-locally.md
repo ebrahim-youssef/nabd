@@ -1,8 +1,7 @@
 # Run locally — nabd
 
-Prerequisites: **Node.js** (LTS) and **pnpm**. This repo is pre-bootstrap — until ticket
-NBD-1 runs, the app scaffold does not exist yet; see `docs/stack.md` §1 for the bootstrap
-sequence.
+Prerequisites: **Node.js** (LTS) and **pnpm**. The root application is the current legacy client;
+the migration workspaces are `packages/shared`, `apps/spa`, and `apps/native`.
 
 ## Environment
 
@@ -12,16 +11,21 @@ Copy the example env file and fill in real values (from the Supabase and Sentry 
 cp .env.example .env.local
 ```
 
-`.env.local` is gitignored. `.env.example` documents every variable. Supabase URL + anon key
-are required for auth and sync; Sentry vars are required for error tracking; Vercel Analytics
-needs no local var.
+`.env.local` is gitignored. `.env.example` documents variables for the root application.
+`apps/native/.env.example` documents the native Sentry variable. The replacement clients do not
+use Supabase during this migration.
 
 ## Install & run
 
 ```bash
 pnpm install          # install dependencies
-pnpm dev              # start the dev server (http://localhost:3000)
+pnpm dev              # current Next.js client (http://localhost:3000)
+pnpm --filter apps-spa dev       # replacement SPA
+pnpm --filter apps-native start  # replacement Android client and Metro
 ```
+
+The native command requires an Android development environment and a connected emulator or
+device. CI builds the standalone release APK.
 
 ## Quality gates (must all exit 0 before any push)
 
@@ -37,6 +41,21 @@ Combined local gate:
 
 ```bash
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
+```
+
+Migration-workspace gates:
+
+```bash
+pnpm --filter @nabd/shared lint
+pnpm --filter @nabd/shared typecheck
+pnpm --filter @nabd/shared test
+pnpm --filter apps-spa lint
+pnpm --filter apps-spa typecheck
+pnpm --filter apps-spa test
+pnpm --filter apps-spa build
+pnpm --filter apps-native lint
+pnpm --filter apps-native typecheck
+pnpm --filter apps-native test
 ```
 
 First-time Playwright setup (once): `pnpm dlx playwright install chromium`.
