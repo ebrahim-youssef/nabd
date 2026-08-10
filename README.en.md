@@ -16,7 +16,9 @@ replacements are being built without redesigning the product: a Vite and React R
 in `apps/spa`, and an Expo Android client in `apps/native`. All three clients now compile against
 the canonical domain rules and Arabic content in `packages/shared`.
 
-The replacement clients do not yet have full feature parity and are not production releases.
+The replacement clients do not yet have full feature parity and are not production releases. The
+Android client now has an Arabic onboarding gate that persists the selected level and initial wird
+in SQLite and restores them when reopened; final Android device verification remains an owner gate.
 
 ## What it does
 
