@@ -1,5 +1,11 @@
 # Product Spec — nabd
 
+> Migration scope: this document describes the legacy Next.js/PWA product contract. For the
+> replacement SPA and Android clients, ADR-0014 and
+> `docs/migration/2026-08-10-execution-plan.md` supersede the PWA, web-offline, Supabase/auth,
+> data-migration, hosting, and release assumptions. The devotional feature behavior remains the
+> parity reference.
+
 Daily wird (ورد) companion for Muslims — helps you commit to a daily devotional routine,
 track it, hold yourself accountable (محاسبة), and reflect on your worship over time.
 
