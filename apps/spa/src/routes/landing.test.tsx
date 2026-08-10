@@ -13,7 +13,7 @@ describe('LandingPage', () => {
     render(<LandingPage />)
 
     expect(screen.getByRole('heading', { level: 1, name: landingCopy.tagline })).toBeInTheDocument()
-    expect(screen.getAllByText(landingCopy.appName).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(landingCopy.appName)).toHaveLength(2)
     expect(screen.getByText(landingCopy.description)).toBeInTheDocument()
 
     for (const valueProp of landingCopy.valueProps) {
