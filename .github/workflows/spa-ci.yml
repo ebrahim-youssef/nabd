@@ -27,8 +27,8 @@ jobs:
             run: pnpm --filter apps-spa typecheck
           - name: spa test
             run: pnpm --filter apps-spa test
-          - name: spa build
-            run: pnpm --filter apps-spa build
+          - name: spa build:cloudflare
+            run: pnpm --filter apps-spa build:cloudflare
           - name: native lint
             run: pnpm --filter apps-native lint
           - name: native typecheck

@@ -23,6 +23,9 @@ test-results/
 blob-report/
 .playwright/
 
+# Wrangler local state (Cloudflare dev/preview cache)
+.wrangler/
+
 # Editor / OS
 .DS_Store
 *.log
