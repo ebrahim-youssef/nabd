@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { ADHKAR_LIBRARY, INTENTIONS_LIBRARY, WIRD_LEVELS } from '../../index'
+import { ADHKAR_LIBRARY, INTENTIONS_LIBRARY, NAV_ORDER, shellCopy, WIRD_LEVELS } from '../../index'
 
 describe('canonical Arabic content', () => {
   it('has stable unique level and adhkar identifiers', () => {
@@ -15,5 +15,10 @@ describe('canonical Arabic content', () => {
       ),
     ).toBe(true)
     expect(INTENTIONS_LIBRARY.every((entry) => entry.intentions.length > 0)).toBe(true)
+  })
+
+  it('exports the shared shell nav labels for the five-item pill', () => {
+    expect(NAV_ORDER).toHaveLength(5)
+    expect(NAV_ORDER.every((key) => shellCopy.nav[key].length > 0)).toBe(true)
   })
 })

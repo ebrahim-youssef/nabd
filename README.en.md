@@ -53,8 +53,9 @@ web client does not promise offline operation and does not include sync or sign-
 ## Where it runs
 
 - **Current release**: an installable web app with a Capacitor Android shell.
-- **Replacement in progress**: a regular web client in `apps/spa` and an Expo Android client in
-  `apps/native`; neither is approved for production yet.
+- **Replacement in progress**: the regular web client in `apps/spa` now has a public route, an
+  `/app/*` shell, and a locally verifiable Cloudflare build; the Expo Android client lives in
+  `apps/native`. Product parity is not complete and neither client is approved for production yet.
 
 ## Tech
 
