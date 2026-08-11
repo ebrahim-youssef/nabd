@@ -52,12 +52,24 @@ pnpm --filter @nabd/shared test
 pnpm --filter apps-spa lint
 pnpm --filter apps-spa typecheck
 pnpm --filter apps-spa test
-pnpm --filter apps-spa build
+pnpm --filter apps-spa build:cloudflare
 pnpm --filter apps-native lint
 pnpm --filter apps-native typecheck
 pnpm --filter apps-native test
 pnpm --filter apps-native build
 ```
+
+The Cloudflare command builds the SPA, verifies the emitted HTML, crawler files, `_headers`, and
+absence of PWA assets, then runs `wrangler deploy --dry-run`. It does not upload or require a
+Cloudflare account. To serve that same production artifact through the configured SPA fallback:
+
+```bash
+pnpm --filter apps-spa preview:cloudflare
+```
+
+While the preview is running, direct requests to `/`, `/app`, and `/app/settings` must return the
+SPA; `/app` and `/app/*` must also carry `X-Robots-Tag: noindex, nofollow`. This command is local
+only: it does not deploy, attach a domain, or change DNS.
 
 The native onboarding slice is covered by a real SQLite file close/reopen integration test plus
 rendered remount tests. Its final physical Android cold-restart check is intentionally held for the

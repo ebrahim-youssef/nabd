@@ -16,5 +16,12 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "site-metadata.ts", "vite.config.ts"]
+  "include": [
+    "src",
+    "e2e",
+    "site-metadata.ts",
+    "pre-paint.ts",
+    "playwright.config.ts",
+    "vite.config.ts"
+  ]
 }

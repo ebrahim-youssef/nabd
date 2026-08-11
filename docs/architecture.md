@@ -28,6 +28,24 @@ migrations before routes render. Native feature repositories keep parameterized 
 immutable initial wird version in one exclusive transaction. Versions have no mutable `active` flag:
 the version in force is always derived from `effectiveFrom` and `createdAt` per ADR-0006.
 
+The replacement SPA creates one React Router data router outside the React tree. `/` remains outside
+the application shell; `/app/*` owns the persistent RTL bottom navigation, route loading and error
+boundaries, and a fixed pre-paint appearance initializer. The NBD-83 subsection routes are bounded
+shell placeholders only; product data and screens arrive in NBD-84.
+
+Every route in that tree is covered by an error boundary at one of two levels: a pathless boundary
+inside the shell keeps navigation usable when a page fails, and a full-page boundary on the landing,
+the `/app` shell route, and the public catch-all covers failures where no layout can be trusted.
+
+Cloudflare Workers Static Assets serves `apps/spa/dist` without a Worker entry point and uses
+`single-page-application` fallback for direct application-route requests. Because that fallback
+answers every unmatched path with the same 200 document, the crawler boundary is stated as a
+default-deny: `_headers` sets `X-Robots-Tag: noindex, nofollow` on `/*` and detaches it for `/`
+alone, so `/` is the only indexable URL and no soft-404 path can leak into an index. `robots.txt`
+and the sitemap declare the same boundary for crawlers that read them, and non-public React routes
+add a runtime noindex directive for renderers that only read markup. The SPA has no manifest or
+service worker and makes no installability or offline-shell promise.
+
 ## The one rule
 
 **Pure logic never touches I/O.** Every feature's calculations live in a pure `logic.ts`
