@@ -1,0 +1,14 @@
+export const WIRD_COPY = {
+  empty: 'لا يوجد وِرد بعد.',
+  monthlyProgress: 'هذا الشهر',
+  targetToday: 'اليوم مستحب',
+  voluntary: 'تطوّع',
+  todayTitle: 'وِرد اليوم',
+  remainingPrefix: 'بقي',
+  remainingSuffix: 'من الوِرد',
+  celebrationTitle: 'أتمَمْتَ وِرْدَكَ اليوم',
+  celebrationHadith: '«أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ» — متفق عليه',
+  celebrationDismiss: 'واصِل',
+  toggleError: 'تعذّر حفظ التغيير. حاول مرة أخرى.',
+  summaryAria: (done: string, total: string) => `أنجزت ${done} من ${total}`,
+} as const
