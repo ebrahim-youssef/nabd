@@ -18,10 +18,6 @@ export function AppPlaceholder({ title }: { title: string }) {
   )
 }
 
-export function PrayerTimesRoute() {
-  return <AppPlaceholder title={shellCopy.nav.prayerTimes} />
-}
-
 export function StatsRoute() {
   return <AppPlaceholder title={shellCopy.nav.stats} />
 }

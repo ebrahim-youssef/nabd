@@ -11,6 +11,10 @@ export default defineConfig({
   use: {
     baseURL: previewUrl,
     locale: 'ar-EG',
+    // Pinned so prayer times are reproducible: they are wall-clock values derived from the
+    // runtime zone, and CI runs in UTC while a local machine does not. Without this, any
+    // assertion about a displayed time passes on one and fails on the other.
+    timezoneId: 'Africa/Cairo',
     trace: 'retain-on-failure',
   },
   webServer: {
