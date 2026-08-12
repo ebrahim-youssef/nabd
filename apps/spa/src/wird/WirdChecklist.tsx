@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { toArabicIndic, toDayId, WIRD_COPY } from '@nabd/shared'
 import type { ChecklistAreaView, ChecklistItemView } from '@nabd/shared'
 
+import { DhikrCounter } from '../counter/DhikrCounter'
 import { useToggleItem } from './useToggleItem'
 import { useWirdChecklist } from './useWirdChecklist'
 
@@ -54,11 +55,21 @@ export function WirdChecklist() {
               <ul className="flex flex-col gap-2" data-testid={`area-items-${area.id}`}>
                 {area.items.map((item) => (
                   <li key={item.id}>
-                    <ChecklistRow
-                      item={item}
-                      disabled={pendingItemIds.has(item.id)}
-                      onToggle={() => void toggle(day, item.id, !item.done)}
-                    />
+                    {item.kind === 'counter' && item.target ? (
+                      <DhikrCounter
+                        day={day}
+                        itemId={item.id}
+                        label={item.label}
+                        target={item.target}
+                        done={item.done}
+                      />
+                    ) : (
+                      <ChecklistRow
+                        item={item}
+                        disabled={pendingItemIds.has(item.id)}
+                        onToggle={() => void toggle(day, item.id, !item.done)}
+                      />
+                    )}
                   </li>
                 ))}
               </ul>
