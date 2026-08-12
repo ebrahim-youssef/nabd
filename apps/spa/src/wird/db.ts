@@ -1,0 +1,86 @@
+import { versionInForce } from '@nabd/shared'
+import type {
+  DayId,
+  Result,
+  WirdDefinition,
+  WirdEntry,
+  WirdRepository,
+  WirdVersion,
+} from '@nabd/shared'
+
+import { db } from '../db/db'
+import { newId } from '../db/ids'
+import { logger } from '../logger'
+
+export async function listVersions(): Promise<WirdVersion[]> {
+  return db.wirdVersions.toArray()
+}
+
+export async function getDayEntries(day: DayId): Promise<WirdEntry[]> {
+  return db.wirdEntries.where('day').equals(day).toArray()
+}
+
+export async function getMonthEntries(month: string): Promise<WirdEntry[]> {
+  return db.wirdEntries.where('day').startsWith(`${month}-`).toArray()
+}
+
+export async function getEntriesInRange(fromDay: DayId, toDay: DayId): Promise<WirdEntry[]> {
+  return db.wirdEntries.where('day').between(fromDay, toDay, true, true).toArray()
+}
+
+export async function getAllEntries(): Promise<WirdEntry[]> {
+  return db.wirdEntries.toArray()
+}
+
+export async function addVersion(
+  effectiveFrom: DayId,
+  definition: WirdDefinition,
+  createdAt: number,
+): Promise<Result<WirdVersion>> {
+  const version: WirdVersion = { id: newId(), effectiveFrom, definition, createdAt }
+  try {
+    await db.wirdVersions.add(version)
+    return { ok: true, value: version }
+  } catch (cause) {
+    logger.error('wird.addVersion failed', cause, { effectiveFrom })
+    return { ok: false, error: 'add_version_failed' }
+  }
+}
+
+export async function appendEntry(
+  day: DayId,
+  versionId: string,
+  itemId: string,
+  done: boolean,
+  at: number,
+): Promise<Result<WirdEntry>> {
+  const entry: WirdEntry = { id: newId(), day, versionId, itemId, done, at }
+  try {
+    await db.wirdEntries.add(entry)
+    return { ok: true, value: entry }
+  } catch (cause) {
+    logger.error('wird.appendEntry failed', cause, { day, itemId, done })
+    return { ok: false, error: 'append_entry_failed' }
+  }
+}
+
+export async function appendEntryForDay(
+  day: DayId,
+  itemId: string,
+  done: boolean,
+  at: number,
+): Promise<Result<WirdEntry>> {
+  const version = versionInForce(await listVersions(), day)
+  if (!version) return { ok: false, error: 'version_not_found' }
+  return appendEntry(day, version.id, itemId, done, at)
+}
+
+export const wirdRepository: WirdRepository = {
+  listVersions,
+  getDayEntries,
+  getMonthEntries,
+  getEntriesInRange,
+  getAllEntries,
+  addVersion,
+  appendEntry,
+}

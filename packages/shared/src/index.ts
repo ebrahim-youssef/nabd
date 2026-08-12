@@ -10,6 +10,7 @@ export {
   STRIP_VISIBLE_COUNT,
 } from './copy/adhkar'
 export { COPY as ONBOARDING_COPY, QUESTIONS } from './copy/onboarding'
+export { WIRD_COPY } from './copy/wird'
 export {
   ADHKAR_REMINDER_MINUTES,
   ALARM_CHANNELS,
