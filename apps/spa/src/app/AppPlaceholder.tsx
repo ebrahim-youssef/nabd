@@ -11,7 +11,7 @@ export function AppPlaceholder({ title }: { title: string }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title={title} backHref="/app" />
-      <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-6 shadow-card-sm">
+      <div className="flex flex-col gap-3 rounded-card border border-border bg-surface p-6 shadow-card-small">
         <p className="m-0 text-body text-foreground">{PLACEHOLDER_NOTE}</p>
       </div>
     </div>

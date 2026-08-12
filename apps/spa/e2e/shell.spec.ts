@@ -102,7 +102,7 @@ test('applies persisted dark and modern appearance before the route is visible',
   page,
 }) => {
   const failures = collectPageFailures(page)
-  await page.goto('/app')
+  await page.goto('/app/settings')
   await page.evaluate(() => {
     localStorage.setItem('nabd:theme', 'dark')
     localStorage.setItem('nabd:mode', 'modern')
@@ -111,7 +111,7 @@ test('applies persisted dark and modern appearance before the route is visible',
 
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
   await expect(page.locator('html')).toHaveAttribute('data-mode', 'modern')
-  await expect(page.getByRole('heading', { level: 1, name: shellCopy.appName })).toHaveCSS(
+  await expect(page.getByRole('heading', { level: 1, name: shellCopy.nav.settings })).toHaveCSS(
     'font-family',
     /Reem Kufi/,
   )

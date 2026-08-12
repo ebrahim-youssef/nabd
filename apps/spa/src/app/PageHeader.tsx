@@ -12,7 +12,7 @@ export function PageHeader({ title, backHref }: { title: string; backHref: strin
         to={backHref}
         aria-label={shellCopy.back}
         data-testid="page-back"
-        className="flex size-9 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-card-sm transition-colors hover:bg-primary hover:text-on-primary"
+        className="flex size-9 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-card-small transition-colors hover:bg-primary hover:text-on-primary"
       >
         <ArrowRight className="size-5" aria-hidden />
       </Link>

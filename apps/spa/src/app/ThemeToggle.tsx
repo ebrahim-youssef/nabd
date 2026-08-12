@@ -13,7 +13,7 @@ export function ThemeToggle() {
       onClick={() => toggleTheme()}
       aria-label={shellCopy.themeToggle}
       data-testid="theme-toggle"
-      className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-card-sm transition-colors hover:bg-primary hover:text-on-primary"
+      className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-primary shadow-card-small transition-colors hover:bg-primary hover:text-on-primary"
     >
       <Moon className="size-5 dark:hidden" aria-hidden />
       <Sun className="hidden size-5 dark:block" aria-hidden />
