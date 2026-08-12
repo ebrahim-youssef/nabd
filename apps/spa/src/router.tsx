@@ -1,7 +1,10 @@
 import { createBrowserRouter } from 'react-router'
 import type { RouteObject } from 'react-router'
 
-import { LibrariesRoute, PrayerTimesRoute, SettingsRoute, StatsRoute } from './app/AppPlaceholder'
+import { PrayerTimesRoute, SettingsRoute, StatsRoute } from './app/AppPlaceholder'
+import { LibrariesRoute } from './app/LibrariesRoute'
+import { AdhkarRoute } from './adhkar/AdhkarRoute'
+import { IntentionsRoute } from './intentions/IntentionsRoute'
 import { AppNotFound } from './app/NotFound'
 import { AppRouteError, FatalRouteError } from './app/RouteError'
 import { AppShell } from './app/AppShell'
@@ -38,6 +41,8 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, Component: GatedAppIndex },
           { path: 'libraries', Component: LibrariesRoute },
+          { path: 'adhkar', Component: AdhkarRoute },
+          { path: 'niyyat', Component: IntentionsRoute },
           { path: 'prayer-times', Component: PrayerTimesRoute },
           { path: 'stats', Component: StatsRoute },
           { path: 'settings', Component: SettingsRoute },

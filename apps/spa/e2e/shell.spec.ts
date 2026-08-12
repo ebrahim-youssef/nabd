@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
-import type { Page } from '@playwright/test'
 
 import { shellCopy } from '@nabd/shared'
+
+import { collectPageFailures } from './helpers'
 
 // Every registered application route, plus the namespace prefixes the bottom navigation already
 // groups (NBD-84 gives them real screens) and an arbitrary unmatched path. All of them must be
@@ -18,20 +19,6 @@ const appRoutes = [
   '/app/qada',
   '/app/does-not-exist',
 ]
-
-function collectPageFailures(page: Page) {
-  const failures: string[] = []
-  page.on('console', (message) => {
-    if (message.type() === 'error') failures.push(message.text())
-  })
-  page.on('pageerror', (error) => failures.push(error.message))
-  page.on('requestfailed', (request) => {
-    failures.push(
-      `${request.method()} ${request.url()}: ${request.failure()?.errorText ?? 'failed'}`,
-    )
-  })
-  return failures
-}
 
 test('serves the public landing and every shell route directly', async ({ page }) => {
   const failures = collectPageFailures(page)
