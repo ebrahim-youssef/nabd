@@ -6,8 +6,14 @@ import { toArabicIndic, toDayId, WIRD_COPY } from '@nabd/shared'
 import type { ChecklistAreaView, ChecklistItemView } from '@nabd/shared'
 
 import { DhikrCounter } from '../counter/DhikrCounter'
+import { PrayerTimeBadge } from '../prayer-times/PrayerTimeBadge'
+import { PrayerTimesBar } from '../prayer-times/PrayerTimesBar'
 import { useToggleItem } from './useToggleItem'
 import { useWirdChecklist } from './useWirdChecklist'
+
+// The one area whose items are prayers, so the only one that carries the times sub-header and the
+// per-item time badges.
+const PRAYERS_AREA_ID = 'prayers'
 
 const AREA_ICONS: Record<string, LucideIcon> = {
   prayers: Clock,
@@ -51,6 +57,7 @@ export function WirdChecklist() {
         return (
           <section key={area.id} className="flex flex-col gap-2">
             <AreaHeader area={area} isOpen={isOpen} onToggle={() => toggleArea(area.id)} />
+            {area.id === PRAYERS_AREA_ID && <PrayerTimesBar />}
             {isOpen && (
               <ul className="flex flex-col gap-2" data-testid={`area-items-${area.id}`}>
                 {area.items.map((item) => (
@@ -66,6 +73,7 @@ export function WirdChecklist() {
                     ) : (
                       <ChecklistRow
                         item={item}
+                        isPrayer={area.id === PRAYERS_AREA_ID}
                         disabled={pendingItemIds.has(item.id)}
                         onToggle={() => void toggle(day, item.id, !item.done)}
                       />
@@ -144,10 +152,12 @@ function AreaHeader({
 
 function ChecklistRow({
   item,
+  isPrayer,
   disabled,
   onToggle,
 }: {
   item: ChecklistItemView
+  isPrayer: boolean
   disabled: boolean
   onToggle: () => void
 }) {
@@ -190,6 +200,7 @@ function ChecklistRow({
           </span>
         )}
       </span>
+      {isPrayer && <PrayerTimeBadge prayerId={item.id} />}
       {item.targetToday && (
         <span className="shrink-0 rounded-chip border border-primary/40 bg-primary/10 px-2 py-0.5 text-label text-primary">
           {WIRD_COPY.targetToday}

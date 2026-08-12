@@ -1,10 +1,11 @@
 import { createBrowserRouter } from 'react-router'
 import type { RouteObject } from 'react-router'
 
-import { PrayerTimesRoute, SettingsRoute, StatsRoute } from './app/AppPlaceholder'
+import { SettingsRoute, StatsRoute } from './app/AppPlaceholder'
 import { LibrariesRoute } from './app/LibrariesRoute'
 import { AdhkarRoute } from './adhkar/AdhkarRoute'
 import { IntentionsRoute } from './intentions/IntentionsRoute'
+import { PrayerTimesRoute } from './prayer-times/PrayerTimesRoute'
 import { AppNotFound } from './app/NotFound'
 import { AppRouteError, FatalRouteError } from './app/RouteError'
 import { AppShell } from './app/AppShell'

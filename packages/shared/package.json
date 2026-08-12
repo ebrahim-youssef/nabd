@@ -11,6 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "adhan": "^4.4.4"
+  },
   "devDependencies": {
     "@typescript-eslint/parser": "^8.64.0",
     "eslint": "^9",
