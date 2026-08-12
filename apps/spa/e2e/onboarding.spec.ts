@@ -4,6 +4,8 @@ import type { Page } from '@playwright/test'
 import { ONBOARDING_COPY, shellCopy, WIRD_LEVELS } from '@nabd/shared'
 import type { Answers, LevelId } from '@nabd/shared'
 
+import { collectPageFailures } from './helpers'
+
 const ANSWER_SETS: ReadonlyArray<{
   name: string
   answers: Answers
@@ -32,20 +34,6 @@ async function answerQuestionnaire(page: Page, answers: Answers) {
     await page.getByTestId(`onboarding-${questionId}-${optionId}`).check()
   }
   await page.getByRole('button', { name: ONBOARDING_COPY.submit }).click()
-}
-
-function collectPageFailures(page: Page) {
-  const failures: string[] = []
-  page.on('console', (message) => {
-    if (message.type() === 'error') failures.push(message.text())
-  })
-  page.on('pageerror', (error) => failures.push(error.message))
-  page.on('requestfailed', (request) => {
-    failures.push(
-      `${request.method()} ${request.url()}: ${request.failure()?.errorText ?? 'failed'}`,
-    )
-  })
-  return failures
 }
 
 async function readPersistedDefinition(page: Page) {

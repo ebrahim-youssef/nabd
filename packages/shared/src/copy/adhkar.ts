@@ -23,6 +23,11 @@ export const DAILY_CATEGORY_ID = 'daily'
 export const STRIP_VISIBLE_COUNT = 3
 
 export const COPY = {
+  libraryTitle: 'مكتبة الأذكار',
+  hubDescription: 'أذكار الصباح والمساء وبعد الصلاة والنوم، بنصوصها ومصادرها.',
+  allSectionAdhkar: 'كل أذكار القسم',
+  sections: 'أقسام',
+  adhkar: 'ذِكرًا',
   finished: 'أتممت أذكار هذا القسم — جُعلت في ميزان حسناتك.',
   markedInWird: 'وعُلّمت في وِردك تلقائيًا ✓',
   restart: 'إعادة',
