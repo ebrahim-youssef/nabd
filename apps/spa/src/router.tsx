@@ -1,13 +1,13 @@
 import { createBrowserRouter } from 'react-router'
 import type { RouteObject } from 'react-router'
 
-import { AppIndex } from './app/AppIndex'
 import { LibrariesRoute, PrayerTimesRoute, SettingsRoute, StatsRoute } from './app/AppPlaceholder'
 import { AppNotFound } from './app/NotFound'
 import { AppRouteError, FatalRouteError } from './app/RouteError'
 import { AppShell } from './app/AppShell'
 import { LandingPage } from './routes/landing'
 import { PublicNotFound } from './routes/not-found'
+import { GatedAppIndex } from './onboarding/GatedAppIndex'
 
 // Data-mode route tree (NBD-83): the public landing keeps `/`; everything product-like lives
 // under `/app` inside the application shell. Each route uses the React Router v7
@@ -36,7 +36,7 @@ export const routes: RouteObject[] = [
       {
         ErrorBoundary: AppRouteError,
         children: [
-          { index: true, Component: AppIndex },
+          { index: true, Component: GatedAppIndex },
           { path: 'libraries', Component: LibrariesRoute },
           { path: 'prayer-times', Component: PrayerTimesRoute },
           { path: 'stats', Component: StatsRoute },
