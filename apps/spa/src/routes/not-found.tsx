@@ -19,7 +19,7 @@ export function PublicNotFound() {
         <NavLink
           to="/"
           end
-          className="mt-2 rounded-btn bg-primary px-5 py-2.5 text-body font-medium text-on-primary shadow-card-sm"
+          className="mt-2 rounded-button bg-primary px-5 py-2.5 text-body font-medium text-on-primary shadow-card-small"
         >
           {shellCopy.returnLanding}
         </NavLink>

@@ -5,7 +5,7 @@ import { shellCopy } from '@nabd/shared'
 // Application-scoped not-found, rendered inside the app shell for any unmatched /app path.
 export function AppNotFound() {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-card border border-border bg-surface p-6 text-center shadow-card-sm">
+    <div className="flex flex-col items-center gap-2 rounded-card border border-border bg-surface p-6 text-center shadow-card-small">
       <span aria-hidden="true" className="text-small font-bold text-gold">
         ۞
       </span>
@@ -14,7 +14,7 @@ export function AppNotFound() {
       <NavLink
         to="/app"
         end
-        className="mt-2 rounded-btn bg-primary px-4 py-2 text-small font-medium text-on-primary shadow-card-sm"
+        className="mt-2 rounded-button bg-primary px-4 py-2 text-small font-medium text-on-primary shadow-card-small"
       >
         {shellCopy.returnHome}
       </NavLink>

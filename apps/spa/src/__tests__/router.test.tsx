@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { act, screen, waitFor } from '@testing-library/react'
 
-import { landingCopy, shellCopy } from '@nabd/shared'
+import { landingCopy, ONBOARDING_COPY, shellCopy } from '@nabd/shared'
 
+import { db } from '../db/db'
 import { renderApp } from '../test/memoryApp'
 
 const NAV_SECTIONS: ReadonlyArray<readonly [string, string]> = [
@@ -13,12 +14,18 @@ const NAV_SECTIONS: ReadonlyArray<readonly [string, string]> = [
 ]
 
 describe('application and public routing', () => {
-  it('serves the bounded transitional index surface at /app', () => {
+  beforeEach(async () => {
+    await db.wirdVersions.clear()
+  })
+
+  it('serves onboarding at the gated /app index', async () => {
     renderApp('/app')
 
+    expect(
+      await screen.findByRole('heading', { level: 2, name: ONBOARDING_COPY.title }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: shellCopy.appName })).toBeInTheDocument()
     expect(screen.getByTestId('theme-toggle')).toBeInTheDocument()
-    expect(screen.getByText(/واجهة الورد اليومي تُبنى الآن/)).toBeInTheDocument()
   })
 
   it('renders a placeholder with a sticky back header for each sub-navigation route', () => {

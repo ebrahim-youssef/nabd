@@ -22,7 +22,14 @@ export default defineConfig([
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      'no-console': 'error',
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+    },
+  },
+  {
+    files: ['src/logger.ts'],
+    rules: {
+      'no-console': 'off',
     },
   },
 ])

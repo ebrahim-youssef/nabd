@@ -44,7 +44,7 @@ export function LandingPage() {
             <ul className="grid list-none gap-4 p-0 sm:grid-cols-2 lg:grid-cols-3">
               {landingCopy.valueProps.map((valueProp, index) => (
                 <li
-                  className="rounded-card border border-border bg-surface p-5 text-start text-body text-foreground shadow-card-sm sm:p-6"
+                  className="rounded-card border border-border bg-surface p-5 text-start text-body text-foreground shadow-card-small sm:p-6"
                   key={valueProp}
                 >
                   <span

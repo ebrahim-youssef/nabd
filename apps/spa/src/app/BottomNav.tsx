@@ -85,7 +85,7 @@ export function BottomNav() {
                   // pill — الإحصائيات alone is ~72px of label.
                   `flex flex-col items-center gap-0.5 rounded-chip px-0.5 py-1.5 text-label transition-all duration-200 ${
                     active
-                      ? 'bg-primary text-on-primary shadow-card-sm'
+                      ? 'bg-primary text-on-primary shadow-card-small'
                       : 'text-muted-foreground hover:text-primary'
                   }`
                 }
