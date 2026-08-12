@@ -204,16 +204,16 @@ Strict behavior and design parity applies throughout; redesign is out of scope.
 
 | ID | Status | Issue | Ticket | Acceptance criterion |
 | --- | --- | ---: | --- | --- |
-| NBD-80 | ✅ done | [#167](https://github.com/Ibrahim-Rezq/nabd/issues/167) | Migration baseline and documentation correction | Accepted decisions, current parity, phase status, and release path are recorded, and the selected baseline passes its existing gates |
-| NBD-81 | ✅ done | [#168](https://github.com/Ibrahim-Rezq/nabd/issues/168) | Canonical shared domain package | Legacy, SPA, and native compile against one tested canonical implementation with no platform I/O in shared logic |
-| NBD-82 | ✅ done | [#169](https://github.com/Ibrahim-Rezq/nabd/issues/169) | Native onboarding and SQLite vertical slice | Android onboarding persists the selected level through a complete app restart |
-| NBD-83 | ✅ done | [#170](https://github.com/Ibrahim-Rezq/nabd/issues/170) | SPA shell, routing, and Cloudflare foundation | The Cloudflare build serves the landing page and direct application routes correctly while keeping application routes unindexed |
-| NBD-84 | ⬜ todo | [#171](https://github.com/Ibrahim-Rezq/nabd/issues/171) | Full SPA product parity | Every web capability assigned by ADR-0014 works under `/app/*` with the reference behavior and appearance |
-| NBD-85 | ⬜ todo | [#172](https://github.com/Ibrahim-Rezq/nabd/issues/172) | Native data and product parity | Every native product workflow works offline and survives process death using SQLite |
-| NBD-86 | ⬜ todo | [#173](https://github.com/Ibrahim-Rezq/nabd/issues/173) | Native device-capability integration | Every device state has an actionable Arabic outcome and the APK is ready for owner verification |
-| NBD-87 | ⬜ todo | [#174](https://github.com/Ibrahim-Rezq/nabd/issues/174) | Replacement CI and automated verification | Every replacement-client quality gate runs and passes on pull requests |
-| NBD-88 | ⬜ todo | [#175](https://github.com/Ibrahim-Rezq/nabd/issues/175) | Cloudflare release preparation and Vercel retirement | A verified Cloudflare build and runbook are ready, and no Vercel integration or related file remains |
-| NBD-89 | ⬜ todo | [#176](https://github.com/Ibrahim-Rezq/nabd/issues/176) | Final APK, owner device verification, and production-readiness gate | Automated gates and the owner device matrix pass after all migration code is complete, and the SPA and APK are production-ready |
+| NBD-80 | ✅ done | [#167](https://github.com/ebrahim-youssef/nabd/issues/167) | Migration baseline and documentation correction | Accepted decisions, current parity, phase status, and release path are recorded, and the selected baseline passes its existing gates |
+| NBD-81 | ✅ done | [#168](https://github.com/ebrahim-youssef/nabd/issues/168) | Canonical shared domain package | Legacy, SPA, and native compile against one tested canonical implementation with no platform I/O in shared logic |
+| NBD-82 | ✅ done | [#169](https://github.com/ebrahim-youssef/nabd/issues/169) | Native onboarding and SQLite vertical slice | Android onboarding persists the selected level through a complete app restart |
+| NBD-83 | ✅ done | [#170](https://github.com/ebrahim-youssef/nabd/issues/170) | SPA shell, routing, and Cloudflare foundation | The Cloudflare build serves the landing page and direct application routes correctly while keeping application routes unindexed |
+| NBD-84 | ⬜ todo | [#171](https://github.com/ebrahim-youssef/nabd/issues/171) | Full SPA product parity | Every web capability assigned by ADR-0014 works under `/app/*` with the reference behavior and appearance |
+| NBD-85 | ⬜ todo | [#172](https://github.com/ebrahim-youssef/nabd/issues/172) | Native data and product parity | Every native product workflow works offline and survives process death using SQLite |
+| NBD-86 | ⬜ todo | [#173](https://github.com/ebrahim-youssef/nabd/issues/173) | Native device-capability integration | Every device state has an actionable Arabic outcome and the APK is ready for owner verification |
+| NBD-87 | ⬜ todo | [#174](https://github.com/ebrahim-youssef/nabd/issues/174) | Replacement CI and automated verification | Every replacement-client quality gate runs and passes on pull requests |
+| NBD-88 | ⬜ todo | [#175](https://github.com/ebrahim-youssef/nabd/issues/175) | Cloudflare release preparation and Vercel retirement | A verified Cloudflare build and runbook are ready, and no Vercel integration or related file remains |
+| NBD-89 | ⬜ todo | [#176](https://github.com/ebrahim-youssef/nabd/issues/176) | Final APK, owner device verification, and production-readiness gate | Automated gates and the owner device matrix pass after all migration code is complete, and the SPA and APK are production-ready |
 
 ## Later (out of scope for MVP)
 

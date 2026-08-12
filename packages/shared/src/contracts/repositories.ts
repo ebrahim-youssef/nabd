@@ -51,8 +51,12 @@ export type AdhkarFlowProgress = FlowState & {
   day: DayId
 }
 
+// `readFlowProgress` takes the day (the baseline did not) so that the two rules this store carries
+// live behind the repository instead of in every caller: a row from another day must not restore a
+// position, and repeatable categories must persist nothing at all. Enforcing both here means no
+// screen can flatten the asymmetry by forgetting to check. Native must implement the same shape.
 export type AdhkarProgressRepository = {
-  readFlowProgress(categoryId: string): Promise<AdhkarFlowProgress | undefined>
+  readFlowProgress(categoryId: string, day: DayId): Promise<AdhkarFlowProgress | undefined>
   writeFlowProgress(categoryId: string, day: DayId, state: FlowState): Promise<void>
   clearFlowProgress(categoryId: string): Promise<void>
 }
