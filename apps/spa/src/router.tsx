@@ -6,6 +6,7 @@ import { LibrariesRoute } from './app/LibrariesRoute'
 import { AdhkarRoute } from './adhkar/AdhkarRoute'
 import { IntentionsRoute } from './intentions/IntentionsRoute'
 import { PrayerTimesRoute } from './prayer-times/PrayerTimesRoute'
+import { QadaRoute } from './qada/QadaRoute'
 import { StatsRoute } from './stats/StatsRoute'
 import { AppNotFound } from './app/NotFound'
 import { AppRouteError, FatalRouteError } from './app/RouteError'
@@ -47,6 +48,7 @@ export const routes: RouteObject[] = [
           { path: 'niyyat', Component: IntentionsRoute },
           { path: 'prayer-times', Component: PrayerTimesRoute },
           { path: 'stats', Component: StatsRoute },
+          { path: 'qada', Component: QadaRoute },
           { path: 'settings', Component: SettingsRoute },
           { path: '*', Component: AppNotFound },
         ],

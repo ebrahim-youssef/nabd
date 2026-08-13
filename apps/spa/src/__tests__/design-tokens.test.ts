@@ -35,6 +35,19 @@ const NAMESPACES: ReadonlyArray<readonly [string, string]> = [
   ['shadow-', '--shadow-'],
 ]
 
+// `rounded-` accepts a side or corner segment before the token — `rounded-t-card` and
+// `rounded-s-card` both resolve against `--radius-card`, and there is no `--radius-t-card`. Strip a
+// known segment so a legitimate per-side utility is not reported as a missing token. Only these
+// exact segments are stripped, so a typo in the token itself still fails.
+const RADIUS_SIDES = ['t', 'b', 's', 'e', 'l', 'r', 'ss', 'se', 'es', 'ee', 'tl', 'tr', 'bl', 'br']
+
+function withoutRadiusSide(utility: string): string {
+  if (!utility.startsWith('rounded-')) return utility
+  const rest = utility.slice('rounded-'.length)
+  const side = RADIUS_SIDES.find((candidate) => rest.startsWith(`${candidate}-`))
+  return side ? `rounded-${rest.slice(side.length + 1)}` : utility
+}
+
 async function sourceFiles(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true })
   const files = await Promise.all(
@@ -64,10 +77,12 @@ describe('design tokens', () => {
       for (const candidate of candidates) {
         // Strip variants such as `hover:` / `md:` — already excluded by the pattern — and any
         // leading fragment from a longer word.
-        const utility = NAMESPACES.map(([prefix]) => {
+        const matched = NAMESPACES.map(([prefix]) => {
           const index = candidate.indexOf(prefix)
           return index === -1 ? null : candidate.slice(index)
         }).find(Boolean)
+
+        const utility = matched ? withoutRadiusSide(matched) : matched
 
         if (!utility || BUILT_IN.has(utility)) continue
 
@@ -76,7 +91,7 @@ describe('design tokens', () => {
 
         const token = `${namespace[1]}${utility.slice(namespace[0].length)}`
         if (!theme.includes(`${token}:`)) {
-          missing.push(`${file.replace(`${process.cwd()}/`, '')}: ${utility} (expected ${token})`)
+          missing.push(`${file.replace(`${process.cwd()}/`, '')}: ${matched} (expected ${token})`)
         }
       }
     }
