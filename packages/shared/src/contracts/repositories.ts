@@ -17,6 +17,13 @@ export type WirdRepository = {
     definition: WirdDefinition,
     createdAt: number,
   ): Promise<Result<WirdVersion>>
+  // A manual level change starts tomorrow and is a no-op for an equal tomorrow definition, so
+  // screens cannot rewrite today's checklist or append duplicates. Native must implement the same shape.
+  setWirdLevel(
+    definition: WirdDefinition,
+    today: DayId,
+    now: number,
+  ): Promise<Result<WirdVersion | null>>
   appendEntry(
     day: DayId,
     versionId: string,
