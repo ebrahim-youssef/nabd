@@ -14,6 +14,7 @@ export { INTENTIONS_COPY } from './copy/intentions'
 export { LOCATION_FAILURE_COPY } from './copy/location'
 export { WIRD_COPY } from './copy/wird'
 export { STATS_COPY } from './copy/stats'
+export { QADA_COPY } from './copy/qada'
 export {
   ADHKAR_REMINDER_MINUTES,
   ALARM_CHANNELS,
