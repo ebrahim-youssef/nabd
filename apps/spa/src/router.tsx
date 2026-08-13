@@ -1,7 +1,7 @@
 import { createBrowserRouter } from 'react-router'
 import type { RouteObject } from 'react-router'
 
-import { SettingsRoute } from './app/AppPlaceholder'
+import { SettingsRoute } from './settings/SettingsRoute'
 import { LibrariesRoute } from './app/LibrariesRoute'
 import { AdhkarRoute } from './adhkar/AdhkarRoute'
 import { IntentionsRoute } from './intentions/IntentionsRoute'

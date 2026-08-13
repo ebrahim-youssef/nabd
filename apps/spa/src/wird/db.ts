@@ -1,4 +1,4 @@
-import { versionInForce } from '@nabd/shared'
+import { nextDay, sameDefinition, versionInForce } from '@nabd/shared'
 import type {
   DayId,
   Result,
@@ -75,6 +75,25 @@ export async function appendEntryForDay(
   return appendEntry(day, version.id, itemId, done, at)
 }
 
+// A manual level change from settings. Effective tomorrow, never today: today's wird is already
+// part-checked, and reinterpreting it under a new definition would rewrite the day the user is
+// standing in — the visible «يبدأ الورد الجديد من الغد» hint is this rule's promise. Choosing the
+// level already in force for tomorrow returns that version and writes nothing, so repeated taps
+// cannot pile up versions.
+export async function setWirdLevel(
+  definition: WirdDefinition,
+  today: DayId,
+  now: number,
+): Promise<Result<WirdVersion | null>> {
+  const versions = await listVersions()
+  const tomorrow = nextDay(today)
+  const tomorrowVersion = versionInForce(versions, tomorrow)
+  if (tomorrowVersion && sameDefinition(tomorrowVersion.definition, definition)) {
+    return { ok: true, value: tomorrowVersion }
+  }
+  return addVersion(tomorrow, definition, now)
+}
+
 export const wirdRepository: WirdRepository = {
   listVersions,
   getDayEntries,
@@ -82,5 +101,6 @@ export const wirdRepository: WirdRepository = {
   getEntriesInRange,
   getAllEntries,
   addVersion,
+  setWirdLevel,
   appendEntry,
 }

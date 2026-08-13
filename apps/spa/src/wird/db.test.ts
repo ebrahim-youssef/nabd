@@ -2,10 +2,10 @@ import 'fake-indexeddb/auto'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { WIRD_LEVELS } from '@nabd/shared'
+import { WIRD_LEVELS, nextDay } from '@nabd/shared'
 
 import { db } from '../db/db'
-import { addVersion, appendEntryForDay, getDayEntries } from './db'
+import { addVersion, appendEntryForDay, getDayEntries, listVersions, setWirdLevel } from './db'
 
 vi.mock('../logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
@@ -54,5 +54,27 @@ describe('wirdRepository', () => {
 
     expect(checked.ok).toBe(true)
     if (checked.ok) expect(await db.wirdEntries.get(checked.value.id)).toEqual(checked.value)
+  })
+
+  it('writes a manual level version effective tomorrow', async () => {
+    await addVersion(DAY, WIRD_LEVELS[0].wird, FIRST_TIME)
+
+    const result = await setWirdLevel(WIRD_LEVELS[1].wird, DAY, SECOND_TIME)
+
+    expect(result).toMatchObject({ ok: true, value: { effectiveFrom: nextDay(DAY) } })
+    expect((await listVersions()).map((version) => version.effectiveFrom).sort()).toEqual([
+      DAY,
+      nextDay(DAY),
+    ])
+  })
+
+  it('does not append a version when tomorrow already has the chosen definition', async () => {
+    await addVersion(DAY, WIRD_LEVELS[0].wird, FIRST_TIME)
+    const tomorrow = await addVersion(nextDay(DAY), WIRD_LEVELS[1].wird, SECOND_TIME)
+
+    const result = await setWirdLevel(WIRD_LEVELS[1].wird, DAY, SECOND_TIME + 1)
+
+    expect(result).toEqual(tomorrow)
+    expect(await listVersions()).toHaveLength(2)
   })
 })
