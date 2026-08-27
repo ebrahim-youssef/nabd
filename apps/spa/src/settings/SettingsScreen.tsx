@@ -5,12 +5,12 @@ import { AppearanceSettings } from './AppearanceSettings'
 import { LevelSettings } from './LevelSettings'
 import { LocationSettings } from './LocationSettings'
 import { PrayerMethodSettings } from './PrayerMethodSettings'
+import { NotificationSettings } from './NotificationSettings'
 
 // Device-local preferences (NBD-37), grouped by topic (NBD-71) so the list reads by subject rather
-// than as one long column. Legacy carries a third «التنبيهات» group — notifications, sounds and the
-// battery exemption. Foreground browser notifications arrive in a later slice; sounds, alarm channels
-// and the battery exemption belong to the native target under ADR-0014 and never appear here. The
-// light/dark toggle stays in the app header, as it does in the reference.
+// than as one long column. The third «التنبيهات» group provides foreground browser reminders only;
+// sounds, alarm channels and battery exemption belong to native under ADR-0014. The light/dark
+// toggle stays in the app header, as it does in the reference.
 function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
@@ -30,6 +30,9 @@ export function SettingsScreen() {
       <SettingsGroup title={SETTINGS_COPY.groups.displayAndContent}>
         <AppearanceSettings />
         <LevelSettings />
+      </SettingsGroup>
+      <SettingsGroup title={SETTINGS_COPY.groups.notifications}>
+        <NotificationSettings />
       </SettingsGroup>
     </div>
   )
