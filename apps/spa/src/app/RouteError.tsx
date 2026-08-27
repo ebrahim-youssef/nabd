@@ -1,20 +1,26 @@
+import { useEffect } from 'react'
 import { NavLink, useRouteError } from 'react-router'
 
 import { shellCopy } from '@nabd/shared'
 
+import { captureException } from '../observability/sentry'
 import { useNoindex } from './useNoindex'
 
 // Route error surfaces for NBD-83. Both render a friendly Arabic line and a real way out; the
-// raw error and its stack are deliberately never rendered. Sentry reporting is out of scope
-// for this ticket.
+// raw error and its stack are deliberately never rendered. The error is reported to Sentry.
 //
 // `AppRouteError` is the in-shell boundary: it draws a card inside the application layout, so
 // the bottom navigation stays usable. `FatalRouteError` is the full-page boundary for failures
 // that happen where no layout can be trusted — the shell component itself, the public landing,
 // and the public catch-all — so it always sends the user back to the landing page.
 
+function reportRouteError(error: unknown) {
+  captureException(error)
+}
+
 export function AppRouteError() {
-  useRouteError()
+  const error = useRouteError()
+  useEffect(() => reportRouteError(error), [error])
 
   return (
     <div className="flex flex-col items-center gap-2 rounded-card border border-border bg-surface p-6 text-center shadow-card-small">
@@ -34,8 +40,9 @@ export function AppRouteError() {
 }
 
 export function FatalRouteError() {
-  useRouteError()
+  const error = useRouteError()
   useNoindex()
+  useEffect(() => reportRouteError(error), [error])
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
