@@ -24,6 +24,7 @@
     "@fontsource/reem-kufi": "^5.3.0",
     "@fontsource/tajawal": "^5.3.0",
     "@nabd/shared": "workspace:*",
+    "@sentry/react": "^10.71.0",
     "dexie": "^4.4.4",
     "dexie-react-hooks": "^4.4.0",
     "lucide-react": "^1.24.0",

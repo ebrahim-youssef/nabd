@@ -8,6 +8,9 @@ import { describe, expect, it } from 'vitest'
 import { LandingPage } from './landing'
 import { injectSiteMetadata } from '../../site-metadata'
 
+// Matches the brand primary token (--primary) and the reference application's theme-color.
+const THEME_COLOR = '#0e5a5a'
+
 describe('LandingPage', () => {
   it('renders the shared landing copy and every value proposition', () => {
     render(<LandingPage />)
@@ -31,6 +34,9 @@ describe('landing document metadata', () => {
 
     expect(documentNode.documentElement.lang).toBe('ar')
     expect(documentNode.documentElement.dir).toBe('rtl')
+    expect(documentNode.querySelector('meta[name="theme-color"]')?.getAttribute('content')).toBe(
+      THEME_COLOR,
+    )
     expect(documentNode.querySelector('meta[name="description"]')?.getAttribute('content')).toBe(
       landingCopy.description,
     )
@@ -43,6 +49,9 @@ describe('landing document metadata', () => {
     expect(
       documentNode.querySelector('meta[property="og:description"]')?.getAttribute('content'),
     ).toBe(landingCopy.description)
+    expect(documentNode.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
+      new URL('/', SITE_URL).toString(),
+    )
     expect(documentNode.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe(
       new URL('/og-image.png', SITE_URL).toString(),
     )

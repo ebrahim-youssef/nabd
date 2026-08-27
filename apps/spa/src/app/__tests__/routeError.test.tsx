@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import type { RouteObject } from 'react-router'
 
@@ -6,6 +6,16 @@ import { shellCopy } from '@nabd/shared'
 
 import { routes } from '../../router'
 import { renderApp } from '../../test/memoryApp'
+
+const { captureExceptionMock } = vi.hoisted(() => ({
+  captureExceptionMock: vi.fn(),
+}))
+
+vi.mock('../../observability/sentry', () => ({
+  initializeSentry: () => {},
+  captureException: captureExceptionMock,
+  Sentry: {},
+}))
 
 const THROWING_MESSAGE = 'internal-top-secret-failure'
 
@@ -26,6 +36,10 @@ function throwAt(tree: RouteObject[], match: (route: RouteObject) => boolean): R
 }
 
 describe('route error boundaries', () => {
+  beforeEach(() => {
+    captureExceptionMock.mockClear()
+  })
+
   it('keeps a failing application page inside the shell without leaking the error', () => {
     renderApp(
       '/app',
@@ -37,6 +51,19 @@ describe('route error boundaries', () => {
     expect(screen.queryByText(THROWING_MESSAGE)).not.toBeInTheDocument()
     expect(screen.queryByText(new RegExp(shellCopy.notFound))).not.toBeInTheDocument()
     expect(screen.getByTestId('bottom-nav')).toBeInTheDocument()
+    expect(captureExceptionMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports the in-shell route error to Sentry', () => {
+    renderApp(
+      '/app',
+      throwAt(routes, (route) => route.index === true),
+    )
+
+    expect(captureExceptionMock).toHaveBeenCalledTimes(1)
+    const [reported] = captureExceptionMock.mock.calls[0] as [Error]
+    expect(reported).toBeInstanceOf(Error)
+    expect(reported.message).toBe(THROWING_MESSAGE)
   })
 
   it('never exposes the error stack', () => {

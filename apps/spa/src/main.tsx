@@ -18,6 +18,9 @@ import '@fontsource/reem-kufi/600.css'
 import '@fontsource/reem-kufi/700.css'
 
 import { router } from './router'
+import { initializeSentry } from './observability/sentry'
+
+initializeSentry()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
