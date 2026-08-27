@@ -9,6 +9,9 @@ export const WIRD_COPY = {
   celebrationTitle: 'أتمَمْتَ وِرْدَكَ اليوم',
   celebrationHadith: '«أَحَبُّ الأَعْمَالِ إِلَى اللهِ أَدْوَمُهَا وَإِنْ قَلَّ» — متفق عليه',
   celebrationDismiss: 'واصِل',
+  celebrationShare: 'شارك إنجازك',
+  celebrationShareText: 'أتممتُ وِردي اليوم بفضل الله — نبض، رفيقك اليومي للوِرد.',
+  celebrationCopied: 'نُسخ إلى الحافظة ✓',
   toggleError: 'تعذّر حفظ التغيير. حاول مرة أخرى.',
   summaryAria: (done: string, total: string) => `أنجزت ${done} من ${total}`,
 } as const
