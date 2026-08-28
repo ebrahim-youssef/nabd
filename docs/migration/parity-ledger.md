@@ -228,17 +228,20 @@ Device-only alarm, countdown, GPS-off, battery, killed-process, force-stop, and 
 defined in section D. Browser e2e coverage cannot close them; the owner’s real-device result is
 the merge evidence.
 
-## F. Durability decision, deferred
+## F. Durability decision, settled
 
 The migration deliberately removes the current remote sync and begins with fresh state. How data
 created after migration survives long-term loss or replacement of a device is decided in
-[ADR-0015](../adr/0015-post-migration-durability.md): the work is deferred until the first build
-is prepared for publication, and until then every install is a fresh start.
+[ADR-0015](../adr/0015-post-migration-durability.md), now accepted: options 1 and 2 below are the
+path, and export and import ship **before any submission to Google Play**, including an internal or
+closed testing track. That work is NBD-91 and it sits on the native critical path immediately before
+publication. Until it ships, every install is a fresh start.
 
-The legacy application is deployed and live and is the current release, but the owner is its only
-account, so there is no third-party history it is the last copy of. Deletion nevertheless stays
-deferred: the execution plan defers it independently, and ADR-0015 is `proposed` rather than
-accepted.
+The legacy application is deployed and live and is the current release, but nobody has ever signed
+in to it: the Google OAuth provider was never enabled in the Supabase dashboard, so there is no
+account and no remote history anywhere. Deletion of the legacy tree is no longer blocked on the
+durability question, but it still waits for the end of the migration, which is where the execution
+plan sequences it.
 
 Current facts:
 
@@ -252,9 +255,12 @@ Current facts:
 - [The JSON export](../../features/stats/hooks/useStatsExport.ts) exports a selected week or month
   range of entries and derived statistics. There is no import path, and it is not a complete
   application backup.
-- [Supabase sync](../../features/sync/db.ts) is the only remote copy of `wirdVersions` and
-  `wirdEntries`. ADR-0014 intentionally drops it. Qada, settings, coordinates, adhkar resume state,
-  and native scheduling state have no remote copy today.
+- [Supabase sync](../../features/sync/db.ts) is the only code path that would produce a remote copy
+  of `wirdVersions` and `wirdEntries`, and it has never run: sign-in requires a Google OAuth provider
+  that was never enabled, and `.env.example` ships both Supabase variables blank. ADR-0014
+  intentionally drops the path. Qada, settings, coordinates, adhkar resume state, and native
+  scheduling state never had a remote copy even in principle. In practice **no** data has a remote
+  copy today.
 - Local database choice alone does not provide recovery after uninstall, cleared application
   data, device loss, or device replacement.
 
