@@ -45,3 +45,26 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: ${{ matrix.run }}
+
+  # Kept out of the matrix above: it is the only check that needs browsers on the runner, and the
+  # only one worth an artifact when it fails. The suite drives the real Cloudflare preview through
+  # the config's own webServer, so this gate exercises the built assets rather than the dev server.
+  spa-e2e:
+    name: spa e2e
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter apps-spa exec playwright install --with-deps chromium
+      - run: pnpm --filter apps-spa test:e2e
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: spa-playwright-report
+          path: apps/spa/playwright-report/
+          retention-days: 7
