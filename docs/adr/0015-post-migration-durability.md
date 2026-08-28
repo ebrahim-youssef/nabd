@@ -2,6 +2,7 @@
 
 - **Status:** proposed
 - **Date:** 2026-08-28
+- **Revised:** 2026-08-28
 
 ## Context
 
@@ -11,57 +12,79 @@ and native scheduling state have never had one. Parity-ledger section F records 
 decision and forbids any implementation from claiming that local persistence alone protects a
 user's history until it is settled.
 
-The question is not academic. A wird ledger is append-only and accumulates for years, and the
-people who benefit most from it are the ones who have kept it longest. Uninstalling the app,
-clearing application data, losing a phone or replacing one currently destroys all of it with no
-recovery path. The decision is needed now rather than at the end of the migration, because the SPA
-already ships a partial export (`apps/spa/src/stats/useStatsExport.ts`) with no import path, and
-building the wrong thing there means building it twice.
+The first version of this ADR treated the decision as urgent. That urgency rested on a premise
+that does not hold. The application has never been published. ADR-0013 records that nothing is on
+Google Play, and ADR-0014 and the execution plan both list Play publication as deferred work. The
+only installs that exist are development APKs the owner sideloads onto his own device for testing.
+There is no accumulated history to protect, and no user other than the owner who could lose any.
+
+What remains true is that the SPA ships a partial export (`apps/spa/src/stats/useStatsExport.ts`)
+with no import path, and that building the wrong thing there means building it twice. That is an
+argument for deciding the shape of the eventual format, not for building it now.
 
 Section F lists four options: user-initiated export and import with a versioned backup format;
 Android application backup; encrypted cloud backup; and a later authenticated sync service.
 
 ## Decision
 
-Adopt option 1, a complete user-initiated export and import with a versioned backup format, as the
-durability path for the migration. Complement it with option 2, Android application backup, as a
-second and automatic layer on native.
+Defer durability work until the first build is prepared for publication. Do not build export and
+import during the migration.
 
-Options 3 and 4 are rejected for this migration, not on their merits but because ADR-0014
-deliberately removes the backend, and both require one. Encrypted cloud backup additionally owes a
-documented key, recovery, deletion and failure model that no part of the migration is scoped to
-provide. They remain open as later work, and option 1's versioned format is deliberately the thing
-a future sync service would carry.
+Options 1 and 2 remain the intended path and are not reopened by this revision. Options 3 and 4
+stay rejected for the reasons the first version gave: ADR-0014 deliberately removes the backend
+and both require one, and encrypted cloud backup additionally owes a documented key, recovery,
+deletion and failure model that nothing in the migration is scoped to provide.
 
-Option 1 is the only option that works identically on both targets, needs no account, no server and
-no running cost, and leaves the user holding their own data. Option 2 is cheap to enable but covers
-only native, is silent about whether a restore actually happened, and cannot be the sole answer for
-a web client that ADR-0014 explicitly denies offline standing.
+The trigger is a build submitted for publication, not a date and not the end of the migration. Any
+work that would put the application in front of someone other than the owner brings this decision
+forward with it.
 
-Scope of what the backup format must carry: wird versions, wird entries, qada events, settings,
-and cached coordinates. It carries a format version from its first release. Import states plainly
-what it is about to do before it does it, because a restore onto a device that already holds
-history is a merge question, not a copy question, and the append-only contract means the safe
-resolution is union by event identity rather than replacement.
+Until that trigger, every install is treated as a fresh start. No migration path is provided from
+the legacy Capacitor application's stored history, and none is owed.
+
+That clean start needs no code, for two independent reasons:
+
+The two applications do not share a store. The legacy application keeps its data in the WebView's
+IndexedDB through Dexie. `apps/native` keeps its data in `nabd-native.db` through `expo-sqlite`,
+and holds no code that reads IndexedDB. Leftover legacy data is unreachable rather than dangerous,
+and today `nabd-native.db` carries only `onboarding_state` and `wird_versions`, since the history
+tables arrive with NBD-85 and have not landed.
+
+Independently, the two are unlikely to install over each other at all. Both declare the
+application id `com.nabd.app`, but the legacy release signing config reads a `keystore.properties`
+that is not in the repository, while the Expo release APK is signed with the template's debug
+keystore. Android refuses an install whose signature does not match the installed package, so the
+owner uninstalls first, and uninstalling clears the entire application sandbox including the
+WebView store. This second reason is inferred from the two signing configurations rather than
+tested on a device; it does not need to hold, because the first reason is sufficient on its own.
 
 ## Consequences
 
-The current stats export stays as it is. It is a date-ranged reporting artefact for the user to
-read, not a backup, and it should not be quietly widened into one; the backup export is a separate
-surface with a separate format and a separate entry point in settings.
+Deleting the legacy Next.js and Capacitor source is no longer blocked by this decision. The first
+version withheld that deletion because the legacy application was the only place a long-standing
+user's history could be recovered from. There is no such history, so that reason is gone and
+NBD-88 and NBD-89 may proceed on their own schedule.
 
-Until the export and import ships, no screen, release note or store listing may describe the app as
-keeping history safe. Section F's prohibition stands, and it applies to copy as much as to code.
+Section F's prohibition stands unchanged. No screen, release note or store listing may describe
+the application as keeping history safe until export and import ship. It costs nothing to keep and
+it is what stops the claim being made early.
 
-Enabling `android:allowBackup` reverses a value that arrived as a Capacitor scaffold default rather
-than as a security choice, but it still needs its own review of what lands in the backup set. That
-review is part of the work, not a formality: the inclusion and exclusion rules are the whole of the
-decision, and a restore has to be tested rather than assumed.
+The `android:allowBackup` item is withdrawn as written. It described reversing a value that
+arrived as a Capacitor scaffold default, but that value lives in `android/app/src/main/AndroidManifest.xml`,
+which belongs to the legacy tree being deleted. `apps/native` has no `android/` directory at all:
+it is a managed Expo project whose manifest is generated by `expo prebuild`, so whatever it should
+declare is a fresh choice expressed in `apps/native/app.json`. That choice belongs with the
+publication work, alongside the review of what a backup set should contain.
 
-This decision unblocks deleting the legacy Next.js and Capacitor source once the export and import
-ships and a restore is verified. Until then, the legacy application remains the only place a
-long-standing user's history could be recovered from, which is a further reason not to delete it
-early.
+The current stats export stays as it is, for the reason the first version gave. It is a
+date-ranged reporting artefact for the user to read, not a backup, and widening it quietly into
+one would produce a format nobody designed.
 
-Revisit this if a backend is reintroduced for any other reason. At that point option 4 becomes
-available at low marginal cost, and the versioned format defined here is what it should transport.
+When the trigger fires, the scope is what the first version specified: wird versions, wird
+entries, qada events, settings and cached coordinates, carrying a format version from its first
+release, with an import that states plainly what it is about to do before it does it. A restore
+onto a device that already holds history is a merge question rather than a copy question, and the
+append-only contract means the safe resolution is union by event identity rather than replacement.
+
+Revisit this if a backend is reintroduced for any other reason, or if any build reaches a device
+that is not the owner's.
