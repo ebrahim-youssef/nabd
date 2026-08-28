@@ -139,14 +139,19 @@ don't touch the READMEs; when in doubt, glance at them and move on.
 4. **Security review (before merge).** One focused pass over the added/changed code for: XSS
    (`dangerouslySetInnerHTML`, unsanitized HTML/URLs), injection (SQL/command), committed
    secrets/keys, auth/authz gaps, unsafe deserialization, SSRF, path traversal. Fix before merging.
-5. Squash-merge; PR title = the commit → must be Conventional-Commits valid.
+5. Merge. A pull request carrying more than one commit is **rebase-merged**, so the slice
+   commits survive; each commit message is already Conventional-Commits valid, because the
+   `commit-msg` hook validated it when it was written. A single-commit pull request may squash,
+   with the PR title as the commit message. See the 2026-08-28 amendment in
+   `docs/adr/0003-branching-and-environments.md`.
 6. Merge auto-deploys `dev` to staging.
 
 ## Phase 8 — Production deploy (dev → master)
 
 1. Smoke-test the STAGING URL in a real browser against the acceptance criteria.
 2. Release PR `dev` → `master` with a changelog since last release. All CI checks again.
-3. Squash-merge → auto-deploy to production.
+3. Merge by the same rule as Phase 7 step 5, rebase for a multi-commit release, squash for a
+   single-commit one → auto-deploy to production.
 4. Open the PRODUCTION URL, run the project success check: _I can log in, answer the
    questionnaire, check off a wird item, go offline and reload and it is still checked, then
    reconnect and see it synced and reflected in the statistics._

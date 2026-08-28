@@ -409,8 +409,13 @@ returns false there.
 
 **The previous amendment held this ticket's merge until NBD-88. That hold is cut.** NBD-88 is
 Cloudflare release preparation for the SPA, which is on hold, so the hold would have blocked NBD-86
-indefinitely. Merge is held until the owner's real-device pass alone, on the release APK the pull
-request builds.
+indefinitely.
+
+What replaces it is a **per-ticket device check**, not the full section D matrix. The owner installs
+the APK this ticket's own pull request builds and confirms the four matrices behave for the states
+this ticket implements. That is what gates the merge. It is deliberately narrower than the final
+pass, because the final pass cannot run before the ticket it would gate has merged, and a gate that
+requires its own output is not a gate.
 
 **Step 3. NBD-87b, the remaining native gates.** Added as native earns them: Maestro flows, a clean
 `expo prebuild` with generated-manifest verification, and the focused security review. The release
@@ -420,15 +425,29 @@ check, because one pull request per ticket makes one build per ticket affordable
 **Step 4. NBD-89a, native verification.** Run every parity-ledger row and golden journey that native
 owns, against a release APK, and collect the evidence. Fill parity-ledger section E's ownership table
 first, at least for the native-owned gates: gate 2 already splits, since native proves restart
-persistence and the SPA does not claim it. Hand the APK to the owner for the section D device matrix
-only after every native code and configuration ticket is complete. Run the review in a fresh session
-rather than one carrying the implementation context.
+persistence and the SPA does not claim it. Run the review in a fresh session rather than one
+carrying the implementation context.
+
+The **full section D device matrix** runs here, on a release APK built from `dev` once NBD-85 and
+NBD-86 have both merged. Those two are the native product and device tickets; the ordering does not
+wait on NBD-91 or NBD-92, which come after this step. Each of those two then ends with a short
+confirmation pass over what it actually changed on the device rather than a re-run of the whole
+matrix: for NBD-91 that is a real export and restore on the phone, and for NBD-92 it is the signed
+artefact installing and launching. Anything either ticket changes in a section D behaviour re-runs
+that matrix row.
 
 **Step 5. NBD-91, durability.** Export and import, as scoped above. It is the last functional gate
 before the store.
 
 **Step 6. NBD-92, EAS and Play.** Configuration, keystore custody, listing, `master` workflow,
 submission.
+
+ADR-0015 accepts option 2 alongside option 1, and option 2 lands here rather than in NBD-91: Android
+application backup enabled, a restore actually verified, and the inclusion and exclusion rules
+stated. It sits with the publication work because it is expressed in `apps/native/app.json` and the
+generated manifest, which is also where the `android:allowBackup` choice that ADR-0015 withdrew from
+the ledger gets made. Reaching the store having shipped option 1 and skipped option 2 would leave an
+accepted decision undelivered.
 
 ### On hold
 

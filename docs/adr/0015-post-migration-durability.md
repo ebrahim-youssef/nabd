@@ -41,8 +41,15 @@ Android application backup; encrypted cloud backup; and a later authenticated sy
 
 ## Decision
 
-Defer durability work until the first build is prepared for publication. Do not build export and
-import during the migration.
+Build export and import before the application is published, and not before that. The first
+revision of this ADR phrased this as "do not build export and import during the migration", which
+was accurate while publication sat somewhere past the end of the migration. It no longer does: the
+owner's priority is that the native application reaches Google Play as soon as it can, so
+publication is now the last step _of_ the native migration rather than something after it. The
+work is therefore scheduled inside the migration, at its end, as NBD-91.
+
+What has not changed is the ordering relative to users. Nothing ships to a device that is not the
+owner's without a way to get the data back off it.
 
 Options 1 and 2 remain the intended path and are not reopened by this revision. Options 3 and 4
 stay rejected for the reasons the first version gave: ADR-0014 deliberately removes the backend
