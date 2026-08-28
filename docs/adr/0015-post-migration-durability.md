@@ -12,11 +12,19 @@ and native scheduling state have never had one. Parity-ledger section F records 
 decision and forbids any implementation from claiming that local persistence alone protects a
 user's history until it is settled.
 
-The first version of this ADR treated the decision as urgent. That urgency rested on a premise
-that does not hold. The application has never been published. ADR-0013 records that nothing is on
-Google Play, and ADR-0014 and the execution plan both list Play publication as deferred work. The
-only installs that exist are development APKs the owner sideloads onto his own device for testing.
-There is no accumulated history to protect, and no user other than the owner who could lose any.
+The first version of this ADR treated the decision as urgent. That urgency rested on a premise that
+has to be stated carefully, because a first attempt at stating it was wrong.
+
+Nothing is on Google Play. ADR-0013 records that, and ADR-0014 and the execution plan both list
+Play publication as deferred work. The only Android installs are development APKs the owner
+sideloads onto his own device.
+
+The legacy Next.js application is a different matter, and the first version of this ADR overlooked
+it. That application is deployed and live, it shipped as v0.14.1, and it carries Google sign-in and
+Supabase sync. Being live is not the same as having users: the owner has confirmed that his is the
+only account. So there is still no accumulated history belonging to anyone else, but the reason is
+that nobody else uses the live deployment, not that no deployment exists. The distinction matters,
+because the two premises fail in different ways and only the second is load-bearing here.
 
 What remains true is that the SPA ships a partial export (`apps/spa/src/stats/useStatsExport.ts`)
 with no import path, and that building the wrong thing there means building it twice. That is an
@@ -35,9 +43,11 @@ stay rejected for the reasons the first version gave: ADR-0014 deliberately remo
 and both require one, and encrypted cloud backup additionally owes a documented key, recovery,
 deletion and failure model that nothing in the migration is scoped to provide.
 
-The trigger is a build submitted for publication, not a date and not the end of the migration. Any
-work that would put the application in front of someone other than the owner brings this decision
-forward with it.
+The trigger is the earlier of two things: a native build submitted to Google Play, or either
+replacement client becoming reachable by someone other than the owner. It is not a date and not the
+end of the migration. The second half carries the weight, because the SPA gets a real deployment at
+NBD-88. A deployment the owner alone uses does not fire the trigger; the first other person who
+keeps history on it does.
 
 Until that trigger, every install is treated as a fresh start. No migration path is provided from
 the legacy Capacitor application's stored history, and none is owed.
@@ -60,10 +70,17 @@ tested on a device; it does not need to hold, because the first reason is suffic
 
 ## Consequences
 
-Deleting the legacy Next.js and Capacitor source is no longer blocked by this decision. The first
-version withheld that deletion because the legacy application was the only place a long-standing
-user's history could be recovered from. There is no such history, so that reason is gone and
-NBD-88 and NBD-89 may proceed on their own schedule.
+Deleting the legacy Next.js and Capacitor source is **not** authorized here. The first version
+withheld that deletion because the legacy application was the only place a long-standing user's
+history could be recovered from, and that specific reason is narrower than it looked, since there
+is no third-party history to strand. But it was never the only reason. The execution plan defers
+deletion independently and names NBD-90 as what unblocks it later, and this ADR is `proposed`
+rather than accepted, so it cannot be that unblocking. Deletion stays deferred, and NBD-88 and
+NBD-89 proceed with the legacy tree in place, exactly as the plan already says.
+
+The live deployment is a second reason to leave it alone. It is the current release, and retiring
+it is a separate decision with its own checks rather than a side effect of finishing the
+migration.
 
 Section F's prohibition stands unchanged. No screen, release note or store listing may describe
 the application as keeping history safe until export and import ship. It costs nothing to keep and

@@ -235,8 +235,10 @@ created after migration survives long-term loss or replacement of a device is de
 [ADR-0015](../adr/0015-post-migration-durability.md): the work is deferred until the first build
 is prepared for publication, and until then every install is a fresh start.
 
-The owner no longer has to choose a durability path before the old application is deleted. Nothing
-has been published, so there is no accumulated history the legacy application is the last copy of.
+The legacy application is deployed and live and is the current release, but the owner is its only
+account, so there is no third-party history it is the last copy of. Deletion nevertheless stays
+deferred: the execution plan defers it independently, and ADR-0015 is `proposed` rather than
+accepted.
 
 Current facts:
 
