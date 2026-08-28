@@ -9,16 +9,12 @@ import {
   notificationMoments,
 } from '@nabd/shared'
 
+import { readCalculationMethodId } from '../prayer-times/prayerMethod'
+
 import { DEFAULT_NOTIFICATION_PREFS } from './logic'
 import { NotificationScheduler } from './NotificationScheduler'
 
 const COORDS = { latitude: 30.0444, longitude: 31.2357 }
-// Just after midnight in Cairo, so every one of the day's moments is still ahead of the clock, and
-// deliberately on an exact minute. Prayer times land on whole minutes too, so this start puts every
-// moment on a re-arm tick — the case where the re-arm used to clear a moment's timer just before it
-// was due and then decline to plan it again, losing the reminder for good.
-const START = Date.parse('2026-03-10T22:10:00.000Z')
-
 let delivered: string[] = []
 
 function stubNotification(permission: string) {
@@ -29,24 +25,38 @@ function stubNotification(permission: string) {
   vi.stubGlobal('Notification', FakeNotification)
 }
 
-function nextMomentAfter(now: number) {
-  const times = computeDayTimes(COORDS, new Date(now), undefined)
-  return notificationMoments(
+// The clock starts half past midnight on a fixed local date, and the plan is built from that same
+// instant, so the day the scheduler derives from the device clock is always the day these moments
+// come from. A fixed UTC instant would not do: computeDayTimes reads its day from local date parts,
+// so one zone's late evening is the next day somewhere else, and the plan and the scheduler would
+// then be working from different days.
+//
+// The start is on an exact minute, and prayer times land on exact minutes too, so every moment
+// falls on a re-arm tick: the case where the re-arm cleared a moment's timer in the same
+// millisecond it was due and then declined to plan it again, losing the reminder silently.
+function planTheDay() {
+  const start = new Date(2026, 2, 11, 0, 30, 0, 0).getTime()
+  const times = computeDayTimes(COORDS, new Date(start), readCalculationMethodId())
+  const moment = notificationMoments(
     times,
     IQAMAH_OFFSET_MINUTES,
     // Only the per-moment half of the preferences; `enabled` is the scheduler's own gate.
     DEFAULT_NOTIFICATION_PREFS,
     BEFORE_ADHAN_MINUTES,
     ADHKAR_REMINDER_MINUTES,
-    now,
+    start,
   )[0]
+  // Cairo's day spans roughly fifteen hours, so some of it is always still ahead of half past
+  // midnight wherever this runs. Said out loud so an empty plan reads as itself rather than as a
+  // scheduler that delivered nothing.
+  expect(moment).toBeDefined()
+  return { start, moment }
 }
 
 beforeEach(() => {
   delivered = []
   localStorage.clear()
   vi.useFakeTimers()
-  vi.setSystemTime(START)
   vi.stubGlobal('isSecureContext', true)
   stubNotification('granted')
   localStorage.setItem('nabd:coords', JSON.stringify(COORDS))
@@ -67,31 +77,34 @@ describe('the scheduler arm cycle', () => {
   // from one re-arm to the next. These assert the cycle itself, which the pure-logic tests around
   // shouldDeliverMoment cannot see.
   it('delivers a moment that is several re-arms away when it comes due', () => {
-    const moment = nextMomentAfter(START)
-    expect(moment.at - START).toBeGreaterThan(3 * 60_000)
+    const { start, moment } = planTheDay()
+    expect(moment.at - start).toBeGreaterThan(3 * 60_000)
+    vi.setSystemTime(start)
 
     render(<NotificationScheduler />)
     expect(delivered).toEqual([])
 
-    vi.advanceTimersByTime(moment.at - START + 1_000)
+    vi.advanceTimersByTime(moment.at - start + 1_000)
     expect(delivered).toHaveLength(1)
   })
 
   it('does not deliver the same moment twice however many times it re-arms', () => {
-    const moment = nextMomentAfter(START)
+    const { start, moment } = planTheDay()
+    vi.setSystemTime(start)
 
     render(<NotificationScheduler />)
-    vi.advanceTimersByTime(moment.at - START + 5 * 60_000)
+    vi.advanceTimersByTime(moment.at - start + 5 * 60_000)
 
     expect(delivered).toHaveLength(1)
   })
 
   it('stays silent while the permission is not granted', () => {
     stubNotification('denied')
-    const moment = nextMomentAfter(START)
+    const { start, moment } = planTheDay()
+    vi.setSystemTime(start)
 
     render(<NotificationScheduler />)
-    vi.advanceTimersByTime(moment.at - START + 1_000)
+    vi.advanceTimersByTime(moment.at - start + 1_000)
 
     expect(delivered).toEqual([])
   })
