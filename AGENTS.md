@@ -93,5 +93,10 @@ code around.
 - **Plan device features fully; security-review before merge.** Any feature touching a device/OS
   capability (location, notifications, alarms, camera, filesystem, background work) is specced
   against the full state matrix first — see "Native / device-feature planning" in `docs/workflow.md`.
-  Before squash-merging any PR, scan the diff for security issues (XSS, injection, secrets, authz) —
+  Before merging any PR, scan the diff for security issues (XSS, injection, secrets, authz) —
   `docs/workflow.md` Phase 7.
+- **One ticket, one branch, one PR.** A branch tracks a ticket, not a slice. A ticket that splits
+  into slices keeps each slice as its own Conventional-Commits commit on that branch, and the whole
+  ticket merges in a single PR by **rebase-merge**, never squash — squash would collapse the slice
+  history that is the reason for keeping it. See the 2026-08-28 amendment in
+  `docs/adr/0003-branching-and-environments.md`.
