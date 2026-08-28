@@ -35,14 +35,22 @@ and checked on a real device without waiting on a Play review or a test track. T
 exist yet; it arrives with NBD-88 alongside the store listing, and this ADR only fixes where it
 belongs.
 
+That path is not NBD-88. The execution plan scopes NBD-88 to the Cloudflare build, the deployment
+runbook and Vercel removal, and NBD-89 produces the sideloadable release APK while listing Play
+Store submission as explicitly deferred. The `master` AAB and EAS path therefore needs its own
+ticket after the migration closes, and this ADR fixes where it belongs rather than when it happens.
+
 `dev` produces an APK only. There is nothing to upload from `dev`, so an AAB there would be a build
 nobody consumes.
 
 Feature branches produce nothing. The workflow's push trigger is restricted to `dev`, with
 `workflow_dispatch` retained so a build can be taken from any ref on demand.
 
-`native-release-apk` stays out of the required status checks for the reason above. It is a
-publisher, not a gate. The gates that protect native correctness are the `native lint`, `native
+`native-release-apk` builds on pull requests that touch native code, which is the "release APK
+build on relevant pull requests" gate NBD-87 requires, and publishes the artefact on a push to
+`dev`. It stays out of the *required* status checks for the reason above: a paths-filtered workflow
+never reports on pull requests that miss the filter, so requiring it would deadlock them. It runs
+and must pass where it applies, without being a context every pull request has to satisfy. The gates that protect native correctness are the `native lint`, `native
 test` and `native typecheck` checks, and NBD-86 adds a clean-prebuild and compile gate that does
 report on pull requests.
 
