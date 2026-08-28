@@ -264,8 +264,10 @@ Current facts:
 - Local database choice alone does not provide recovery after uninstall, cleared application
   data, device loss, or device replacement.
 
-ADR-0015 selects options 1 and 2 below as the eventual path and rejects 3 and 4 for this
-migration. The options are kept here because the choice has to be tested, not just recorded:
+ADR-0015 selects options 1 and 2 below as the path and rejects 3 and 4 for this migration. Both
+selected options are scheduled: option 1 is NBD-91, and option 2 is NBD-92, where it sits with the
+publication work because it is expressed in `apps/native/app.json` and the generated manifest. The
+options are kept here because the choice has to be tested, not just recorded:
 
 1. Complete user-initiated export and import covering versions, entries, qada events, settings,
    coordinates as appropriate, and a versioned backup format.
