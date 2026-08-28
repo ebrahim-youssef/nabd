@@ -1,12 +1,9 @@
 import { logger } from '../logger'
 
-import {
-  DEFAULT_NOTIFICATION_PREFS,
-  NOTIFICATION_PREFS_EVENT,
-  NOTIFICATION_PREFS_KEY,
-  parseNotificationPrefs,
-} from './logic'
-import type { NotificationPrefs } from './logic'
+import { DEFAULT_NOTIFICATION_PREFS, parseNotificationPrefs } from '@nabd/shared'
+import type { NotificationPrefs } from '@nabd/shared'
+
+import { NOTIFICATION_PREFS_EVENT, NOTIFICATION_PREFS_KEY } from './logic'
 
 export function readNotificationPrefs(): NotificationPrefs {
   try {

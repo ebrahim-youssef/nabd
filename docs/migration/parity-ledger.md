@@ -99,9 +99,11 @@ target persistence engines and contain:
    coordinates and city, notifications enabled with at least one moment disabled,
    `alarmOnSilent: true`, and `permanentCountdown: true`.
 
-The fixture gate must prove that each version governs the correct days, latest events determine
-current item state, historical statistics do not change after the version change, the qada balance
-reflects both events, onboarding does not return, and all non-default settings round-trip.
+The fixture is split: the repository half covers parts 1–4, proving version-day resolution,
+latest-event state, stable historical statistics, qada balance, and completed onboarding. The
+preference half covers part 5 by round-tripping all non-default settings without a persistence
+engine. `alarmOnSilent` and `permanentCountdown` are native-only fixture values, asserted only by
+native; the SPA neither stores nor asserts them.
 
 ## C. Critical settings defaults
 

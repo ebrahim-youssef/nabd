@@ -6,7 +6,7 @@ import { logger } from '../logger'
 // Dexie because they are a device preference, not user history: their only job is to recompute
 // prayer times offline on a later visit.
 
-const COORDS_KEY = 'nabd:coords'
+export const COORDS_KEY = 'nabd:coords'
 
 // Fired on window after a successful grant so every mounted consumer — the checklist sub-header and
 // each per-prayer badge — picks the coordinates up without a remount.

@@ -1,4 +1,5 @@
 import { SETTINGS_COPY } from '@nabd/shared'
+import type { NotificationPrefs } from '@nabd/shared'
 import { Bell } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -10,7 +11,6 @@ import {
 import { NOTIFICATION_PREFS_EVENT } from '../notifications/logic'
 import { readNotificationPrefs, writeNotificationPrefs } from '../notifications/preferences'
 import type { BrowserNotificationPermission } from '../notifications/browser'
-import type { NotificationPrefs } from '../notifications/logic'
 
 const MOMENT_TOGGLES: { key: Exclude<keyof NotificationPrefs, 'enabled'>; label: string }[] = [
   { key: 'beforeAdhan', label: SETTINGS_COPY.notifications.beforeAdhan },

@@ -1,6 +1,8 @@
 import { render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { DEFAULT_NOTIFICATION_PREFS } from '@nabd/shared'
+
 import {
   ADHKAR_REMINDER_MINUTES,
   BEFORE_ADHAN_MINUTES,
@@ -11,7 +13,6 @@ import {
 
 import { readCalculationMethodId } from '../prayer-times/prayerMethod'
 
-import { DEFAULT_NOTIFICATION_PREFS } from './logic'
 import { NotificationScheduler } from './NotificationScheduler'
 
 const COORDS = { latitude: 30.0444, longitude: 31.2357 }
