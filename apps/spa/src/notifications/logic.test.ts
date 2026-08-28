@@ -34,8 +34,18 @@ describe('foreground delivery decisions', () => {
   const MOMENT = { at: 1_755_000_000_000, kind: 'iqamah' as const, prayerId: 'fajr' }
   const NOW = MOMENT.at
 
-  it('creates a stable per-day, per-moment marker', () => {
-    expect(notificationMomentMarker(MOMENT)).toBe('nabd:notification-fired:2025-08-12:iqamah:fajr')
+  it('creates a stable per-day, per-moment marker from the day it was planned for', () => {
+    expect(notificationMomentMarker(MOMENT, '2025-08-12')).toBe(
+      'nabd:notification-fired:2025-08-12:iqamah:fajr',
+    )
+  })
+
+  it('keys the marker to the planning day even when the moment falls outside it', () => {
+    // What a device whose clock sits far from its coordinates produces. The marker has to follow
+    // the day the pruning keeps, or it is discarded from under a moment that already fired.
+    expect(notificationMomentMarker(MOMENT, '2025-08-11')).toBe(
+      'nabd:notification-fired:2025-08-11:iqamah:fajr',
+    )
   })
 
   it('collects every marker except the ones belonging to today', () => {

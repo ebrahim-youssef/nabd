@@ -1,4 +1,3 @@
-import { toDayId } from '@nabd/shared'
 import type { NotificationMoment } from '@nabd/shared'
 
 export type NotificationPrefs = {
@@ -39,8 +38,13 @@ export function parseNotificationPrefs(value: unknown): NotificationPrefs {
   ) as NotificationPrefs
 }
 
-export function notificationMomentMarker(moment: NotificationMoment): string {
-  return `${NOTIFICATION_FIRED_PREFIX}:${toDayId(new Date(moment.at))}:${moment.kind}:${moment.prayerId}`
+// Keyed by the day the plan was drawn up for, not the day the moment itself falls on. Those are
+// usually the same day and, on a device whose clock sits far from its coordinates, sometimes not:
+// a local day's prayer times can land on the calendar day either side of it. Pruning keeps the
+// planning day and discards the rest, so a marker keyed the other way would be thrown out from
+// under a moment that had already fired, taking the once-a-day guarantee with it.
+export function notificationMomentMarker(moment: NotificationMoment, dayId: string): string {
+  return `${NOTIFICATION_FIRED_PREFIX}:${dayId}:${moment.kind}:${moment.prayerId}`
 }
 
 // Markers only ever answer "did today's moment already fire", so yesterday's are dead weight. Left
