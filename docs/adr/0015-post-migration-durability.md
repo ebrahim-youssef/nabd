@@ -1,6 +1,6 @@
 # ADR-0015 — Post-migration durability of devotional history
 
-- **Status:** proposed
+- **Status:** accepted
 - **Date:** 2026-08-28
 - **Revised:** 2026-08-28
 
@@ -20,11 +20,17 @@ Play publication as deferred work. The only Android installs are development APK
 sideloads onto his own device.
 
 The legacy Next.js application is a different matter, and the first version of this ADR overlooked
-it. That application is deployed and live, it shipped as v0.14.1, and it carries Google sign-in and
-Supabase sync. Being live is not the same as having users: the owner has confirmed that his is the
-only account. So there is still no accumulated history belonging to anyone else, but the reason is
-that nobody else uses the live deployment, not that no deployment exists. The distinction matters,
-because the two premises fail in different ways and only the second is load-bearing here.
+it. That application is deployed and live and it shipped as v0.14.1. The second version then said it
+"carries Google sign-in and Supabase sync", which is true of the source and false of the running
+system. The sign-in path needs the Google OAuth provider enabled in the Supabase dashboard, which
+`docs/backlog.md` already records as a manual step outside the repository, and the owner has
+confirmed it was never done. `.env.example` carries `NEXT_PUBLIC_SUPABASE_URL` and
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` blank, and `features/sync/` contains no `signInWithOAuth` call.
+
+So nobody has ever signed in, and the remote database holds nothing belonging to anyone. That is a
+stronger fact than the second version's, which rested on the owner being the only account: there is
+no account, and no remote history exists to be the last copy of. The live deployment is a test host
+that happens to be reachable, not a service anyone depends on.
 
 What remains true is that the SPA ships a partial export (`apps/spa/src/stats/useStatsExport.ts`)
 with no import path, and that building the wrong thing there means building it twice. That is an
@@ -43,11 +49,21 @@ stay rejected for the reasons the first version gave: ADR-0014 deliberately remo
 and both require one, and encrypted cloud backup additionally owes a documented key, recovery,
 deletion and failure model that nothing in the migration is scoped to provide.
 
-The trigger is the earlier of two things: a native build submitted to Google Play, or either
-replacement client becoming reachable by someone other than the owner. It is not a date and not the
-end of the migration. The second half carries the weight, because the SPA gets a real deployment at
-NBD-88. A deployment the owner alone uses does not fire the trigger; the first other person who
-keeps history on it does.
+The trigger is the earlier of two things, and the owner has now fixed the first one concretely.
+
+Export and import ship **before any submission to Google Play**, including an internal or closed
+testing track. The looser reading — publish to a closed track first and build durability before the
+open track — was offered and declined. The line is the store, not the audience, because a closed
+track is still a real install on a device that is not the owner's, and because "we will do it before
+the open track" is the kind of commitment that quietly does not survive a release date.
+
+The second half is unchanged: either replacement client becoming reachable by someone other than the
+owner. That still matters for the SPA, which gets a real deployment at NBD-88. A deployment the owner
+alone uses does not fire it; the first other person who keeps history on it does.
+
+The practical consequence is that durability is no longer deferred past the migration. It sits on the
+native critical path, immediately before publication, as NBD-91. The execution plan's native-first
+amendment sequences it there.
 
 Until that trigger, every install is treated as a fresh start. No migration path is provided from
 the legacy Capacitor application's stored history, and none is owed.
@@ -70,17 +86,21 @@ tested on a device; it does not need to hold, because the first reason is suffic
 
 ## Consequences
 
-Deleting the legacy Next.js and Capacitor source is **not** authorized here. The first version
-withheld that deletion because the legacy application was the only place a long-standing user's
-history could be recovered from, and that specific reason is narrower than it looked, since there
-is no third-party history to strand. But it was never the only reason. The execution plan defers
-deletion independently and names NBD-90 as what unblocks it later, and this ADR is `proposed`
-rather than accepted, so it cannot be that unblocking. Deletion stays deferred, and NBD-88 and
-NBD-89 proceed with the legacy tree in place, exactly as the plan already says.
+Deleting the legacy Next.js and Capacitor source is unblocked by this ADR being accepted, but it is
+not authorized _now_. The owner's instruction is that deletion happens when the migration is
+finished, not partway through it, and the execution plan already sequences it that way. NBD-88 and
+NBD-89 proceed with the legacy tree in place. What this ADR removes is the durability objection to
+deleting it; what remains is ordering.
 
-The live deployment is a second reason to leave it alone. It is the current release, and retiring
-it is a separate decision with its own checks rather than a side effect of finishing the
+The live deployment is a second reason to leave it standing until then. It is the current release,
+and retiring it is a separate step with its own checks rather than a side effect of finishing the
 migration.
+
+The owner's standing decision on existing data is recorded here so it is not re-asked. Everything
+created before the migration goes live is disposable, wherever it lives: browser IndexedDB on the
+legacy web deployment, anything on a sideloaded APK, and the empty Supabase project. All of it was
+testing, by the owner or by anyone he handed a link to, and none of it is treated as canonical. No
+migration path is owed from any of it, and nothing in the replacement clients reads it.
 
 Section F's prohibition stands unchanged. No screen, release note or store listing may describe
 the application as keeping history safe until export and import ship. It costs nothing to keep and
