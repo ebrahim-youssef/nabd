@@ -21,6 +21,11 @@ beforeEach(async () => {
         success({ coords: { latitude: 30, longitude: 31 } } as GeolocationPosition),
     },
   })
+  vi.stubGlobal('isSecureContext', true)
+  vi.stubGlobal('Notification', {
+    permission: 'granted',
+    requestPermission: vi.fn().mockResolvedValue('granted'),
+  })
 })
 
 describe('SettingsScreen', () => {
@@ -56,5 +61,18 @@ describe('SettingsScreen', () => {
     fireEvent.click(await screen.findByTestId('enable-location-settings'))
 
     await waitFor(() => expect(screen.getByTestId('location-granted')).toBeVisible())
+  })
+
+  it('persists enabled notification moments independently', async () => {
+    await addVersion('2026-08-12', WIRD_LEVELS[0].wird, CREATED_AT)
+    renderApp('/app/settings')
+
+    fireEvent.click(await screen.findByTestId('notification-enabled'))
+    fireEvent.click(await screen.findByTestId('notification-moment-atIqamah'))
+
+    expect(JSON.parse(localStorage.getItem('nabd:notification-prefs') ?? '')).toMatchObject({
+      enabled: true,
+      atIqamah: false,
+    })
   })
 })
