@@ -345,3 +345,114 @@ into the NBD-86 work or close it, because NBD-86 will otherwise duplicate it.
 The migration is finalized when NBD-89 passes with the legacy Next.js and Capacitor source still in the
 tree. Deletion stays deferred, and NBD-90 is what unblocks it later. Until NBD-90 is recorded, no
 implementation may claim that local persistence alone protects multi-year devotional history.
+
+## 2026-08-28b amendment - native first
+
+The owner has set a single priority: **the native application reaches Google Play as soon as it
+can**. The SPA and web migration is on hold. This amendment supersedes the _Order of work_ in the
+2026-08-28 amendment; that amendment's status table and its four corrections stand, and everything
+else above still applies where it does not conflict.
+
+### What closed since the previous amendment
+
+| Ticket                     | State  | Evidence                                                                             |
+| -------------------------- | ------ | ------------------------------------------------------------------------------------ |
+| NBD-84 SPA parity          | done   | all thirteen slices: #181-#188, sharing #189, foreground reminders #193, Sentry #194 |
+| NBD-87a required gates     | done   | Playwright gate #191, plus seventeen required contexts on `dev` and `master`         |
+| NBD-90 durability decision | done   | ADR-0015, accepted at #195/#198 and this amendment                                   |
+| ADR-0016 native release    | done   | #197                                                                                 |
+| PR #166                    | closed | superseded by NBD-86, rebuild plan recorded on the pull request                      |
+
+Steps 1 through 3 of the previous amendment are complete. What follows replaces steps 4 through 9.
+
+### Two new tickets
+
+**NBD-91, durability implementation.** ADR-0015 is accepted and its trigger is now concrete: export
+and import ship before **any** submission to Google Play, an internal or closed testing track
+included. This is no longer post-migration work, it is the last gate before publication. Scope: the
+versioned backup format and its shared serialization in `packages/shared`, and the SQLite read and
+write halves in `apps/native`, covering wird versions, wird entries, qada events, settings and
+cached coordinates. Import states what it is about to do before it does it, and resolves onto a
+non-empty device by union on event identity, which the append-only contract makes safe. The Dexie
+half is designed here and implemented when the web track resumes, so native is not blocked on
+paused work.
+
+**NBD-92, EAS build and Play release path.** ADR-0016 records that `master` produces both an AAB and
+an APK through EAS and that this is not NBD-88, which is scoped to Cloudflare alone. It had no
+ticket. It has one now: the EAS configuration, the upload keystore and its custody, the Play console
+listing, and the `master` workflow. It is the last ticket before submission.
+
+### Order of work
+
+**Step 1. NBD-85, native product parity.** Thirteen slices in the same order NBD-84 used, on one
+branch, in one pull request, one commit per slice. The parity-ledger section B characterization
+fixture lands as the first commit, in `packages/shared`, consumed by both the SQLite and Dexie
+suites. Each slice keeps the three additions the previous amendment specified, and they are worth
+restating because they are what green gates do not prove:
+
+- The NativeWind guard check. `className` is silently dropped on components NativeWind has not
+  registered, `Animated.View`, `Animated.Text` and `LinearGradient` among them. Nothing warns and
+  unit tests still pass, so the source is scanned for it.
+- A screenshot of the rendered screen. Gates prove it compiles, not that it renders.
+- That slice's fixture assertions, so persistence semantics are proven per slice rather than once at
+  the end.
+
+One feature per delegated run. A single brief covering many route groups has hung for eighty minutes
+with no writes.
+
+**Step 2. NBD-86, device integration.** Each item maps to one of the four matrices in parity-ledger
+section D: exact alarms and sound, permanent countdown, location and the GPS switch, and
+battery-optimization exemption. Every state gets an actionable Arabic outcome. The permission model
+is ADR-0016's: `USE_EXACT_ALARM` for Android 13 and above, `SCHEDULE_EXACT_ALARM` with
+`android:maxSdkVersion="32"` for Android 12, prompting through `canScheduleExactAlarms()` when it
+returns false there.
+
+**The previous amendment held this ticket's merge until NBD-88. That hold is cut.** NBD-88 is
+Cloudflare release preparation for the SPA, which is on hold, so the hold would have blocked NBD-86
+indefinitely. Merge is held until the owner's real-device pass alone, on the release APK the pull
+request builds.
+
+**Step 3. NBD-87b, the remaining native gates.** Added as native earns them: Maestro flows, a clean
+`expo prebuild` with generated-manifest verification, and the focused security review. The release
+APK build is already in place and stays a full release build on pull requests rather than a compile
+check, because one pull request per ticket makes one build per ticket affordable.
+
+**Step 4. NBD-89a, native verification.** Run every parity-ledger row and golden journey that native
+owns, against a release APK, and collect the evidence. Fill parity-ledger section E's ownership table
+first, at least for the native-owned gates: gate 2 already splits, since native proves restart
+persistence and the SPA does not claim it. Hand the APK to the owner for the section D device matrix
+only after every native code and configuration ticket is complete. Run the review in a fresh session
+rather than one carrying the implementation context.
+
+**Step 5. NBD-91, durability.** Export and import, as scoped above. It is the last functional gate
+before the store.
+
+**Step 6. NBD-92, EAS and Play.** Configuration, keystore custody, listing, `master` workflow,
+submission.
+
+### On hold
+
+NBD-88 Cloudflare release preparation, the web half of NBD-89, and the SPA half of NBD-91 are
+paused, not cancelled. They resume when the owner says so. Nothing in steps 1 through 6 may take a
+dependency on them, and the NBD-86 hold above was the one place that already had.
+
+Deletion of the legacy Next.js, Capacitor and legacy Android source stays deferred. ADR-0015 no
+longer blocks it, but the owner's instruction is that it happens once the migration is finished, so
+it is the last step of all and not a side effect of any ticket here.
+
+### Workflow
+
+One ticket, one branch, one pull request, one commit per slice, merged by **rebase-merge** rather
+than squash so the slice commits survive. The 2026-08-28 amendment to
+[ADR-0003](../adr/0003-branching-and-environments.md) records this and why.
+
+Every pull request draws an automated review. Its comments are addressed on their merits and
+resolved, never bypassed with an admin merge. That happened once, on #195, and it discarded a
+correct finding about this plan's own premises which then took #198 to repair.
+
+### What finalized means
+
+Unchanged in substance, narrowed in order. The native migration is finished when NBD-89a passes,
+NBD-91 ships and NBD-92 submits, with the legacy tree still in the repository. The web migration is
+finished separately, when it resumes. Until NBD-91 ships, no screen, release note or store listing
+may claim that local persistence alone protects a user's history.
