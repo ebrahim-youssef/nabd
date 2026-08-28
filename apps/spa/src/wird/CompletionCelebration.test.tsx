@@ -1,5 +1,5 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isScheduledOn, toDayId, WIRD_COPY, WIRD_LEVELS } from '@nabd/shared'
 
@@ -15,6 +15,55 @@ beforeEach(async () => {
   await db.transaction('rw', db.wirdEntries, db.wirdVersions, async () => {
     await db.wirdEntries.clear()
     await db.wirdVersions.clear()
+  })
+})
+
+afterEach(() => vi.unstubAllGlobals())
+
+async function completeToday() {
+  const day = toDayId(new Date())
+  const level = WIRD_LEVELS[0]
+  await addVersion(day, level.wird, CREATED_AT)
+  renderApp('/app')
+  await screen.findByTestId('wird-checklist')
+  const required = level.wird.items.filter((item) => !item.optional && isScheduledOn(item, day))
+  for (const [index, item] of required.entries()) {
+    await appendEntryForDay(day, item.id, true, CREATED_AT + index + 1)
+  }
+  return screen.findByRole('dialog', { name: WIRD_COPY.celebrationTitle })
+}
+
+describe('CompletionCelebration sharing', () => {
+  it('confirms a clipboard copy when the platform has no share sheet', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    await completeToday()
+
+    fireEvent.click(screen.getByTestId('celebration-share'))
+
+    expect(await screen.findByTestId('celebration-copied')).toHaveTextContent(
+      WIRD_COPY.celebrationCopied,
+    )
+    expect(writeText).toHaveBeenCalledWith(WIRD_COPY.celebrationShareText)
+  })
+
+  it('stays quiet when the share sheet handled it', async () => {
+    vi.stubGlobal('navigator', { share: vi.fn().mockResolvedValue(undefined) })
+    await completeToday()
+
+    fireEvent.click(screen.getByTestId('celebration-share'))
+
+    // The sheet is its own feedback, so a successful share must not also claim a clipboard copy.
+    await waitFor(() => expect(screen.queryByTestId('celebration-copied')).toBeNull())
+  })
+
+  it('stays quiet when sharing fails outright', async () => {
+    vi.stubGlobal('navigator', {})
+    await completeToday()
+
+    fireEvent.click(screen.getByTestId('celebration-share'))
+
+    await waitFor(() => expect(screen.queryByTestId('celebration-copied')).toBeNull())
   })
 })
 
