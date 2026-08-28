@@ -182,5 +182,5 @@ don't touch the READMEs; when in doubt, glance at them and move on.
 - [ ] Works on staging URL (acceptance criteria met)
 - [ ] Works on production URL (success check passes)
 - [ ] Nothing previously working is broken (e2e suite green)
-- [ ] Squashed with a valid Conventional Commits title
+- [ ] Merged by the Phase 7 step 5 rule, rebase for a multi-commit ticket, squash for a single-commit one, every commit message Conventional-Commits valid
 - [ ] Branches updated, feature branch deleted
