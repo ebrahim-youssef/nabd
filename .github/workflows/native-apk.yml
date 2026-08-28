@@ -2,7 +2,19 @@ name: native-release-apk
 
 on:
   workflow_dispatch:
+  # Two roles for one build. On a pull request that touches native code it is the gate the
+  # execution plan requires ("release APK build on relevant pull requests", NBD-87). On a push to
+  # dev it is the publisher: the artefact the owner sideloads to close the section D device
+  # matrices. It is deliberately not a required status check, because a paths-filtered workflow
+  # never reports on pull requests that miss the filter and would deadlock them. See ADR-0016.
+  pull_request:
+    paths:
+      - 'apps/native/**'
+      - 'packages/shared/**'
+      - '.github/workflows/native-apk.yml'
   push:
+    branches:
+      - dev
     paths:
       - 'apps/native/**'
       - 'packages/shared/**'
