@@ -4,20 +4,17 @@
 // Every read/apply tolerates a throwing storage layer so the app never breaks on a blocked
 // or disabled localStorage.
 
-export type Theme = 'light' | 'dark'
-export type Mode = 'classic' | 'modern'
+import { DEFAULT_MODE, DEFAULT_THEME, VALID_MODES, VALID_THEMES } from '@nabd/shared'
+import type { Mode, Theme } from '@nabd/shared'
+
+export { APPEARANCE_INIT_SCRIPT } from './appearance-init'
+export type { Mode, Theme } from '@nabd/shared'
 
 export const THEME_STORAGE_KEY = 'nabd:theme'
 export const MODE_STORAGE_KEY = 'nabd:mode'
 
 const THEME_ATTRIBUTE = 'data-theme'
 const MODE_ATTRIBUTE = 'data-mode'
-
-const DEFAULT_THEME: Theme = 'light'
-const DEFAULT_MODE: Mode = 'classic'
-
-const VALID_THEMES: readonly Theme[] = ['light', 'dark']
-const VALID_MODES: readonly Mode[] = ['classic', 'modern']
 
 export function readTheme(): Theme {
   try {
@@ -61,10 +58,3 @@ export function toggleTheme(): Theme {
   applyTheme(next)
   return next
 }
-
-// Inline no-FOUC script for the app document: applies the stored preferences before first
-// paint. It is a fixed build-time constant (no user/DOM interpolation), dependency-free, and
-// defensive because it is serialized into the initial HTML — a CSP hash/nonce decision for it
-// is deferred (NBD-83 leaves CSP out of scope).
-export const APPEARANCE_INIT_SCRIPT =
-  "try{var d=document.documentElement;if(localStorage.getItem('nabd:theme')==='dark')d.setAttribute('data-theme','dark');if(localStorage.getItem('nabd:mode')==='modern')d.setAttribute('data-mode','modern')}catch(e){}"

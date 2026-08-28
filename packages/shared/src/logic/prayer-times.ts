@@ -1,4 +1,5 @@
 import { toArabicIndic } from './format'
+import type { NotificationPrefs } from './notification-prefs'
 import type { TimePoint, TimelineStatus } from '../types/prayer-times'
 
 // Pure timeline math (ADR-0009): time points + `now` in, status out. No clock, no I/O.
@@ -41,13 +42,10 @@ export type NotificationMoment = {
   prayerId: string
 }
 
-type MomentPrefs = {
-  beforeAdhan: boolean
-  atAdhan: boolean
-  atIqamah: boolean
-  morningAdhkar: boolean
-  eveningAdhkar: boolean
-}
+type MomentPrefs = Pick<
+  NotificationPrefs,
+  'beforeAdhan' | 'atAdhan' | 'atIqamah' | 'morningAdhkar' | 'eveningAdhkar'
+>
 
 // The day's remaining notification instants for the five prayers (sunrise never notifies),
 // honoring the per-moment toggles and the fixed iqamah offsets. Pure: times, offsets, prefs,

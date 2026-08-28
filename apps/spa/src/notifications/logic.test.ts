@@ -1,12 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  DEFAULT_NOTIFICATION_PREFS,
-  notificationMomentMarker,
-  parseNotificationPrefs,
-  shouldDeliverMoment,
-  staleMarkerKeys,
-} from './logic'
+import { DEFAULT_NOTIFICATION_PREFS, parseNotificationPrefs } from '@nabd/shared'
+
+import { notificationMomentMarker, shouldDeliverMoment, staleMarkerKeys } from './logic'
 
 describe('notification preferences', () => {
   it('uses the parity defaults when storage is absent or not an object', () => {

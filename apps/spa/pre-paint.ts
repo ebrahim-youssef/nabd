@@ -1,4 +1,4 @@
-import { APPEARANCE_INIT_SCRIPT } from './src/app/appearance'
+import { APPEARANCE_INIT_SCRIPT } from './src/app/appearance-init'
 
 const DOCUMENT_HEAD = '<head>'
 
