@@ -12,8 +12,9 @@ cp .env.example .env.local
 ```
 
 `.env.local` is gitignored. `.env.example` documents variables for the root application.
-`apps/native/.env.example` documents the native Sentry variable. The replacement clients do not
-use Supabase during this migration.
+`apps/spa/.env.example` documents the SPA Sentry variable (`VITE_SENTRY_DSN`) and
+`apps/native/.env.example` documents the native one. The replacement clients do not use Supabase
+during this migration.
 
 ## Install & run
 
