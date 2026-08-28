@@ -3,6 +3,10 @@ name: native-release-apk
 on:
   workflow_dispatch:
   push:
+    # dev publishes the test APK the owner sideloads; master's production path arrives with EAS in
+    # NBD-88. Feature branches build nothing. See ADR-0016.
+    branches:
+      - dev
     paths:
       - 'apps/native/**'
       - 'packages/shared/**'
