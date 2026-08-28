@@ -77,7 +77,10 @@ export function NotificationScheduler() {
       if (!prefs.enabled || !coords || browserNotificationPermission() !== 'granted') return
 
       const now = Date.now()
-      pruneStaleMarkers(toDayId(new Date(now)))
+      // One day for both the pruning and the delivery markers, so the two cannot disagree about
+      // which day a moment belongs to.
+      const planningDay = toDayId(new Date(now))
+      pruneStaleMarkers(planningDay)
       const prayerTimes = computeDayTimes(coords, new Date(now), readCalculationMethodId())
       const moments = notificationMoments(
         prayerTimes,
@@ -91,7 +94,7 @@ export function NotificationScheduler() {
       timers = moments.map((moment) =>
         window.setTimeout(
           () => {
-            const marker = notificationMomentMarker(moment)
+            const marker = notificationMomentMarker(moment, planningDay)
             if (
               !shouldDeliverMoment({
                 moment,
