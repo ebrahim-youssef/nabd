@@ -25,6 +25,14 @@ import { readNotificationPrefs } from './preferences'
 
 const REARM_INTERVAL_MS = 60_000
 
+// A moment due in the same millisecond as a re-arm would otherwise be lost: the re-arm clears its
+// timer before it can run, and planning again from the exact same instant drops it, because a
+// moment is only planned while it is still strictly ahead. Planning from a moment earlier keeps it
+// alive across that one tick. It cannot make a reminder late by more than this, since
+// shouldDeliverMoment still refuses anything that is not yet due and the per-moment marker still
+// allows only one delivery.
+const REARM_GRACE_MS = 1_000
+
 function hasFired(marker: string): boolean {
   try {
     return window.localStorage.getItem(marker) !== null
@@ -77,27 +85,30 @@ export function NotificationScheduler() {
         prefs,
         BEFORE_ADHAN_MINUTES,
         ADHKAR_REMINDER_MINUTES,
-        now,
+        now - REARM_GRACE_MS,
       )
 
       timers = moments.map((moment) =>
-        window.setTimeout(() => {
-          const marker = notificationMomentMarker(moment)
-          if (
-            !shouldDeliverMoment({
-              moment,
-              now: Date.now(),
-              visible: document.visibilityState === 'visible',
-              alreadyFired: hasFired(marker),
-            })
-          ) {
-            return
-          }
-          markFired(marker)
-          const label = MOMENT_LABELS[moment.prayerId] ?? moment.prayerId
-          const { title, body } = NOTIFICATION_COPY[moment.kind](label)
-          showBrowserNotification(title, body)
-        }, moment.at - now),
+        window.setTimeout(
+          () => {
+            const marker = notificationMomentMarker(moment)
+            if (
+              !shouldDeliverMoment({
+                moment,
+                now: Date.now(),
+                visible: document.visibilityState === 'visible',
+                alreadyFired: hasFired(marker),
+              })
+            ) {
+              return
+            }
+            markFired(marker)
+            const label = MOMENT_LABELS[moment.prayerId] ?? moment.prayerId
+            const { title, body } = NOTIFICATION_COPY[moment.kind](label)
+            showBrowserNotification(title, body)
+          },
+          Math.max(0, moment.at - now),
+        ),
       )
     }
 
