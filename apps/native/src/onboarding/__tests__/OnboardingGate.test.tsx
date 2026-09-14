@@ -21,7 +21,6 @@ type StateRow = {
 }
 type VersionRow = {
   id: string
-  level_id: string
   effective_from: string
   definition_json: string
   created_at: number
@@ -41,10 +40,9 @@ function createPersistedDatabase() {
         if (source.includes('INSERT INTO wird_versions')) {
           versions.set(String(parameters[0]), {
             id: String(parameters[0]),
-            level_id: String(parameters[1]),
-            effective_from: String(parameters[2]),
-            definition_json: String(parameters[3]),
-            created_at: Number(parameters[4]),
+            effective_from: String(parameters[1]),
+            definition_json: String(parameters[2]),
+            created_at: Number(parameters[3]),
           })
         }
         if (source.includes('INSERT INTO onboarding_state')) {

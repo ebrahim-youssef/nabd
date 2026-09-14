@@ -77,10 +77,10 @@ describe('native SQLite persistence integration', () => {
       reopenedConnection
         .prepare(
           `INSERT INTO wird_versions
-            (id, level_id, effective_from, definition_json, created_at)
-            VALUES (?, ?, ?, ?, ?)`,
+             (id, effective_from, definition_json, created_at)
+             VALUES (?, ?, ?, ?)`,
         )
-        .run('future-level', 'level-1', '2026-08-11', JSON.stringify(WIRD_LEVELS[0].wird), 200)
+        .run('future-level', '2026-08-11', JSON.stringify(WIRD_LEVELS[0].wird), 200)
       expect(
         reopenedConnection.prepare('SELECT COUNT(*) AS count FROM wird_versions').get(),
       ).toEqual({ count: 2 })

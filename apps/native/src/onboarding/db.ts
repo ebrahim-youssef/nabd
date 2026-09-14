@@ -32,7 +32,6 @@ type OnboardingRow = {
 
 type WirdVersionRow = {
   id: string
-  level_id: string
   effective_from: string
   definition_json: string
   created_at: number
@@ -57,14 +56,14 @@ export type CompleteOnboardingInput = {
 const SELECT_ONBOARDING =
   'SELECT answers_json, selected_level_id, completed_at, effective_from, wird_version_id FROM onboarding_state WHERE id = ?'
 const SELECT_WIRD_VERSION =
-  'SELECT id, level_id, effective_from, definition_json, created_at FROM wird_versions WHERE id = ?'
+  'SELECT id, effective_from, definition_json, created_at FROM wird_versions WHERE id = ?'
 const SELECT_ANY_WIRD_VERSION = 'SELECT id FROM wird_versions LIMIT 1'
 const INSERT_ONBOARDING = `INSERT INTO onboarding_state
   (id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id)
   VALUES (?, ?, ?, ?, ?, ?)`
 const INSERT_WIRD = `INSERT INTO wird_versions
-  (id, level_id, effective_from, definition_json, created_at)
-  VALUES (?, ?, ?, ?, ?)`
+  (id, effective_from, definition_json, created_at)
+  VALUES (?, ?, ?, ?)`
 
 function parseAnswers(source: string): Answers | null {
   try {
@@ -158,7 +157,6 @@ function parsePersisted(
   if (
     !level ||
     version.id !== row.wird_version_id ||
-    version.level_id !== level.id ||
     version.effective_from !== row.effective_from ||
     !isDayId(row.effective_from) ||
     !Number.isFinite(row.completed_at) ||
@@ -227,7 +225,6 @@ export function createOnboardingRepository(database: OnboardingDatabase) {
         await transaction.runAsync(
           INSERT_WIRD,
           input.versionId,
-          input.selectedLevelId,
           input.effectiveFrom,
           JSON.stringify(level.wird),
           input.completedAt,
