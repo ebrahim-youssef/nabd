@@ -41,9 +41,25 @@ describe('migrateDatabase', () => {
     expect(executed).toContain('CREATE TABLE IF NOT EXISTS onboarding_state')
     expect(executed).toContain('wird_version_id TEXT NOT NULL REFERENCES wird_versions(id)')
     expect(executed).toContain('CREATE TABLE IF NOT EXISTS wird_versions')
+    expect(executed).toContain('CREATE TABLE IF NOT EXISTS app_preferences')
     expect(executed).toContain('idx_wird_versions_effective')
     expect(executed).not.toContain('is_active')
     expect(fake.version()).toBe(CURRENT_SCHEMA_VERSION)
+  })
+
+  it('adds the device preference table without changing product tables', async () => {
+    const fake = createMigrationDatabase(3)
+
+    await expect(migrateDatabase(fake.database)).resolves.toBe(CURRENT_SCHEMA_VERSION)
+
+    const executed = (fake.database.execAsync as jest.Mock).mock.calls
+      .map(([source]) => String(source))
+      .join('\n')
+    expect(executed).toContain(
+      'CREATE TABLE IF NOT EXISTS app_preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)',
+    )
+    expect(executed).not.toContain('ALTER TABLE wird_versions')
+    expect(executed).not.toContain('ALTER TABLE wird_entries')
   })
 
   it('upgrades version one once and remains idempotent', async () => {

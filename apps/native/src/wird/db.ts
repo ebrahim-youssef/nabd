@@ -7,6 +7,7 @@ import type {
   WirdRepository,
   WirdVersion,
 } from '@nabd/shared'
+import { captureException } from '../observability/sentry'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 
 type VersionRow = {
@@ -82,7 +83,8 @@ export function createWirdRepository(database: ProductDatabase): WirdRepository 
       )
       if (!row) throw new Error('missing entry')
       return { ok: true, value: asEntry(row) }
-    } catch {
+    } catch (cause: unknown) {
+      captureException(cause)
       return { ok: false, error: 'append_entry_failed' }
     }
   }
