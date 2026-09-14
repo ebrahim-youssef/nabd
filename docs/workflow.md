@@ -121,6 +121,27 @@ Arabic + `README.en.md` English) in the same PR so they keep describing reality;
 in step and match the house style (natural Arabic, no AI tells, no em-dashes). Smaller changes
 don't touch the READMEs; when in doubt, glance at them and move on.
 
+## Phase 5b — Automated review gate (before any commit)
+
+Runs on the finished working tree, after the implementation is done and before anything is staged.
+Green gates prove the code compiles and the tests pass. They do not prove the code is simple, and
+they do not prove it is safe. These three passes cover what the gates miss, in this order:
+
+1. `/simplify` over the changed code. Reuse, duplication, dead branches, and altitude. It applies
+   the cleanups it finds, so re-run `pnpm lint && pnpm typecheck && pnpm test` afterwards.
+2. `/claude-security:claude-security` for the orchestrated security pass, and
+   `/claude-security:scan` for the multi-agent scan across the changed components. Both are
+   read-only reviewers: they report, they do not patch.
+3. Triage every finding. A finding that is real gets fixed; a finding that is not gets recorded in
+   the pull request with the reason it was dismissed, so the next reviewer does not re-raise it.
+
+**Fixes go back to the delegate, not to the orchestrator's own hands.** The findings become a
+written brief, the delegate implements them, and the orchestrator reviews the result and re-runs
+the gates. This is the same loop as Phase 3, and the same rule applies: the delegate never commits.
+
+Only once this gate is clean does Phase 6 begin. Nothing reaches GitHub, as a commit or a push,
+that has not been through it.
+
 ## Phase 6 — Version bump, commit & push
 
 1. Bump version per the table in `CONVENTIONS.md` (feat=MINOR, fix/perf/refactor=PATCH,
