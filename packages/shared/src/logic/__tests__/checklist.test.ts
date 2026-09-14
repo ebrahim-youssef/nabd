@@ -4,6 +4,7 @@ import { WIRD_LEVELS } from '../../content/levels'
 import type { WirdDefinition, WirdEntry, WirdVersion } from '../../types/wird'
 
 import {
+  areaProgress,
   buildChecklist,
   latestStateByItem,
   levelMatching,
@@ -192,6 +193,64 @@ describe('summarizeChecklist', () => {
       remaining: 0,
       voluntary: { total: 1, done: 0 },
     })
+  })
+})
+
+describe('areaProgress', () => {
+  function item(id: string, done: boolean, optional = false) {
+    return { id, label: id, kind: 'checkbox' as const, done, optional }
+  }
+
+  it('counts all required items', () => {
+    const result = areaProgress({
+      id: 'required',
+      label: 'مطلوب',
+      order: 0,
+      items: [item('done', true), item('remaining', false)],
+    })
+
+    expect(result).toEqual({
+      counted: [item('done', true), item('remaining', false)],
+      doneCount: 1,
+      complete: false,
+      progress: 50,
+    })
+  })
+
+  it('falls back to all-optional items when there are no required items', () => {
+    const result = areaProgress({
+      id: 'optional',
+      label: 'اختياري',
+      order: 0,
+      items: [item('done', true, true), item('remaining', false, true)],
+    })
+
+    expect(result.counted.map(({ id }) => id)).toEqual(['done', 'remaining'])
+    expect(result.doneCount).toBe(1)
+    expect(result.complete).toBe(false)
+    expect(result.progress).toBe(50)
+  })
+
+  it('returns zero progress for an empty area', () => {
+    expect(areaProgress({ id: 'empty', label: 'فارغ', order: 0, items: [] })).toEqual({
+      counted: [],
+      doneCount: 0,
+      complete: false,
+      progress: 0,
+    })
+  })
+
+  it('reports partial completion using the required items', () => {
+    const result = areaProgress({
+      id: 'partial',
+      label: 'جزئي',
+      order: 0,
+      items: [item('one', true), item('two', true), item('three', false)],
+    })
+
+    expect(result.doneCount).toBe(2)
+    expect(result.complete).toBe(false)
+    expect(result.progress).toBeCloseTo(200 / 3)
   })
 })
 
