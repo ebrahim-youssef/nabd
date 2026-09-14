@@ -3,7 +3,8 @@ import * as SQLite from 'expo-sqlite'
 export const DATABASE_NAME = 'nabd-native.db'
 export const SCHEMA_VERSION_MIGRATIONS = 1
 export const SCHEMA_VERSION_ONBOARDING = 2
-export const CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_ONBOARDING
+export const SCHEMA_VERSION_PRODUCT = 3
+export const CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_PRODUCT
 
 type VersionRow = { version: number }
 
@@ -37,6 +38,14 @@ const CREATE_WIRD_VERSIONS_TABLE = `
   )`
 const CREATE_WIRD_VERSION_DATE_INDEX =
   'CREATE INDEX IF NOT EXISTS idx_wird_versions_effective ON wird_versions (effective_from, created_at)'
+const CREATE_WIRD_ENTRIES_TABLE = `CREATE TABLE IF NOT EXISTS wird_entries (
+  id TEXT PRIMARY KEY, day TEXT NOT NULL, version_id TEXT NOT NULL, item_id TEXT NOT NULL,
+  done INTEGER NOT NULL, at INTEGER NOT NULL)`
+const CREATE_QADA_EVENTS_TABLE = `CREATE TABLE IF NOT EXISTS qada_events (
+  id TEXT PRIMARY KEY, prayer_id TEXT NOT NULL, delta INTEGER NOT NULL, at INTEGER NOT NULL)`
+const CREATE_ADHKAR_FLOW_TABLE = `CREATE TABLE IF NOT EXISTS adhkar_flow_progress (
+  category_id TEXT PRIMARY KEY, day TEXT NOT NULL, "index" INTEGER NOT NULL, count INTEGER NOT NULL,
+  finished INTEGER NOT NULL)`
 
 async function applyMigration(database: MigrationDatabase, version: number): Promise<void> {
   if (version === SCHEMA_VERSION_MIGRATIONS) return
@@ -44,6 +53,23 @@ async function applyMigration(database: MigrationDatabase, version: number): Pro
     await database.execAsync(CREATE_WIRD_VERSIONS_TABLE)
     await database.execAsync(CREATE_WIRD_VERSION_DATE_INDEX)
     await database.execAsync(CREATE_ONBOARDING_STATE_TABLE)
+    return
+  }
+  if (version === SCHEMA_VERSION_PRODUCT) {
+    await database.execAsync('ALTER TABLE wird_versions DROP COLUMN level_id')
+    await database.execAsync(CREATE_WIRD_ENTRIES_TABLE)
+    await database.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_wird_entries_day ON wird_entries (day)',
+    )
+    await database.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_wird_entries_day_item ON wird_entries (day, item_id)',
+    )
+    await database.execAsync('CREATE INDEX IF NOT EXISTS idx_wird_entries_at ON wird_entries (at)')
+    await database.execAsync(CREATE_QADA_EVENTS_TABLE)
+    await database.execAsync(
+      'CREATE INDEX IF NOT EXISTS idx_qada_events_prayer ON qada_events (prayer_id)',
+    )
+    await database.execAsync(CREATE_ADHKAR_FLOW_TABLE)
     return
   }
   throw new Error(`SQLite migration ${version} is not defined`)

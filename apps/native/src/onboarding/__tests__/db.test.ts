@@ -12,7 +12,6 @@ type StateRow = {
 
 type VersionRow = {
   id: string
-  level_id: string
   effective_from: string
   definition_json: string
   created_at: number
@@ -36,10 +35,9 @@ function fakeDatabase() {
           if (versions.has(id)) throw new Error('duplicate version')
           versions.set(id, {
             id,
-            level_id: String(parameters[1]),
-            effective_from: String(parameters[2]),
-            definition_json: String(parameters[3]),
-            created_at: Number(parameters[4]),
+            effective_from: String(parameters[1]),
+            definition_json: String(parameters[2]),
+            created_at: Number(parameters[3]),
           })
           return undefined
         }
