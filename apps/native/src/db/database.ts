@@ -4,7 +4,8 @@ export const DATABASE_NAME = 'nabd-native.db'
 export const SCHEMA_VERSION_MIGRATIONS = 1
 export const SCHEMA_VERSION_ONBOARDING = 2
 export const SCHEMA_VERSION_PRODUCT = 3
-export const CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_PRODUCT
+export const SCHEMA_VERSION_PREFERENCES = 4
+export const CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_PREFERENCES
 
 type VersionRow = { version: number }
 
@@ -46,6 +47,8 @@ const CREATE_QADA_EVENTS_TABLE = `CREATE TABLE IF NOT EXISTS qada_events (
 const CREATE_ADHKAR_FLOW_TABLE = `CREATE TABLE IF NOT EXISTS adhkar_flow_progress (
   category_id TEXT PRIMARY KEY, day TEXT NOT NULL, "index" INTEGER NOT NULL, count INTEGER NOT NULL,
   finished INTEGER NOT NULL)`
+const CREATE_APP_PREFERENCES_TABLE =
+  'CREATE TABLE IF NOT EXISTS app_preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)'
 
 async function applyMigration(database: MigrationDatabase, version: number): Promise<void> {
   if (version === SCHEMA_VERSION_MIGRATIONS) return
@@ -70,6 +73,10 @@ async function applyMigration(database: MigrationDatabase, version: number): Pro
       'CREATE INDEX IF NOT EXISTS idx_qada_events_prayer ON qada_events (prayer_id)',
     )
     await database.execAsync(CREATE_ADHKAR_FLOW_TABLE)
+    return
+  }
+  if (version === SCHEMA_VERSION_PREFERENCES) {
+    await database.execAsync(CREATE_APP_PREFERENCES_TABLE)
     return
   }
   throw new Error(`SQLite migration ${version} is not defined`)

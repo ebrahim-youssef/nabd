@@ -15,6 +15,7 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 import { captureException } from '../observability/sentry'
+import { HomeScreen } from '../home/HomeScreen'
 import { ONBOARDING_COPY } from './constants'
 import { createOnboardingRepository, type PersistedOnboarding } from './db'
 
@@ -49,7 +50,13 @@ function Button({ label, onPress, disabled = false, testID }: ButtonProps) {
   )
 }
 
-function ScreenContainer({ children, testID }: { children: React.ReactNode; testID: string }) {
+export function ScreenContainer({
+  children,
+  testID,
+}: {
+  children: React.ReactNode
+  testID: string
+}) {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ScrollView className="flex-1" testID={testID}>
@@ -72,24 +79,6 @@ function LoadingState() {
       <View className="h-14 rounded-button bg-surface-2" />
       <Text className="text-body text-center text-muted-foreground">{ONBOARDING_COPY.loading}</Text>
     </View>
-  )
-}
-
-function HomeShell({ persisted }: { persisted: PersistedOnboarding }) {
-  const level = levelById(WIRD_LEVELS, persisted.selectedLevelId)
-  if (!level) return null
-
-  return (
-    <ScreenContainer testID="home-shell">
-      <Text accessibilityRole="header" className="text-title text-start text-primary">
-        {ONBOARDING_COPY.readyTitle}
-      </Text>
-      <View className="mt-6 rounded-card border border-border bg-surface p-4 shadow-card-sm">
-        <Text className="text-title text-start text-primary">{level.title}</Text>
-        <Text className="text-body mt-2 text-start text-muted-foreground">{level.description}</Text>
-      </View>
-      <Text className="text-body mt-6 text-start text-foreground">{ONBOARDING_COPY.readyBody}</Text>
-    </ScreenContainer>
   )
 }
 
@@ -130,7 +119,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
     )
   }
 
-  if (gate.persisted) return <HomeShell persisted={gate.persisted} />
+  if (gate.persisted) return <HomeScreen persisted={gate.persisted} />
 
   if (screen === 'welcome') {
     return (
