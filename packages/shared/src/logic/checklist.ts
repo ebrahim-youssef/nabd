@@ -1,6 +1,6 @@
 import { monthOf, weekdayOf } from './day'
 import { isScheduledOn, latestStateByItem, monthlyDoneDays, versionInForce } from './wird'
-import type { ChecklistAreaView, TodaySummary } from '../types/checklist'
+import type { ChecklistAreaView, ChecklistItemView, TodaySummary } from '../types/checklist'
 import type { DayId, WirdDefinition, WirdEntry } from '../types/wird'
 
 // Wird-specific pure logic: turning a definition + a day's entries into the checklist view.
@@ -66,6 +66,20 @@ export function levelMatching<L extends { wird: WirdDefinition }>(
 // stringify compare is exact.
 export function sameDefinition(a: WirdDefinition, b: WirdDefinition): boolean {
   return JSON.stringify(a) === JSON.stringify(b)
+}
+
+export function areaProgress(area: ChecklistAreaView): {
+  counted: ChecklistItemView[]
+  doneCount: number
+  complete: boolean
+  progress: number
+} {
+  const required = area.items.filter((item) => !item.optional)
+  const counted = required.length > 0 ? required : area.items
+  const doneCount = counted.filter((item) => item.done).length
+  const complete = counted.length > 0 && doneCount === counted.length
+  const progress = counted.length > 0 ? (doneCount / counted.length) * 100 : 0
+  return { counted, doneCount, complete, progress }
 }
 
 // Rolls the resolved checklist up into today's counts (NBD-10). Required items drive

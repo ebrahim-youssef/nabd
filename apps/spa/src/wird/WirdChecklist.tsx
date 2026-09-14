@@ -2,7 +2,7 @@ import { BookOpen, Check, ChevronDown, Clock, HeartHandshake, Sparkles } from 'l
 import type { LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 
-import { toArabicIndic, toDayId, WIRD_COPY } from '@nabd/shared'
+import { areaProgress, toArabicIndic, toDayId, WIRD_COPY } from '@nabd/shared'
 import type { ChecklistAreaView, ChecklistItemView } from '@nabd/shared'
 
 import { DhikrCounter } from '../counter/DhikrCounter'
@@ -98,11 +98,7 @@ function AreaHeader({
   isOpen: boolean
   onToggle: () => void
 }) {
-  const required = area.items.filter((item) => !item.optional)
-  const counted = required.length > 0 ? required : area.items
-  const doneCount = counted.filter((item) => item.done).length
-  const complete = counted.length > 0 && doneCount === counted.length
-  const progress = counted.length > 0 ? (doneCount / counted.length) * 100 : 0
+  const { counted, doneCount, complete, progress } = areaProgress(area)
   const Icon = AREA_ICONS[area.id]
 
   return (

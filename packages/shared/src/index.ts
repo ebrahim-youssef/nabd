@@ -89,6 +89,7 @@ export {
   summarize,
 } from './logic/stats'
 export {
+  areaProgress,
   buildChecklist,
   levelMatching,
   sameDefinition,
