@@ -11,10 +11,10 @@ import {
 } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
 import { captureException } from '../observability/sentry'
+import { ScreenContainer } from '../app/ScreenContainer'
 import { HomeScreen } from '../home/HomeScreen'
 import { ONBOARDING_COPY } from './constants'
 import { createOnboardingRepository, type PersistedOnboarding } from './db'
@@ -47,22 +47,6 @@ function Button({ label, onPress, disabled = false, testID }: ButtonProps) {
     >
       <Text className="text-body text-center font-medium text-primary-foreground">{label}</Text>
     </Pressable>
-  )
-}
-
-export function ScreenContainer({
-  children,
-  testID,
-}: {
-  children: React.ReactNode
-  testID: string
-}) {
-  return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView className="flex-1" testID={testID}>
-        <View className="px-6 py-8">{children}</View>
-      </ScrollView>
-    </SafeAreaView>
   )
 }
 
@@ -133,7 +117,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
         <View className="mt-6 gap-3">
           {SHARED_COPY.welcomePoints.map((point) => (
             <View
-              className="flex-row items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-card-sm"
+              className="flex-row items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-card-small"
               key={point}
             >
               <Text accessibilityElementsHidden className="text-title text-gold">
@@ -177,7 +161,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
                       className={`rounded-card border p-3 ${
                         checked
                           ? 'border-primary bg-primary/10'
-                          : 'border-border bg-surface shadow-card-sm'
+                          : 'border-border bg-surface shadow-card-small'
                       }`}
                       key={option.id}
                       onPress={() =>
@@ -250,7 +234,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
               className={`rounded-card border p-4 ${
                 checked
                   ? 'border-primary bg-primary/10 shadow-card'
-                  : 'border-border bg-surface shadow-card-sm'
+                  : 'border-border bg-surface shadow-card-small'
               }`}
               key={level.id}
               onPress={() => setSelectedLevelId(level.id)}

@@ -37,6 +37,15 @@ const colors = Object.fromEntries(
     resolveVariable(variable),
   ]),
 )
+const boxShadow = Object.fromEntries(
+  Object.entries(themeTokens.shadows).map(([name, variable]) => [
+    camelToKebab(name),
+    resolveVariable(variable),
+  ]),
+)
+const elevation = Object.fromEntries(
+  Object.entries(boxShadow).map(([name, value]) => [name, pixels(value.split(' ')[1])]),
+)
 const fontSize = Object.fromEntries(
   Object.entries(themeTokens.typography).map(([name, value]) => [
     name,
@@ -64,7 +73,7 @@ const spacing = Object.fromEntries(
     .filter(([name]) => name.startsWith('--sp-'))
     .map(([name, value]) => [name.slice(5), pixels(value)]),
 )
-const theme = { colors, fontSize, borderRadius: radiusValues, spacing }
+const theme = { colors, fontSize, borderRadius: radiusValues, spacing, boxShadow, elevation }
 
 await mkdir(new URL('../generated/', import.meta.url), { recursive: true })
 await writeFile(

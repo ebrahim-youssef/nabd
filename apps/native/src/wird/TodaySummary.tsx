@@ -4,16 +4,7 @@ import { Text, View } from 'react-native'
 import { useMemo } from 'react'
 
 import { useWirdDay } from './WirdDayProvider'
-
-type NativeTheme = {
-  colors: {
-    gold: string
-    'on-primary': string
-    'ring-track': string
-  }
-}
-
-const NATIVE_THEME = require('../../generated/nativewind-theme.cjs') as NativeTheme
+import { NATIVE_THEME } from '../app/nativeTheme'
 const RING_RADIUS = 42
 const RING_STROKE = 8
 const RING_CENTER = RING_RADIUS + RING_STROKE / 2
