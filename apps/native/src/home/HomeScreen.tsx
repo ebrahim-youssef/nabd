@@ -2,7 +2,7 @@ import { WIRD_LEVELS, levelById, toDayId } from '@nabd/shared'
 import { useState } from 'react'
 import { Text, View } from 'react-native'
 
-import { ScreenContainer } from '../onboarding/OnboardingGate'
+import { ScreenContainer } from '../app/ScreenContainer'
 import type { PersistedOnboarding } from '../onboarding/db'
 import { CompletionCelebration } from '../wird/CompletionCelebration'
 import { TodaySummary } from '../wird/TodaySummary'
