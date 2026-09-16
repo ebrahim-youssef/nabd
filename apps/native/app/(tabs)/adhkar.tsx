@@ -4,5 +4,5 @@ import { RouteStub } from '../../src/app/RouteStub'
 
 // NBD-85 libraries and adhkar slices.
 export default function AdhkarRoute() {
-  return <RouteStub subPage title={ADHKAR_COPY.libraryTitle} />
+  return <RouteStub backHref="/libraries" subPage title={ADHKAR_COPY.libraryTitle} />
 }

@@ -6,7 +6,7 @@ import { shellCopy } from '@nabd/shared'
 
 import { ICON_SIZE, NATIVE_THEME } from './nativeTheme'
 
-export function PageHeader({ title }: { title: string }) {
+export function PageHeader({ title, backHref }: { title: string; backHref: string }) {
   const router = useRouter()
 
   return (
@@ -15,12 +15,12 @@ export function PageHeader({ title }: { title: string }) {
         accessibilityLabel={shellCopy.back}
         accessibilityRole="button"
         className="size-9 items-center justify-center rounded-full border border-border bg-surface shadow-card-small"
-        onPress={() => router.back()}
+        onPress={() => (router.canGoBack() ? router.back() : router.replace(backHref))}
         testID="page-back"
       >
         <ArrowRight accessible={false} color={NATIVE_THEME.colors.primary} size={ICON_SIZE} />
       </Pressable>
-      <Text accessibilityRole="header" className="text-title text-primary">
+      <Text accessibilityRole="header" className="text-title text-start text-primary">
         {title}
       </Text>
     </View>
