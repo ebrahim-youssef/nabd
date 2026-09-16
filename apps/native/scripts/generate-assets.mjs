@@ -42,7 +42,7 @@ const fontSize = Object.fromEntries(
     name,
     [
       pixels(value.size),
-      { lineHeight: Number((pixels(value.size) * Number(value.lineHeight)).toFixed(3)) },
+      { lineHeight: `${Number((pixels(value.size) * Number(value.lineHeight)).toFixed(3))}px` },
     ],
   ]),
 )
