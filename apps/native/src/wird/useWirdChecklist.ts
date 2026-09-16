@@ -1,8 +1,8 @@
 import { buildChecklist, monthOf, versionInForce } from '@nabd/shared'
 import type { ChecklistAreaView, DayId } from '@nabd/shared'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 
-import { captureException } from '../observability/sentry'
+import { useLiveRepositoryQuery } from '../app/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
 
 type ChecklistState = {
@@ -14,45 +14,28 @@ type ChecklistState = {
 
 export function useWirdChecklist(day: DayId): ChecklistState {
   const repository = useWirdRepository()
-  const [refreshToken, setRefreshToken] = useState(0)
-  const [state, setState] = useState<Omit<ChecklistState, 'refresh'>>({
-    isLoading: true,
-    areas: [],
-    versionId: null,
-  })
-  const refresh = useCallback(() => {
-    setState((current) => ({ ...current, isLoading: true }))
-    setRefreshToken((current) => current + 1)
-  }, [])
+  const read = useCallback(
+    () =>
+      Promise.all([
+        repository.listVersions(),
+        repository.getDayEntries(day),
+        repository.getMonthEntries(monthOf(day)),
+      ]),
+    [day, repository],
+  )
+  const { data, isLoading, refresh } = useLiveRepositoryQuery(read)
 
-  useEffect(() => {
-    let active = true
-    void Promise.all([
-      repository.listVersions(),
-      repository.getDayEntries(day),
-      repository.getMonthEntries(monthOf(day)),
-    ])
-      .then(([versions, entries, monthEntries]) => {
-        if (!active) return
-        const version = versionInForce(versions, day)
-        setState(
-          version
-            ? {
-                isLoading: false,
-                areas: buildChecklist(version.definition, entries, day, monthEntries),
-                versionId: version.id,
-              }
-            : { isLoading: false, areas: [], versionId: null },
-        )
-      })
-      .catch((cause: unknown) => {
-        captureException(cause)
-        if (active) setState({ isLoading: false, areas: [], versionId: null })
-      })
-    return () => {
-      active = false
-    }
-  }, [day, refreshToken, repository])
-
-  return useMemo(() => ({ ...state, refresh }), [state, refresh])
+  return useMemo(() => {
+    if (!data) return { isLoading, areas: [], versionId: null, refresh }
+    const [versions, entries, monthEntries] = data
+    const version = versionInForce(versions, day)
+    return version
+      ? {
+          isLoading,
+          areas: buildChecklist(version.definition, entries, day, monthEntries),
+          versionId: version.id,
+          refresh,
+        }
+      : { isLoading, areas: [], versionId: null, refresh }
+  }, [data, day, isLoading, refresh])
 }

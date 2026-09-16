@@ -1,8 +1,5 @@
-import { shellCopy } from '@nabd/shared'
+import { LibrariesRoute as LibrariesScreen } from '../../src/app/LibrariesRoute'
 
-import { RouteStub } from '../../src/app/RouteStub'
-
-// NBD-85 libraries and adhkar slices.
 export default function LibrariesRoute() {
-  return <RouteStub title={shellCopy.nav.libraries} />
+  return <LibrariesScreen />
 }

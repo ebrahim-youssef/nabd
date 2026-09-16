@@ -4,11 +4,19 @@ import { Text } from 'react-native'
 import { PageHeader } from './PageHeader'
 import { ScreenContainer } from './ScreenContainer'
 
-export function RouteStub({ title, subPage = false }: { title: string; subPage?: boolean }) {
+export function RouteStub({
+  title,
+  subPage = false,
+  backHref = '/',
+}: {
+  title: string
+  subPage?: boolean
+  backHref?: string
+}) {
   return (
     <ScreenContainer testID="route-stub">
       {subPage ? (
-        <PageHeader title={title} />
+        <PageHeader title={title} backHref={backHref} />
       ) : (
         <Text accessibilityRole="header" className="text-title text-start text-primary">
           {title}

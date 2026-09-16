@@ -17,19 +17,33 @@ describe('NativeWind registration guard', () => {
     ]
       .map((path) => readFileSync(path, 'utf8'))
       .join('\n')
-    const registeredComponents = new Set([
-      'Pressable',
-      'SafeAreaView',
-      'ScrollView',
-      'Text',
-      'View',
-    ])
+    const interopSource = readFileSync(
+      require.resolve('react-native-css-interop/dist/runtime/components.js'),
+      'utf8',
+    )
+    const registeredComponents = new Set(
+      [
+        ...interopSource.matchAll(
+          /\(0,\s*api_1\.(?:cssInterop|remapProps)\)\(\s*(?:react_native_1\.)?([A-Z][\w]*)\s*,/g,
+        ),
+      ].map(([, component]) => component),
+    )
+    expect(registeredComponents.size).toBeGreaterThanOrEqual(12)
+    for (const component of ['View', 'Text', 'TextInput']) {
+      expect(registeredComponents).toContain(component)
+    }
     const classNameComponents = [...source.matchAll(/<([A-Z][\w.]*)\b[^>]*\bclassName\s*=/g)].map(
       ([, component]) => component,
     )
 
-    expect(classNameComponents.filter((component) => !registeredComponents.has(component))).toEqual(
-      [],
+    // Modal is the known unregistered component this guard catches.
+    const unregisteredComponents = classNameComponents.filter(
+      (component) => !registeredComponents.has(component),
     )
+    if (unregisteredComponents.length > 0) {
+      throw new Error(
+        `NativeWind className guard found unregistered component(s): ${unregisteredComponents.join(', ')}`,
+      )
+    }
   })
 })

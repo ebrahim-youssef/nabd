@@ -1,23 +1,14 @@
 import { WIRD_LEVELS, compareDayId, levelMatching } from '@nabd/shared'
 import type { DayId, LevelId } from '@nabd/shared'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 
+import { useLiveRepositoryQuery } from '../app/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
 
 export function useWirdLevel() {
   const repository = useWirdRepository()
-  const [versions, setVersions] = useState<Awaited<ReturnType<typeof repository.listVersions>>>()
-  const [refreshToken, setRefreshToken] = useState(0)
-
-  useEffect(() => {
-    let active = true
-    void repository.listVersions().then((nextVersions) => {
-      if (active) setVersions(nextVersions)
-    })
-    return () => {
-      active = false
-    }
-  }, [refreshToken, repository])
+  const read = useCallback(() => repository.listVersions(), [repository])
+  const { data: versions, isLoading, refresh } = useLiveRepositoryQuery(read)
 
   const sortedVersions = [...(versions ?? [])].sort((a, b) => {
     const byDay = compareDayId(b.effectiveFrom, a.effectiveFrom)
@@ -33,15 +24,15 @@ export function useWirdLevel() {
       const chosenLevel = WIRD_LEVELS.find((level) => level.id === levelId)
       if (!chosenLevel) return
       const result = await repository.setWirdLevel(chosenLevel.wird, today, now)
-      if (result.ok) setRefreshToken((current) => current + 1)
+      if (result.ok) refresh()
       return result
     },
-    [repository],
+    [refresh, repository],
   )
 
   return {
     currentLevelId: currentLevel?.id ?? WIRD_LEVELS[0].id,
     changeLevel,
-    isLoading: versions === undefined,
+    isLoading,
   }
 }
