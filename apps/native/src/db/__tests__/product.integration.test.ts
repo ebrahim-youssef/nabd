@@ -92,4 +92,37 @@ describe('native product SQLite repositories', () => {
       rmSync(directory, { recursive: true, force: true })
     }
   })
+
+  it('appends one event per prayer for debt and exactly one payment event', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const db = adapter(connection)
+      await migrateDatabase(db as MigrationDatabase)
+      const repository = createQadaRepository(db)
+
+      await expect(repository.addQadaDebt(3, 10)).resolves.toEqual({ ok: true, value: null })
+      expect(
+        connection.prepare('SELECT prayer_id, delta FROM qada_events ORDER BY prayer_id').all(),
+      ).toEqual([
+        { prayer_id: 'asr', delta: 3 },
+        { prayer_id: 'dhuhr', delta: 3 },
+        { prayer_id: 'fajr', delta: 3 },
+        { prayer_id: 'isha', delta: 3 },
+        { prayer_id: 'maghrib', delta: 3 },
+      ])
+
+      await expect(repository.payQadaPrayer('fajr', 11)).resolves.toEqual({ ok: true, value: null })
+      expect(
+        connection
+          .prepare('SELECT prayer_id, delta FROM qada_events WHERE prayer_id = ?')
+          .all('fajr'),
+      ).toEqual([
+        { prayer_id: 'fajr', delta: 3 },
+        { prayer_id: 'fajr', delta: -1 },
+      ])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
 })

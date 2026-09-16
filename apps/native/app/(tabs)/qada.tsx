@@ -1,8 +1,5 @@
-import { QADA_COPY } from '@nabd/shared'
+import { QadaRoute as NativeQadaRoute } from '../../src/qada/QadaRoute'
 
-import { RouteStub } from '../../src/app/RouteStub'
-
-// NBD-85 statistics and qada slices.
 export default function QadaRoute() {
-  return <RouteStub subPage title={QADA_COPY.pageTitle} />
+  return <NativeQadaRoute />
 }
