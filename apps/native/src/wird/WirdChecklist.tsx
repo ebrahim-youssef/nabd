@@ -3,6 +3,7 @@ import type { ChecklistAreaView, ChecklistItemView } from '@nabd/shared'
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
+import { DhikrCounter } from '../counter/DhikrCounter'
 import { useToggleItem } from './useToggleItem'
 import { useWirdDay } from './WirdDayProvider'
 
@@ -47,14 +48,25 @@ export function WirdChecklist() {
             <AreaHeader area={area} isOpen={isOpen} onToggle={() => toggleArea(area.id)} />
             {isOpen && (
               <View className="gap-2" testID={`${ITEMS_TEST_PREFIX}${area.id}`}>
-                {area.items.map((item) => (
-                  <ChecklistRow
-                    disabled={pendingItemIds.has(item.id)}
-                    item={item}
-                    key={item.id}
-                    onToggle={() => void toggle(initialDay, item.id, !item.done)}
-                  />
-                ))}
+                {area.items.map((item) =>
+                  item.kind === 'counter' && item.target ? (
+                    <DhikrCounter
+                      day={initialDay}
+                      done={item.done}
+                      itemId={item.id}
+                      key={item.id}
+                      label={item.label}
+                      target={item.target}
+                    />
+                  ) : (
+                    <ChecklistRow
+                      disabled={pendingItemIds.has(item.id)}
+                      item={item}
+                      key={item.id}
+                      onToggle={() => void toggle(initialDay, item.id, !item.done)}
+                    />
+                  ),
+                )}
               </View>
             )}
           </View>
@@ -120,10 +132,6 @@ function ChecklistRow({
   onToggle: () => void
 }) {
   let detail = item.minimum || item.monthlyProgress
-  if (item.kind === 'counter' && item.target !== undefined) {
-    // NBD-85 slice 4
-    detail = undefined
-  }
   return (
     <Pressable
       accessibilityRole="button"
