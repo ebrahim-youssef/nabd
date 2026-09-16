@@ -6,7 +6,7 @@
   "scripts": {
     "generate:assets": "node scripts/generate-assets.mjs",
     "prestart": "pnpm generate:assets",
-    "start": "expo start --dev-client --android",
+    "start": "expo start",
     "prebuild": "pnpm generate:assets",
     "build": "expo export --platform android",
     "lint": "eslint .",
