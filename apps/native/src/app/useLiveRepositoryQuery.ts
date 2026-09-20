@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useFocusEffect } from 'expo-router'
 
 import { captureException } from '../observability/sentry'
 
@@ -12,11 +13,23 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
   const [data, setData] = useState<T>()
   const [isLoading, setIsLoading] = useState(true)
   const [refreshToken, setRefreshToken] = useState(0)
+  const hasFocused = useRef(false)
 
   const refresh = useCallback(() => {
     setIsLoading(true)
     setRefreshToken((current) => current + 1)
   }, [])
+
+  // Expo tabs stay mounted while the user moves between them. Re-read on a
+  // subsequent focus so a mounted tab reflects writes made by another tab.
+  // The initial focus is covered by the initial query effect below.
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocused.current) refresh()
+      else hasFocused.current = true
+      return undefined
+    }, [refresh]),
+  )
 
   useEffect(() => {
     let active = true

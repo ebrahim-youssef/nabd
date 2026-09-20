@@ -10,6 +10,7 @@ import { useWirdRepository } from '../../wird/useWirdRepository'
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('expo-router', () => ({
   useRouter: () => ({ back: jest.fn(), canGoBack: () => false, replace: jest.fn() }),
+  useFocusEffect: jest.fn(),
 }))
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null }))
 jest.mock('../../wird/useWirdRepository', () => ({ useWirdRepository: jest.fn() }))

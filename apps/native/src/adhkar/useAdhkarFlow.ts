@@ -23,6 +23,7 @@ export function useAdhkarFlow(
   const state = stored.key === flowKey ? stored.flow : INITIAL_FLOW
   const current = useRef(INITIAL_FLOW)
   const hydrationVersion = useRef(0)
+  const hydrated = useRef(!persisted)
   const [marked, setMarked] = useState<{ key: string; value: boolean }>({
     key: flowKey,
     value: false,
@@ -33,6 +34,7 @@ export function useAdhkarFlow(
     const version = hydrationVersion.current + 1
     hydrationVersion.current = version
     current.current = INITIAL_FLOW
+    hydrated.current = !persisted
     if (!persisted) return
     let cancelled = false
     void (async () => {
@@ -42,6 +44,7 @@ export function useAdhkarFlow(
         current.current = saved
         setStored({ key: flowKey, flow: saved })
         setMarked({ key: flowKey, value: saved.finished })
+        hydrated.current = true
         return
       }
       const linkedDone = await repository.isLinkedWirdItemDone(day, categoryId)
@@ -52,6 +55,7 @@ export function useAdhkarFlow(
         setStored({ key: flowKey, flow: finished })
         setMarked({ key: flowKey, value: true })
       }
+      hydrated.current = true
     })()
     return () => {
       cancelled = true
@@ -59,6 +63,7 @@ export function useAdhkarFlow(
   }, [categoryId, day, flowKey, persisted, repository])
 
   const tap = useCallback(() => {
+    if (persisted && !hydrated.current) return
     hydrationVersion.current += 1
     const next = tapFlow(current.current, items)
     if (next === current.current) return

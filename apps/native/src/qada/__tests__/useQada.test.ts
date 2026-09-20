@@ -5,6 +5,7 @@ import type { QadaEvent, QadaRepository } from '@nabd/shared'
 import { createQadaRepository } from '../db'
 import { useQada } from '../useQada'
 
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('../db', () => ({ createQadaRepository: jest.fn() }))
 

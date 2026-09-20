@@ -7,6 +7,7 @@ import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { useToggleItem } from '../useToggleItem'
 import { useWirdChecklist } from '../useWirdChecklist'
 
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>

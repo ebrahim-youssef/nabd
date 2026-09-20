@@ -9,6 +9,7 @@ import { WirdChecklist } from '../WirdChecklist'
 import { WirdDayProvider } from '../WirdDayProvider'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const DAY = '2026-09-14'
