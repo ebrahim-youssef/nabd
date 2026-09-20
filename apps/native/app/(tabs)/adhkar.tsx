@@ -1,8 +1,6 @@
-import { ADHKAR_COPY } from '@nabd/shared'
-
-import { RouteStub } from '../../src/app/RouteStub'
+import { AdhkarRoute as NativeAdhkarRoute } from '../../src/adhkar/AdhkarRoute'
 
 // NBD-85 libraries and adhkar slices.
 export default function AdhkarRoute() {
-  return <RouteStub backHref="/libraries" subPage title={ADHKAR_COPY.libraryTitle} />
+  return <NativeAdhkarRoute />
 }
