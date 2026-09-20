@@ -2,6 +2,9 @@ import type { ProductDatabase } from '../db/productDatabase'
 
 export const PREFERENCE_KEYS = {
   celebratedDay: 'nabd:celebrated-day',
+  calculationMethod: 'nabd:prayer-calculation-method',
+  latitude: 'nabd:cached-latitude',
+  longitude: 'nabd:cached-longitude',
 } as const
 
 export type PreferenceKey = (typeof PREFERENCE_KEYS)[keyof typeof PREFERENCE_KEYS]
