@@ -7,8 +7,7 @@ import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../db'
 
-function createDatabase() {
-  const directory = mkdtempSync(join(tmpdir(), 'nabd-preferences-'))
+function createDatabaseAt(directory: string) {
   const connection = new DatabaseSync(join(directory, 'nabd.db'))
   const database: ProductDatabase & MigrationDatabase = {
     async execAsync(source: string) {
@@ -37,6 +36,10 @@ function createDatabase() {
   return { connection, database, directory }
 }
 
+function createDatabase() {
+  return createDatabaseAt(mkdtempSync(join(tmpdir(), 'nabd-preferences-')))
+}
+
 describe('native preference SQLite store', () => {
   it('writes, reads, overwrites, and clears the celebrated day', async () => {
     const { connection, database, directory } = createDatabase()
@@ -54,6 +57,38 @@ describe('native preference SQLite store', () => {
       await expect(preferences.read(PREFERENCE_KEYS.celebratedDay)).resolves.toBeNull()
     } finally {
       connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('retains appearance and calculation preferences after a process-death reopen', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'nabd-preferences-reopen-'))
+    const first = createDatabaseAt(directory)
+    try {
+      await migrateDatabase(first.database)
+      const preferences = createPreferencesRepository(first.database)
+      await preferences.write(PREFERENCE_KEYS.theme, 'dark', 100)
+      await preferences.write(PREFERENCE_KEYS.mode, 'modern', 101)
+      await preferences.write(PREFERENCE_KEYS.calculationMethod, 'umm_al_qura', 102)
+      first.connection.close()
+
+      const reopened = createDatabaseAt(directory)
+      try {
+        const reopenedPreferences = createPreferencesRepository(reopened.database)
+        await expect(reopenedPreferences.read(PREFERENCE_KEYS.theme)).resolves.toBe('dark')
+        await expect(reopenedPreferences.read(PREFERENCE_KEYS.mode)).resolves.toBe('modern')
+        await expect(reopenedPreferences.read(PREFERENCE_KEYS.calculationMethod)).resolves.toBe(
+          'umm_al_qura',
+        )
+      } finally {
+        reopened.connection.close()
+      }
+    } finally {
+      try {
+        first.connection.close()
+      } catch {
+        // The first connection was closed before the reopen; cleanup remains best effort.
+      }
       rmSync(directory, { recursive: true, force: true })
     }
   })

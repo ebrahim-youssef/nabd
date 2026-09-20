@@ -12,6 +12,9 @@ export const SETTINGS_COPY = {
   },
   appearance: {
     title: 'نمط العرض',
+    themeTitle: 'المظهر',
+    light: 'فاتح',
+    dark: 'ليلي',
     classic: {
       title: 'كلاسيكي',
       description: 'خطّ رقعة تراثيّ وزوايا هادئة.',
@@ -43,5 +46,8 @@ export const SETTINGS_COPY = {
     prayerTimes: 'المواقيت',
     displayAndContent: 'العرض والمحتوى',
     notifications: 'التنبيهات',
+  },
+  links: {
+    title: 'الوصول السريع',
   },
 } as const
