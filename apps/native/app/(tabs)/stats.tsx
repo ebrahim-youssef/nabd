@@ -1,8 +1,5 @@
-import { shellCopy } from '@nabd/shared'
+import { StatsRoute as NativeStatsRoute } from '../../src/stats/StatsRoute'
 
-import { RouteStub } from '../../src/app/RouteStub'
-
-// NBD-85 statistics and qada slices.
 export default function StatsRoute() {
-  return <RouteStub title={shellCopy.nav.stats} />
+  return <NativeStatsRoute />
 }
