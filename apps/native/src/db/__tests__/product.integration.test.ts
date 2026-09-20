@@ -7,8 +7,10 @@ import {
   assertRepositoryCharacterization,
   seedRepositoryCharacterization,
 } from '@nabd/shared/testing'
+import { dayCompletion, qadaRemaining, versionInForce } from '@nabd/shared'
 
 import { createDhikrCompletionRepository } from '../../counter/db'
+import { createAdhkarRepository } from '../../adhkar/db'
 import { migrateDatabase, type MigrationDatabase } from '../database'
 import type { ProductDatabase, SqlValue } from '../productDatabase'
 import { createCanonicalOnboardingRepository } from '../../onboarding/canonicalDb'
@@ -122,6 +124,107 @@ describe('native product SQLite repositories', () => {
       ])
     } finally {
       connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves versioned state and derived product state across a process-death reopen', async () => {
+    const { directory, connection } = fresh()
+    const firstDay = '2026-08-10'
+    const secondDay = '2026-08-11'
+
+    try {
+      const firstDatabase = adapter(connection)
+      await migrateDatabase(firstDatabase as MigrationDatabase)
+      const firstRepositories = {
+        wird: createWirdRepository(firstDatabase),
+        qada: createQadaRepository(firstDatabase),
+        dhikrCompletion: createDhikrCompletionRepository(firstDatabase),
+        onboarding: createCanonicalOnboardingRepository(firstDatabase),
+      }
+      const seeded = await seedRepositoryCharacterization(firstRepositories)
+      const firstAdhkar = createAdhkarRepository(firstDatabase)
+
+      await firstAdhkar.writeFlowProgress('morning', secondDay, {
+        index: 3,
+        count: 1,
+        finished: false,
+      })
+      await firstAdhkar.writeFlowProgress('evening', secondDay, {
+        index: 2,
+        count: 2,
+        finished: false,
+      })
+      await expect(
+        firstRepositories.dhikrCompletion.completeLinkedWirdItem(
+          secondDay,
+          'second-extra',
+          1_786_262_400_000,
+        ),
+      ).resolves.toMatchObject({ ok: true, value: { itemId: 'second-extra', done: true } })
+
+      connection.close()
+
+      const reopenedConnection = new DatabaseSync(join(directory, 'nabd.db'))
+      try {
+        const reopenedDatabase = adapter(reopenedConnection)
+        await migrateDatabase(reopenedDatabase as MigrationDatabase)
+        const reopenedRepositories = {
+          wird: createWirdRepository(reopenedDatabase),
+          qada: createQadaRepository(reopenedDatabase),
+          dhikrCompletion: createDhikrCompletionRepository(reopenedDatabase),
+        }
+        const reopenedAdhkar = createAdhkarRepository(reopenedDatabase)
+        const versions = await reopenedRepositories.wird.listVersions()
+        const entries = await reopenedRepositories.wird.getAllEntries()
+
+        expect(versions).toHaveLength(2)
+        expect(versionInForce(versions, firstDay)?.id).toBe(seeded.firstVersion.id)
+        expect(versionInForce(versions, secondDay)?.id).toBe(seeded.secondVersion.id)
+        expect(entries.filter((entry) => entry.day === secondDay)).toHaveLength(4)
+        expect(entries).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              day: secondDay,
+              versionId: seeded.secondVersion.id,
+              itemId: 'second-extra',
+              done: true,
+            }),
+          ]),
+        )
+        expect(dayCompletion(versions, entries, secondDay)).toEqual({
+          day: secondDay,
+          total: 2,
+          done: 2,
+        })
+        expect(
+          await reopenedRepositories.dhikrCompletion.isWirdItemDoneToday(secondDay, 'second-extra'),
+        ).toBe(true)
+        expect(qadaRemaining(await reopenedRepositories.qada.listQadaEvents())).toEqual({
+          fajr: 2,
+          dhuhr: 3,
+          asr: 3,
+          maghrib: 3,
+          isha: 3,
+        })
+        await expect(reopenedAdhkar.readFlowProgress('morning', secondDay)).resolves.toEqual({
+          categoryId: 'morning',
+          day: secondDay,
+          index: 3,
+          count: 1,
+          finished: false,
+        })
+        await expect(reopenedAdhkar.readFlowProgress('evening', secondDay)).resolves.toEqual({
+          categoryId: 'evening',
+          day: secondDay,
+          index: 2,
+          count: 2,
+          finished: false,
+        })
+      } finally {
+        reopenedConnection.close()
+      }
+    } finally {
       rmSync(directory, { recursive: true, force: true })
     }
   })
