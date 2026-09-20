@@ -7,7 +7,13 @@ import {
 import type { AdhkarProgressRepository, DayId, FlowState, Result, WirdEntry } from '@nabd/shared'
 import type { ProductDatabase } from '../db/productDatabase'
 import { SQLITE_ID } from '../db/productDatabase'
-type Row = { category_id: string; day: string; index: number; count: number; finished: number }
+type Row = {
+  category_id: string
+  day: string
+  flow_index: number
+  count: number
+  finished: number
+}
 
 type EntryRow = {
   id: string
@@ -43,12 +49,18 @@ export function createAdhkarProgressRepository(
       if (!ONCE_DAILY_CATEGORIES.has(categoryId)) return undefined
       try {
         const row = await database.getFirstAsync<Row>(
-          'SELECT category_id, day, "index" AS index, count, finished FROM adhkar_flow_progress WHERE category_id = ?',
+          'SELECT category_id, day, "index" AS flow_index, count, finished FROM adhkar_flow_progress WHERE category_id = ?',
           categoryId,
         )
         return !row || row.day !== day
           ? undefined
-          : { categoryId, day, index: row.index, count: row.count, finished: row.finished === 1 }
+          : {
+              categoryId,
+              day,
+              index: row.flow_index,
+              count: row.count,
+              finished: row.finished === 1,
+            }
       } catch {
         return undefined
       }

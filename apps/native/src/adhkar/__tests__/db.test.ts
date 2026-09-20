@@ -27,7 +27,7 @@ describe('native adhkar repository', () => {
     const getFirstAsync = jest.fn(async () => ({
       category_id: 'morning',
       day: DAY,
-      index: 1,
+      flow_index: 1,
       count: 2,
       finished: 0,
     }))
