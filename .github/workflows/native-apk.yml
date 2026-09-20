@@ -43,6 +43,8 @@ jobs:
           java-version: '17'
           cache: gradle
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter apps-native generate:assets
       - run: pnpm --filter apps-native exec expo prebuild --platform android --no-install
