@@ -14,13 +14,16 @@ import {
 } from '@nabd/shared'
 import type { DayCompletion, ItemStat, RangeSummary, AreaStat, QadaEvent } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
+import { Share } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'
 
+import { captureException } from '../observability/sentry'
 import { useLiveRepositoryQuery } from '../app/useLiveRepositoryQuery'
 import { createQadaRepository } from '../qada/db'
 import { useWirdRepository } from '../wird/useWirdRepository'
 
-export const STATS_WINDOW_DAYS = 7
+export const STATS_WINDOW_DAYS = 30
+export const CHART_WINDOW_DAYS = 7
 
 type StatsData = {
   completions: DayCompletion[]
@@ -47,14 +50,17 @@ function earliestDay(
 export function useStats(): {
   isLoading: boolean
   days: string[]
+  chartDays: string[]
   data: StatsData
   refresh: () => void
+  exportRange: (daysCount: number, label: string) => Promise<void>
 } {
   const database = useSQLiteContext()
   const wird = useWirdRepository()
   const qada = useMemo(() => createQadaRepository(database), [database])
   const [today] = useState(() => toDayId(new Date()))
   const days = useMemo(() => lastNDays(today, STATS_WINDOW_DAYS), [today])
+  const chartDays = useMemo(() => lastNDays(today, CHART_WINDOW_DAYS), [today])
   const read = useCallback(async () => {
     const [versions, entries, allEntries, qadaEvents] = await Promise.all([
       wird.listVersions(),
@@ -65,6 +71,39 @@ export function useStats(): {
     return { versions, entries, allEntries, qadaEvents }
   }, [days, qada, wird])
   const { data: persisted, isLoading, refresh } = useLiveRepositoryQuery(read)
+
+  const exportRange = useCallback(
+    async (daysCount: number, label: string) => {
+      if (!Number.isInteger(daysCount) || daysCount <= 0) return
+      const exportDays = lastNDays(today, daysCount)
+      const from = exportDays[0]
+      const to = exportDays[exportDays.length - 1]
+      if (!from || !to) return
+      try {
+        const [versions, entries] = await Promise.all([
+          wird.listVersions(),
+          wird.getEntriesInRange(from, to),
+        ])
+        const completions = rangeCompletion(versions, entries, exportDays)
+        await Share.share({
+          title: `nabd-${label}-${to}.json`,
+          message: JSON.stringify(
+            {
+              exportedFor: { from, to, days: daysCount },
+              summary: summarize(completions),
+              completions,
+              entries,
+            },
+            null,
+            2,
+          ),
+        })
+      } catch (cause: unknown) {
+        captureException(cause)
+      }
+    },
+    [today, wird],
+  )
 
   const data = useMemo<StatsData>(() => {
     if (!persisted) {
@@ -100,7 +139,7 @@ export function useStats(): {
     }
   }, [days, persisted, today])
 
-  return { isLoading, days, data, refresh }
+  return { isLoading, days, chartDays, data, refresh, exportRange }
 }
 
 export { bestStreak, currentStreak }

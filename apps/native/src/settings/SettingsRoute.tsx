@@ -54,18 +54,21 @@ function OptionButton({
   onPress,
   testID,
   description,
+  disabled = false,
 }: {
   label: string
   selected: boolean
   onPress: () => void
   testID: string
   description?: string
+  disabled?: boolean
 }) {
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      className={`rounded-card border p-3 ${selected ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
+      accessibilityState={{ selected, disabled }}
+      className={`rounded-card border p-3 ${selected ? 'border-primary bg-primary/10' : 'border-border bg-surface'} ${disabled ? 'opacity-50' : ''}`}
+      disabled={disabled}
       onPress={onPress}
       testID={testID}
     >
@@ -82,7 +85,7 @@ export function SettingsRoute() {
   const router = useRouter()
   const { setColorScheme } = useColorScheme()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
-  const { currentLevelId, changeLevel, isLoading: isLevelLoading } = useWirdLevel()
+  const { currentLevelId, canChangeLevel, changeLevel, isLoading: isLevelLoading } = useWirdLevel()
   const [hydrated, setHydrated] = useState(false)
   const [state, setState] = useState<SettingsState>({
     theme: 'light',
@@ -211,7 +214,8 @@ export function SettingsRoute() {
                 key={level.id}
                 label={level.title}
                 description={level.description}
-                selected={!isLevelLoading && currentLevelId === level.id}
+                selected={!isLevelLoading && canChangeLevel && currentLevelId === level.id}
+                disabled={isLevelLoading || !canChangeLevel}
                 onPress={() => void changeLevel(level.id, toDayId(new Date()), Date.now())}
                 testID={`level-${level.id}`}
               />

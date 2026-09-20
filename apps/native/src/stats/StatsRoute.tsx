@@ -12,7 +12,7 @@ import { Pressable, Text, View } from 'react-native'
 
 import { PageHeader } from '../app/PageHeader'
 import { ScreenContainer } from '../app/ScreenContainer'
-import { useStats } from './useStats'
+import { CHART_WINDOW_DAYS, STATS_WINDOW_DAYS, useStats } from './useStats'
 
 const PERCENT = 100
 const CHART_BAR_MIN_HEIGHT = 4
@@ -27,7 +27,7 @@ function formatCompletion(done: number, total: number): string {
 
 export function StatsRoute() {
   const router = useRouter()
-  const { data, days, isLoading } = useStats()
+  const { data, chartDays, exportRange, isLoading } = useStats()
   const current = currentStreak(data.completions)
   const best = bestStreak(data.completions)
   const qadaTotal = QADA_PRAYERS.reduce((total, prayer) => total + data.qada[prayer.id], 0)
@@ -52,7 +52,7 @@ export function StatsRoute() {
             <View className="gap-3" testID="stats-week-chart">
               <Text className="text-title text-primary">{STATS_COPY.completionTile}</Text>
               <View className="h-32 flex-row items-end justify-between gap-1 rounded-card border border-border bg-surface p-3">
-                {days.map((day) => {
+                {chartDays.map((day) => {
                   const completion = data.completions.find((entry) => entry.day === day)
                   const percent = completion
                     ? completionPercent(completion.done, completion.total)
@@ -128,6 +128,29 @@ export function StatsRoute() {
               </View>
               <Text className="text-small text-muted-foreground">{QADA_COPY.statsDescription}</Text>
             </Pressable>
+            <View className="gap-3" testID="stats-export">
+              <Text className="text-label text-start text-muted-foreground">
+                {STATS_COPY.exportData}
+              </Text>
+              <View className="flex-row gap-2">
+                <Pressable
+                  accessibilityRole="button"
+                  className="rounded-button bg-surface-2 px-3 py-2"
+                  onPress={() => void exportRange(CHART_WINDOW_DAYS, 'week')}
+                  testID="stats-export-week"
+                >
+                  <Text className="text-small text-foreground">{STATS_COPY.exportWeek}</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  className="rounded-button bg-surface-2 px-3 py-2"
+                  onPress={() => void exportRange(STATS_WINDOW_DAYS, 'month')}
+                  testID="stats-export-month"
+                >
+                  <Text className="text-small text-foreground">{STATS_COPY.exportMonth}</Text>
+                </Pressable>
+              </View>
+            </View>
           </>
         ) : null}
       </View>

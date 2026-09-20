@@ -13,6 +13,7 @@ jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('nativewind', () => ({ useColorScheme: () => ({ setColorScheme: mockSetColorScheme }) }))
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
+  useFocusEffect: jest.fn(),
 }))
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null, Check: () => null }))
 jest.mock('../../preferences/db', () => ({

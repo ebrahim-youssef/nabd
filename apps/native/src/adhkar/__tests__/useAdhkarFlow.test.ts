@@ -67,6 +67,7 @@ describe('useAdhkarFlow', () => {
       ({ categoryId }: { categoryId: string }) => useAdhkarFlow(categoryId, ITEMS, DAY),
       { initialProps: { categoryId: 'morning' } },
     )
+    await waitFor(() => expect(mockRepository.isLinkedWirdItemDone).toHaveBeenCalled())
     await act(async () => result.current.tap())
     expect(result.current.state.index).toBe(1)
 
@@ -93,7 +94,7 @@ describe('useAdhkarFlow', () => {
     expect(result.current.state.index).toBe(1)
   })
 
-  it('keeps an immediate tap when saved hydration resolves later', async () => {
+  it('does not overwrite saved progress when tapped before hydration completes', async () => {
     let resolveSaved: (value: Progress | undefined) => void = () => undefined
     mockRepository.readFlowProgress.mockImplementation(
       () => new Promise<Progress | undefined>((resolve) => (resolveSaved = resolve)),
@@ -106,6 +107,7 @@ describe('useAdhkarFlow', () => {
       resolveSaved({ categoryId: 'morning', day: DAY, index: 0, count: 0, finished: false }),
     )
 
-    expect(result.current.state.index).toBe(1)
+    expect(result.current.state.index).toBe(0)
+    expect(mockRepository.writeFlowProgress).not.toHaveBeenCalled()
   })
 })
