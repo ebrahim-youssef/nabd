@@ -21,6 +21,7 @@ export const IQAMAH_OFFSET_MINUTES: Record<string, number> = {
 export const COPY = {
   enableLocation: 'فعّل الموقع لعرض مواقيت الصلاة',
   locationDenied: 'تعذّر الوصول إلى الموقع — لن تظهر مواقيت الصلاة.',
+  tomorrowFajr: 'الفجر غدًا',
 } as const
 
 // Minutes before the adhan for the early reminder (ADR-0009).
