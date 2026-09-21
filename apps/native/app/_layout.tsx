@@ -2,17 +2,20 @@ import '../global.css'
 
 import { Stack } from 'expo-router'
 import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite'
+import { StatusBar } from 'expo-status-bar'
 import { useColorScheme } from 'nativewind'
-import { I18nManager } from 'react-native'
-import { useEffect, useMemo } from 'react'
+import { I18nManager, Text } from 'react-native'
+import { useEffect, useMemo, useState } from 'react'
 
 import { DATABASE_NAME, migrateDatabase } from '../src/db/database'
 import { initializeSentry, Sentry } from '../src/observability/sentry'
 import {
   createPreferencesRepository,
   PREFERENCE_KEYS,
-  readStoredTheme,
 } from '../src/preferences/db'
+import { deviceCopy } from '../src/device/copy'
+import { readThemeWithFallback } from '../src/app/themeBootstrap'
+import { useNativeShell } from '../src/device/useNativeShell'
 
 initializeSentry()
 I18nManager.allowRTL(true)
@@ -22,18 +25,28 @@ function NativeAppearanceBootstrap() {
   const database = useSQLiteContext()
   const { setColorScheme } = useColorScheme()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
+  const [themeError, setThemeError] = useState<unknown>()
 
   useEffect(() => {
     let active = true
-    void preferences.read(PREFERENCE_KEYS.theme).then((stored) => {
-      if (active) setColorScheme(readStoredTheme(stored))
+    void readThemeWithFallback(
+      () => preferences.read(PREFERENCE_KEYS.theme),
+      (cause) => {
+        if (active) setThemeError(cause)
+      },
+    ).then((theme) => {
+      if (active) setColorScheme(theme)
     })
     return () => {
       active = false
     }
   }, [preferences, setColorScheme])
 
-  return null
+  return themeError ? (
+    <Text accessibilityRole="alert" className="text-small text-start text-muted-foreground">
+      {deviceCopy.errors.preferencesReadFailed}
+    </Text>
+  ) : null
 }
 
 function RootLayout() {
@@ -45,8 +58,18 @@ function RootLayout() {
       }}
     >
       <NativeAppearanceBootstrap />
-      <Stack screenOptions={{ headerShown: false }} />
+      <NativeShellBootstrap />
     </SQLiteProvider>
+  )
+}
+
+function NativeShellBootstrap() {
+  const shell = useNativeShell()
+  return (
+    <>
+      <StatusBar style={shell.statusBarStyle} />
+      <Stack screenOptions={{ headerShown: false }} />
+    </>
   )
 }
 

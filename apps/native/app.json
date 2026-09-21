@@ -8,8 +8,16 @@
     "scheme": "nabd",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "platforms": ["android"],
-    "plugins": ["expo-router", "expo-localization", "expo-sqlite", "@sentry/react-native/expo"],
+    "platforms": [
+      "android"
+    ],
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-sqlite",
+      "@sentry/react-native/expo",
+      "./plugins/withNabdDeviceCapabilities.cjs"
+    ],
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
@@ -27,7 +35,11 @@
       "forcesRTL": true,
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "3f56668a-2bd1-4158-b730-243df7f75a18"
       }
-    }
+    },
+    "owner": "hima391"
   }
 }

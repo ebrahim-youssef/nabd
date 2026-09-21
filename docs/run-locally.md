@@ -26,7 +26,8 @@ pnpm --filter apps-native start  # replacement Android client and Metro
 ```
 
 The native command requires an Android development environment and a connected emulator or
-device. CI builds the standalone release APK.
+device. CI builds the standalone release APK. For the owner APK handoff and the complete Android
+device matrix, see [`native-device-verification.md`](./native-device-verification.md).
 
 ## Quality gates (must all exit 0 before any push)
 

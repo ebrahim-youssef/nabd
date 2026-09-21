@@ -16,12 +16,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
 import { ScreenContainer } from '../app/ScreenContainer'
+import { deviceCopy } from '../device/copy'
 import {
   createPreferencesRepository,
   PREFERENCE_KEYS,
   readStoredMode,
   readStoredTheme,
 } from '../preferences/db'
+import type { DeviceAction, DeviceActionType } from '../device/types'
+import { useDeviceCapabilities } from '../device/useDeviceCapabilities'
+import { usePrayerSchedule } from '../device/usePrayerSchedule'
 import { useWirdLevel } from '../wird/useWirdLevel'
 
 type SettingsState = {
@@ -86,7 +90,11 @@ export function SettingsRoute() {
   const { setColorScheme } = useColorScheme()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
   const { currentLevelId, canChangeLevel, changeLevel, isLoading: isLevelLoading } = useWirdLevel()
+  const device = useDeviceCapabilities()
+  const schedule = usePrayerSchedule()
   const [hydrated, setHydrated] = useState(false)
+  const [hydrationError, setHydrationError] = useState<unknown>()
+  const [actionError, setActionError] = useState<unknown>()
   const [state, setState] = useState<SettingsState>({
     theme: 'light',
     mode: 'classic',
@@ -99,19 +107,27 @@ export function SettingsRoute() {
       preferences.read(PREFERENCE_KEYS.theme),
       preferences.read(PREFERENCE_KEYS.mode),
       preferences.read(PREFERENCE_KEYS.calculationMethod),
-    ]).then(([theme, mode, method]) => {
-      if (!active) return
-      const nextTheme = readStoredTheme(theme)
-      setState({
-        theme: nextTheme,
-        mode: readStoredMode(mode),
-        methodId: CALCULATION_METHODS.some((entry) => entry.id === method)
-          ? (method as CalculationMethodId)
-          : DEFAULT_METHOD_ID,
+    ])
+      .then(([theme, mode, method]) => {
+        if (!active) return
+        const nextTheme = readStoredTheme(theme)
+        setState({
+          theme: nextTheme,
+          mode: readStoredMode(mode),
+          methodId: CALCULATION_METHODS.some((entry) => entry.id === method)
+            ? (method as CalculationMethodId)
+            : DEFAULT_METHOD_ID,
+        })
+        setColorScheme(nextTheme)
+        setHydrated(true)
       })
-      setColorScheme(nextTheme)
-      setHydrated(true)
-    })
+      .catch((cause: unknown) => {
+        if (!active) return
+        setState({ theme: 'light', mode: 'classic', methodId: DEFAULT_METHOD_ID })
+        setColorScheme('light')
+        setHydrationError(cause)
+        setHydrated(true)
+      })
     return () => {
       active = false
     }
@@ -136,9 +152,43 @@ export function SettingsRoute() {
     writePreference(PREFERENCE_KEYS.mode, mode, updatedAt)
   }
 
-  function changeMethod(methodId: CalculationMethodId, updatedAt: number) {
+  async function changeMethod(methodId: CalculationMethodId, updatedAt: number) {
+    const previousMethodId = state.methodId
     setState((previous) => ({ ...previous, methodId }))
-    writePreference(PREFERENCE_KEYS.calculationMethod, methodId, updatedAt)
+    try {
+      await preferences.write(PREFERENCE_KEYS.calculationMethod, methodId, updatedAt)
+      await schedule.sync()
+      setActionError(undefined)
+    } catch (cause) {
+      setState((previous) => ({ ...previous, methodId: previousMethodId }))
+      try {
+        await preferences.write(PREFERENCE_KEYS.calculationMethod, previousMethodId, updatedAt)
+      } catch {
+        // Keep the in-memory rollback and surface the original failure.
+      }
+      setActionError(cause)
+    }
+  }
+
+  async function handleNotificationAction(type: DeviceActionType) {
+    if (type === 'enable-notifications') {
+      await schedule.setNotificationEnabled(true)
+      return
+    }
+    await device.handleAction(type)
+  }
+
+  async function handleLocationAction(type: DeviceActionType) {
+    if (type === 'retry-location') {
+      const result = await device.requestLocation()
+      if (result.ok) await schedule.sync()
+      return
+    }
+    await device.handleAction(type)
+    if (type === 'open-location-settings') {
+      await device.refresh()
+      await schedule.sync()
+    }
   }
 
   return (
@@ -148,7 +198,17 @@ export function SettingsRoute() {
           {shellCopy.nav.settings}
         </Text>
         {!hydrated ? (
-          <Text className="text-body text-start text-muted-foreground">جارٍ تحميل الإعدادات…</Text>
+          <Text className="text-body text-start text-muted-foreground">{deviceCopy.settings.loading}</Text>
+        ) : null}
+        {hydrationError ? (
+          <Text className="text-body text-start text-muted-foreground" testID="settings-hydration-error">
+            {deviceCopy.errors.preferencesReadFailed}
+          </Text>
+        ) : null}
+        {actionError ? (
+          <Text className="text-body text-start text-muted-foreground" testID="settings-action-error">
+            {deviceCopy.errors.actionFailed}
+          </Text>
         ) : null}
 
         <View className="gap-3" testID="settings-appearance">
@@ -196,7 +256,7 @@ export function SettingsRoute() {
                 key={method.id}
                 label={method.label}
                 selected={state.methodId === method.id}
-                onPress={() => changeMethod(method.id, Date.now())}
+                onPress={() => void changeMethod(method.id, Date.now())}
                 testID={`method-${method.id}`}
               />
             ))}
@@ -226,6 +286,133 @@ export function SettingsRoute() {
           </Text>
         </View>
 
+        <View className="gap-3" testID="settings-device">
+          <Text className="text-label text-start text-muted-foreground">
+            {deviceCopy.settings.deviceHeading}
+          </Text>
+          <DeviceStatusRow
+            testID="device-notifications-status"
+            label={deviceCopy.settings.notificationsLabel}
+            message={device.status?.notifications.message ?? deviceCopy.settings.notificationsChecking}
+            action={device.status?.notifications.action}
+            onAction={handleNotificationAction}
+          />
+          {schedule.error ? (
+            <Text className="text-small text-start text-muted-foreground" testID="settings-schedule-error">
+              {deviceCopy.errors.scheduleRejected}
+            </Text>
+          ) : null}
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: schedule.notificationPrefs.enabled }}
+            className="rounded-card border border-border bg-surface p-3"
+            onPress={() => void schedule.setNotificationEnabled(!schedule.notificationPrefs.enabled)}
+            testID="device-notifications-toggle"
+          >
+            <Text className="text-body text-start text-foreground">
+              {schedule.notificationPrefs.enabled
+                ? deviceCopy.settings.notificationsEnabled
+                : deviceCopy.settings.notificationsDisabled}
+            </Text>
+          </Pressable>
+          {(
+            [
+              ['beforeAdhan', deviceCopy.settings.beforeAdhan],
+              ['atAdhan', deviceCopy.settings.atAdhan],
+              ['atIqamah', deviceCopy.settings.atIqamah],
+              ['morningAdhkar', deviceCopy.settings.morningAdhkar],
+              ['eveningAdhkar', deviceCopy.settings.eveningAdhkar],
+            ] as const
+          ).map(([key, label]) => (
+            <Pressable
+              accessibilityRole="switch"
+              accessibilityState={{ checked: schedule.notificationPrefs[key] }}
+              className="rounded-card border border-border bg-surface p-3"
+              key={key}
+              onPress={() => void schedule.setNotificationMoment(key, !schedule.notificationPrefs[key])}
+              testID={`device-notification-${key}`}
+            >
+              <Text className="text-body text-start text-foreground">{label}</Text>
+            </Pressable>
+          ))}
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: schedule.alarmOnSilent }}
+            className="rounded-card border border-border bg-surface p-3"
+            onPress={() => void schedule.setAlarmOnSilent(!schedule.alarmOnSilent)}
+            testID="device-alarm-on-silent"
+          >
+            <Text className="text-body text-start text-foreground">{deviceCopy.settings.silentMode}</Text>
+          </Pressable>
+          <DeviceStatusRow
+            testID="device-exact-alarm-status"
+            label={deviceCopy.settings.exactAlarmLabel}
+            message={device.status?.exactAlarm.message ?? deviceCopy.settings.exactAlarmChecking}
+            action={device.status?.exactAlarm.action}
+            onAction={device.handleAction}
+          />
+          <DeviceStatusRow
+            testID="device-countdown-status"
+            label={deviceCopy.settings.countdownLabel}
+            message={device.status?.countdown.message ?? deviceCopy.settings.countdownChecking}
+            action={device.status?.countdown.action}
+            onAction={device.handleAction}
+          />
+          <Pressable
+            accessibilityRole="switch"
+            accessibilityState={{ checked: device.snapshot?.countdown.enabled ?? false }}
+            className="rounded-card border border-border bg-surface p-3"
+            onPress={() => void schedule.setCountdownEnabled(!(device.snapshot?.countdown.enabled ?? false))}
+            testID="device-countdown-toggle"
+          >
+            <Text className="text-body text-start text-foreground">
+              {device.snapshot?.countdown.enabled
+                ? deviceCopy.settings.countdownEnabled
+                : deviceCopy.settings.countdownDisabled}
+            </Text>
+          </Pressable>
+          <DeviceStatusRow
+            testID="device-battery-status"
+            label={deviceCopy.settings.batteryLabel}
+            message={device.status?.battery.message ?? deviceCopy.settings.batteryChecking}
+            action={device.status?.battery.action}
+            onAction={device.handleAction}
+          />
+          {device.status?.location ? (
+            <DeviceStatusRow
+              testID="device-location-status"
+              label={deviceCopy.settings.locationLabel}
+              message={device.status.location.message}
+              action={device.status.location.action}
+              onAction={handleLocationAction}
+            />
+          ) : null}
+          {device.actionError ? (
+            <View className="gap-2 rounded-card border border-border bg-surface p-3" testID="settings-device-action-error">
+              <Text className="text-small text-start text-muted-foreground">
+                {deviceCopy.errors.actionFailed}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                className="rounded-card border border-primary bg-primary/10 p-3"
+                onPress={() =>
+                  void device.retryLastAction().then((action) => {
+                    if (action === 'retry-location' || action === 'open-location-settings') {
+                      return schedule.sync()
+                    }
+                    return undefined
+                  })
+                }
+                testID="settings-device-action-retry"
+              >
+                <Text className="text-body text-start text-primary">
+                  {deviceCopy.actions.retryDeviceAction}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+
         <View className="gap-2" testID="settings-links">
           <Text className="text-label text-start text-muted-foreground">
             {SETTINGS_COPY.links.title}
@@ -248,5 +435,36 @@ export function SettingsRoute() {
         </View>
       </View>
     </ScreenContainer>
+  )
+}
+
+function DeviceStatusRow({
+  testID,
+  label,
+  message,
+  action,
+  onAction,
+}: {
+  testID: string
+  label: string
+  message: string
+  action: DeviceAction | null | undefined
+  onAction: (type: DeviceActionType) => Promise<unknown>
+}) {
+  return (
+    <View className="gap-2 rounded-card border border-border bg-surface p-3" testID={testID}>
+      <Text className="text-body text-start text-foreground">{label}</Text>
+      <Text className="text-small text-start text-muted-foreground">{message}</Text>
+      {action ? (
+        <Pressable
+          accessibilityRole="button"
+          className="rounded-card border border-primary bg-primary/10 p-3"
+          onPress={() => void onAction(action.type)}
+          testID={`${testID}-action`}
+        >
+          <Text className="text-body text-start text-primary">{action.label}</Text>
+        </Pressable>
+      ) : null}
+    </View>
   )
 }

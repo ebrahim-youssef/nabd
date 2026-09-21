@@ -18,7 +18,10 @@ import { Pressable, Text, View } from 'react-native'
 
 import { PageHeader } from '../app/PageHeader'
 import { ScreenContainer } from '../app/ScreenContainer'
+import { deviceCopy } from '../device/copy'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
+import { useDeviceCapabilities } from '../device/useDeviceCapabilities'
+import { usePrayerSchedule } from '../device/usePrayerSchedule'
 
 const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 
@@ -70,11 +73,14 @@ function nextDay(date: Date): Date {
 export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProps = {}) {
   const database = useSQLiteContext()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
+  const device = useDeviceCapabilities()
+  const schedule = usePrayerSchedule()
   const [hydrated, setHydrated] = useState(false)
   const [state, setState] = useState<HydratedState>({
     methodId: DEFAULT_METHOD_ID,
     coords: null,
   })
+  const [routeError, setRouteError] = useState<unknown>()
 
   useEffect(() => {
     let active = true
@@ -102,9 +108,12 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
 
   const instant = now()
   const date = today ? today() : new Date(instant)
-  const times = state.coords ? computeDayTimes(state.coords, date, state.methodId) : null
-  const tomorrowTimes = state.coords
-    ? computeDayTimes(state.coords, nextDay(date), state.methodId)
+  const coords = state.coords ?? (device.cachedLocation
+    ? { latitude: device.cachedLocation.latitude, longitude: device.cachedLocation.longitude }
+    : null)
+  const times = coords ? computeDayTimes(coords, date, state.methodId) : null
+  const tomorrowTimes = coords
+    ? computeDayTimes(coords, nextDay(date), state.methodId)
     : null
   const points = times
     ? [
@@ -116,10 +125,42 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
     : []
   const timeline = timelineStatus(points, instant)
   const status = statusLine(timeline)
+  const locationAction = device.status?.location.action
 
-  function changeMethod(methodId: CalculationMethodId) {
+  async function changeMethod(methodId: CalculationMethodId) {
+    const previousMethodId = state.methodId
     setState((previous) => ({ ...previous, methodId }))
-    void preferences.write(PREFERENCE_KEYS.calculationMethod, methodId, now())
+    try {
+      await preferences.write(PREFERENCE_KEYS.calculationMethod, methodId, now())
+      await schedule.sync()
+      setRouteError(undefined)
+    } catch (cause) {
+      setState((previous) => ({ ...previous, methodId: previousMethodId }))
+      try {
+        await preferences.write(PREFERENCE_KEYS.calculationMethod, previousMethodId, now())
+      } catch {
+        // Keep the in-memory rollback and surface the original failure.
+      }
+      setRouteError(cause)
+    }
+  }
+
+  async function requestLocation() {
+    try {
+      const result = await device.requestLocation()
+      if (result.ok) {
+        setState((previous) => ({ ...previous, coords: result.coords }))
+        await schedule.sync()
+        setRouteError(undefined)
+      }
+    } catch (cause) {
+      setRouteError(cause)
+    }
+  }
+
+  function handleLocationAction(type: NonNullable<typeof locationAction>['type']) {
+    if (type === 'retry-location') void requestLocation()
+    else void device.handleAction(type)
   }
 
   return (
@@ -137,7 +178,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
                 accessibilityState={{ selected: method.id === state.methodId }}
                 className={`rounded-card border px-4 py-3 ${method.id === state.methodId ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
                 key={method.id}
-                onPress={() => changeMethod(method.id)}
+                onPress={() => void changeMethod(method.id)}
                 testID={`prayer-method-${method.id}`}
               >
                 <Text
@@ -153,7 +194,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
             ))}
           </View>
         </View>
-        {hydrated && !state.coords ? (
+        {hydrated && !coords ? (
           <View
             className="gap-2 rounded-card border border-border bg-surface p-4"
             testID="prayer-times-no-location"
@@ -161,7 +202,78 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
             <Text className="text-body text-start text-foreground">
               {PRAYER_TIMES_COPY.enableLocation}
             </Text>
+            <Text className="text-small text-start text-muted-foreground">
+              {device.status?.location.message ?? deviceCopy.settings.locationChecking}
+            </Text>
+            {locationAction ? (
+              <Pressable
+                accessibilityRole="button"
+                className="rounded-card border border-primary bg-primary/10 p-3"
+                onPress={() => handleLocationAction(locationAction.type)}
+                testID="prayer-times-location-action"
+              >
+                <Text className="text-body text-start text-primary">
+                  {locationAction.label}
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                accessibilityRole="button"
+                className="rounded-card border border-primary bg-primary/10 p-3"
+                disabled={device.isRequestingLocation}
+                onPress={() => void requestLocation()}
+                testID="prayer-times-request-location"
+              >
+                <Text className="text-body text-start text-primary">{deviceCopy.settings.requestLocation}</Text>
+              </Pressable>
+            )}
           </View>
+        ) : null}
+        {coords && device.status?.location && device.status.location.state !== 'ready' && device.status.location.state !== 'offline-cache' ? (
+          <View className="gap-2 rounded-card border border-border bg-surface p-4" testID="prayer-times-location-status">
+            <Text className="text-body text-start text-foreground">
+              {device.status.location.message}
+            </Text>
+            {locationAction ? (
+              <Pressable
+                accessibilityRole="button"
+                className="rounded-card border border-primary bg-primary/10 p-3"
+                onPress={() => handleLocationAction(locationAction.type)}
+                testID="prayer-times-location-action"
+              >
+                <Text className="text-body text-start text-primary">
+                  {locationAction.label}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
+        {coords && device.cachedLocation?.city ? (
+          <Text className="text-small text-start text-muted-foreground" testID="prayer-times-city">
+            {device.cachedLocation.city}
+          </Text>
+        ) : null}
+        {device.actionError ? (
+          <View className="gap-2 rounded-card border border-border bg-surface p-4" testID="prayer-times-location-error">
+            <Text className="text-small text-start text-muted-foreground">
+              {deviceCopy.errors.actionFailed}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              className="rounded-card border border-primary bg-primary/10 p-3"
+              onPress={() => void device.retryLastAction()}
+              testID="prayer-times-location-error-retry"
+            >
+              <Text className="text-body text-start text-primary">
+                {deviceCopy.actions.retryDeviceAction}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {routeError ? (
+          <Text className="text-small text-start text-muted-foreground" testID="prayer-times-action-error">
+            {deviceCopy.errors.actionFailed}
+          </Text>
         ) : null}
         {hydrated && times ? (
           <View className="gap-3" testID="prayer-times-table">

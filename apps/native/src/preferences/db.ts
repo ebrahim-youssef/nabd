@@ -8,6 +8,10 @@ export const PREFERENCE_KEYS = {
   calculationMethod: 'nabd:prayer-calculation-method',
   latitude: 'nabd:cached-latitude',
   longitude: 'nabd:cached-longitude',
+  city: 'nabd:cached-city',
+  locationRecordedAt: 'nabd:cached-location-recorded-at',
+  notifications: 'nabd:notification-prefs',
+  alarmOnSilent: 'nabd:alarm-on-silent',
   theme: 'nabd:theme',
   mode: 'nabd:mode',
 } as const

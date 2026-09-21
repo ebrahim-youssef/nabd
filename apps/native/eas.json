@@ -1,0 +1,10 @@
+{
+  "build": {
+    "owner-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  }
+}
