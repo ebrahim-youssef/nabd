@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 
 import type { DayId } from '@nabd/shared'
 
-import { captureException } from '../observability/sentry'
+import { logger } from '../observability/logger'
 import { useWirdRepository } from './useWirdRepository'
 
 export function useToggleItem(versionId: string | null, onRefresh?: () => void) {
@@ -24,7 +24,7 @@ export function useToggleItem(versionId: string | null, onRefresh?: () => void) 
       if (!result.ok) setHasError(true)
       else onRefresh?.()
     } catch (cause: unknown) {
-      captureException(cause)
+      logger.error('Native wird item toggle failed', cause)
       setHasError(true)
     } finally {
       pendingItems.current.delete(itemId)

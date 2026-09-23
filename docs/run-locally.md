@@ -5,16 +5,15 @@ the migration workspaces are `packages/shared`, `apps/spa`, and `apps/native`.
 
 ## Environment
 
-Copy the example env file and fill in real values (from the Supabase and Sentry dashboards):
+Copy the example env file and fill in the required values for the legacy client:
 
 ```bash
 cp .env.example .env.local
 ```
 
 `.env.local` is gitignored. `.env.example` documents variables for the root application.
-`apps/spa/.env.example` documents the SPA Sentry variable (`VITE_SENTRY_DSN`) and
-`apps/native/.env.example` documents the native one. The replacement clients do not use Supabase
-during this migration.
+`apps/spa/.env.example` documents the SPA Sentry variable (`VITE_SENTRY_DSN`). The replacement
+clients do not use Supabase during this migration, and native does not use Sentry.
 
 ## Install & run
 

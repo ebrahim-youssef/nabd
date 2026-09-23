@@ -3,8 +3,8 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pressable, Share, Text, View } from 'react-native'
 
-import { captureException } from '../observability/sentry'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
+import { logger } from '../observability/logger'
 import { useWirdDay } from './WirdDayProvider'
 
 const AWARD_MARK = '✦'
@@ -34,7 +34,7 @@ export function CompletionCelebration() {
         if (active) setShow(true)
       })
       .catch((cause: unknown) => {
-        captureException(cause)
+        logger.error('Native completion celebration state failed', cause)
       })
     return () => {
       active = false
@@ -74,7 +74,7 @@ export function CompletionCelebration() {
             className="rounded-button border border-on-primary px-6 py-3"
             onPress={() => {
               void Share.share({ message: WIRD_COPY.celebrationShareText }).catch(
-                (cause: unknown) => captureException(cause),
+                (cause: unknown) => logger.error('Native celebration share failed', cause),
               )
             }}
             testID={SHARE_TEST_ID}

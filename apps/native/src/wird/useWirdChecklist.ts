@@ -2,7 +2,7 @@ import { buildChecklist, monthOf, versionInForce } from '@nabd/shared'
 import type { ChecklistAreaView, DayId } from '@nabd/shared'
 import { useCallback, useMemo } from 'react'
 
-import { useLiveRepositoryQuery } from '../app/useLiveRepositoryQuery'
+import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
 
 type ChecklistState = {

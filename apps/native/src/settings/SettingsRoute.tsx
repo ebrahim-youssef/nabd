@@ -15,7 +15,7 @@ import { useColorScheme } from 'nativewind'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
-import { ScreenContainer } from '../app/ScreenContainer'
+import { ScreenContainer } from '../shell/ScreenContainer'
 import {
   createPreferencesRepository,
   PREFERENCE_KEYS,

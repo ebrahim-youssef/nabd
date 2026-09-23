@@ -83,6 +83,13 @@ await writeFile(
 
 const appConfig = JSON.parse(await readFile(appJsonPath, 'utf8'))
 const background = resolveVariable(themeTokens.colors.background)
-appConfig.expo.splash.backgroundColor = background
+const splashPlugin = appConfig.expo.plugins.find(
+  (plugin) => Array.isArray(plugin) && plugin[0] === 'expo-splash-screen',
+)
+if (splashPlugin) splashPlugin[1] = { ...splashPlugin[1], backgroundColor: background }
 appConfig.expo.android.adaptiveIcon.backgroundColor = background
-await writeFile(appJsonPath, `${JSON.stringify(appConfig, null, 2)}\n`)
+const appJson = JSON.stringify(appConfig, null, 2).replace(
+  /"platforms": \[\n\s+"android"\n\s+\]/,
+  '"platforms": ["android"]',
+)
+await writeFile(appJsonPath, `${appJson}\n`)

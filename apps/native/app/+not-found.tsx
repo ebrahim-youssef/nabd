@@ -2,7 +2,7 @@ import { shellCopy } from '@nabd/shared'
 import { useRouter } from 'expo-router'
 import { Pressable, Text } from 'react-native'
 
-import { ScreenContainer } from '../src/app/ScreenContainer'
+import { ScreenContainer } from '../src/shell/ScreenContainer'
 
 export default function NotFoundRoute() {
   const router = useRouter()

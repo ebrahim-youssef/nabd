@@ -30,7 +30,7 @@ jobs:
           - name: spa build:cloudflare
             run: pnpm --filter apps-spa build:cloudflare
           - name: native lint
-            run: pnpm --filter apps-native lint
+            run: pnpm --filter apps-native check:no-sentry && pnpm --filter apps-native lint
           - name: native typecheck
             run: pnpm --filter apps-native typecheck
           - name: native test

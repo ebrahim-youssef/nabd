@@ -3,7 +3,7 @@ import { Check, Plus } from 'lucide-react-native'
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
-import { ICON_SIZE, NATIVE_THEME } from '../app/nativeTheme'
+import { ICON_SIZE, NATIVE_THEME } from '../shell/nativeTheme'
 import { useQada } from './useQada'
 
 const LEDGER_TEST_ID = 'qada-ledger'

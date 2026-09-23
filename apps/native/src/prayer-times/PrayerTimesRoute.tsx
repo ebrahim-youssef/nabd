@@ -16,8 +16,9 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
-import { PageHeader } from '../app/PageHeader'
-import { ScreenContainer } from '../app/ScreenContainer'
+import { PageHeader } from '../shell/PageHeader'
+import { ScreenContainer } from '../shell/ScreenContainer'
+import { logger } from '../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 
 const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
@@ -91,7 +92,8 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
         })
         setHydrated(true)
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
+        logger.error('Native prayer time preferences load failed', cause)
         if (active) setHydrated(true)
       })
 

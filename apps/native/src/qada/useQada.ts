@@ -3,7 +3,7 @@ import type { QadaPrayerId } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useMemo } from 'react'
 
-import { useLiveRepositoryQuery } from '../app/useLiveRepositoryQuery'
+import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
 import { createQadaRepository } from './db'
 
 export function useQada() {

@@ -1,8 +1,8 @@
 import { QADA_COPY } from '@nabd/shared'
 import { View } from 'react-native'
 
-import { PageHeader } from '../app/PageHeader'
-import { ScreenContainer } from '../app/ScreenContainer'
+import { PageHeader } from '../shell/PageHeader'
+import { ScreenContainer } from '../shell/ScreenContainer'
 import { QadaLedger } from './QadaLedger'
 
 export function QadaRoute() {

@@ -10,8 +10,8 @@ import {
 import { useRouter } from 'expo-router'
 import { Pressable, Text, View } from 'react-native'
 
-import { PageHeader } from '../app/PageHeader'
-import { ScreenContainer } from '../app/ScreenContainer'
+import { PageHeader } from '../shell/PageHeader'
+import { ScreenContainer } from '../shell/ScreenContainer'
 import { CHART_WINDOW_DAYS, STATS_WINDOW_DAYS, useStats } from './useStats'
 
 const PERCENT = 100

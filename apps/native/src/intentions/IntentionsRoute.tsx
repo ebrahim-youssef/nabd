@@ -4,9 +4,9 @@ import { Pressable, Text, View } from 'react-native'
 
 import { INTENTIONS_COPY, INTENTIONS_LIBRARY, toArabicIndic } from '@nabd/shared'
 
-import { PageHeader } from '../app/PageHeader'
-import { ScreenContainer } from '../app/ScreenContainer'
-import { ICON_SIZE, NATIVE_THEME } from '../app/nativeTheme'
+import { PageHeader } from '../shell/PageHeader'
+import { ScreenContainer } from '../shell/ScreenContainer'
+import { ICON_SIZE, NATIVE_THEME } from '../shell/nativeTheme'
 
 const DEED_GLYPH = '۞'
 const INTENTION_GLYPH = '✦'

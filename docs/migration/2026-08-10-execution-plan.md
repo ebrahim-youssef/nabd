@@ -23,7 +23,8 @@ Sources of truth:
 - Native runtime: offline operation is required.
 - Accounts: Supabase authentication and sync are not carried into the replacement clients.
 - Data: replacement clients start with fresh local state; no legacy-data migration is included.
-- Observability: Sentry remains in both replacement clients.
+- Observability: Sentry remains in the SPA. Native uses the central logger, as recorded in the
+  2026-09-24 amendment to ADR-0014.
 - Hosting: the SPA build and runbook target Cloudflare. The migration does not deploy or move the
   production domain. Vercel files, workflows, Analytics, and deployment documentation are removed
   before completion.
@@ -201,7 +202,8 @@ Scope:
 - Add the deployment configuration, command, required-variable inventory, and owner runbook.
 - Document post-deploy smoke checks and rollback without executing the deployment.
 - Remove every Vercel workflow, configuration file, Analytics integration, and deployment reference.
-- Confirm Sentry remains configured for both replacement clients.
+- Confirm Sentry remains configured for the SPA. Native uses the central logger, as recorded in
+  the 2026-09-24 amendment to ADR-0014.
 
 Acceptance: the SPA is ready for an owner-operated Cloudflare deployment, the build and runbook are
 verified, and no Vercel integration or related file remains.

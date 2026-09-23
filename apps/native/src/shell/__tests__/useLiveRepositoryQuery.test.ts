@@ -1,14 +1,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { useFocusEffect } from 'expo-router'
 
-import { captureException } from '../../observability/sentry'
+import { logger } from '../../observability/logger'
 import { useLiveRepositoryQuery } from '../useLiveRepositoryQuery'
 
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
-jest.mock('../../observability/sentry', () => ({ captureException: jest.fn() }))
 
-const mockedCaptureException = captureException as jest.MockedFunction<typeof captureException>
 const mockedUseFocusEffect = useFocusEffect as jest.MockedFunction<typeof useFocusEffect>
+const mockedLogger = logger as jest.Mocked<typeof logger>
 
 let focusCallback: (() => undefined | (() => void)) | undefined
 
@@ -61,7 +60,7 @@ describe('useLiveRepositoryQuery', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.data).toBeUndefined()
-    expect(mockedCaptureException).toHaveBeenCalledWith(cause)
+    expect(mockedLogger.error).toHaveBeenCalledWith('Native repository query failed', cause)
   })
 
   it('drops a resolution that arrives after unmount', async () => {
