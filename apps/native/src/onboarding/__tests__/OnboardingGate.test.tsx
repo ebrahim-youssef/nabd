@@ -7,7 +7,6 @@ import type { OnboardingDatabase } from '../db'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
-jest.mock('../../observability/sentry', () => ({ captureException: jest.fn() }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const FIXED_DATE = new Date(2026, 7, 10, 0, 30)

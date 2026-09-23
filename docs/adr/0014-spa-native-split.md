@@ -253,3 +253,10 @@ the owner gate; it does not replace the owner test.
 
 The native migration deliverable is a release APK. A signed Play-uploadable AAB and Play Store
 publication are deferred.
+
+## Amendment (2026-09-24)
+
+- **Status:** accepted (owner and tech lead decision 2026-09-24)
+
+Native ships without Sentry. Native errors go to the central logger. Revisit this decision before
+the Play release in NBD-92.

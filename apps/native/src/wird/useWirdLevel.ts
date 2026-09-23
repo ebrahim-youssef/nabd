@@ -2,7 +2,7 @@ import { WIRD_LEVELS, compareDayId, levelMatching } from '@nabd/shared'
 import type { DayId, LevelId } from '@nabd/shared'
 import { useCallback } from 'react'
 
-import { useLiveRepositoryQuery } from '../app/useLiveRepositoryQuery'
+import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
 
 export function useWirdLevel() {

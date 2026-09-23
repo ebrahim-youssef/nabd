@@ -16,4 +16,10 @@ export default defineConfig([
       'no-console': 'error',
     },
   },
+  {
+    files: ['src/observability/logger.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ])

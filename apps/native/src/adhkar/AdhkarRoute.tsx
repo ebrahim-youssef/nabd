@@ -3,8 +3,8 @@ import type { AdhkarCategory } from '@nabd/shared'
 import { useState } from 'react'
 import { Pressable, Text, View } from 'react-native'
 
-import { PageHeader } from '../app/PageHeader'
-import { ScreenContainer } from '../app/ScreenContainer'
+import { PageHeader } from '../shell/PageHeader'
+import { ScreenContainer } from '../shell/ScreenContainer'
 import { AdhkarList } from './AdhkarList'
 import { AdhkarFlow } from './AdhkarFlow'
 

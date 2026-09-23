@@ -4,7 +4,7 @@ import { Text, View } from 'react-native'
 import { useMemo } from 'react'
 
 import { useWirdDay } from './WirdDayProvider'
-import { NATIVE_THEME } from '../app/nativeTheme'
+import { NATIVE_THEME } from '../shell/nativeTheme'
 const RING_RADIUS = 42
 const RING_STROKE = 8
 const RING_CENTER = RING_RADIUS + RING_STROKE / 2

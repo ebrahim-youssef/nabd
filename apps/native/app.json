@@ -7,14 +7,21 @@
     "icon": "./assets/icon.png",
     "scheme": "nabd",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "platforms": ["android"],
-    "plugins": ["expo-router", "expo-localization", "expo-sqlite", "@sentry/react-native/expo"],
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#eaf2f0"
-    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-sqlite",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "backgroundColor": "#eaf2f0",
+          "imageWidth": 100,
+          "resizeMode": "contain"
+        }
+      ]
+    ],
     "android": {
       "package": "com.nabd.app",
       "adaptiveIcon": {
@@ -27,6 +34,9 @@
       "forcesRTL": true,
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "3f56668a-2bd1-4158-b730-243df7f75a18"
       }
     }
   }

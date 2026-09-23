@@ -17,8 +17,8 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { Share } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'
 
-import { captureException } from '../observability/sentry'
-import { useLiveRepositoryQuery } from '../app/useLiveRepositoryQuery'
+import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
+import { logger } from '../observability/logger'
 import { createQadaRepository } from '../qada/db'
 import { useWirdRepository } from '../wird/useWirdRepository'
 
@@ -99,7 +99,7 @@ export function useStats(): {
           ),
         })
       } catch (cause: unknown) {
-        captureException(cause)
+        logger.error('Native stats export failed', cause)
       }
     },
     [today, wird],

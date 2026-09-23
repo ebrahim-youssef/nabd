@@ -13,9 +13,9 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, Text, View } from 'react-native'
 
-import { captureException } from '../observability/sentry'
-import { ScreenContainer } from '../app/ScreenContainer'
+import { ScreenContainer } from '../shell/ScreenContainer'
 import { HomeScreen } from '../home/HomeScreen'
+import { logger } from '../observability/logger'
 import { ONBOARDING_COPY } from './constants'
 import { createOnboardingRepository, type PersistedOnboarding } from './db'
 
@@ -84,7 +84,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
         if (active) setGate({ status: 'ready', persisted })
       })
       .catch((cause: unknown) => {
-        captureException(cause)
+        logger.error('Native onboarding load failed', cause)
         if (active) setGate({ status: 'error' })
       })
     return () => {
@@ -208,7 +208,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
       })
       setGate({ status: 'ready', persisted })
     } catch (cause: unknown) {
-      captureException(cause)
+      logger.error('Native onboarding completion failed', cause)
       completionInFlight.current = false
       setSubmitting(false)
       setGate({ status: 'error' })

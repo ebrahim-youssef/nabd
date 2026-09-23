@@ -7,8 +7,8 @@ import type {
   WirdRepository,
   WirdVersion,
 } from '@nabd/shared'
-import { captureException } from '../observability/sentry'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
+import { logger } from '../observability/logger'
 
 type VersionRow = {
   id: string
@@ -61,7 +61,8 @@ export function createWirdRepository(database: ProductDatabase): WirdRepository 
       )
       if (!row) throw new Error('missing version')
       return { ok: true, value: asVersion(row) }
-    } catch {
+    } catch (cause: unknown) {
+      logger.error('Native wird version insert failed', cause)
       return { ok: false, error: 'add_version_failed' }
     }
   }
@@ -84,7 +85,7 @@ export function createWirdRepository(database: ProductDatabase): WirdRepository 
       if (!row) throw new Error('missing entry')
       return { ok: true, value: asEntry(row) }
     } catch (cause: unknown) {
-      captureException(cause)
+      logger.error('Native wird entry insert failed', cause)
       return { ok: false, error: 'append_entry_failed' }
     }
   }

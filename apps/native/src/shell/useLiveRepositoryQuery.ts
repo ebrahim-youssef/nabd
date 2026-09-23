@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 
-import { captureException } from '../observability/sentry'
+import { logger } from '../observability/logger'
 
 type LiveRepositoryQueryState<T> = {
   data: T | undefined
@@ -41,7 +41,7 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
         setIsLoading(false)
       })
       .catch((cause: unknown) => {
-        captureException(cause)
+        logger.error('Native repository query failed', cause)
         if (!active) return
         setData(undefined)
         setIsLoading(false)
