@@ -45,13 +45,19 @@ describe('location adapter', () => {
     [{ status: 'denied', canAskAgain: true }, 'denied'],
     [{ status: 'denied', canAskAgain: false }, 'blocked'],
     [{ status: 'granted', canAskAgain: true }, 'granted'],
-  ] as const)('maps a %s permission response to %s', async (response, expected) => {
+  ] as const)('maps a %s permission response to %s', (response, expected) => {
+    expect(mapPermissionResponse(response as never)).toBe(expected)
+  })
+
+  it('delegates permission reads and requests to expo-location', async () => {
+    const response = { status: 'granted', canAskAgain: true } as const
     mockedLocation.getForegroundPermissionsAsync.mockResolvedValue(response as never)
     mockedLocation.requestForegroundPermissionsAsync.mockResolvedValue(response as never)
 
-    await expect(readPermission()).resolves.toBe(expected)
-    await expect(requestPermission()).resolves.toBe(expected)
-    expect(mapPermissionResponse(response as never)).toBe(expected)
+    await expect(readPermission()).resolves.toBe('granted')
+    await expect(requestPermission()).resolves.toBe('granted')
+    expect(mockedLocation.getForegroundPermissionsAsync).toHaveBeenCalledTimes(1)
+    expect(mockedLocation.requestForegroundPermissionsAsync).toHaveBeenCalledTimes(1)
   })
 
   it('reads whether location services are enabled', async () => {

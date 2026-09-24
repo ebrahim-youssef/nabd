@@ -15,8 +15,6 @@ jest.mock('lucide-react-native', () => ({ ArrowRight: () => null }))
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: {
     calculationMethod: 'nabd:prayer-calculation-method',
-    latitude: 'nabd:cached-latitude',
-    longitude: 'nabd:cached-longitude',
   },
   createPreferencesRepository: jest.fn(),
 }))
@@ -76,8 +74,7 @@ describe('PrayerTimesRoute', () => {
     mockedCreatePreferencesRepository.mockReturnValue({
       read: readPreference,
       write: writePreference,
-      clear: jest.fn(),
-    })
+    } as unknown as ReturnType<typeof createPreferencesRepository>)
     mockedUseLocationCapability.mockReturnValue(makeLocationView())
     readPreference.mockResolvedValue('umm_al_qura')
   })
@@ -97,6 +94,10 @@ describe('PrayerTimesRoute', () => {
     expect(screen.getByTestId('prayer-method-umm_al_qura').props.accessibilityState.selected).toBe(
       true,
     )
+    expect(screen.getByTestId('prayer-times-location-card')).toBeTruthy()
+    expect(screen.getByTestId('prayer-times-location-city')).toHaveTextContent('القاهرة')
+    expect(screen.queryByTestId('prayer-times-location-message')).toBeNull()
+    expect(screen.queryByTestId('prayer-times-location-action')).toBeNull()
   })
 
   it('shows a deterministic current-next status for the calculated timeline', async () => {
@@ -194,6 +195,7 @@ describe('PrayerTimesRoute', () => {
       deviceCopy.actions.retryLocation,
     )
 
+    expect(runAction).not.toHaveBeenCalled()
     fireEvent.press(screen.getByTestId('prayer-times-location-action'))
 
     expect(runAction).toHaveBeenCalledTimes(1)
@@ -244,37 +246,6 @@ describe('PrayerTimesRoute', () => {
     ).toBe(true)
 
     fireEvent.press(screen.getByTestId('prayer-times-location-action'))
-
-    expect(runAction).not.toHaveBeenCalled()
-  })
-
-  it('shows only the known city in the ready location card', async () => {
-    render(<PrayerTimesRoute />)
-    await waitFor(() =>
-      expect(
-        screen.getByTestId('prayer-method-umm_al_qura').props.accessibilityState.selected,
-      ).toBe(true),
-    )
-
-    expect(screen.getByTestId('prayer-times-location-card')).toBeTruthy()
-    expect(screen.getByTestId('prayer-times-location-city')).toHaveTextContent('القاهرة')
-    expect(screen.queryByTestId('prayer-times-location-message')).toBeNull()
-    expect(screen.queryByTestId('prayer-times-location-action')).toBeNull()
-  })
-
-  it('does not run a location action on render', async () => {
-    const runAction = jest.fn(async () => undefined)
-    mockedUseLocationCapability.mockReturnValue(
-      makeLocationView({
-        coordinates: null,
-        city: null,
-        status: retryStatus,
-        runAction,
-      }),
-    )
-
-    render(<PrayerTimesRoute />)
-    await waitFor(() => expect(screen.getByTestId('prayer-times-location-action')).toBeTruthy())
 
     expect(runAction).not.toHaveBeenCalled()
   })

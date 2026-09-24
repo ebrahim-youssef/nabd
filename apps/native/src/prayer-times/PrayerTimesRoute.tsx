@@ -30,10 +30,6 @@ type PrayerTimesRouteProps = {
   today?: () => Date
 }
 
-type HydratedState = {
-  methodId: CalculationMethodId
-}
-
 function formatPrayerTime(at: number): string {
   const date = new Date(at)
   return `${toArabicIndic(date.getHours())}:${toArabicIndic(date.getMinutes()).padStart(2, '٠')}`
@@ -59,9 +55,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
     isRefreshing,
     runAction,
   } = useLocationCapability()
-  const [state, setState] = useState<HydratedState>({
-    methodId: DEFAULT_METHOD_ID,
-  })
+  const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
 
   useEffect(() => {
     let active = true
@@ -69,7 +63,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
       .read(PREFERENCE_KEYS.calculationMethod)
       .then((method) => {
         if (!active) return
-        setState({ methodId: isCalculationMethodId(method) ? method : DEFAULT_METHOD_ID })
+        setMethodId(isCalculationMethodId(method) ? method : DEFAULT_METHOD_ID)
       })
       .catch((cause: unknown) => {
         logger.error('Native prayer time preferences load failed', cause)
@@ -82,10 +76,8 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
 
   const instant = now()
   const date = today ? today() : new Date(instant)
-  const times = coordinates ? computeDayTimes(coordinates, date, state.methodId) : null
-  const tomorrowTimes = coordinates
-    ? computeDayTimes(coordinates, nextDay(date), state.methodId)
-    : null
+  const times = coordinates ? computeDayTimes(coordinates, date, methodId) : null
+  const tomorrowTimes = coordinates ? computeDayTimes(coordinates, nextDay(date), methodId) : null
   const points = times
     ? [
         ...prayerPoints(times),
@@ -96,11 +88,10 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
     : []
   const timeline = timelineStatus(points, instant)
   const prayerStatus = statusLine(timeline)
-  const showLocationMessage =
-    city === null || locationStatus.state !== 'ready' || locationStatus.action !== null
+  const showLocationMessage = locationStatus.state !== 'ready'
 
   function changeMethod(methodId: CalculationMethodId) {
-    setState((previous) => ({ ...previous, methodId }))
+    setMethodId(methodId)
     void preferences.write(PREFERENCE_KEYS.calculationMethod, methodId, now())
   }
 
@@ -116,15 +107,15 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
             {CALCULATION_METHODS.map((method) => (
               <Pressable
                 accessibilityRole="radio"
-                accessibilityState={{ selected: method.id === state.methodId }}
-                className={`rounded-card border px-4 py-3 ${method.id === state.methodId ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
+                accessibilityState={{ selected: method.id === methodId }}
+                className={`rounded-card border px-4 py-3 ${method.id === methodId ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
                 key={method.id}
                 onPress={() => changeMethod(method.id)}
                 testID={`prayer-method-${method.id}`}
               >
                 <Text
                   className={
-                    method.id === state.methodId
+                    method.id === methodId
                       ? 'text-body text-on-primary'
                       : 'text-body text-foreground'
                   }
