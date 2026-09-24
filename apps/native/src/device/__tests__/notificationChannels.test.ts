@@ -27,10 +27,12 @@ describe('notification channels', () => {
     ['adhan', false, 'nabd-prayer-adhan-v1'],
     ['adhanFajr', false, 'nabd-prayer-fajr-v1'],
     ['iqamah', false, 'nabd-prayer-iqamah-v1'],
+    ['adhkarReminder', false, 'nabd-adhkar-reminder-v1'],
     ['before', true, 'nabd-prayer-before-alarm-v1'],
     ['adhan', true, 'nabd-prayer-adhan-alarm-v1'],
     ['adhanFajr', true, 'nabd-prayer-fajr-alarm-v1'],
     ['iqamah', true, 'nabd-prayer-iqamah-alarm-v1'],
+    ['adhkarReminder', true, 'nabd-adhkar-reminder-alarm-v1'],
   ] as const)('selects the %s channel in silentMode=%s', (kind, silentMode, expected) => {
     expect(channelFor(kind, silentMode)).toBe(expected)
   })
@@ -42,7 +44,7 @@ describe('notification channels', () => {
   it('creates every normal and alarm-usage channel with its immutable sound', async () => {
     await ensureChannels()
 
-    expect(mockedNotifications.setNotificationChannelAsync).toHaveBeenCalledTimes(8)
+    expect(mockedNotifications.setNotificationChannelAsync).toHaveBeenCalledTimes(10)
     const calls = mockedNotifications.setNotificationChannelAsync.mock.calls
     for (const [id, config] of calls) {
       const definition = Object.values(NOTIFICATION_CHANNELS).find((entry) =>
@@ -56,7 +58,7 @@ describe('notification channels', () => {
     }
 
     const alarmCalls = calls.filter(([id]) => id.endsWith('-alarm-v1'))
-    expect(alarmCalls).toHaveLength(4)
+    expect(alarmCalls).toHaveLength(5)
     expect(alarmCalls.every(([, config]) => config.audioAttributes?.usage === 4)).toBe(true)
   })
 })

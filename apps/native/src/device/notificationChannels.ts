@@ -1,10 +1,11 @@
+import { ALARM_CHANNELS } from '@nabd/shared'
+import type { AlarmPayload } from '@nabd/shared'
 import * as Notifications from 'expo-notifications'
 import type { NotificationChannelInput } from 'expo-notifications'
 
 import { logger } from '../observability/logger'
 
-export type NotificationMomentKind = 'before' | 'adhan' | 'adhanFajr' | 'iqamah'
-export type ChannelVariant = 'normal' | 'alarm'
+type NotificationMomentKind = AlarmPayload['channelKey']
 
 type ChannelDefinition = {
   id: string
@@ -14,35 +15,34 @@ type ChannelDefinition = {
   sound: string
 }
 
-export const NOTIFICATION_CHANNELS: Record<NotificationMomentKind, ChannelDefinition> = {
-  before: {
-    id: 'nabd-prayer-before-v1',
-    alarmId: 'nabd-prayer-before-alarm-v1',
-    name: 'اقتربت الصلاة',
-    alarmName: 'اقتربت الصلاة (منبّه)',
-    sound: 'before.mp3',
-  },
-  adhan: {
-    id: 'nabd-prayer-adhan-v1',
-    alarmId: 'nabd-prayer-adhan-alarm-v1',
-    name: 'الأذان',
-    alarmName: 'الأذان (منبّه)',
-    sound: 'adhan.mp3',
-  },
-  adhanFajr: {
-    id: 'nabd-prayer-fajr-v1',
-    alarmId: 'nabd-prayer-fajr-alarm-v1',
-    name: 'أذان الفجر',
-    alarmName: 'أذان الفجر (منبّه)',
-    sound: 'adhan_fajr.mp3',
-  },
-  iqamah: {
-    id: 'nabd-prayer-iqamah-v1',
-    alarmId: 'nabd-prayer-iqamah-alarm-v1',
-    name: 'الإقامة',
-    alarmName: 'الإقامة (منبّه)',
-    sound: 'iqama.mp3',
-  },
+const VERSIONED_CHANNEL_IDS: Record<NotificationMomentKind, string> = {
+  before: 'nabd-prayer-before-v1',
+  adhan: 'nabd-prayer-adhan-v1',
+  adhanFajr: 'nabd-prayer-fajr-v1',
+  iqamah: 'nabd-prayer-iqamah-v1',
+  adhkarReminder: 'nabd-adhkar-reminder-v1',
+}
+const ALARM_CHANNEL_SUFFIX = '-alarm-v1'
+const ALARM_CHANNEL_SUFFIX_LABEL = ' (منبّه)'
+
+function channelDefinition(momentKind: NotificationMomentKind): ChannelDefinition {
+  const shared = ALARM_CHANNELS[momentKind]
+  const id = VERSIONED_CHANNEL_IDS[momentKind]
+  return {
+    id,
+    alarmId: id.replace(/-v1$/, ALARM_CHANNEL_SUFFIX),
+    name: shared.name,
+    alarmName: `${shared.name}${ALARM_CHANNEL_SUFFIX_LABEL}`,
+    sound: shared.sound,
+  }
+}
+
+export const NOTIFICATION_CHANNELS: Record<AlarmPayload['channelKey'], ChannelDefinition> = {
+  before: channelDefinition('before'),
+  adhan: channelDefinition('adhan'),
+  adhanFajr: channelDefinition('adhanFajr'),
+  iqamah: channelDefinition('iqamah'),
+  adhkarReminder: channelDefinition('adhkarReminder'),
 }
 
 export const DEFAULT_CHANNEL_ID = NOTIFICATION_CHANNELS.adhan.id
