@@ -29,6 +29,49 @@ describe('useLiveRepositoryQuery', () => {
     expect(result.current.isLoading).toBe(false)
   })
 
+  it('clears cached data when a new read rejects', async () => {
+    const cause = new Error('new read failed')
+    const initialRead = jest.fn().mockResolvedValue('first')
+    const nextRead = jest.fn().mockRejectedValue(cause)
+    const { result, rerender } = renderHook(
+      ({ read }: { read: () => Promise<string> }) => useLiveRepositoryQuery(read),
+      { initialProps: { read: initialRead } },
+    )
+
+    await waitFor(() => expect(result.current.data).toBe('first'))
+    rerender({ read: nextRead })
+
+    await waitFor(() =>
+      expect(mockedLogger.error).toHaveBeenCalledWith('Native repository query failed', cause),
+    )
+    expect(result.current.data).toBeUndefined()
+    expect(result.current.isLoading).toBe(false)
+  })
+
+  it('reports loading until a new read resolves', async () => {
+    let resolveNext!: (value: string) => void
+    const initialRead = jest.fn().mockResolvedValue('first')
+    const nextRead = jest.fn().mockReturnValue(
+      new Promise<string>((resolve) => {
+        resolveNext = resolve
+      }),
+    )
+    const { result, rerender } = renderHook(
+      ({ read }: { read: () => Promise<string> }) => useLiveRepositoryQuery(read),
+      { initialProps: { read: initialRead } },
+    )
+
+    await waitFor(() => expect(result.current.data).toBe('first'))
+    rerender({ read: nextRead })
+    await waitFor(() => expect(nextRead).toHaveBeenCalledTimes(1))
+
+    expect(result.current.data).toBeUndefined()
+    expect(result.current.isLoading).toBe(true)
+    await act(async () => resolveNext('second'))
+    await waitFor(() => expect(result.current.data).toBe('second'))
+    expect(result.current.isLoading).toBe(false)
+  })
+
   it('re-reads the repository after refresh without hiding the current data', async () => {
     let resolveSecond!: (value: string) => void
     const read = jest

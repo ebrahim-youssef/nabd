@@ -11,7 +11,7 @@ export default function NotFoundRoute() {
 
   return (
     <ScreenContainer testID="not-found">
-      <Text accessibilityRole="header" className="text-title text-primary">
+      <Text accessibilityRole="header" className="font-display text-title text-primary">
         {shellCopy.notFound}
       </Text>
       <Text className="mt-4 text-body text-start text-muted-foreground">

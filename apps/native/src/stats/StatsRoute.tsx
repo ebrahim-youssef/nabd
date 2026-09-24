@@ -129,7 +129,7 @@ export function StatsRoute() {
               testID="stats-qada-link"
             >
               <View className="flex-row items-center justify-between gap-3">
-                <Text className="text-body text-primary">{QADA_COPY.pageTitle}</Text>
+                <Text className="font-display text-body text-primary">{QADA_COPY.pageTitle}</Text>
                 <Text className="text-body text-primary">{toArabicIndic(qadaTotal)}</Text>
               </View>
               <Text className="text-small text-muted-foreground">{QADA_COPY.statsDescription}</Text>
