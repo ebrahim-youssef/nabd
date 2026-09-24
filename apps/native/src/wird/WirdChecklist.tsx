@@ -1,9 +1,10 @@
 import { areaProgress, toArabicIndic, WIRD_COPY } from '@nabd/shared'
 import type { ChecklistAreaView, ChecklistItemView } from '@nabd/shared'
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { DhikrCounter } from '../counter/DhikrCounter'
+import { Text } from '../shell/Text'
 import { useToggleItem } from './useToggleItem'
 import { useWirdDay } from './WirdDayProvider'
 
@@ -20,7 +21,11 @@ export function WirdChecklist() {
   const { toggle, pendingItemIds, hasError } = useToggleItem(versionId, refresh)
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
 
-  if (isLoading) return <View className="h-40 w-full rounded-card bg-surface-2" />
+  if (isLoading && areas.length === 0) {
+    return (
+      <View className="h-40 w-full rounded-card bg-surface-2" testID="wird-checklist-loading" />
+    )
+  }
   if (!versionId || areas.length === 0) {
     return <Text className="text-body text-muted-foreground">{WIRD_COPY.empty}</Text>
   }
@@ -97,7 +102,7 @@ function AreaHeader({
       <View className="gap-2 py-1">
         <View className="flex-row items-center justify-between gap-3">
           <View className="min-w-0 flex-1 flex-row items-center gap-2">
-            <Text className="text-title text-primary">{area.label}</Text>
+            <Text className="font-display text-title text-primary">{area.label}</Text>
             <Text className="text-small text-muted-foreground">{isOpen ? '⌄' : '⌃'}</Text>
           </View>
           <Text

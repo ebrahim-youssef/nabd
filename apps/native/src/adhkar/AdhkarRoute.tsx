@@ -1,10 +1,11 @@
 import { ADHKAR_COPY, ADHKAR_LIBRARY, LIST_CATEGORIES } from '@nabd/shared'
 import type { AdhkarCategory } from '@nabd/shared'
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
+import { Text } from '../shell/Text'
 import { AdhkarList } from './AdhkarList'
 import { AdhkarFlow } from './AdhkarFlow'
 

@@ -14,10 +14,11 @@ import {
 import type { Coords, CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
+import { Text } from '../shell/Text'
 import { logger } from '../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 
@@ -129,7 +130,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
       <View className="gap-6">
         <PageHeader backHref="/" title={shellCopy.nav.prayerTimes} />
         <View className="gap-3" testID="prayer-methods">
-          <Text className="text-label text-start text-muted-foreground">
+          <Text className="font-display text-label text-start text-muted-foreground">
             {SETTINGS_COPY.prayerMethod.title}
           </Text>
           <View className="gap-2">

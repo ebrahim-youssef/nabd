@@ -1,7 +1,8 @@
 import { toArabicIndic } from '@nabd/shared'
 import type { DayId } from '@nabd/shared'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
+import { Text } from '../shell/Text'
 import { useDhikrCounter } from './useDhikrCounter'
 
 const CHECKMARK = '✓'
@@ -39,7 +40,7 @@ export function DhikrCounter({ day, itemId, label, target, done }: DhikrCounterP
           </View>
         ) : (
           <Text
-            className="shrink-0 rounded-chip bg-primary/10 px-2 py-1 text-small font-medium text-primary"
+            className="shrink-0 rounded-chip bg-primary/10 px-2 py-1 text-small font-body-medium text-primary"
             testID={`dhikr-count-${itemId}`}
           >
             {toArabicIndic(count)}/{toArabicIndic(target)}

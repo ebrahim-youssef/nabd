@@ -1,6 +1,6 @@
 import { ChevronLeft, HeartHandshake, Sparkles } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import {
   ADHKAR_COPY,
@@ -13,6 +13,7 @@ import {
 
 import { PageHeader } from './PageHeader'
 import { ScreenContainer } from './ScreenContainer'
+import { Text } from './Text'
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 
 const LIBRARY_ICON_SIZE = 28
@@ -55,7 +56,7 @@ export function LibrariesRoute() {
                 <Icon accessible={false} color={theme.hex.primary} size={LIBRARY_ICON_SIZE} />
               </View>
               <View className="min-w-0 flex-1 gap-1">
-                <Text className="text-title text-primary">{title}</Text>
+                <Text className="font-display text-title text-primary">{title}</Text>
                 <Text className="text-small text-muted-foreground">{description}</Text>
                 <Text className="text-label text-gold">{count}</Text>
               </View>

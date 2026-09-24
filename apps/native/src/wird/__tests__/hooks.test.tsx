@@ -132,5 +132,6 @@ describe('native wird hooks', () => {
     fireEvent.press(await screen.findByTestId('item'))
 
     await waitFor(() => expect(screen.getByTestId('error')).toBeTruthy())
+    expect(screen.getByText('not-done')).toBeTruthy()
   })
 })

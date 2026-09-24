@@ -28,6 +28,8 @@ describe('NativeWind registration guard', () => {
         ),
       ].map(([, component]) => component),
     )
+    // Typography wrappers use JSX aliases for the same registered primitives.
+    for (const alias of ['NativeText', 'NativeTextInput']) registeredComponents.add(alias)
     expect(registeredComponents.size).toBeGreaterThanOrEqual(12)
     for (const component of ['View', 'Text', 'TextInput']) {
       expect(registeredComponents).toContain(component)

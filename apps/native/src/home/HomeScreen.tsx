@@ -1,8 +1,9 @@
 import { WIRD_LEVELS, levelById, toDayId } from '@nabd/shared'
 import { useEffect, useState } from 'react'
-import { AppState, Text, View } from 'react-native'
+import { AppState, View } from 'react-native'
 
 import { ScreenContainer } from '../shell/ScreenContainer'
+import { Text } from '../shell/Text'
 import type { PersistedOnboarding } from '../onboarding/db'
 import { CompletionCelebration } from '../wird/CompletionCelebration'
 import { TodaySummary } from '../wird/TodaySummary'
@@ -26,7 +27,10 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
     <WirdDayProvider day={currentDay}>
       <ScreenContainer testID="home-shell">
         <View className="gap-6">
-          <Text accessibilityRole="header" className="text-title text-start text-primary">
+          <Text
+            accessibilityRole="header"
+            className="font-display text-title text-start text-primary"
+          >
             {level.title}
           </Text>
           <TodaySummary />

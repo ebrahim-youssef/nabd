@@ -1,11 +1,12 @@
 import { ChevronDown, ChevronUp } from 'lucide-react-native'
 import { useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { INTENTIONS_COPY, INTENTIONS_LIBRARY, toArabicIndic } from '@nabd/shared'
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
+import { Text } from '../shell/Text'
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 
 const DEED_GLYPH = '۞'
@@ -82,7 +83,7 @@ export function IntentionsRoute() {
                         </View>
                         {intention.evidence && (
                           <Text
-                            className="ms-6 text-small text-muted-foreground"
+                            className="ms-6 font-scripture text-small text-muted-foreground"
                             testID={`deed-evidence-${entry.id}-${intentionIndex}`}
                           >
                             {intention.evidence}

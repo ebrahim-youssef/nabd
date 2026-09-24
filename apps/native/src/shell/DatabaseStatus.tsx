@@ -1,8 +1,9 @@
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { shellCopy } from '@nabd/shared'
 
 import { NATIVE_SHELL_COPY } from './constants'
+import { Text } from './Text'
 
 export function DatabaseLoading() {
   return (
@@ -31,7 +32,7 @@ export function DatabaseError({ onRetry }: { onRetry: () => void }) {
         className="rounded-button bg-primary px-5 py-4"
         onPress={onRetry}
       >
-        <Text className="text-body text-center font-medium text-primary-foreground">
+        <Text className="text-body text-center font-body-medium text-primary-foreground">
           {shellCopy.retry}
         </Text>
       </Pressable>

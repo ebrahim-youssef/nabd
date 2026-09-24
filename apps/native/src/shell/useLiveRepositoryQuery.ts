@@ -13,10 +13,11 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
   const [data, setData] = useState<T>()
   const [isLoading, setIsLoading] = useState(true)
   const [refreshToken, setRefreshToken] = useState(0)
+  const dataRef = useRef<T | undefined>(undefined)
   const hasFocused = useRef(false)
 
   const refresh = useCallback(() => {
-    setIsLoading(true)
+    if (dataRef.current === undefined) setIsLoading(true)
     setRefreshToken((current) => current + 1)
   }, [])
 
@@ -37,13 +38,14 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
       .then(read)
       .then((nextData) => {
         if (!active) return
+        dataRef.current = nextData
         setData(nextData)
         setIsLoading(false)
       })
       .catch((cause: unknown) => {
         logger.error('Native repository query failed', cause)
         if (!active) return
-        setData(undefined)
+        if (dataRef.current === undefined) setData(undefined)
         setIsLoading(false)
       })
 

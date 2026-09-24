@@ -8,10 +8,11 @@ import {
   toArabicIndic,
 } from '@nabd/shared'
 import { useRouter } from 'expo-router'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
+import { Text } from '../shell/Text'
 import { CHART_WINDOW_DAYS, STATS_WINDOW_DAYS, useStats } from './useStats'
 
 const PERCENT = 100
@@ -44,13 +45,18 @@ export function StatsRoute() {
               testID="stats-streak-card"
             >
               <Text className="text-body text-muted-foreground">{STATS_COPY.streakSuffix}</Text>
-              <Text className="text-display text-primary" testID="stats-current-streak">
+              <Text
+                className="font-display text-display text-primary"
+                testID="stats-current-streak"
+              >
                 {toArabicIndic(current)}
               </Text>
               <Text className="text-small text-muted-foreground">{STATS_COPY.streakPrompt}</Text>
             </View>
             <View className="gap-3" testID="stats-week-chart">
-              <Text className="text-title text-primary">{STATS_COPY.completionTile}</Text>
+              <Text className="font-display text-title text-primary">
+                {STATS_COPY.completionTile}
+              </Text>
               <View className="h-32 flex-row items-end justify-between gap-1 rounded-card border border-border bg-surface p-3">
                 {chartDays.map((day) => {
                   const completion = data.completions.find((entry) => entry.day === day)
@@ -75,19 +81,19 @@ export function StatsRoute() {
             <View className="gap-3" testID="stats-summary-card">
               <View className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
                 <Text className="text-body text-foreground">{STATS_COPY.completionTile}</Text>
-                <Text className="text-title text-primary" testID="stats-summary">
+                <Text className="font-display text-title text-primary" testID="stats-summary">
                   {formatCompletion(data.summary.done, data.summary.total)}
                 </Text>
               </View>
               <View className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
                 <Text className="text-body text-foreground">{STATS_COPY.bestStreakTile}</Text>
-                <Text className="text-title text-primary" testID="stats-best-streak">
+                <Text className="font-display text-title text-primary" testID="stats-best-streak">
                   {toArabicIndic(best)}
                 </Text>
               </View>
             </View>
             <View className="gap-3" testID="stats-today-areas">
-              <Text className="text-title text-primary">{STATS_COPY.todayDetail}</Text>
+              <Text className="font-display text-title text-primary">{STATS_COPY.todayDetail}</Text>
               {data.todayAreas.map((area) => (
                 <View
                   className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4"
@@ -102,7 +108,7 @@ export function StatsRoute() {
               ))}
             </View>
             <View className="gap-3" testID="stats-items">
-              <Text className="text-title text-primary">{STATS_COPY.itemStats}</Text>
+              <Text className="font-display text-title text-primary">{STATS_COPY.itemStats}</Text>
               {data.itemStats.map((item) => (
                 <View
                   className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4"

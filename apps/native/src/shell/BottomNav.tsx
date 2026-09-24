@@ -1,12 +1,13 @@
 import type { LucideIcon } from 'lucide-react-native'
 import { usePathname, useRouter } from 'expo-router'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { shellCopy } from '@nabd/shared'
 
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { isNavMatch } from './navMatch'
+import { Text } from './Text'
 
 type NativeIcons = {
   BarChart3: LucideIcon

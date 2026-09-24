@@ -1,6 +1,8 @@
 import { shellCopy } from '@nabd/shared'
 import { useRouter } from 'expo-router'
-import { Pressable, Text } from 'react-native'
+import { Pressable } from 'react-native'
+
+import { Text } from '../src/shell/Text'
 
 import { ScreenContainer } from '../src/shell/ScreenContainer'
 
@@ -22,7 +24,7 @@ export default function NotFoundRoute() {
         onPress={() => router.replace('/')}
         testID="not-found-home"
       >
-        <Text className="text-body text-center font-medium text-on-primary">
+        <Text className="text-body text-center font-body-medium text-on-primary">
           {shellCopy.returnHome}
         </Text>
       </Pressable>
