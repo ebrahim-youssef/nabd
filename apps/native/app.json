@@ -11,6 +11,12 @@
     "plugins": [
       "expo-router",
       [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "يسمح لتطبيق نبض بالوصول إلى موقعك الحالي أثناء استخدام التطبيق."
+        }
+      ],
+      [
         "expo-font",
         {
           "fonts": [
