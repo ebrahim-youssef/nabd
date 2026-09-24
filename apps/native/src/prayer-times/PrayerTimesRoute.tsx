@@ -11,16 +11,17 @@ import {
   timelineStatus,
   toArabicIndic,
 } from '@nabd/shared'
-import type { Coords, CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/shared'
+import type { CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
 import { logger } from '../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
+import { useLocationCapability } from '../device/useLocationCapability'
 
 const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 
@@ -31,27 +32,6 @@ type PrayerTimesRouteProps = {
 
 type HydratedState = {
   methodId: CalculationMethodId
-  coords: Coords | null
-}
-
-function parseCoords(latitude: string | null, longitude: string | null): Coords | null {
-  if (
-    latitude === null ||
-    longitude === null ||
-    latitude.trim() === '' ||
-    longitude.trim() === ''
-  ) {
-    return null
-  }
-  const parsed = { latitude: Number(latitude), longitude: Number(longitude) }
-  return Number.isFinite(parsed.latitude) &&
-    Number.isFinite(parsed.longitude) &&
-    parsed.latitude >= -90 &&
-    parsed.latitude <= 90 &&
-    parsed.longitude >= -180 &&
-    parsed.longitude <= 180
-    ? parsed
-    : null
 }
 
 function formatPrayerTime(at: number): string {
@@ -72,30 +52,27 @@ function nextDay(date: Date): Date {
 export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProps = {}) {
   const database = useSQLiteContext()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
-  const [hydrated, setHydrated] = useState(false)
+  const {
+    status: locationStatus,
+    coordinates,
+    city,
+    isRefreshing,
+    runAction,
+  } = useLocationCapability()
   const [state, setState] = useState<HydratedState>({
     methodId: DEFAULT_METHOD_ID,
-    coords: null,
   })
 
   useEffect(() => {
     let active = true
-    void Promise.all([
-      preferences.read(PREFERENCE_KEYS.calculationMethod),
-      preferences.read(PREFERENCE_KEYS.latitude),
-      preferences.read(PREFERENCE_KEYS.longitude),
-    ])
-      .then(([method, latitude, longitude]) => {
+    void preferences
+      .read(PREFERENCE_KEYS.calculationMethod)
+      .then((method) => {
         if (!active) return
-        setState({
-          methodId: isCalculationMethodId(method) ? method : DEFAULT_METHOD_ID,
-          coords: parseCoords(latitude, longitude),
-        })
-        setHydrated(true)
+        setState({ methodId: isCalculationMethodId(method) ? method : DEFAULT_METHOD_ID })
       })
       .catch((cause: unknown) => {
         logger.error('Native prayer time preferences load failed', cause)
-        if (active) setHydrated(true)
       })
 
     return () => {
@@ -105,9 +82,9 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
 
   const instant = now()
   const date = today ? today() : new Date(instant)
-  const times = state.coords ? computeDayTimes(state.coords, date, state.methodId) : null
-  const tomorrowTimes = state.coords
-    ? computeDayTimes(state.coords, nextDay(date), state.methodId)
+  const times = coordinates ? computeDayTimes(coordinates, date, state.methodId) : null
+  const tomorrowTimes = coordinates
+    ? computeDayTimes(coordinates, nextDay(date), state.methodId)
     : null
   const points = times
     ? [
@@ -118,7 +95,9 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
       ]
     : []
   const timeline = timelineStatus(points, instant)
-  const status = statusLine(timeline)
+  const prayerStatus = statusLine(timeline)
+  const showLocationMessage =
+    city === null || locationStatus.state !== 'ready' || locationStatus.action !== null
 
   function changeMethod(methodId: CalculationMethodId) {
     setState((previous) => ({ ...previous, methodId }))
@@ -156,20 +135,50 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
             ))}
           </View>
         </View>
-        {hydrated && !state.coords ? (
-          <View
-            className="gap-2 rounded-card border border-border bg-surface p-4"
-            testID="prayer-times-no-location"
-          >
-            <Text className="text-body text-start text-foreground">
-              {PRAYER_TIMES_COPY.enableLocation}
-            </Text>
+        <View
+          className="gap-3 rounded-card border border-border bg-surface p-4 shadow-card-sm"
+          testID="prayer-times-location-card"
+        >
+          <View className="flex-row items-center gap-2">
+            {city !== null ? (
+              <Text
+                className="flex-1 text-body text-start font-body-medium text-foreground"
+                testID="prayer-times-location-city"
+              >
+                {city}
+              </Text>
+            ) : null}
+            {isRefreshing ? (
+              <ActivityIndicator size="small" testID="prayer-times-location-refreshing" />
+            ) : null}
           </View>
-        ) : null}
-        {hydrated && times ? (
+          {showLocationMessage ? (
+            <Text
+              className="text-small text-start text-muted-foreground"
+              testID="prayer-times-location-message"
+            >
+              {locationStatus.message}
+            </Text>
+          ) : null}
+          {locationStatus.action ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isRefreshing }}
+              className={`rounded-button border border-primary bg-primary/10 px-4 py-3 ${isRefreshing ? 'opacity-50' : ''}`}
+              disabled={isRefreshing}
+              onPress={() => void runAction()}
+              testID="prayer-times-location-action"
+            >
+              <Text className="text-body text-center font-body-medium text-primary">
+                {locationStatus.action.label}
+              </Text>
+            </Pressable>
+          ) : null}
+        </View>
+        {times ? (
           <View className="gap-3" testID="prayer-times-table">
             <Text className="text-body text-start text-primary" testID="prayer-status">
-              {status ?? ''}
+              {prayerStatus ?? ''}
             </Text>
             <View className="gap-2">
               {points.map((point) => (
