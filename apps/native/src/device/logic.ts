@@ -8,7 +8,6 @@ import type {
 
 export { deviceCopy }
 export type {
-  CityCacheState,
   ConnectivityState,
   CoordinateCacheState,
   GpsState,
@@ -32,12 +31,6 @@ const cacheStatus = (message: string, retry: boolean): LocationStatus => ({
   state: 'offline-cache',
   message,
   action: retry ? action('retry-location') : null,
-})
-
-const cityRequired = (): LocationStatus => ({
-  state: 'city-required',
-  message: deviceCopy.location.cityRequired,
-  action: action('retry-location'),
 })
 
 const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus => {
@@ -90,9 +83,6 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
   }
 
   if (fix === 'timeout' || fix === 'error') {
-    if (location.cityCache === 'missing') {
-      return cityRequired()
-    }
     return cacheStatus(
       fix === 'timeout' ? deviceCopy.location.timeoutCache : deviceCopy.location.unavailable,
       true,
@@ -105,10 +95,6 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
       message: deviceCopy.location.stale,
       action: action('retry-location'),
     }
-  }
-
-  if (location.cityCache === 'missing') {
-    return cityRequired()
   }
 
   if (location.connectivity === 'online') {

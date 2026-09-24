@@ -57,7 +57,6 @@ function makeLocationView(overrides: Partial<LocationCapabilityView> = {}): Loca
   return {
     status: readyStatus,
     coordinates: { latitude: 30.0444, longitude: 31.2357 },
-    city: 'القاهرة',
     isRefreshing: false,
     refresh: jest.fn(async () => undefined),
     runAction: jest.fn(async () => undefined),
@@ -95,7 +94,6 @@ describe('PrayerTimesRoute', () => {
       true,
     )
     expect(screen.getByTestId('prayer-times-location-card')).toBeTruthy()
-    expect(screen.getByTestId('prayer-times-location-city')).toHaveTextContent('القاهرة')
     expect(screen.queryByTestId('prayer-times-location-message')).toBeNull()
     expect(screen.queryByTestId('prayer-times-location-action')).toBeNull()
   })
@@ -139,7 +137,7 @@ describe('PrayerTimesRoute', () => {
   it('falls back safely when preferences are missing or invalid', async () => {
     readPreference.mockResolvedValue(null)
     mockedUseLocationCapability.mockReturnValue(
-      makeLocationView({ coordinates: null, city: null, status: retryStatus }),
+      makeLocationView({ coordinates: null, status: retryStatus }),
     )
     const { unmount } = render(<PrayerTimesRoute />)
 
@@ -174,7 +172,6 @@ describe('PrayerTimesRoute', () => {
     mockedUseLocationCapability.mockReturnValue(
       makeLocationView({
         coordinates: null,
-        city: null,
         status: retryStatus,
         runAction,
       }),
@@ -204,7 +201,7 @@ describe('PrayerTimesRoute', () => {
 
   it('shows the open-settings action for blocked location permission', async () => {
     mockedUseLocationCapability.mockReturnValue(
-      makeLocationView({ coordinates: null, city: null, status: blockedStatus }),
+      makeLocationView({ coordinates: null, status: blockedStatus }),
     )
 
     render(<PrayerTimesRoute />)
