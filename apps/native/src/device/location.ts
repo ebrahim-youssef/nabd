@@ -84,7 +84,7 @@ export async function getFix(timeoutMs = LOCATION_FIX_TIMEOUT_MS): Promise<Locat
   }
 }
 
-function androidPackage(): string {
+export function androidPackage(): string {
   const packageName = Constants.expoConfig?.android?.package
   return typeof packageName === 'string' && packageName.trim() !== ''
     ? packageName
