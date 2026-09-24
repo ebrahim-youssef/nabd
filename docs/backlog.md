@@ -219,6 +219,7 @@ Strict behavior and design parity applies throughout; redesign is out of scope.
 | NBD-92 | ⬜ todo | [#201](https://github.com/ebrahim-youssef/nabd/issues/201) | EAS build and Play release path | `master` produces a signed AAB and APK through EAS from a custodied upload key, the Play listing with its permission declarations is submitted, and section F option 2 is delivered: Android application backup enabled, a restore verified, and its inclusion and exclusion rules stated |
 | NBD-94 | ✅ done | [#221](https://github.com/ebrahim-youssef/nabd/issues/221) | Native app opens on a router error | The release bundle resolves `apps/native/app` as the Expo Router root, shows the root navigator before SQLite is ready, and exposes a retryable Arabic migration error |
 | NBD-95 | ✅ done | [#222](https://github.com/ebrahim-youssef/nabd/issues/222) | Native theme hand-written, classic only, light, dark and follow phone | Native theme behavior is hand-written and supports classic, light, dark, and follow-phone modes |
+| NBD-96 | ✅ done | [#225](https://github.com/ebrahim-youssef/nabd/issues/225) | Native bundled fonts and no wird list flash | Tajawal, Aref Ruqaa and Amiri ship with the app so labels are not clipped on Xiaomi; ticking a wird item updates the list in place |
 
 ## Later (out of scope for MVP)
 
