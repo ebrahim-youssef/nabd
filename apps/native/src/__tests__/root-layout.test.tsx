@@ -17,6 +17,12 @@ const mockSQLiteState = {
   openCalls: 0,
 }
 
+const mockNativeWindState = {
+  colorScheme: 'light' as 'light' | 'dark',
+}
+
+const mockStatusBar = jest.fn(() => null)
+
 jest.mock('expo', () => {
   const actual = jest.requireActual('expo')
 
@@ -87,7 +93,14 @@ jest.mock('lucide-react-native', () => {
 })
 
 jest.mock('nativewind', () => ({
-  useColorScheme: () => ({ setColorScheme: jest.fn() }),
+  useColorScheme: () => ({
+    colorScheme: mockNativeWindState.colorScheme,
+    setColorScheme: jest.fn(),
+  }),
+}))
+
+jest.mock('expo-status-bar', () => ({
+  StatusBar: mockStatusBar,
 }))
 
 function resetDatabaseMock() {
@@ -101,6 +114,8 @@ async function resolveDatabase() {
 
 beforeEach(() => {
   Object.assign(globalThis, { __DEV__: false })
+  mockNativeWindState.colorScheme = 'light'
+  mockStatusBar.mockClear()
   resetDatabaseMock()
   jest.spyOn(console, 'error').mockImplementation(() => undefined)
 })
@@ -111,6 +126,19 @@ afterEach(() => {
 })
 
 describe('native root layout', () => {
+  it.each([
+    ['dark', 'light'],
+    ['light', 'dark'],
+  ] as const)('maps the %s NativeWind scheme to %s status bar icons', async (colorScheme, style) => {
+    mockNativeWindState.colorScheme = colorScheme
+
+    renderRouter('./app')
+
+    await waitFor(() => {
+      expect(mockStatusBar).toHaveBeenLastCalledWith(expect.objectContaining({ style }), undefined)
+    })
+  })
+
   it('keeps the root navigator visible while tabs wait for SQLite, then renders home', async () => {
     const router = renderRouter('./app')
 
