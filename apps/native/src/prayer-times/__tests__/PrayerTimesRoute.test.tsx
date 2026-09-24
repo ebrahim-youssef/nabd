@@ -1,21 +1,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
-import { computeDayTimes, PRAYER_LABELS, PRAYER_TIMES_COPY } from '@nabd/shared'
+import { computeDayTimes, PRAYER_LABELS } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import PrayerTimesRoute from '../../../app/(tabs)/prayer-times'
+import { deviceCopy } from '../../device/copy'
+import { useLocationCapability } from '../../device/useLocationCapability'
+import type { LocationCapabilityView } from '../../device/useLocationCapability'
+import type { LocationStatus } from '../../device/types'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null }))
-jest.mock(
-  'expo-location',
-  () => ({
-    requestForegroundPermissionsAsync: jest.fn(),
-    getCurrentPositionAsync: jest.fn(),
-  }),
-  { virtual: true },
-)
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: {
     calculationMethod: 'nabd:prayer-calculation-method',
@@ -24,13 +20,60 @@ jest.mock('../../preferences/db', () => ({
   },
   createPreferencesRepository: jest.fn(),
 }))
+jest.mock('../../device/useLocationCapability', () => ({
+  useLocationCapability: jest.fn(),
+}))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedCreatePreferencesRepository = createPreferencesRepository as jest.MockedFunction<
   typeof createPreferencesRepository
 >
+const mockedUseLocationCapability = useLocationCapability as jest.MockedFunction<
+  typeof useLocationCapability
+>
 const readPreference = jest.fn()
 const writePreference = jest.fn()
+
+const readyStatus: LocationStatus = {
+  capability: 'location',
+  state: 'ready',
+  source: 'fresh',
+  city: 'available',
+  message: deviceCopy.location.ready,
+  action: null,
+}
+const retryStatus: LocationStatus = {
+  capability: 'location',
+  state: 'unavailable',
+  message: deviceCopy.location.unavailable,
+  action: { type: 'retry-location', label: deviceCopy.actions.retryLocation },
+}
+const blockedStatus: LocationStatus = {
+  capability: 'location',
+  state: 'settings-required',
+  message: deviceCopy.location.settingsRequired,
+  action: { type: 'open-app-settings', label: deviceCopy.actions.openAppSettings },
+}
+const refreshingStatus: LocationStatus = {
+  capability: 'location',
+  state: 'offline-cache',
+  source: 'cache',
+  city: 'available',
+  message: deviceCopy.location.offlineCache,
+  action: { type: 'retry-location', label: deviceCopy.actions.retryLocation },
+}
+
+function makeLocationView(overrides: Partial<LocationCapabilityView> = {}): LocationCapabilityView {
+  return {
+    status: readyStatus,
+    coordinates: { latitude: 30.0444, longitude: 31.2357 },
+    city: 'القاهرة',
+    isRefreshing: false,
+    refresh: jest.fn(async () => undefined),
+    runAction: jest.fn(async () => undefined),
+    ...overrides,
+  }
+}
 
 describe('PrayerTimesRoute', () => {
   beforeEach(() => {
@@ -43,14 +86,8 @@ describe('PrayerTimesRoute', () => {
       write: writePreference,
       clear: jest.fn(),
     })
-    readPreference.mockImplementation(async (key: string) => {
-      const values: Record<string, string> = {
-        [PREFERENCE_KEYS.calculationMethod]: 'umm_al_qura',
-        [PREFERENCE_KEYS.latitude]: '30.0444',
-        [PREFERENCE_KEYS.longitude]: '31.2357',
-      }
-      return values[key] ?? null
-    })
+    mockedUseLocationCapability.mockReturnValue(makeLocationView())
+    readPreference.mockResolvedValue('umm_al_qura')
   })
 
   afterEach(() => {
@@ -97,10 +134,7 @@ describe('PrayerTimesRoute', () => {
     )
 
     unmount()
-    readPreference.mockImplementation(async (key: string) => {
-      if (key === PREFERENCE_KEYS.calculationMethod) return 'egyptian'
-      return key === PREFERENCE_KEYS.latitude ? '30.0444' : '31.2357'
-    })
+    readPreference.mockResolvedValue('egyptian')
     render(<PrayerTimesRoute />)
     await waitFor(() =>
       expect(screen.getByTestId('prayer-method-egyptian').props.accessibilityState.selected).toBe(
@@ -111,33 +145,145 @@ describe('PrayerTimesRoute', () => {
 
   it('falls back safely when preferences are missing or invalid', async () => {
     readPreference.mockResolvedValue(null)
-    const { unmount } = render(<PrayerTimesRoute />)
-    await waitFor(() => expect(screen.getByTestId('prayer-times-no-location')).toBeTruthy())
-    expect(screen.getByText(PRAYER_TIMES_COPY.enableLocation)).toBeTruthy()
-    expect(screen.getByTestId('prayer-method-egyptian').props.accessibilityState.selected).toBe(
-      true,
+    mockedUseLocationCapability.mockReturnValue(
+      makeLocationView({ coordinates: null, city: null, status: retryStatus }),
     )
+    const { unmount } = render(<PrayerTimesRoute />)
+
+    await waitFor(() =>
+      expect(screen.getByTestId('prayer-method-egyptian').props.accessibilityState.selected).toBe(
+        true,
+      ),
+    )
+    expect(screen.getByTestId('prayer-times-location-card')).toBeTruthy()
+    expect(screen.getByTestId('prayer-times-location-message')).toHaveTextContent(
+      deviceCopy.location.unavailable,
+    )
+    expect(screen.getByTestId('prayer-times-location-action')).toHaveTextContent(
+      deviceCopy.actions.retryLocation,
+    )
+    expect(screen.queryByTestId('prayer-times-table')).toBeNull()
 
     unmount()
-    readPreference.mockImplementation(async (key: string) => {
-      if (key === PREFERENCE_KEYS.calculationMethod) return 'invalid-method'
-      return key === PREFERENCE_KEYS.latitude ? 'not-a-number' : '31.2357'
-    })
+    readPreference.mockResolvedValue('invalid-method')
     render(<PrayerTimesRoute />)
-    await waitFor(() => expect(screen.getByTestId('prayer-times-no-location')).toBeTruthy())
-    expect(screen.getByTestId('prayer-method-egyptian').props.accessibilityState.selected).toBe(
-      true,
+    await waitFor(() =>
+      expect(screen.getByTestId('prayer-method-egyptian').props.accessibilityState.selected).toBe(
+        true,
+      ),
     )
+    expect(screen.getByTestId('prayer-times-location-card')).toBeTruthy()
     expect(screen.queryByTestId('prayer-times-table')).toBeNull()
   })
 
-  it('does not request platform location services', async () => {
-    render(<PrayerTimesRoute />)
-    await waitFor(() => expect(screen.getByTestId('prayer-times-table')).toBeTruthy())
+  it('shows the retry action without coordinates and runs it', async () => {
+    const runAction = jest.fn(async () => undefined)
+    mockedUseLocationCapability.mockReturnValue(
+      makeLocationView({
+        coordinates: null,
+        city: null,
+        status: retryStatus,
+        runAction,
+      }),
+    )
 
-    const location = jest.requireMock('expo-location') as {
-      requestForegroundPermissionsAsync: jest.Mock
-    }
-    expect(location.requestForegroundPermissionsAsync).not.toHaveBeenCalled()
+    render(<PrayerTimesRoute />)
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('prayer-method-umm_al_qura').props.accessibilityState.selected,
+      ).toBe(true),
+    )
+
+    expect(screen.getByTestId('prayer-times-location-card')).toBeTruthy()
+    expect(screen.getByTestId('prayer-times-location-message')).toHaveTextContent(
+      deviceCopy.location.unavailable,
+    )
+    expect(screen.getByTestId('prayer-times-location-action')).toHaveTextContent(
+      deviceCopy.actions.retryLocation,
+    )
+
+    fireEvent.press(screen.getByTestId('prayer-times-location-action'))
+
+    expect(runAction).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('prayer-times-table')).toBeNull()
+  })
+
+  it('shows the open-settings action for blocked location permission', async () => {
+    mockedUseLocationCapability.mockReturnValue(
+      makeLocationView({ coordinates: null, city: null, status: blockedStatus }),
+    )
+
+    render(<PrayerTimesRoute />)
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('prayer-method-umm_al_qura').props.accessibilityState.selected,
+      ).toBe(true),
+    )
+
+    expect(screen.getByTestId('prayer-times-location-message')).toHaveTextContent(
+      deviceCopy.location.settingsRequired,
+    )
+    expect(screen.getByTestId('prayer-times-location-action')).toHaveTextContent(
+      deviceCopy.actions.openAppSettings,
+    )
+  })
+
+  it('keeps cached prayer rows visible while location refreshes and disables the action', async () => {
+    const runAction = jest.fn(async () => undefined)
+    mockedUseLocationCapability.mockReturnValue(
+      makeLocationView({
+        status: refreshingStatus,
+        isRefreshing: true,
+        runAction,
+      }),
+    )
+
+    render(<PrayerTimesRoute />)
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('prayer-method-umm_al_qura').props.accessibilityState.selected,
+      ).toBe(true),
+    )
+
+    expect(screen.getByTestId('prayer-times-table')).toBeTruthy()
+    expect(screen.getByTestId('prayer-times-location-refreshing')).toBeTruthy()
+    expect(
+      screen.getByTestId('prayer-times-location-action').props.accessibilityState.disabled,
+    ).toBe(true)
+
+    fireEvent.press(screen.getByTestId('prayer-times-location-action'))
+
+    expect(runAction).not.toHaveBeenCalled()
+  })
+
+  it('shows only the known city in the ready location card', async () => {
+    render(<PrayerTimesRoute />)
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('prayer-method-umm_al_qura').props.accessibilityState.selected,
+      ).toBe(true),
+    )
+
+    expect(screen.getByTestId('prayer-times-location-card')).toBeTruthy()
+    expect(screen.getByTestId('prayer-times-location-city')).toHaveTextContent('القاهرة')
+    expect(screen.queryByTestId('prayer-times-location-message')).toBeNull()
+    expect(screen.queryByTestId('prayer-times-location-action')).toBeNull()
+  })
+
+  it('does not run a location action on render', async () => {
+    const runAction = jest.fn(async () => undefined)
+    mockedUseLocationCapability.mockReturnValue(
+      makeLocationView({
+        coordinates: null,
+        city: null,
+        status: retryStatus,
+        runAction,
+      }),
+    )
+
+    render(<PrayerTimesRoute />)
+    await waitFor(() => expect(screen.getByTestId('prayer-times-location-action')).toBeTruthy())
+
+    expect(runAction).not.toHaveBeenCalled()
   })
 })
