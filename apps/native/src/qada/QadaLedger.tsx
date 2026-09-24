@@ -1,8 +1,10 @@
 import { QADA_COPY, QADA_PRAYERS, daysFromPeriod } from '@nabd/shared'
 import { Check, Plus } from 'lucide-react-native'
 import { useState } from 'react'
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
+import { Modal, Pressable, ScrollView, View } from 'react-native'
 
+import { Text } from '../shell/Text'
+import { TextInput } from '../shell/TextInput'
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { useQada } from './useQada'
 
@@ -120,7 +122,7 @@ export function QadaLedger() {
           >
             <ScrollView className="flex-grow-0" contentContainerClassName="gap-4">
               <View className="mx-auto mb-3 h-1 w-10 rounded-chip bg-border" />
-              <Text className="text-title text-primary">{QADA_COPY.modalTitle}</Text>
+              <Text className="font-display text-title text-primary">{QADA_COPY.modalTitle}</Text>
               <Text className="text-small text-muted-foreground">{QADA_COPY.modalNote}</Text>
               <View className="flex-row gap-3">
                 {PERIOD_FIELDS.map(({ key, label, testID }) => (

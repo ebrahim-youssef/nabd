@@ -1,8 +1,9 @@
 import { summarizeChecklist, toArabicIndic, WIRD_COPY } from '@nabd/shared'
 import { Circle, Svg } from 'react-native-svg'
-import { Text, View } from 'react-native'
+import { View } from 'react-native'
 import { useMemo } from 'react'
 
+import { Text } from '../shell/Text'
 import { useWirdDay } from './WirdDayProvider'
 import { useThemeTokens } from '../../theme/palette'
 const RING_RADIUS = 42
@@ -24,7 +25,8 @@ export function TodaySummary() {
   const theme = useThemeTokens()
   const summary = useMemo(() => summarizeChecklist(areas), [areas])
 
-  if (isLoading) return <View className="h-28 w-full rounded-card bg-surface-2" />
+  if (isLoading && areas.length === 0)
+    return <View className="h-28 w-full rounded-card bg-surface-2" />
 
   const { total, done, remaining, voluntary } = summary
   if (total === 0 && voluntary.total === 0) return null
@@ -68,7 +70,7 @@ export function TodaySummary() {
           />
         </Svg>
         <View className="absolute inset-0 items-center justify-center">
-          <Text className="text-title text-on-primary">
+          <Text className="font-display text-title text-on-primary">
             <Text testID={SUMMARY_DONE_TEST_ID}>{toArabicIndic(done)}</Text>
             {COUNT_SEPARATOR}
             <Text testID={SUMMARY_TOTAL_TEST_ID}>{toArabicIndic(total)}</Text>
@@ -76,7 +78,7 @@ export function TodaySummary() {
         </View>
       </View>
       <View className="min-w-0 flex-1 gap-1">
-        <Text className="text-title font-medium text-on-primary">{WIRD_COPY.todayTitle}</Text>
+        <Text className="font-display text-title text-on-primary">{WIRD_COPY.todayTitle}</Text>
         <Text className="text-small text-on-primary">
           {WIRD_COPY.remainingPrefix}{' '}
           <Text testID={SUMMARY_REMAINING_TEST_ID}>{toArabicIndic(remaining)}</Text>{' '}

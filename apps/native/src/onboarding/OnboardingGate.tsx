@@ -11,8 +11,9 @@ import {
 } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useRef, useState } from 'react'
-import { ActivityIndicator, Pressable, Text, View } from 'react-native'
+import { ActivityIndicator, Pressable, View } from 'react-native'
 
+import { Text } from '../shell/Text'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { HomeScreen } from '../home/HomeScreen'
 import { logger } from '../observability/logger'
@@ -45,7 +46,9 @@ function Button({ label, onPress, disabled = false, testID }: ButtonProps) {
       onPress={onPress}
       testID={testID}
     >
-      <Text className="text-body text-center font-medium text-primary-foreground">{label}</Text>
+      <Text className="text-body text-center font-body-medium text-primary-foreground">
+        {label}
+      </Text>
     </Pressable>
   )
 }
@@ -108,7 +111,10 @@ export function OnboardingGate({ now }: { now: () => Date }) {
   if (screen === 'welcome') {
     return (
       <ScreenContainer testID="onboarding-welcome">
-        <Text accessibilityRole="header" className="text-title text-start text-primary">
+        <Text
+          accessibilityRole="header"
+          className="font-display text-title text-start text-primary"
+        >
           {SHARED_COPY.title}
         </Text>
         <Text className="text-body mt-4 text-start text-muted-foreground">
@@ -140,14 +146,17 @@ export function OnboardingGate({ now }: { now: () => Date }) {
     const answered = isComplete(QUESTIONS, answers)
     return (
       <ScreenContainer testID="onboarding-questionnaire">
-        <Text accessibilityRole="header" className="text-title text-start text-primary">
+        <Text
+          accessibilityRole="header"
+          className="font-display text-title text-start text-primary"
+        >
           {SHARED_COPY.title}
         </Text>
         <Text className="text-body mt-2 text-start text-muted-foreground">{SHARED_COPY.intro}</Text>
         <View className="mt-6 gap-6">
           {QUESTIONS.map((question) => (
             <View accessibilityRole="radiogroup" key={question.id}>
-              <Text className="text-body mb-2 text-start font-medium text-foreground">
+              <Text className="text-body mb-2 text-start font-body-medium text-foreground">
                 {question.prompt}
               </Text>
               <View className="gap-2">
@@ -217,7 +226,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
 
   return (
     <ScreenContainer testID="onboarding-level">
-      <Text accessibilityRole="header" className="text-title text-start text-primary">
+      <Text accessibilityRole="header" className="font-display text-title text-start text-primary">
         {SHARED_COPY.recommendationTitle}
       </Text>
       <Text className="text-body mt-2 text-start text-muted-foreground">
@@ -240,7 +249,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
               onPress={() => setSelectedLevelId(level.id)}
               testID={`level-${level.id}`}
             >
-              <Text className="text-title text-start text-primary">{level.title}</Text>
+              <Text className="font-display text-title text-start text-primary">{level.title}</Text>
               <Text className="text-body mt-2 text-start text-muted-foreground">
                 {level.description}
               </Text>

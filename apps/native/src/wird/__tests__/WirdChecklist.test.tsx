@@ -67,4 +67,21 @@ describe('WirdChecklist', () => {
     expect(screen.getByText('تطوّع')).toBeTruthy()
     expect(screen.getByRole('alert')).toBeTruthy()
   })
+
+  it('keeps the mounted list visible while repository data refreshes', () => {
+    const { rerender } = render(<WirdChecklist />)
+    const checklist = screen.getByTestId('wird-checklist')
+
+    mockedUseWirdDay.mockReturnValue({
+      isLoading: true,
+      areas: [area],
+      versionId: 'version',
+      refresh: jest.fn(),
+      day: '2026-09-14',
+    })
+    rerender(<WirdChecklist />)
+
+    expect(screen.queryByTestId('wird-checklist')).toBe(checklist)
+    expect(screen.queryByTestId('wird-checklist-loading')).toBeNull()
+  })
 })

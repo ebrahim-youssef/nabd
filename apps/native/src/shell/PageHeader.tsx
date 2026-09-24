@@ -1,10 +1,11 @@
 import { ArrowRight } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { shellCopy } from '@nabd/shared'
 
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
+import { Text } from './Text'
 
 export function PageHeader({ title, backHref }: { title: string; backHref: string }) {
   const router = useRouter()
@@ -21,7 +22,7 @@ export function PageHeader({ title, backHref }: { title: string; backHref: strin
       >
         <ArrowRight accessible={false} color={theme.hex.primary} size={ICON_SIZE} />
       </Pressable>
-      <Text accessibilityRole="header" className="text-title text-start text-primary">
+      <Text accessibilityRole="header" className="font-display text-title text-start text-primary">
         {title}
       </Text>
     </View>

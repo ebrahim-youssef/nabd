@@ -29,15 +29,37 @@ describe('useLiveRepositoryQuery', () => {
     expect(result.current.isLoading).toBe(false)
   })
 
-  it('re-reads the repository after refresh', async () => {
-    const read = jest.fn().mockResolvedValueOnce('first').mockResolvedValueOnce('second')
+  it('re-reads the repository after refresh without hiding the current data', async () => {
+    let resolveSecond!: (value: string) => void
+    const read = jest
+      .fn()
+      .mockResolvedValueOnce('first')
+      .mockReturnValueOnce(new Promise<string>((resolve) => (resolveSecond = resolve)))
     const { result } = renderHook(() => useLiveRepositoryQuery(read))
 
     await waitFor(() => expect(result.current.data).toBe('first'))
     act(() => result.current.refresh())
-    expect(result.current.isLoading).toBe(true)
+    expect(result.current.data).toBe('first')
+    expect(result.current.isLoading).toBe(false)
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2))
+
+    await act(async () => resolveSecond('second'))
     await waitFor(() => expect(result.current.data).toBe('second'))
-    expect(read).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps stale data when a refresh fails', async () => {
+    const cause = new Error('refresh failed')
+    const read = jest.fn().mockResolvedValueOnce('first').mockRejectedValueOnce(cause)
+    const { result } = renderHook(() => useLiveRepositoryQuery(read))
+
+    await waitFor(() => expect(result.current.data).toBe('first'))
+    act(() => result.current.refresh())
+
+    await waitFor(() =>
+      expect(mockedLogger.error).toHaveBeenCalledWith('Native repository query failed', cause),
+    )
+    expect(result.current.data).toBe('first')
+    expect(result.current.isLoading).toBe(false)
   })
 
   it('re-reads the repository after a subsequent tab focus', async () => {

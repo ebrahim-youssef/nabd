@@ -1,4 +1,10 @@
 module.exports = {
+  fontFamily: {
+    body: ['Tajawal_400Regular'],
+    'body-medium': ['Tajawal_500Medium'],
+    display: ['ArefRuqaa_400Regular'],
+    scripture: ['Amiri_400Regular'],
+  },
   fontSize: {
     display: ['40px', { lineHeight: '48px' }],
     title: ['24px', { lineHeight: '28.8px' }],

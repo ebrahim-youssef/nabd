@@ -1,10 +1,11 @@
 import { summarizeChecklist, WIRD_COPY } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Modal, Pressable, Share, Text, View } from 'react-native'
+import { Modal, Pressable, Share, View } from 'react-native'
 
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import { logger } from '../observability/logger'
+import { Text } from '../shell/Text'
 import { useWirdDay } from './WirdDayProvider'
 
 const AWARD_MARK = '✦'
@@ -61,7 +62,7 @@ export function CompletionCelebration() {
             {AWARD_MARK}
           </Text>
         </View>
-        <Text className="text-display text-center text-on-primary">
+        <Text className="font-display text-display text-center text-on-primary">
           {WIRD_COPY.celebrationTitle}
         </Text>
         <Text className="text-scripture text-center text-on-primary">

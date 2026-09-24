@@ -1,5 +1,5 @@
 import { shellCopy } from '@nabd/shared'
-import { Text } from 'react-native'
+import { Text } from './Text'
 
 import { PageHeader } from './PageHeader'
 import { ScreenContainer } from './ScreenContainer'

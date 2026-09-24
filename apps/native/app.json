@@ -10,6 +10,17 @@
     "platforms": ["android"],
     "plugins": [
       "expo-router",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Amiri_400Regular.ttf",
+            "./assets/fonts/ArefRuqaa_400Regular.ttf",
+            "./assets/fonts/Tajawal_400Regular.ttf",
+            "./assets/fonts/Tajawal_500Medium.ttf"
+          ]
+        }
+      ],
       "expo-localization",
       "expo-sqlite",
       [

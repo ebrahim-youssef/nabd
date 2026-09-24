@@ -11,9 +11,10 @@ import { useRouter } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useColorScheme } from 'nativewind'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, Text, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 
 import { ScreenContainer } from '../shell/ScreenContainer'
+import { Text } from '../shell/Text'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import {
   DEFAULT_NATIVE_THEME,
@@ -122,7 +123,10 @@ export function SettingsRoute() {
   return (
     <ScreenContainer testID="settings-screen">
       <View className="gap-6">
-        <Text accessibilityRole="header" className="text-title text-start text-primary">
+        <Text
+          accessibilityRole="header"
+          className="font-display text-title text-start text-primary"
+        >
           {shellCopy.nav.settings}
         </Text>
         {!hydrated ? (
@@ -130,7 +134,7 @@ export function SettingsRoute() {
         ) : null}
 
         <View className="gap-3" testID="settings-appearance">
-          <Text className="text-label text-start text-muted-foreground">
+          <Text className="font-display text-label text-start text-muted-foreground">
             {SETTINGS_COPY.appearance.themeTitle}
           </Text>
           <View className="gap-2" accessibilityRole="radiogroup">
@@ -147,7 +151,7 @@ export function SettingsRoute() {
         </View>
 
         <View className="gap-3" testID="settings-prayer-method">
-          <Text className="text-label text-start text-muted-foreground">
+          <Text className="font-display text-label text-start text-muted-foreground">
             {SETTINGS_COPY.prayerMethod.title}
           </Text>
           <View className="gap-2" accessibilityRole="radiogroup">
@@ -164,7 +168,7 @@ export function SettingsRoute() {
         </View>
 
         <View className="gap-3" testID="settings-level">
-          <Text className="text-label text-start text-muted-foreground">
+          <Text className="font-display text-label text-start text-muted-foreground">
             {SETTINGS_COPY.level.title}
           </Text>
           <Text className="text-body text-start text-foreground">{SETTINGS_COPY.level.label}</Text>
