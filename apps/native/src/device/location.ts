@@ -70,15 +70,12 @@ function positionResult(): Promise<LocationFixResult> {
 
 export async function getFix(timeoutMs = LOCATION_FIX_TIMEOUT_MS): Promise<LocationFixResult> {
   let timeoutId: ReturnType<typeof setTimeout> | undefined
+  const position = positionResult()
+  const timeout = new Promise<LocationFixResult>((resolve) => {
+    timeoutId = setTimeout(() => resolve({ kind: 'timeout' }), timeoutMs)
+  })
   try {
-    const position = positionResult()
-    const timeout = new Promise<LocationFixResult>((resolve) => {
-      timeoutId = setTimeout(() => resolve({ kind: 'timeout' }), timeoutMs)
-    })
     return await Promise.race([position, timeout])
-  } catch (cause: unknown) {
-    logger.warn('Native location fix race failed', { error: cause })
-    return { kind: 'error' }
   } finally {
     if (timeoutId !== undefined) clearTimeout(timeoutId)
   }

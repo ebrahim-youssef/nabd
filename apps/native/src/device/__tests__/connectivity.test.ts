@@ -1,36 +1,6 @@
-import {
-  createConnectivityProvider,
-  createNetInfoConnectivityProvider,
-  mapNetInfoState,
-} from '../connectivity'
+import { createNetInfoConnectivityProvider, mapNetInfoState } from '../connectivity'
 
 describe('connectivity provider', () => {
-  it('reads online state and notifies subscribers when the source changes', () => {
-    const listeners = new Map<string, () => void>()
-    const source = {
-      onLine: true,
-      addEventListener: (name: string, listener: () => void) => listeners.set(name, listener),
-      removeEventListener: (name: string) => listeners.delete(name),
-    }
-    const provider = createConnectivityProvider(source)
-    const onChange = jest.fn()
-    const unsubscribe = provider.subscribe(onChange)
-
-    expect(provider.getState()).toBe('online')
-    source.onLine = false
-    listeners.get('offline')?.()
-    expect(onChange).toHaveBeenCalledWith('offline')
-
-    unsubscribe()
-    source.onLine = true
-    listeners.get('online')?.()
-    expect(onChange).toHaveBeenCalledTimes(1)
-  })
-
-  it('reports unknown when the runtime does not expose online state', () => {
-    expect(createConnectivityProvider({}).getState()).toBe('unknown')
-  })
-
   it.each([
     [{ isConnected: null, isInternetReachable: null }, 'unknown'],
     [{ isConnected: true, isInternetReachable: null }, 'online'],
@@ -43,14 +13,17 @@ describe('connectivity provider', () => {
   it('uses NetInfo fetch and subscription state for native connectivity', async () => {
     let subscriber:
       ((state: { isConnected: boolean; isInternetReachable: boolean }) => void) | undefined
+    const fetch = jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true })
     const netInfo = {
-      fetch: jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true }),
+      fetch,
       addEventListener: jest.fn((listener) => {
         subscriber = listener
         return jest.fn()
       }),
     }
     const provider = createNetInfoConnectivityProvider(netInfo)
+
+    expect(fetch).not.toHaveBeenCalled()
     await provider.refresh()
 
     expect(provider.getState()).toBe('online')

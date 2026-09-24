@@ -3,7 +3,9 @@ import { DatabaseSync } from 'node:sqlite'
 import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { PREFERENCE_KEYS } from '../../preferences/db'
-import { createDeviceRepository, LOCATION_CACHE_MAX_AGE_MS } from '../db'
+import { createDeviceRepository } from '../db'
+
+const LOCATION_CACHE_MAX_AGE_MS = 10 * 60 * 1000
 
 function createDatabase() {
   const connection = new DatabaseSync(':memory:')
@@ -46,11 +48,12 @@ describe('device location SQLite repository', () => {
         1_000,
       )
 
-      await expect(repository.readCachedLocation()).resolves.toEqual({
+      await expect(repository.readLocationCacheState(1_000)).resolves.toEqual({
         latitude: 30.0444,
         longitude: 31.2357,
         city: 'القاهرة',
         recordedAt: 1_000,
+        fresh: true,
       })
     } finally {
       connection.close()
@@ -68,11 +71,12 @@ describe('device location SQLite repository', () => {
       )
       await repository.writeCachedLocation({ latitude: 30.05, longitude: 31.24, city: null }, 2_000)
 
-      await expect(repository.readCachedLocation()).resolves.toEqual({
+      await expect(repository.readLocationCacheState(2_000)).resolves.toEqual({
         latitude: 30.05,
         longitude: 31.24,
         city: 'القاهرة',
         recordedAt: 2_000,
+        fresh: true,
       })
     } finally {
       connection.close()
@@ -97,25 +101,6 @@ describe('device location SQLite repository', () => {
       await expect(
         repository.readLocationCacheState(1_001 + LOCATION_CACHE_MAX_AGE_MS),
       ).resolves.toMatchObject({ fresh: false })
-    } finally {
-      connection.close()
-    }
-  })
-
-  it('clears every location preference', async () => {
-    const { connection, database } = createDatabase()
-    try {
-      await migrateDatabase(database)
-      const repository = createDeviceRepository(database)
-      await repository.writeCachedLocation(
-        { latitude: 30.0444, longitude: 31.2357, city: 'القاهرة' },
-        1_000,
-      )
-
-      await repository.clearCachedLocation()
-
-      await expect(repository.readCachedLocation()).resolves.toBeNull()
-      await expect(repository.readLocationCacheState(1_000)).resolves.toBeNull()
     } finally {
       connection.close()
     }

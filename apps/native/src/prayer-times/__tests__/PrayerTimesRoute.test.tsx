@@ -35,30 +35,22 @@ const readPreference = jest.fn()
 const writePreference = jest.fn()
 
 const readyStatus: LocationStatus = {
-  capability: 'location',
   state: 'ready',
-  source: 'fresh',
-  city: 'available',
   message: deviceCopy.location.ready,
   action: null,
 }
 const retryStatus: LocationStatus = {
-  capability: 'location',
   state: 'unavailable',
   message: deviceCopy.location.unavailable,
   action: { type: 'retry-location', label: deviceCopy.actions.retryLocation },
 }
 const blockedStatus: LocationStatus = {
-  capability: 'location',
   state: 'settings-required',
   message: deviceCopy.location.settingsRequired,
   action: { type: 'open-app-settings', label: deviceCopy.actions.openAppSettings },
 }
 const refreshingStatus: LocationStatus = {
-  capability: 'location',
   state: 'offline-cache',
-  source: 'cache',
-  city: 'available',
   message: deviceCopy.location.offlineCache,
   action: { type: 'retry-location', label: deviceCopy.actions.retryLocation },
 }

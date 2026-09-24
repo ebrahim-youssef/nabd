@@ -2,9 +2,9 @@ import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import type { ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 
-export const LOCATION_CACHE_MAX_AGE_MINUTES = 10
+const LOCATION_CACHE_MAX_AGE_MINUTES = 10
 const MINUTE_MS = 60 * 1000
-export const LOCATION_CACHE_MAX_AGE_MS = LOCATION_CACHE_MAX_AGE_MINUTES * MINUTE_MS
+const LOCATION_CACHE_MAX_AGE_MS = LOCATION_CACHE_MAX_AGE_MINUTES * MINUTE_MS
 const MIN_LATITUDE = -90
 const MAX_LATITUDE = 90
 const MIN_LONGITUDE = -180
@@ -17,7 +17,7 @@ export type CachedLocation = {
   recordedAt: number
 }
 
-export type LocationCacheState = CachedLocation & {
+type LocationCacheState = CachedLocation & {
   fresh: boolean
 }
 
@@ -122,20 +122,6 @@ export function createDeviceRepository(database: ProductDatabase) {
     }
   }
 
-  async function clearCachedLocation(): Promise<void> {
-    try {
-      await Promise.all([
-        preferences.clear(PREFERENCE_KEYS.latitude),
-        preferences.clear(PREFERENCE_KEYS.longitude),
-        preferences.clear(PREFERENCE_KEYS.city),
-        preferences.clear(PREFERENCE_KEYS.locationRecordedAt),
-      ])
-    } catch (cause: unknown) {
-      logger.error('Native location cache clear failed', cause, { operation: 'clear' })
-      throw cause
-    }
-  }
-
   async function readLocationCacheState(now: number): Promise<LocationCacheState | null> {
     const cached = await readCachedLocation()
     return cached
@@ -144,9 +130,7 @@ export function createDeviceRepository(database: ProductDatabase) {
   }
 
   return {
-    readCachedLocation,
     writeCachedLocation,
-    clearCachedLocation,
     readLocationCacheState,
   }
 }
