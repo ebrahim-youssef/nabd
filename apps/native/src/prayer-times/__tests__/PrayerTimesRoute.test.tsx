@@ -7,6 +7,7 @@ import PrayerTimesRoute from '../../../app/(tabs)/prayer-times'
 import { deviceCopy } from '../../device/copy'
 import { useLocationCapability } from '../../device/useLocationCapability'
 import type { LocationCapabilityView } from '../../device/useLocationCapability'
+import { requestPrayerReschedule } from '../../device/prayerAlarms'
 import type { LocationStatus } from '../../device/types'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 
@@ -20,6 +21,9 @@ jest.mock('../../preferences/db', () => ({
 }))
 jest.mock('../../device/useLocationCapability', () => ({
   useLocationCapability: jest.fn(),
+}))
+jest.mock('../../device/prayerAlarms', () => ({
+  requestPrayerReschedule: jest.fn(),
 }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
@@ -123,6 +127,7 @@ describe('PrayerTimesRoute', () => {
         expect.any(Number),
       ),
     )
+    await waitFor(() => expect(requestPrayerReschedule).toHaveBeenCalledTimes(1))
 
     unmount()
     readPreference.mockResolvedValue('egyptian')

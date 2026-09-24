@@ -1,14 +1,13 @@
-import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite'
 import { Tabs } from 'expo-router'
+import { useSQLiteContext } from 'expo-sqlite'
 import { useColorScheme } from 'nativewind'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 
-import { DATABASE_NAME, migrateDatabase } from '../../src/db/database'
+import { BottomNav } from '../../src/shell/BottomNav'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../src/preferences/db'
 import { readStoredTheme } from '../../src/preferences/theme'
 import { logger } from '../../src/observability/logger'
-import { BottomNav } from '../../src/shell/BottomNav'
-import { DatabaseError, DatabaseLoading } from '../../src/shell/DatabaseStatus'
+import { DatabaseError } from '../../src/shell/DatabaseStatus'
 
 function NativeAppearanceBootstrap() {
   const database = useSQLiteContext()
@@ -45,55 +44,6 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
   return <DatabaseError onRetry={retry} />
 }
 
-type DatabaseStatus = 'loading' | 'ready' | 'error'
-
 export default function TabsLayout() {
-  const [status, setStatus] = useState<DatabaseStatus>('loading')
-  const [attempt, setAttempt] = useState(0)
-  const openErrorScheduled = useRef(false)
-
-  const initializeDatabase = useCallback(
-    async (database: Parameters<typeof migrateDatabase>[0]) => {
-      try {
-        await migrateDatabase(database)
-        setStatus('ready')
-      } catch (cause) {
-        logger.error('Native database migration failed', cause)
-        setStatus('error')
-      }
-    },
-    [],
-  )
-
-  const handleOpenError = useCallback((cause: Error) => {
-    if (openErrorScheduled.current) return
-    openErrorScheduled.current = true
-    queueMicrotask(() => {
-      logger.error('Native database open failed', cause)
-      setStatus('error')
-    })
-  }, [])
-
-  const retry = useCallback(() => {
-    openErrorScheduled.current = false
-    setStatus('loading')
-    setAttempt((current) => current + 1)
-  }, [])
-
-  if (status === 'error') return <DatabaseError onRetry={retry} />
-
-  return (
-    <>
-      {status === 'loading' ? <DatabaseLoading /> : null}
-      <SQLiteProvider
-        key={attempt}
-        databaseName={DATABASE_NAME}
-        onError={handleOpenError}
-        onInit={initializeDatabase}
-      >
-        {/* SQLiteProvider memoizes without comparing children; keep them independent of status. */}
-        <TabsContent />
-      </SQLiteProvider>
-    </>
-  )
+  return <TabsContent />
 }
