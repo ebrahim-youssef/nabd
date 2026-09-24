@@ -14,6 +14,7 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
   const [isLoading, setIsLoading] = useState(true)
   const [refreshToken, setRefreshToken] = useState(0)
   const dataRef = useRef<T | undefined>(undefined)
+  const cachedReadRef = useRef<(() => Promise<T>) | undefined>(undefined)
   const hasFocused = useRef(false)
 
   const refresh = useCallback(() => {
@@ -34,11 +35,18 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
 
   useEffect(() => {
     let active = true
+    if (cachedReadRef.current !== read) {
+      dataRef.current = undefined
+      cachedReadRef.current = undefined
+      setData(undefined)
+      setIsLoading(true)
+    }
     void Promise.resolve()
       .then(read)
       .then((nextData) => {
         if (!active) return
         dataRef.current = nextData
+        cachedReadRef.current = read
         setData(nextData)
         setIsLoading(false)
       })

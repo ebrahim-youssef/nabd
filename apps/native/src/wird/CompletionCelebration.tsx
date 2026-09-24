@@ -65,7 +65,7 @@ export function CompletionCelebration() {
         <Text className="font-display text-display text-center text-on-primary">
           {WIRD_COPY.celebrationTitle}
         </Text>
-        <Text className="text-scripture text-center text-on-primary">
+        <Text className="font-scripture text-scripture text-center text-on-primary">
           {WIRD_COPY.celebrationHadith}
         </Text>
         <View className="flex-row items-center gap-3">
