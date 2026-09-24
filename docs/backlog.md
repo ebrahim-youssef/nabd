@@ -218,7 +218,7 @@ Strict behavior and design parity applies throughout; redesign is out of scope.
 | NBD-91 | ⬜ todo | [#200](https://github.com/ebrahim-youssef/nabd/issues/200) | Durability implementation, export and import | A backup taken on one install restores onto a fresh install with every row intact, and onto a non-empty install without duplicating or destroying what was already there. This is section F option 1; option 2 ships in NBD-92 |
 | NBD-92 | ⬜ todo | [#201](https://github.com/ebrahim-youssef/nabd/issues/201) | EAS build and Play release path | `master` produces a signed AAB and APK through EAS from a custodied upload key, the Play listing with its permission declarations is submitted, and section F option 2 is delivered: Android application backup enabled, a restore verified, and its inclusion and exclusion rules stated |
 | NBD-94 | ✅ done | [#221](https://github.com/ebrahim-youssef/nabd/issues/221) | Native app opens on a router error | The release bundle resolves `apps/native/app` as the Expo Router root, shows the root navigator before SQLite is ready, and exposes a retryable Arabic migration error |
-| NBD-95 | ⬜ todo | [#222](https://github.com/ebrahim-youssef/nabd/issues/222) | Native theme hand-written, classic only, light, dark and follow phone | Native theme behavior is hand-written and supports classic, light, dark, and follow-phone modes |
+| NBD-95 | ✅ done | [#222](https://github.com/ebrahim-youssef/nabd/issues/222) | Native theme hand-written, classic only, light, dark and follow phone | Native theme behavior is hand-written and supports classic, light, dark, and follow-phone modes |
 
 ## Later (out of scope for MVP)
 
