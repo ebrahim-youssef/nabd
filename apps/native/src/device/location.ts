@@ -50,7 +50,10 @@ export async function enableServices(): Promise<boolean> {
 function positionResult(): Promise<LocationFixResult> {
   let positionPromise: Promise<Awaited<ReturnType<typeof Location.getCurrentPositionAsync>>>
   try {
-    positionPromise = Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
+    positionPromise = Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+      mayShowUserSettingsDialog: false,
+    })
   } catch (cause: unknown) {
     logger.warn('Native location fix request failed', { error: cause })
     return Promise.resolve({ kind: 'error' })

@@ -6,7 +6,6 @@ const baseSnapshot: LocationCapabilitySnapshot = {
   gps: 'enabled',
   connectivity: 'online',
   coordinateCache: 'fresh',
-  cityCache: 'available',
 }
 
 describe('location status logic', () => {
@@ -66,7 +65,6 @@ describe('location status logic', () => {
     const status = evaluateLocation({
       ...baseSnapshot,
       coordinateCache: 'missing',
-      cityCache: 'missing',
       fix: 'timeout',
     })
 
@@ -74,16 +72,6 @@ describe('location status logic', () => {
       state: 'unavailable',
       action: { type: 'retry-location' },
       message: deviceCopy.location.timeout,
-    })
-  })
-
-  it('produces an actionable city-required state when the city is missing', () => {
-    const status = evaluateLocation({ ...baseSnapshot, cityCache: 'missing' })
-
-    expect(status).toMatchObject({
-      state: 'city-required',
-      action: { type: 'retry-location' },
-      message: deviceCopy.location.cityRequired,
     })
   })
 
@@ -139,7 +127,6 @@ describe('location status logic', () => {
       ...baseSnapshot,
       connectivity: 'offline',
       coordinateCache: 'missing',
-      cityCache: 'missing',
     })
 
     expect(status).toMatchObject({

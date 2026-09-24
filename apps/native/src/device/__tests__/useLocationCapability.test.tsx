@@ -95,16 +95,13 @@ function grantPermission() {
 
 function renderLocation(
   options: {
-    reverseGeocoder?: jest.Mock
     connectivityProvider?: ReturnType<typeof createConnectivityProvider>
   } = {},
 ) {
   const connectivityProvider = options.connectivityProvider ?? createConnectivityProvider()
-  const reverseGeocoder = options.reverseGeocoder ?? jest.fn().mockResolvedValue('القاهرة')
   return renderHook(() =>
     useLocationCapability({
       connectivityProvider,
-      reverseGeocoder,
       now,
     }),
   )
@@ -125,46 +122,26 @@ describe('useLocationCapability', () => {
     grantPermission()
   })
 
-  it('persists coordinates and the best-effort city on a successful fix', async () => {
-    const geocoder = jest.fn().mockResolvedValue('القاهرة')
-    const { result } = renderLocation({ reverseGeocoder: geocoder })
+  it('persists coordinates on a successful fix', async () => {
+    const { result } = renderLocation()
 
     await waitFor(() => expect(result.current.status.state).toBe('ready'))
 
     expect(result.current.coordinates).toEqual({ latitude: 30.0444, longitude: 31.2357 })
-    expect(result.current.city).toBe('القاهرة')
-    expect(repository.writeCachedLocation).toHaveBeenNthCalledWith(
-      1,
-      { latitude: 30.0444, longitude: 31.2357, city: null },
-      NOW,
-    )
-    expect(repository.writeCachedLocation).toHaveBeenNthCalledWith(
-      2,
-      { latitude: 30.0444, longitude: 31.2357, city: 'القاهرة' },
+    expect(repository.writeCachedLocation).toHaveBeenCalledTimes(1)
+    expect(repository.writeCachedLocation).toHaveBeenCalledWith(
+      { latitude: 30.0444, longitude: 31.2357 },
       NOW,
     )
   })
 
-  it('keeps the previous city when geocoding fails', async () => {
-    repository = createRepository({
-      latitude: 30,
-      longitude: 31,
-      city: 'القاهرة',
-      recordedAt: NOW,
-    })
-    mockedCreateDeviceRepository.mockReturnValue(repository as never)
-    const geocoder = jest.fn().mockRejectedValue(new Error('network down'))
-    const { result } = renderLocation({ reverseGeocoder: geocoder })
+  it('does not fetch for a successful fix', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch')
+    const { result } = renderLocation()
 
     await waitFor(() => expect(result.current.status.state).toBe('ready'))
 
-    expect(result.current.city).toBe('القاهرة')
-    expect(repository.writeCachedLocation).toHaveBeenCalledTimes(1)
-    expect(repository.writeCachedLocation).toHaveBeenNthCalledWith(
-      1,
-      { latitude: 30.0444, longitude: 31.2357, city: 'القاهرة' },
-      NOW,
-    )
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 
   it('does not request a fix on mount when the cached location is fresh', async () => {
@@ -172,7 +149,6 @@ describe('useLocationCapability', () => {
       {
         latitude: 30,
         longitude: 31,
-        city: 'القاهرة',
         recordedAt: NOW - 1_000,
       },
       true,
@@ -192,7 +168,6 @@ describe('useLocationCapability', () => {
       {
         latitude: 30,
         longitude: 31,
-        city: 'القاهرة',
         recordedAt: NOW,
       } satisfies CachedLocation,
     ],
@@ -212,7 +187,6 @@ describe('useLocationCapability', () => {
       {
         latitude: 30,
         longitude: 31,
-        city: 'القاهرة',
         recordedAt: NOW - 1_000,
       },
       true,
@@ -245,7 +219,7 @@ describe('useLocationCapability', () => {
         resolvePosition = resolve
       }) as never,
     )
-    const { result } = renderLocation({ reverseGeocoder: jest.fn().mockResolvedValue('القاهرة') })
+    const { result } = renderLocation()
 
     await waitFor(() => expect(mockedLocation.getCurrentPositionAsync).toHaveBeenCalledTimes(1))
 
@@ -277,7 +251,6 @@ describe('useLocationCapability', () => {
       {
         latitude: 30,
         longitude: 31,
-        city: 'القاهرة',
         recordedAt: NOW - 1_000,
       },
       true,
@@ -312,7 +285,6 @@ describe('useLocationCapability', () => {
       {
         latitude: 30,
         longitude: 31,
-        city: 'القاهرة',
         recordedAt: NOW - 1_000,
       },
       true,

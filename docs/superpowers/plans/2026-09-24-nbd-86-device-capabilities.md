@@ -24,9 +24,14 @@ module that was never written, and predates NBD-94/95/96 on `dev`.
    crossing time zones without moving does not change them, and moving needs a new location,
    which needs the app. On foreground (AppState `active`) we recompute and reschedule if the
    offset, date, location or method changed.
-5. **Reverse geocoding keeps legacy parity:** BigDataCloud with coordinates rounded to two decimals
-   (`lib/impure/reverse-geocode.ts`), only when online, best effort, previous city kept on failure.
-   Prayer calculation never depends on it.
+5. **Location stays on the device except for the opt-in countdown city label.** ADR-0009
+   Amendment 1 allows a coordinate to leave the device only when the user has turned on the
+   countdown notification, and the Play Data Safety form declares location as not collected.
+   So 86a shows no city and makes no network request with coordinates. In 86c, with the countdown
+   enabled, the city label uses BigDataCloud with coordinates rounded to two decimals
+   (`lib/impure/reverse-geocode.ts`), only when online, with a bounded timeout, previous city kept
+   on failure. Prayer calculation never depends on it. (Corrected 2026-09-24 after the PR #228
+   review; the first version of this plan put the lookup on the prayer times screen.)
 6. **Location timeout** is a `Promise.race` of 15 s in TypeScript around
    `getCurrentPositionAsync({ accuracy: High })`, falling back to cached coordinates.
 7. **Channel ids are versioned** (sound and usage are immutable after creation). Silent-mode
@@ -111,7 +116,10 @@ Branch `ibrahim/173-native-device-capabilities`.
    Xiaomi/HyperOS written steps in Arabic in Settings.
 3. Shell items the draft claimed but did not do, only where missing on dev: hardware back, keyboard
    avoidance on screens with inputs.
-4. Owner check: countdown updates with the app killed, survives reboot, battery exemption flow,
+4. City label for the countdown only (decision 5): move `src/device/reverseGeocode.ts` back from
+   the 86a history, call it only while the countdown is enabled, with an AbortController timeout,
+   and a test that no request is made while the countdown is off.
+5. Owner check: countdown updates with the app killed, survives reboot, battery exemption flow,
    Xiaomi steps.
 
 ## Per-PR workflow

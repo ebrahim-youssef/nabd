@@ -85,7 +85,10 @@ describe('location adapter', () => {
       latitude: 30.0444,
       longitude: 31.2357,
     })
-    expect(mockedLocation.getCurrentPositionAsync).toHaveBeenCalledWith({ accuracy: 4 })
+    expect(mockedLocation.getCurrentPositionAsync).toHaveBeenCalledWith({
+      accuracy: 4,
+      mayShowUserSettingsDialog: false,
+    })
   })
 
   it('returns timeout and clears the timer when a fix does not arrive', async () => {

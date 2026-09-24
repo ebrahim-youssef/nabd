@@ -48,13 +48,7 @@ function nextDay(date: Date): Date {
 export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProps = {}) {
   const database = useSQLiteContext()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
-  const {
-    status: locationStatus,
-    coordinates,
-    city,
-    isRefreshing,
-    runAction,
-  } = useLocationCapability()
+  const { status: locationStatus, coordinates, isRefreshing, runAction } = useLocationCapability()
   const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
 
   useEffect(() => {
@@ -131,14 +125,6 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
           testID="prayer-times-location-card"
         >
           <View className="flex-row items-center gap-2">
-            {city !== null ? (
-              <Text
-                className="flex-1 text-body text-start font-body-medium text-foreground"
-                testID="prayer-times-location-city"
-              >
-                {city}
-              </Text>
-            ) : null}
             {isRefreshing ? (
               <ActivityIndicator size="small" testID="prayer-times-location-refreshing" />
             ) : null}

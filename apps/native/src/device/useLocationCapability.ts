@@ -8,8 +8,6 @@ import type { ConnectivityProvider } from './connectivity'
 import { createDeviceRepository } from './db'
 import type { CachedLocation } from './db'
 import { evaluateLocation } from './logic'
-import { createReverseGeocodeAdapter, resolveCachedCity } from './reverseGeocode'
-import type { ReverseGeocoder } from './reverseGeocode'
 import {
   enableServices,
   getFix,
@@ -30,7 +28,6 @@ import type {
 
 export type UseLocationCapabilityOptions = {
   connectivityProvider?: ConnectivityProvider
-  reverseGeocoder?: ReverseGeocoder
   now?: () => number
 }
 
@@ -41,7 +38,6 @@ export type LocationRefreshOptions = {
 export type LocationCapabilityView = {
   status: LocationStatus
   coordinates: { latitude: number; longitude: number } | null
-  city: string | null
   isRefreshing: boolean
   refresh: (options?: LocationRefreshOptions) => Promise<void>
   runAction: (action?: LocationActionType) => Promise<void>
@@ -52,19 +48,16 @@ const INITIAL_SNAPSHOT: LocationCapabilitySnapshot = {
   gps: 'unknown',
   connectivity: 'unknown',
   coordinateCache: 'missing',
-  cityCache: 'missing',
 }
 
 type LocationCapabilityViewState = {
   snapshot: LocationCapabilitySnapshot
   coordinates: { latitude: number; longitude: number } | null
-  city: string | null
 }
 
 const INITIAL_VIEW: LocationCapabilityViewState = {
   snapshot: INITIAL_SNAPSHOT,
   coordinates: null,
-  city: null,
 }
 
 function makeSnapshot(
@@ -80,7 +73,6 @@ function makeSnapshot(
     gps,
     connectivity,
     coordinateCache: cached ? (cacheFresh ? 'fresh' : 'stale') : 'missing',
-    cityCache: cached?.city ? 'available' : 'missing',
     fix,
   }
 }
@@ -109,10 +101,6 @@ export function useLocationCapability(
     [options.connectivityProvider],
   )
   const { state: connectivity, refreshAndSet } = useConnectivityState(connectivityProvider)
-  const reverseGeocoder = useMemo(
-    () => options.reverseGeocoder ?? createReverseGeocodeAdapter(),
-    [options.reverseGeocoder],
-  )
   const now = options.now ?? Date.now
 
   const [view, setView] = useState<LocationCapabilityViewState>(INITIAL_VIEW)
@@ -131,7 +119,6 @@ export function useLocationCapability(
       const next: LocationCapabilityViewState = {
         snapshot,
         coordinates: coordinatesFrom(cached),
-        city: cached?.city ?? null,
       }
       cachedLocationRef.current = cached
       viewRef.current = next
@@ -174,27 +161,10 @@ export function useLocationCapability(
         }
 
         const coordinates = { latitude: fix.latitude, longitude: fix.longitude }
-        const previousCity = cached?.city ?? null
         const recordedAt = now()
-        await repository.writeCachedLocation({ ...coordinates, city: previousCity }, recordedAt)
+        await repository.writeCachedLocation(coordinates, recordedAt)
         cacheFresh = true
-        cached = { ...coordinates, city: previousCity, recordedAt }
-        commit(
-          makeSnapshot(permission, gps, cached, cacheFresh, connectivityRef.current, 'ok'),
-          cached,
-        )
-
-        const city = await resolveCachedCity(
-          coordinates,
-          connectivityRef.current,
-          previousCity,
-          reverseGeocoder,
-        )
-        if (city === previousCity) return
-
-        const resolved = { ...coordinates, city, recordedAt }
-        await repository.writeCachedLocation({ ...coordinates, city }, recordedAt)
-        cached = resolved
+        cached = { ...coordinates, recordedAt }
         commit(
           makeSnapshot(permission, gps, cached, cacheFresh, connectivityRef.current, 'ok'),
           cached,
@@ -209,7 +179,7 @@ export function useLocationCapability(
         setRefreshing(false)
       }
     },
-    [commit, now, refreshAndSet, repository, reverseGeocoder, setRefreshing],
+    [commit, now, refreshAndSet, repository, setRefreshing],
   )
 
   const startRefresh = useCallback(
@@ -329,7 +299,6 @@ export function useLocationCapability(
   return {
     status,
     coordinates: view.coordinates,
-    city: view.city,
     isRefreshing,
     refresh,
     runAction,
