@@ -94,7 +94,8 @@ export default function TabsLayout() {
         onError={handleOpenError}
         onInit={initializeDatabase}
       >
-        {status === 'ready' ? <TabsContent /> : null}
+        {/* SQLiteProvider memoizes without comparing children; keep them independent of status. */}
+        <TabsContent />
       </SQLiteProvider>
     </>
   )

@@ -12,56 +12,65 @@ import { shellCopy } from '@nabd/shared'
 
 import { NATIVE_SHELL_COPY } from '../shell/constants'
 
-type MockDatabase = {
-  execAsync: jest.Mock<Promise<void>, [string]>
-  getFirstAsync: jest.Mock<Promise<{ version: number } | null>, [string, ...unknown[]]>
-  runAsync: jest.Mock<Promise<unknown>, [string, ...unknown[]]>
-  withExclusiveTransactionAsync: jest.Mock<
-    Promise<void>,
-    [(database: MockDatabase) => Promise<void>]
-  >
+const mockSQLiteState = {
+  shouldFail: false,
+  openCalls: 0,
 }
 
-const mockState = {
-  database: null as MockDatabase | null,
-  onInit: null as ((database: MockDatabase) => Promise<void>) | null,
-  onError: null as ((cause: Error) => void) | null,
-  setOpened: null as (() => void) | null,
-}
+jest.mock('expo', () => {
+  const actual = jest.requireActual('expo')
 
-jest.mock('expo-sqlite', () => {
-  const React = require('react') as typeof import('react')
-  const DatabaseContext = React.createContext<MockDatabase | null>(null)
+  class NativeStatement {
+    source = ''
 
-  function SQLiteProvider({
-    children,
-    onError,
-    onInit,
-  }: {
-    children: React.ReactNode
-    onError?: (cause: Error) => void
-    onInit?: (database: MockDatabase) => Promise<void>
-  }) {
-    const [opened, setOpened] = React.useState(false)
-
-    React.useEffect(() => {
-      mockState.onInit = onInit ?? null
-      mockState.onError = onError ?? null
-      mockState.setOpened = () => setOpened(true)
-      return () => {
-        mockState.onInit = null
-        mockState.onError = null
-        mockState.setOpened = null
+    async runAsync() {
+      return {
+        changes: 0,
+        firstRowValues: this.source.includes('SELECT version FROM schema_version') ? [4] : [],
+        lastInsertRowId: 0,
       }
-    }, [onError, onInit])
+    }
 
-    if (!opened) return null
-    return React.createElement(DatabaseContext.Provider, { value: mockState.database }, children)
+    async getColumnNamesAsync() {
+      return this.source.includes('SELECT version FROM schema_version') ? ['version'] : []
+    }
+
+    async stepAsync() {
+      return null
+    }
+
+    async finalizeAsync() {}
+  }
+
+  class NativeDatabase {
+    constructor() {
+      mockSQLiteState.openCalls += 1
+    }
+
+    async initAsync() {}
+
+    async closeAsync() {}
+
+    async execAsync() {
+      if (mockSQLiteState.shouldFail) throw new Error('migration failed')
+    }
+
+    async prepareAsync(statement: NativeStatement, source: string) {
+      statement.source = source
+    }
   }
 
   return {
-    SQLiteProvider,
-    useSQLiteContext: () => React.useContext(DatabaseContext),
+    ...actual,
+    requireNativeModule: (name: string) =>
+      name === 'ExpoSQLite'
+        ? {
+            NativeDatabase,
+            NativeStatement,
+            defaultDatabaseDirectory: 'SQLite',
+            ensureDatabasePathExistsAsync: async () => undefined,
+          }
+        : actual.requireNativeModule(name),
   }
 })
 
@@ -81,37 +90,17 @@ jest.mock('nativewind', () => ({
   useColorScheme: () => ({ setColorScheme: jest.fn() }),
 }))
 
-function createDatabase(shouldFail = false): MockDatabase {
-  const database = {} as MockDatabase
-  database.execAsync = jest.fn(async (_source: string): Promise<void> => {
-    if (shouldFail) throw new Error('migration failed')
-  })
-  database.getFirstAsync = jest.fn(async (source: string) =>
-    source.includes('SELECT version FROM schema_version') ? { version: 4 } : null,
-  )
-  database.runAsync = jest.fn(
-    async (_source: string, ..._parameters: unknown[]): Promise<unknown> => undefined,
-  )
-  database.withExclusiveTransactionAsync = jest.fn(async (task) => task(database))
-  return database
-}
-
 function resetDatabaseMock() {
-  mockState.database = createDatabase()
-  mockState.onInit = null
-  mockState.onError = null
-  mockState.setOpened = null
+  mockSQLiteState.shouldFail = false
+  mockSQLiteState.openCalls = 0
 }
 
 async function resolveDatabase() {
-  if (!mockState.database || !mockState.onInit || !mockState.setOpened) {
-    throw new Error('SQLite test provider was not mounted')
-  }
-  await mockState.onInit(mockState.database)
-  mockState.setOpened()
+  await waitFor(() => expect(mockSQLiteState.openCalls).toBeGreaterThan(0))
 }
 
 beforeEach(() => {
+  Object.assign(globalThis, { __DEV__: false })
   resetDatabaseMock()
   jest.spyOn(console, 'error').mockImplementation(() => undefined)
 })
@@ -134,14 +123,14 @@ describe('native root layout', () => {
     await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy())
 
     expect(screen.getByTestId('onboarding-welcome')).toBeTruthy()
-    const initCalls = mockState.database?.execAsync.mock.calls.length
+    const initCalls = mockSQLiteState.openCalls
     router.rerender(<ExpoRoot context={getMockContext('./app')} location="/" />)
-    expect(mockState.database?.execAsync.mock.calls.length).toBe(initCalls)
+    expect(mockSQLiteState.openCalls).toBe(initCalls)
   })
 
   it('shows the Arabic error screen, then retries migration on a fresh provider', async () => {
+    mockSQLiteState.shouldFail = true
     renderRouter('./app')
-    mockState.database = createDatabase(true)
 
     await act(async () => {
       await resolveDatabase()
@@ -150,7 +139,7 @@ describe('native root layout', () => {
     await waitFor(() => expect(screen.getByTestId('database-error')).toBeTruthy())
     expect(screen.getByText(NATIVE_SHELL_COPY.databaseError)).toBeTruthy()
 
-    mockState.database = createDatabase()
+    mockSQLiteState.shouldFail = false
     await act(async () => {
       fireEvent.press(screen.getByRole('button', { name: shellCopy.retry }))
     })
