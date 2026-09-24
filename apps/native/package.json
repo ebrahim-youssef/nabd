@@ -13,10 +13,13 @@
   },
   "dependencies": {
     "@nabd/shared": "workspace:*",
+    "@react-native-community/netinfo": "12.0.1",
     "expo": "~57.0.24",
     "expo-constants": "~57.0.19",
     "expo-font": "~57.0.4",
+    "expo-intent-launcher": "~57.0.1",
     "expo-localization": "~57.0.2",
+    "expo-location": "~57.0.20",
     "expo-router": "~57.0.22",
     "expo-splash-screen": "~57.0.9",
     "expo-sqlite": "~57.0.3",
