@@ -1,14 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import NetInfo from '@react-native-community/netinfo'
 
 import { logger } from '../observability/logger'
 import type { ConnectivityState } from './types'
-
-export type ConnectivitySource = {
-  onLine?: boolean
-  addEventListener?: (name: 'online' | 'offline', listener: () => void) => void
-  removeEventListener?: (name: 'online' | 'offline', listener: () => void) => void
-}
 
 export type ConnectivityProvider = {
   getState: () => ConnectivityState
@@ -33,33 +27,6 @@ export function mapNetInfoState(state: NetInfoStateLike): ConnectivityState {
   return 'unknown'
 }
 
-function runtimeSource(): ConnectivitySource {
-  return typeof navigator === 'undefined' ? {} : (navigator as unknown as ConnectivitySource)
-}
-
-export function createConnectivityProvider(
-  source: ConnectivitySource = runtimeSource(),
-): ConnectivityProvider {
-  const getState = (): ConnectivityState =>
-    typeof source.onLine === 'boolean' ? (source.onLine ? 'online' : 'offline') : 'unknown'
-
-  return {
-    getState,
-    async refresh() {
-      return getState()
-    },
-    subscribe(listener) {
-      const notify = () => listener(getState())
-      source.addEventListener?.('online', notify)
-      source.addEventListener?.('offline', notify)
-      return () => {
-        source.removeEventListener?.('online', notify)
-        source.removeEventListener?.('offline', notify)
-      }
-    },
-  }
-}
-
 export function createNetInfoConnectivityProvider(
   netInfo: NetInfoLike = NetInfo,
 ): ConnectivityProvider {
@@ -74,7 +41,6 @@ export function createNetInfoConnectivityProvider(
     return current
   }
 
-  void refresh()
   return {
     getState: () => current,
     refresh,
@@ -88,18 +54,43 @@ export function createNetInfoConnectivityProvider(
   }
 }
 
-export function useConnectivityState(provider: ConnectivityProvider): ConnectivityState {
+export function useConnectivityState(provider: ConnectivityProvider): {
+  state: ConnectivityState
+  refreshAndSet: () => Promise<ConnectivityState>
+} {
   const [state, setState] = useState(provider.getState)
-  useEffect(() => {
-    let active = true
-    const unsubscribe = provider.subscribe(setState)
-    void provider.refresh().then((next) => {
-      if (active) setState(next)
-    })
-    return () => {
-      active = false
-      unsubscribe()
-    }
+  const mountedRef = useRef(false)
+  const refreshPromiseRef = useRef<Promise<ConnectivityState> | null>(null)
+  const refreshAndSet = useCallback(() => {
+    const activeRefresh = refreshPromiseRef.current
+    if (activeRefresh) return activeRefresh
+
+    let operation: Promise<ConnectivityState>
+    operation = provider
+      .refresh()
+      .then((next) => {
+        if (mountedRef.current) setState(next)
+        return next
+      })
+      .finally(() => {
+        if (refreshPromiseRef.current === operation) refreshPromiseRef.current = null
+      })
+    refreshPromiseRef.current = operation
+    return operation
   }, [provider])
-  return state
+
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const unsubscribe = provider.subscribe(setState)
+    void refreshAndSet()
+    return unsubscribe
+  }, [provider, refreshAndSet])
+
+  return { state, refreshAndSet }
 }

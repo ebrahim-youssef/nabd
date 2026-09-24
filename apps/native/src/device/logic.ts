@@ -1,9 +1,7 @@
 import { deviceCopy } from './copy'
 import type {
-  DeviceAction,
-  DeviceActionType,
-  DeviceCapabilitySnapshot,
-  DeviceStatus,
+  LocationAction,
+  LocationActionType,
   LocationCapabilitySnapshot,
   LocationStatus,
 } from './types'
@@ -13,45 +11,38 @@ export type {
   CityCacheState,
   ConnectivityState,
   CoordinateCacheState,
-  DeviceAction,
-  DeviceActionType,
-  DeviceCapabilitySnapshot,
-  DeviceStatus,
   GpsState,
   LocationAction,
   LocationActionType,
   LocationCapabilitySnapshot,
   LocationFixState,
   LocationPermission,
-  LocationSnapshot,
   LocationStatus,
 } from './types'
 
-const actionLabels: Record<DeviceActionType, string> = {
+const actionLabels: Record<LocationActionType, string> = {
   'open-app-settings': deviceCopy.actions.openAppSettings,
   'open-location-settings': deviceCopy.actions.openLocationSettings,
   'retry-location': deviceCopy.actions.retryLocation,
 }
 
-const action = (type: DeviceActionType): DeviceAction => ({ type, label: actionLabels[type] })
+const action = (type: LocationActionType): LocationAction => ({ type, label: actionLabels[type] })
 
-const cacheStatus = (
-  location: LocationCapabilitySnapshot,
-  message: string,
-  retry: boolean,
-): LocationStatus => ({
-  capability: 'location',
+const cacheStatus = (message: string, retry: boolean): LocationStatus => ({
   state: 'offline-cache',
-  source: 'cache',
-  city: location.cityCache,
   message,
   action: retry ? action('retry-location') : null,
+})
+
+const cityRequired = (): LocationStatus => ({
+  state: 'city-required',
+  message: deviceCopy.location.cityRequired,
+  action: action('retry-location'),
 })
 
 const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus => {
   if (location.permission === 'blocked') {
     return {
-      capability: 'location',
       state: 'settings-required',
       message: deviceCopy.location.settingsRequired,
       action: action('open-app-settings'),
@@ -60,7 +51,6 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
 
   if (location.permission !== 'granted') {
     return {
-      capability: 'location',
       state: 'permission-required',
       message: deviceCopy.location.permissionRequired,
       action: action('retry-location'),
@@ -69,7 +59,6 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
 
   if (location.gps === 'disabled') {
     return {
-      capability: 'location',
       state: 'gps-disabled',
       message: deviceCopy.location.gpsDisabled,
       action: action('open-location-settings'),
@@ -78,7 +67,6 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
 
   if (location.gps === 'unknown') {
     return {
-      capability: 'location',
       state: 'unavailable',
       message: deviceCopy.location.unavailable,
       action: action('retry-location'),
@@ -95,7 +83,6 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
           ? deviceCopy.location.noCache
           : deviceCopy.location.unavailable
     return {
-      capability: 'location',
       state: 'unavailable',
       message,
       action: action('retry-location'),
@@ -104,15 +91,9 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
 
   if (fix === 'timeout' || fix === 'error') {
     if (location.cityCache === 'missing') {
-      return {
-        capability: 'location',
-        state: 'city-required',
-        message: deviceCopy.location.cityRequired,
-        action: action('retry-location'),
-      }
+      return cityRequired()
     }
     return cacheStatus(
-      location,
       fix === 'timeout' ? deviceCopy.location.timeoutCache : deviceCopy.location.unavailable,
       true,
     )
@@ -120,7 +101,6 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
 
   if (location.coordinateCache === 'stale' && location.connectivity === 'online') {
     return {
-      capability: 'location',
       state: 'unavailable',
       message: deviceCopy.location.stale,
       action: action('retry-location'),
@@ -128,20 +108,12 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
   }
 
   if (location.cityCache === 'missing') {
-    return {
-      capability: 'location',
-      state: 'city-required',
-      message: deviceCopy.location.cityRequired,
-      action: action('retry-location'),
-    }
+    return cityRequired()
   }
 
   if (location.connectivity === 'online') {
     return {
-      capability: 'location',
       state: 'ready',
-      source: 'fresh',
-      city: location.cityCache,
       message: deviceCopy.location.ready,
       action: null,
     }
@@ -149,13 +121,9 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
 
   const unknownConnectivity = location.connectivity === 'unknown'
   return cacheStatus(
-    location,
     unknownConnectivity ? deviceCopy.location.unknownCache : deviceCopy.location.offlineCache,
     unknownConnectivity,
   )
 }
 
 export { evaluateLocation }
-export const evaluateDeviceStatus = (snapshot: DeviceCapabilitySnapshot): DeviceStatus => ({
-  location: evaluateLocation(snapshot.location),
-})

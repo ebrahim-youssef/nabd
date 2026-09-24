@@ -5,14 +5,12 @@ export type CoordinateCacheState = 'fresh' | 'stale' | 'missing'
 export type CityCacheState = 'available' | 'missing'
 export type LocationFixState = 'ok' | 'timeout' | 'error'
 
-export type DeviceActionType = 'open-app-settings' | 'open-location-settings' | 'retry-location'
-export type LocationActionType = DeviceActionType
+export type LocationActionType = 'open-app-settings' | 'open-location-settings' | 'retry-location'
 
-export type DeviceAction = {
-  type: DeviceActionType
+export type LocationAction = {
+  type: LocationActionType
   label: string
 }
-export type LocationAction = DeviceAction
 
 export type LocationCapabilitySnapshot = {
   permission: LocationPermission
@@ -23,33 +21,15 @@ export type LocationCapabilitySnapshot = {
   fix?: LocationFixState
 }
 
-export type LocationSnapshot = LocationCapabilitySnapshot
-
-export type LocationStatus =
-  | {
-      capability: 'location'
-      state: 'ready' | 'offline-cache'
-      source: 'fresh' | 'cache'
-      city: CityCacheState
-      message: string
-      action: DeviceAction | null
-    }
-  | {
-      capability: 'location'
-      state:
-        | 'permission-required'
-        | 'settings-required'
-        | 'gps-disabled'
-        | 'city-required'
-        | 'unavailable'
-      message: string
-      action: DeviceAction
-    }
-
-export type DeviceCapabilitySnapshot = {
-  location: LocationCapabilitySnapshot
-}
-
-export type DeviceStatus = {
-  location: LocationStatus
+export type LocationStatus = {
+  state:
+    | 'ready'
+    | 'offline-cache'
+    | 'permission-required'
+    | 'settings-required'
+    | 'gps-disabled'
+    | 'city-required'
+    | 'unavailable'
+  message: string
+  action: LocationAction | null
 }

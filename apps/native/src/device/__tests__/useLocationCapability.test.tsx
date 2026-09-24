@@ -5,7 +5,7 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { AppState } from 'react-native'
 
 import type { CachedLocation } from '../db'
-import { createDeviceRepository, LOCATION_CACHE_MAX_AGE_MS } from '../db'
+import { createDeviceRepository } from '../db'
 import { useLocationCapability } from '../useLocationCapability'
 
 jest.mock('@react-native-community/netinfo', () => ({
@@ -33,7 +33,6 @@ jest.mock('expo-intent-launcher', () => ({
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('../db', () => ({
   createDeviceRepository: jest.fn(),
-  LOCATION_CACHE_MAX_AGE_MS: 600_000,
 }))
 
 const mockedLocation = Location as jest.Mocked<typeof Location>
@@ -45,27 +44,23 @@ const mockedCreateDeviceRepository = createDeviceRepository as jest.MockedFuncti
 const NOW = 1_800_000_000_000
 const now = () => NOW
 
+type TestCacheState = CachedLocation & { fresh: boolean }
+
 type TestRepository = {
-  readCachedLocation: jest.Mock<Promise<CachedLocation | null>, []>
   writeCachedLocation: jest.Mock<Promise<void>, [unknown, number]>
-  clearCachedLocation: jest.Mock<Promise<void>, []>
-  readLocationCacheState: jest.Mock<Promise<unknown>, [number]>
+  readLocationCacheState: jest.Mock<Promise<TestCacheState | null>, [number]>
 }
 
 let repository: TestRepository
 let appStateListener:
   ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void) | undefined
 
-function createRepository(cached: CachedLocation | null = null): TestRepository {
+function createRepository(cached: CachedLocation | null = null, fresh = false): TestRepository {
   return {
-    readCachedLocation: jest.fn().mockResolvedValue(cached),
     writeCachedLocation: jest.fn().mockResolvedValue(undefined),
-    clearCachedLocation: jest.fn().mockResolvedValue(undefined),
     readLocationCacheState: jest
       .fn()
-      .mockImplementation(async (now) =>
-        cached ? { ...cached, fresh: now - cached.recordedAt <= LOCATION_CACHE_MAX_AGE_MS } : null,
-      ),
+      .mockImplementation(async () => (cached ? { ...cached, fresh } : null)),
   }
 }
 
@@ -155,7 +150,7 @@ describe('useLocationCapability', () => {
       latitude: 30,
       longitude: 31,
       city: 'القاهرة',
-      recordedAt: NOW - LOCATION_CACHE_MAX_AGE_MS - 1,
+      recordedAt: NOW,
     })
     mockedCreateDeviceRepository.mockReturnValue(repository as never)
     const geocoder = jest.fn().mockRejectedValue(new Error('network down'))
@@ -164,20 +159,24 @@ describe('useLocationCapability', () => {
     await waitFor(() => expect(result.current.status.state).toBe('ready'))
 
     expect(result.current.city).toBe('القاهرة')
+    expect(repository.writeCachedLocation).toHaveBeenCalledTimes(1)
     expect(repository.writeCachedLocation).toHaveBeenNthCalledWith(
-      2,
+      1,
       { latitude: 30.0444, longitude: 31.2357, city: 'القاهرة' },
       NOW,
     )
   })
 
   it('does not request a fix on mount when the cached location is fresh', async () => {
-    repository = createRepository({
-      latitude: 30,
-      longitude: 31,
-      city: 'القاهرة',
-      recordedAt: NOW - 1_000,
-    })
+    repository = createRepository(
+      {
+        latitude: 30,
+        longitude: 31,
+        city: 'القاهرة',
+        recordedAt: NOW - 1_000,
+      },
+      true,
+    )
     mockedCreateDeviceRepository.mockReturnValue(repository as never)
 
     const { result } = renderLocation()
@@ -194,7 +193,7 @@ describe('useLocationCapability', () => {
         latitude: 30,
         longitude: 31,
         city: 'القاهرة',
-        recordedAt: NOW - LOCATION_CACHE_MAX_AGE_MS - 1,
+        recordedAt: NOW,
       } satisfies CachedLocation,
     ],
     ['missing', null],
@@ -209,12 +208,15 @@ describe('useLocationCapability', () => {
   })
 
   it('rechecks permission and services without a fix when the app becomes active with a fresh cache', async () => {
-    repository = createRepository({
-      latitude: 30,
-      longitude: 31,
-      city: 'القاهرة',
-      recordedAt: NOW - 1_000,
-    })
+    repository = createRepository(
+      {
+        latitude: 30,
+        longitude: 31,
+        city: 'القاهرة',
+        recordedAt: NOW - 1_000,
+      },
+      true,
+    )
     mockedCreateDeviceRepository.mockReturnValue(repository as never)
     const connectivityProvider = createConnectivityProvider()
     const { result } = renderLocation({ connectivityProvider })
@@ -271,12 +273,15 @@ describe('useLocationCapability', () => {
         resolvePermission = resolve
       }) as never,
     )
-    repository = createRepository({
-      latitude: 30,
-      longitude: 31,
-      city: 'القاهرة',
-      recordedAt: NOW - 1_000,
-    })
+    repository = createRepository(
+      {
+        latitude: 30,
+        longitude: 31,
+        city: 'القاهرة',
+        recordedAt: NOW - 1_000,
+      },
+      true,
+    )
     mockedCreateDeviceRepository.mockReturnValue(repository as never)
     const { result } = renderLocation()
 
@@ -303,12 +308,15 @@ describe('useLocationCapability', () => {
   })
 
   it('forces a fix for an explicit retry with a fresh cache', async () => {
-    repository = createRepository({
-      latitude: 30,
-      longitude: 31,
-      city: 'القاهرة',
-      recordedAt: NOW - 1_000,
-    })
+    repository = createRepository(
+      {
+        latitude: 30,
+        longitude: 31,
+        city: 'القاهرة',
+        recordedAt: NOW - 1_000,
+      },
+      true,
+    )
     mockedCreateDeviceRepository.mockReturnValue(repository as never)
     const { result } = renderLocation()
 

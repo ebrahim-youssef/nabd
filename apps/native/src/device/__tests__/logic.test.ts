@@ -1,32 +1,25 @@
-import { deviceCopy, evaluateDeviceStatus } from '../logic'
-import type { DeviceCapabilitySnapshot } from '../types'
+import { deviceCopy, evaluateLocation } from '../logic'
+import type { LocationCapabilitySnapshot } from '../types'
 
-const baseSnapshot: DeviceCapabilitySnapshot = {
-  location: {
-    permission: 'granted',
-    gps: 'enabled',
-    connectivity: 'online',
-    coordinateCache: 'fresh',
-    cityCache: 'available',
-  },
+const baseSnapshot: LocationCapabilitySnapshot = {
+  permission: 'granted',
+  gps: 'enabled',
+  connectivity: 'online',
+  coordinateCache: 'fresh',
+  cityCache: 'available',
 }
 
 describe('location status logic', () => {
   it('reports a ready fresh location with no action', () => {
-    expect(evaluateDeviceStatus(baseSnapshot).location).toEqual({
-      capability: 'location',
+    expect(evaluateLocation(baseSnapshot)).toEqual({
       state: 'ready',
-      source: 'fresh',
-      city: 'available',
       message: deviceCopy.location.ready,
       action: null,
     })
   })
 
   it('keeps denied location permission actionable', () => {
-    const status = evaluateDeviceStatus({
-      location: { ...baseSnapshot.location, permission: 'denied' },
-    }).location
+    const status = evaluateLocation({ ...baseSnapshot, permission: 'denied' })
 
     expect(status).toMatchObject({
       state: 'permission-required',
@@ -36,9 +29,7 @@ describe('location status logic', () => {
   })
 
   it('routes blocked location permission to app settings', () => {
-    const status = evaluateDeviceStatus({
-      location: { ...baseSnapshot.location, permission: 'blocked' },
-    }).location
+    const status = evaluateLocation({ ...baseSnapshot, permission: 'blocked' })
 
     expect(status).toMatchObject({
       state: 'settings-required',
@@ -48,9 +39,7 @@ describe('location status logic', () => {
   })
 
   it('keeps GPS-disabled distinct from permission denial', () => {
-    const status = evaluateDeviceStatus({
-      location: { ...baseSnapshot.location, gps: 'disabled' },
-    }).location
+    const status = evaluateLocation({ ...baseSnapshot, gps: 'disabled' })
 
     expect(status).toMatchObject({
       state: 'gps-disabled',
@@ -60,31 +49,26 @@ describe('location status logic', () => {
   })
 
   it('maps a timeout to retry while using cached coordinates', () => {
-    const status = evaluateDeviceStatus({
-      location: {
-        ...baseSnapshot.location,
-        coordinateCache: 'stale',
-        fix: 'timeout',
-      },
-    }).location
+    const status = evaluateLocation({
+      ...baseSnapshot,
+      coordinateCache: 'stale',
+      fix: 'timeout',
+    })
 
     expect(status).toMatchObject({
       state: 'offline-cache',
-      source: 'cache',
       action: { type: 'retry-location' },
       message: deviceCopy.location.timeoutCache,
     })
   })
 
   it('maps a timeout without cache to an actionable unavailable state', () => {
-    const status = evaluateDeviceStatus({
-      location: {
-        ...baseSnapshot.location,
-        coordinateCache: 'missing',
-        cityCache: 'missing',
-        fix: 'timeout',
-      },
-    }).location
+    const status = evaluateLocation({
+      ...baseSnapshot,
+      coordinateCache: 'missing',
+      cityCache: 'missing',
+      fix: 'timeout',
+    })
 
     expect(status).toMatchObject({
       state: 'unavailable',
@@ -94,9 +78,7 @@ describe('location status logic', () => {
   })
 
   it('produces an actionable city-required state when the city is missing', () => {
-    const status = evaluateDeviceStatus({
-      location: { ...baseSnapshot.location, cityCache: 'missing' },
-    }).location
+    const status = evaluateLocation({ ...baseSnapshot, cityCache: 'missing' })
 
     expect(status).toMatchObject({
       state: 'city-required',
@@ -106,55 +88,44 @@ describe('location status logic', () => {
   })
 
   it('uses a cached location while offering retry when connectivity is unknown', () => {
-    const status = evaluateDeviceStatus({
-      location: {
-        ...baseSnapshot.location,
-        connectivity: 'unknown',
-        coordinateCache: 'stale',
-      },
-    }).location
+    const status = evaluateLocation({
+      ...baseSnapshot,
+      connectivity: 'unknown',
+      coordinateCache: 'stale',
+    })
 
     expect(status).toMatchObject({
       state: 'offline-cache',
-      source: 'cache',
       action: { type: 'retry-location' },
       message: deviceCopy.location.unknownCache,
     })
   })
 
   it('keeps a fresh unknown-connectivity cache usable and actionable', () => {
-    const status = evaluateDeviceStatus({
-      location: { ...baseSnapshot.location, connectivity: 'unknown' },
-    }).location
+    const status = evaluateLocation({ ...baseSnapshot, connectivity: 'unknown' })
 
     expect(status).toMatchObject({
       state: 'offline-cache',
-      source: 'cache',
       action: { type: 'retry-location' },
     })
   })
 
   it('uses an offline cache without a retry action', () => {
-    const status = evaluateDeviceStatus({
-      location: {
-        ...baseSnapshot.location,
-        connectivity: 'offline',
-        coordinateCache: 'stale',
-      },
-    }).location
+    const status = evaluateLocation({
+      ...baseSnapshot,
+      connectivity: 'offline',
+      coordinateCache: 'stale',
+    })
 
     expect(status).toMatchObject({
       state: 'offline-cache',
-      source: 'cache',
       action: null,
       message: deviceCopy.location.offlineCache,
     })
   })
 
   it('does not treat an online stale cache as fresh', () => {
-    const status = evaluateDeviceStatus({
-      location: { ...baseSnapshot.location, coordinateCache: 'stale' },
-    }).location
+    const status = evaluateLocation({ ...baseSnapshot, coordinateCache: 'stale' })
 
     expect(status).toMatchObject({
       state: 'unavailable',
@@ -164,14 +135,12 @@ describe('location status logic', () => {
   })
 
   it('offers retry when offline and no coordinate cache exists', () => {
-    const status = evaluateDeviceStatus({
-      location: {
-        ...baseSnapshot.location,
-        connectivity: 'offline',
-        coordinateCache: 'missing',
-        cityCache: 'missing',
-      },
-    }).location
+    const status = evaluateLocation({
+      ...baseSnapshot,
+      connectivity: 'offline',
+      coordinateCache: 'missing',
+      cityCache: 'missing',
+    })
 
     expect(status).toMatchObject({
       state: 'unavailable',

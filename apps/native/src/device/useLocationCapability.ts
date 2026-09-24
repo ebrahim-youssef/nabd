@@ -5,7 +5,7 @@ import { AppState } from 'react-native'
 import { logger } from '../observability/logger'
 import { createNetInfoConnectivityProvider, useConnectivityState } from './connectivity'
 import type { ConnectivityProvider } from './connectivity'
-import { createDeviceRepository, LOCATION_CACHE_MAX_AGE_MS } from './db'
+import { createDeviceRepository } from './db'
 import type { CachedLocation } from './db'
 import { evaluateLocation } from './logic'
 import { createReverseGeocodeAdapter, resolveCachedCity } from './reverseGeocode'
@@ -19,28 +19,16 @@ import {
   requestPermission,
   servicesEnabled,
 } from './location'
-import type { LocationFixResult } from './location'
 import type {
   ConnectivityState,
-  DeviceActionType,
   GpsState,
+  LocationActionType,
   LocationCapabilitySnapshot,
   LocationPermission,
   LocationStatus,
 } from './types'
 
-export type LocationAdapter = {
-  readPermission: typeof readPermission
-  requestPermission: typeof requestPermission
-  servicesEnabled: typeof servicesEnabled
-  enableServices: typeof enableServices
-  getFix: typeof getFix
-  openAppSettings: typeof openAppSettings
-  openLocationSettings: typeof openLocationSettings
-}
-
 export type UseLocationCapabilityOptions = {
-  adapter?: LocationAdapter
   connectivityProvider?: ConnectivityProvider
   reverseGeocoder?: ReverseGeocoder
   now?: () => number
@@ -56,17 +44,7 @@ export type LocationCapabilityView = {
   city: string | null
   isRefreshing: boolean
   refresh: (options?: LocationRefreshOptions) => Promise<void>
-  runAction: (action?: DeviceActionType) => Promise<void>
-}
-
-const DEFAULT_LOCATION_ADAPTER: LocationAdapter = {
-  readPermission,
-  requestPermission,
-  servicesEnabled,
-  enableServices,
-  getFix,
-  openAppSettings,
-  openLocationSettings,
+  runAction: (action?: LocationActionType) => Promise<void>
 }
 
 const INITIAL_SNAPSHOT: LocationCapabilitySnapshot = {
@@ -77,43 +55,31 @@ const INITIAL_SNAPSHOT: LocationCapabilitySnapshot = {
   cityCache: 'missing',
 }
 
-const INITIAL_VIEW: LocationCapabilityViewState = {
-  snapshot: INITIAL_SNAPSHOT,
-  coordinates: null,
-  city: null,
-}
-
 type LocationCapabilityViewState = {
   snapshot: LocationCapabilitySnapshot
   coordinates: { latitude: number; longitude: number } | null
   city: string | null
 }
 
-type ConnectivityObservation = {
-  source: ConnectivityState
-  value: ConnectivityState
-}
-
-function coordinateCacheState(cached: CachedLocation | null, now: number) {
-  if (!cached) return 'missing' as const
-  return now - cached.recordedAt <= LOCATION_CACHE_MAX_AGE_MS
-    ? ('fresh' as const)
-    : ('stale' as const)
+const INITIAL_VIEW: LocationCapabilityViewState = {
+  snapshot: INITIAL_SNAPSHOT,
+  coordinates: null,
+  city: null,
 }
 
 function makeSnapshot(
   permission: LocationPermission,
   gps: GpsState,
   cached: CachedLocation | null,
+  cacheFresh: boolean,
   connectivity: ConnectivityState,
-  now: number,
   fix?: LocationCapabilitySnapshot['fix'],
 ): LocationCapabilitySnapshot {
   return {
     permission,
     gps,
     connectivity,
-    coordinateCache: coordinateCacheState(cached, now),
+    coordinateCache: cached ? (cacheFresh ? 'fresh' : 'stale') : 'missing',
     cityCache: cached?.city ? 'available' : 'missing',
     fix,
   }
@@ -127,21 +93,22 @@ function currentSnapshot(snapshot: LocationCapabilitySnapshot, connectivity: Con
   return { ...snapshot, connectivity }
 }
 
+async function enableServicesOrOpenSettings(): Promise<boolean> {
+  const enabled = await enableServices()
+  if (!enabled) await openLocationSettings()
+  return enabled
+}
+
 export function useLocationCapability(
   options: UseLocationCapabilityOptions = {},
 ): LocationCapabilityView {
   const database = useSQLiteContext()
   const repository = useMemo(() => createDeviceRepository(database), [database])
-  const adapter = useMemo(() => options.adapter ?? DEFAULT_LOCATION_ADAPTER, [options.adapter])
   const connectivityProvider = useMemo(
     () => options.connectivityProvider ?? createNetInfoConnectivityProvider(),
     [options.connectivityProvider],
   )
-  const connectivity = useConnectivityState(connectivityProvider)
-  const [connectivityObservation, setConnectivityObservation] =
-    useState<ConnectivityObservation | null>(null)
-  const observedConnectivity =
-    connectivityObservation?.source === connectivity ? connectivityObservation.value : connectivity
+  const { state: connectivity, refreshAndSet } = useConnectivityState(connectivityProvider)
   const reverseGeocoder = useMemo(
     () => options.reverseGeocoder ?? createReverseGeocodeAdapter(),
     [options.reverseGeocoder],
@@ -154,10 +121,9 @@ export function useLocationCapability(
   const viewRef = useRef<LocationCapabilityViewState>(INITIAL_VIEW)
   const cachedLocationRef = useRef<CachedLocation | null>(null)
   const connectivityRef = useRef(connectivity)
-  const connectivitySourceRef = useRef(connectivity)
   const refreshPromiseRef = useRef<Promise<void> | null>(null)
-  const refreshForceRef = useRef(false)
-  const forcedRefreshPromiseRef = useRef<Promise<void> | null>(null)
+  const activeForcedRef = useRef(false)
+  const forceQueuedRef = useRef(false)
   const actionPromiseRef = useRef<Promise<void> | null>(null)
 
   const commit = useCallback(
@@ -183,28 +149,25 @@ export function useLocationCapability(
       setRefreshing(true)
       let cached = cachedLocationRef.current
       try {
-        const permission = await adapter.readPermission()
+        const permission = await readPermission()
         const observedAt = now()
         const cacheState = await repository.readLocationCacheState(observedAt)
-        const sourceConnectivity = connectivitySourceRef.current
-        const currentConnectivity = await connectivityProvider.refresh()
+        let cacheFresh = cacheState?.fresh ?? false
+        const currentConnectivity = await refreshAndSet()
         connectivityRef.current = currentConnectivity
-        if (mountedRef.current) {
-          setConnectivityObservation({ source: sourceConnectivity, value: currentConnectivity })
-        }
         cached = cacheState
-        commit(makeSnapshot(permission, 'unknown', cached, currentConnectivity, observedAt), cached)
+        commit(makeSnapshot(permission, 'unknown', cached, cacheFresh, currentConnectivity), cached)
         if (permission !== 'granted') return
 
-        const gps: GpsState = (await adapter.servicesEnabled()) ? 'enabled' : 'disabled'
-        commit(makeSnapshot(permission, gps, cached, connectivityRef.current, observedAt), cached)
+        const gps: GpsState = (await servicesEnabled()) ? 'enabled' : 'disabled'
+        commit(makeSnapshot(permission, gps, cached, cacheFresh, connectivityRef.current), cached)
         if (gps === 'disabled') return
         if (!force && cacheState?.fresh) return
 
-        const fix = await adapter.getFix()
+        const fix = await getFix()
         if (fix.kind !== 'ok') {
           commit(
-            makeSnapshot(permission, gps, cached, connectivityRef.current, observedAt, fix.kind),
+            makeSnapshot(permission, gps, cached, cacheFresh, connectivityRef.current, fix.kind),
             cached,
           )
           return
@@ -214,28 +177,26 @@ export function useLocationCapability(
         const previousCity = cached?.city ?? null
         const recordedAt = now()
         await repository.writeCachedLocation({ ...coordinates, city: previousCity }, recordedAt)
+        cacheFresh = true
         cached = { ...coordinates, city: previousCity, recordedAt }
         commit(
-          makeSnapshot(permission, gps, cached, connectivityRef.current, recordedAt, 'ok'),
+          makeSnapshot(permission, gps, cached, cacheFresh, connectivityRef.current, 'ok'),
           cached,
         )
 
-        let city = previousCity
-        try {
-          city = await resolveCachedCity(
-            coordinates,
-            connectivityRef.current,
-            previousCity,
-            reverseGeocoder,
-          )
-        } catch (cause: unknown) {
-          logger.warn('Native location city resolution failed', { error: cause })
-        }
+        const city = await resolveCachedCity(
+          coordinates,
+          connectivityRef.current,
+          previousCity,
+          reverseGeocoder,
+        )
+        if (city === previousCity) return
+
         const resolved = { ...coordinates, city, recordedAt }
         await repository.writeCachedLocation({ ...coordinates, city }, recordedAt)
         cached = resolved
         commit(
-          makeSnapshot(permission, gps, cached, connectivityRef.current, recordedAt, 'ok'),
+          makeSnapshot(permission, gps, cached, cacheFresh, connectivityRef.current, 'ok'),
           cached,
         )
       } catch (cause: unknown) {
@@ -248,17 +209,32 @@ export function useLocationCapability(
         setRefreshing(false)
       }
     },
-    [adapter, commit, connectivityProvider, now, repository, reverseGeocoder, setRefreshing],
+    [commit, now, refreshAndSet, repository, reverseGeocoder, setRefreshing],
   )
 
   const startRefresh = useCallback(
-    (force: boolean): Promise<void> => {
-      const operation = performRefresh(force).finally(() => {
-        refreshPromiseRef.current = null
-        refreshForceRef.current = false
-      })
+    (initialForce: boolean): Promise<void> => {
+      let operation: Promise<void>
+      const drain = async (): Promise<void> => {
+        let force = initialForce
+        try {
+          while (true) {
+            activeForcedRef.current = force
+            forceQueuedRef.current = false
+            await performRefresh(force)
+            if (!forceQueuedRef.current) return
+            force = true
+          }
+        } finally {
+          if (refreshPromiseRef.current === operation) {
+            refreshPromiseRef.current = null
+            activeForcedRef.current = false
+            forceQueuedRef.current = false
+          }
+        }
+      }
+      operation = drain()
       refreshPromiseRef.current = operation
-      refreshForceRef.current = force
       return operation
     },
     [performRefresh],
@@ -268,29 +244,14 @@ export function useLocationCapability(
     ({ force = false }: LocationRefreshOptions = {}): Promise<void> => {
       const activeRefresh = refreshPromiseRef.current
       if (!activeRefresh) return startRefresh(force)
-      if (!force || refreshForceRef.current) return activeRefresh
-      if (forcedRefreshPromiseRef.current) return forcedRefreshPromiseRef.current
-
-      const runForcedRefresh = (): Promise<void> => {
-        const currentRefresh = refreshPromiseRef.current
-        if (!currentRefresh) return startRefresh(true)
-        if (refreshForceRef.current) return currentRefresh
-        return currentRefresh.then(runForcedRefresh)
-      }
-      const queuedRefresh = activeRefresh.then(runForcedRefresh, runForcedRefresh)
-      const trackedQueuedRefresh = queuedRefresh.finally(() => {
-        if (forcedRefreshPromiseRef.current === trackedQueuedRefresh) {
-          forcedRefreshPromiseRef.current = null
-        }
-      })
-      forcedRefreshPromiseRef.current = trackedQueuedRefresh
-      return trackedQueuedRefresh
+      if (force && !activeForcedRef.current) forceQueuedRef.current = true
+      return activeRefresh
     },
     [startRefresh],
   )
 
   const runAction = useCallback(
-    (requestedAction?: DeviceActionType): Promise<void> => {
+    (requestedAction?: LocationActionType): Promise<void> => {
       if (actionPromiseRef.current) return actionPromiseRef.current
 
       const operation = (async (): Promise<void> => {
@@ -300,38 +261,32 @@ export function useLocationCapability(
 
         try {
           if (action === 'open-app-settings') {
-            await adapter.openAppSettings()
+            await openAppSettings()
             return
           }
 
           if (action === 'open-location-settings') {
             if (snapshot.gps === 'disabled') {
-              const enabled = await adapter.enableServices()
+              const enabled = await enableServicesOrOpenSettings()
               if (enabled) {
                 await refresh({ force: true })
-                return
               }
+              return
             }
-            await adapter.openLocationSettings()
+            await openLocationSettings()
             return
           }
 
           let permission = snapshot.permission
           if (permission === 'undetermined' || permission === 'denied') {
-            permission = await adapter.requestPermission()
+            permission = await requestPermission()
             if (permission !== 'granted') {
               commit({ ...snapshot, permission, fix: undefined }, cachedLocationRef.current)
               return
             }
           }
 
-          if (snapshot.gps === 'disabled') {
-            const enabled = await adapter.enableServices()
-            if (!enabled) {
-              await adapter.openLocationSettings()
-              return
-            }
-          }
+          if (snapshot.gps === 'disabled' && !(await enableServicesOrOpenSettings())) return
 
           await refresh({ force: true })
         } catch (cause: unknown) {
@@ -344,11 +299,10 @@ export function useLocationCapability(
       actionPromiseRef.current = tracked
       return tracked
     },
-    [adapter, commit, refresh],
+    [commit, refresh],
   )
 
   useEffect(() => {
-    connectivitySourceRef.current = connectivity
     connectivityRef.current = connectivity
   }, [connectivity])
 
@@ -370,7 +324,7 @@ export function useLocationCapability(
     return () => subscription.remove()
   }, [refresh])
 
-  const status = evaluateLocation(currentSnapshot(view.snapshot, observedConnectivity))
+  const status = evaluateLocation(currentSnapshot(view.snapshot, connectivity))
 
   return {
     status,
