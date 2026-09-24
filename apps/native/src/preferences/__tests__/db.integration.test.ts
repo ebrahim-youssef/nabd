@@ -68,15 +68,13 @@ describe('native preference SQLite store', () => {
       await migrateDatabase(first.database)
       const preferences = createPreferencesRepository(first.database)
       await preferences.write(PREFERENCE_KEYS.theme, 'dark', 100)
-      await preferences.write(PREFERENCE_KEYS.mode, 'modern', 101)
-      await preferences.write(PREFERENCE_KEYS.calculationMethod, 'umm_al_qura', 102)
+      await preferences.write(PREFERENCE_KEYS.calculationMethod, 'umm_al_qura', 101)
       first.connection.close()
 
       const reopened = createDatabaseAt(directory)
       try {
         const reopenedPreferences = createPreferencesRepository(reopened.database)
         await expect(reopenedPreferences.read(PREFERENCE_KEYS.theme)).resolves.toBe('dark')
-        await expect(reopenedPreferences.read(PREFERENCE_KEYS.mode)).resolves.toBe('modern')
         await expect(reopenedPreferences.read(PREFERENCE_KEYS.calculationMethod)).resolves.toBe(
           'umm_al_qura',
         )

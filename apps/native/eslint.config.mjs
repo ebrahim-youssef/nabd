@@ -3,7 +3,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import { defineConfig } from 'eslint/config'
 
 export default defineConfig([
-  { ignores: ['android/**', 'coverage/**', 'dist/**', 'generated/**'] },
+  { ignores: ['android/**', 'coverage/**', 'dist/**'] },
   {
     files: ['app/**/*.{ts,tsx}', 'src/**/*.{ts,tsx}'],
     languageOptions: {

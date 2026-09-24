@@ -3,4 +3,3 @@ android/
 dist/
 coverage/
 .env*.local
-generated/

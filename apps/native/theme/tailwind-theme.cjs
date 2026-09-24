@@ -1,0 +1,43 @@
+module.exports = {
+  fontSize: {
+    display: ['40px', { lineHeight: '48px' }],
+    title: ['24px', { lineHeight: '28.8px' }],
+    subtitle: ['22px', { lineHeight: '28.6px' }],
+    body: ['16px', { lineHeight: '27.2px' }],
+    small: ['13px', { lineHeight: '19.5px' }],
+    xsmall: ['12px', { lineHeight: '18px' }],
+    label: ['11px', { lineHeight: '15.4px' }],
+    scripture: ['16px', { lineHeight: '32px' }],
+  },
+  borderRadius: {
+    sm: 8.4,
+    md: 11.2,
+    lg: 14,
+    xl: 19.6,
+    '2xl': 25.2,
+    icon: 9999,
+    button: 14,
+    chip: 22,
+    card: 16,
+    ring: 9999,
+  },
+  spacing: {
+    1: 4,
+    2: 8,
+    3: 12,
+    4: 16,
+    5: 20,
+    6: 24,
+    8: 32,
+    10: 40,
+    12: 48,
+  },
+  boxShadow: {
+    card: 'var(--shadow)',
+    'card-sm': 'var(--shadow-sm)',
+  },
+  elevation: {
+    card: 8,
+    'card-sm': 2,
+  },
+}
