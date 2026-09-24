@@ -6,13 +6,14 @@ import { INTENTIONS_COPY, INTENTIONS_LIBRARY, toArabicIndic } from '@nabd/shared
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
-import { ICON_SIZE, NATIVE_THEME } from '../shell/nativeTheme'
+import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 
 const DEED_GLYPH = '۞'
 const INTENTION_GLYPH = '✦'
 
 export function IntentionsRoute() {
   const [expandedIds, setExpandedIds] = useState<ReadonlySet<string>>(new Set())
+  const theme = useThemeTokens()
 
   function toggleDeed(entryId: string) {
     setExpandedIds((previous) => {
@@ -35,7 +36,7 @@ export function IntentionsRoute() {
             const expanded = expandedIds.has(entry.id)
             return (
               <View
-                className={`rounded-card border border-border bg-surface ${expanded ? 'shadow-card' : 'shadow-card-small'}`}
+                className={`rounded-card border border-border bg-surface ${expanded ? 'shadow-card' : 'shadow-card-sm'}`}
                 key={entry.id}
               >
                 <Pressable
@@ -56,13 +57,13 @@ export function IntentionsRoute() {
                   {expanded ? (
                     <ChevronUp
                       accessible={false}
-                      color={NATIVE_THEME.colors['muted-foreground']}
+                      color={theme.hex['muted-foreground']}
                       size={ICON_SIZE}
                     />
                   ) : (
                     <ChevronDown
                       accessible={false}
-                      color={NATIVE_THEME.colors['muted-foreground']}
+                      color={theme.hex['muted-foreground']}
                       size={ICON_SIZE}
                     />
                   )}

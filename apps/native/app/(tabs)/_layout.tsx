@@ -4,11 +4,8 @@ import { useColorScheme } from 'nativewind'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { DATABASE_NAME, migrateDatabase } from '../../src/db/database'
-import {
-  createPreferencesRepository,
-  PREFERENCE_KEYS,
-  readStoredTheme,
-} from '../../src/preferences/db'
+import { createPreferencesRepository, PREFERENCE_KEYS } from '../../src/preferences/db'
+import { readStoredTheme } from '../../src/preferences/theme'
 import { logger } from '../../src/observability/logger'
 import { BottomNav } from '../../src/shell/BottomNav'
 import { DatabaseError, DatabaseLoading } from '../../src/shell/DatabaseStatus'

@@ -3,7 +3,7 @@ import { Check, Plus } from 'lucide-react-native'
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native'
 
-import { ICON_SIZE, NATIVE_THEME } from '../shell/nativeTheme'
+import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { useQada } from './useQada'
 
 const LEDGER_TEST_ID = 'qada-ledger'
@@ -28,6 +28,7 @@ const CHECKMARK = '✓'
 
 export function QadaLedger() {
   const { isLoading, hasAny, remaining, addDebt, payPrayer } = useQada()
+  const theme = useThemeTokens()
   const [isModalVisible, setIsModalVisible] = useState(false)
   const [period, setPeriod] = useState({ years: '', months: '', days: '' })
   const { years, months, days } = period
@@ -56,11 +57,11 @@ export function QadaLedger() {
       </Text>
       <Pressable
         accessibilityRole="button"
-        className="self-start flex-row items-center justify-center gap-2 rounded-button bg-primary px-5 py-2.5 text-body text-on-primary shadow-card-small"
+        className="self-start flex-row items-center justify-center gap-2 rounded-button bg-primary px-5 py-2.5 text-body text-on-primary shadow-card-sm"
         onPress={openModal}
         testID={ADD_TEST_ID}
       >
-        <Plus accessible={false} color={NATIVE_THEME.colors['on-primary']} size={ICON_SIZE} />
+        <Plus accessible={false} color={theme.hex['on-primary']} size={ICON_SIZE} />
         <Text className="text-body text-on-primary">{QADA_COPY.addButton}</Text>
       </Pressable>
       <View className="gap-2">
@@ -69,7 +70,7 @@ export function QadaLedger() {
           const clear = count === 0
           return (
             <View
-              className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 shadow-card-small"
+              className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 shadow-card-sm"
               key={prayer.id}
               testID={`${ROW_TEST_PREFIX}${prayer.id}`}
             >
@@ -92,9 +93,7 @@ export function QadaLedger() {
               >
                 <Check
                   accessible={false}
-                  color={
-                    clear ? NATIVE_THEME.colors['muted-foreground'] : NATIVE_THEME.colors.primary
-                  }
+                  color={clear ? theme.hex['muted-foreground'] : theme.hex.primary}
                   size={ICON_SIZE - 4}
                 />
                 <Text

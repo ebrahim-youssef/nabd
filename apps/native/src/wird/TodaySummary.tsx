@@ -4,7 +4,7 @@ import { Text, View } from 'react-native'
 import { useMemo } from 'react'
 
 import { useWirdDay } from './WirdDayProvider'
-import { NATIVE_THEME } from '../shell/nativeTheme'
+import { useThemeTokens } from '../../theme/palette'
 const RING_RADIUS = 42
 const RING_STROKE = 8
 const RING_CENTER = RING_RADIUS + RING_STROKE / 2
@@ -21,6 +21,7 @@ const SUMMARY_VOLUNTARY_TEST_ID = 'summary-voluntary'
 
 export function TodaySummary() {
   const { areas, isLoading } = useWirdDay()
+  const theme = useThemeTokens()
   const summary = useMemo(() => summarizeChecklist(areas), [areas])
 
   if (isLoading) return <View className="h-28 w-full rounded-card bg-surface-2" />
@@ -50,7 +51,7 @@ export function TodaySummary() {
             cy={RING_CENTER}
             fill="none"
             r={RING_RADIUS}
-            stroke={NATIVE_THEME.colors['ring-track']}
+            stroke={theme.hex['ring-track']}
             strokeWidth={RING_STROKE}
           />
           <Circle
@@ -58,7 +59,7 @@ export function TodaySummary() {
             cy={RING_CENTER}
             fill="none"
             r={RING_RADIUS}
-            stroke={NATIVE_THEME.colors.gold}
+            stroke={theme.hex.gold}
             strokeDasharray={RING_CIRCUMFERENCE}
             strokeDashoffset={dashOffset}
             strokeLinecap="round"

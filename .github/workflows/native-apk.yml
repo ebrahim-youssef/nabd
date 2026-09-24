@@ -46,7 +46,6 @@ jobs:
         with:
           packages: platform-tools
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter apps-native generate:assets
       - run: pnpm --filter apps-native exec expo prebuild --platform android --no-install
       # Release, not debug. A debug React Native APK contains no JS bundle: it expects a Metro
       # dev server on the same network, so installing one standalone shows a red error screen.

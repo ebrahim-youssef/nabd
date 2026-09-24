@@ -117,7 +117,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
         <View className="mt-6 gap-3">
           {SHARED_COPY.welcomePoints.map((point) => (
             <View
-              className="flex-row items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-card-small"
+              className="flex-row items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-card-sm"
               key={point}
             >
               <Text accessibilityElementsHidden className="text-title text-gold">
@@ -161,7 +161,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
                       className={`rounded-card border p-3 ${
                         checked
                           ? 'border-primary bg-primary/10'
-                          : 'border-border bg-surface shadow-card-small'
+                          : 'border-border bg-surface shadow-card-sm'
                       }`}
                       key={option.id}
                       onPress={() =>
@@ -234,7 +234,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
               className={`rounded-card border p-4 ${
                 checked
                   ? 'border-primary bg-primary/10 shadow-card'
-                  : 'border-border bg-surface shadow-card-small'
+                  : 'border-border bg-surface shadow-card-sm'
               }`}
               key={level.id}
               onPress={() => setSelectedLevelId(level.id)}

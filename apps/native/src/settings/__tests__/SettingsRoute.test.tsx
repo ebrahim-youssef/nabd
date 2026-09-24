@@ -23,11 +23,14 @@ jest.mock('../../preferences/db', () => ({
     latitude: 'nabd:cached-latitude',
     longitude: 'nabd:cached-longitude',
     theme: 'nabd:theme',
-    mode: 'nabd:mode',
   },
-  readStoredTheme: (value: string | null) => (value === 'dark' ? 'dark' : 'light'),
-  readStoredMode: (value: string | null) => (value === 'modern' ? 'modern' : 'classic'),
   createPreferencesRepository: jest.fn(),
+}))
+jest.mock('../../preferences/theme', () => ({
+  DEFAULT_NATIVE_THEME: 'system',
+  SYSTEM_THEME_LABEL: 'حسب الجهاز',
+  readStoredTheme: (value: string | null) =>
+    value === 'light' || value === 'dark' || value === 'system' ? value : 'system',
 }))
 jest.mock('../../wird/useWirdRepository', () => ({ useWirdRepository: jest.fn() }))
 
@@ -55,7 +58,6 @@ describe('SettingsRoute', () => {
     readPreference.mockImplementation(async (key: string) => {
       const values: Record<string, string> = {
         [PREFERENCE_KEYS.theme]: 'dark',
-        [PREFERENCE_KEYS.mode]: 'modern',
         [PREFERENCE_KEYS.calculationMethod]: 'umm_al_qura',
       }
       return values[key] ?? null
@@ -92,11 +94,12 @@ describe('SettingsRoute', () => {
       expect(screen.getByTestId('level-level-1').props.accessibilityState.selected).toBe(true),
     )
     expect(screen.getByTestId('theme-dark').props.accessibilityState.selected).toBe(true)
-    expect(screen.getByTestId('mode-modern').props.accessibilityState.selected).toBe(true)
+    expect(screen.getByTestId('theme-system').props.accessibilityState.selected).toBe(false)
     expect(screen.getByTestId('method-umm_al_qura').props.accessibilityState.selected).toBe(true)
 
     fireEvent.press(screen.getByTestId('theme-light'))
-    fireEvent.press(screen.getByTestId('mode-classic'))
+    fireEvent.press(screen.getByTestId('theme-system'))
+    fireEvent.press(screen.getByTestId('theme-dark'))
     fireEvent.press(screen.getByTestId('method-egyptian'))
     fireEvent.press(screen.getByTestId('level-level-2'))
 
@@ -107,8 +110,13 @@ describe('SettingsRoute', () => {
         expect.any(Number),
       )
       expect(writePreference).toHaveBeenCalledWith(
-        PREFERENCE_KEYS.mode,
-        'classic',
+        PREFERENCE_KEYS.theme,
+        'system',
+        expect.any(Number),
+      )
+      expect(writePreference).toHaveBeenCalledWith(
+        PREFERENCE_KEYS.theme,
+        'dark',
         expect.any(Number),
       )
       expect(writePreference).toHaveBeenCalledWith(
@@ -121,6 +129,9 @@ describe('SettingsRoute', () => {
         '2026-09-20',
         expect.any(Number),
       )
+      expect(mockSetColorScheme).toHaveBeenCalledWith('system')
+      expect(mockSetColorScheme).toHaveBeenCalledWith('dark')
+      expect(readPreference).not.toHaveBeenCalledWith('nabd:mode')
     })
     unmount()
   })

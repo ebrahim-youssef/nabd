@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { shellCopy } from '@nabd/shared'
 
-import { ICON_SIZE, NATIVE_THEME } from './nativeTheme'
+import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { isNavMatch } from './navMatch'
 
 type NativeIcons = {
@@ -33,6 +33,7 @@ export function BottomNav() {
     require('lucide-react-native') as NativeIcons
   const pathname = usePathname()
   const router = useRouter()
+  const theme = useThemeTokens()
   const { bottom } = useSafeAreaInsets()
   // Keep this order aligned with NAV_ORDER.
   const navItems: readonly NavItem[] = [
@@ -86,13 +87,13 @@ export function BottomNav() {
           const active = isNavMatch(pathname, match, exact)
           const activeStyles = active
             ? {
-                container: 'bg-primary shadow-card-small',
-                iconColor: NATIVE_THEME.colors['on-primary'],
+                container: 'bg-primary shadow-card-sm',
+                iconColor: theme.hex['on-primary'],
                 label: 'text-label text-on-primary',
               }
             : {
                 container: '',
-                iconColor: NATIVE_THEME.colors['muted-foreground'],
+                iconColor: theme.hex['muted-foreground'],
                 label: 'text-label text-muted-foreground',
               }
           return (
