@@ -37,15 +37,13 @@ function channelDefinition(momentKind: NotificationMomentKind): ChannelDefinitio
   }
 }
 
-export const NOTIFICATION_CHANNELS: Record<AlarmPayload['channelKey'], ChannelDefinition> = {
+const NOTIFICATION_CHANNELS: Record<AlarmPayload['channelKey'], ChannelDefinition> = {
   before: channelDefinition('before'),
   adhan: channelDefinition('adhan'),
   adhanFajr: channelDefinition('adhanFajr'),
   iqamah: channelDefinition('iqamah'),
   adhkarReminder: channelDefinition('adhkarReminder'),
 }
-
-export const DEFAULT_CHANNEL_ID = NOTIFICATION_CHANNELS.adhan.id
 
 export function channelFor(momentKind: NotificationMomentKind, silentMode: boolean): string {
   const channel = NOTIFICATION_CHANNELS[momentKind]
