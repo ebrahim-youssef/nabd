@@ -1,10 +1,13 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
 import { DEFAULT_NOTIFICATION_PREFS, WIRD_LEVELS } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import { SettingsRoute } from '../SettingsRoute'
+import { deviceCopy } from '../../device/copy'
 import { useNotificationSettings } from '../../device/useNotificationSettings'
+import { requestPrayerReschedule, setPrayerAlarmSyncOutcome } from '../../device/prayerAlarms'
+import { logger } from '../../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 import { useWirdRepository } from '../../wird/useWirdRepository'
 
@@ -18,6 +21,10 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('../../device/useNotificationSettings', () => ({
   useNotificationSettings: jest.fn(),
+}))
+jest.mock('../../device/prayerAlarms', () => ({
+  ...jest.requireActual('../../device/prayerAlarms'),
+  requestPrayerReschedule: jest.fn(),
 }))
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null, Check: () => null }))
 jest.mock('../../preferences/db', () => ({
@@ -83,6 +90,7 @@ const notificationSettings = {
 describe('SettingsRoute', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    setPrayerAlarmSyncOutcome('ok')
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
     mockedUseSQLiteContext.mockReturnValue({} as ReturnType<typeof useSQLiteContext>)
@@ -192,9 +200,29 @@ describe('SettingsRoute', () => {
       )
       expect(mockSetColorScheme).toHaveBeenCalledWith('system')
       expect(mockSetColorScheme).toHaveBeenCalledWith('dark')
+      expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
       expect(readPreference).not.toHaveBeenCalledWith('nabd:mode')
     })
+
     unmount()
+  })
+
+  it('logs a failed calculation-method write without requesting a reschedule', async () => {
+    const cause = new Error('write failed')
+    writePreference.mockRejectedValueOnce(cause)
+    render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('method-egyptian')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('method-egyptian'))
+
+    await waitFor(() =>
+      expect(logger.error).toHaveBeenCalledWith(
+        'Native prayer calculation method write failed',
+        cause,
+        { operation: 'change-calculation-method' },
+      ),
+    )
+    expect(requestPrayerReschedule).not.toHaveBeenCalled()
   })
 
   it('renders the notification controls in the settings section', async () => {
@@ -213,6 +241,23 @@ describe('SettingsRoute', () => {
     expect(setNotificationMoment).toHaveBeenCalledWith('atIqamah', false)
     expect(setNotificationSilentMode).toHaveBeenCalledWith(true)
     expect(runNotificationAction).toHaveBeenCalledWith('open-exact-alarm-settings')
+  })
+
+  it('shows a retryable alarm-sync failure and hides it after success', async () => {
+    setPrayerAlarmSyncOutcome('failed')
+    render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('notification-alarm-sync-failure')).toBeTruthy())
+    expect(screen.getByText(deviceCopy.notifications.syncFailed)).toBeTruthy()
+    expect(screen.getByTestId('notification-alarm-sync-retry')).toHaveTextContent(
+      deviceCopy.actions.retry,
+    )
+
+    fireEvent.press(screen.getByTestId('notification-alarm-sync-retry'))
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
+
+    act(() => setPrayerAlarmSyncOutcome('ok'))
+    await waitFor(() => expect(screen.queryByTestId('notification-alarm-sync-failure')).toBeNull())
   })
 
   it.each(['not-required', 'ready'] as const)(

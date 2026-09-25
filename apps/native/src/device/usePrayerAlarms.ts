@@ -16,6 +16,7 @@ import {
   PREFERENCE_KEYS,
 } from '../preferences/db'
 import { createDeviceRepository } from './db'
+import { readExactAlarmSnapshot } from './exactAlarm'
 import {
   cancelPrayerAlarms,
   configureForegroundHandler,
@@ -23,7 +24,8 @@ import {
   replacePrayerAlarms,
 } from './notifications'
 import { buildPrayerSchedule } from './schedule'
-import { subscribePrayerReschedule } from './prayerAlarms'
+import { setPrayerAlarmSyncOutcome, subscribePrayerReschedule } from './prayerAlarms'
+import type { ExactAlarmAccess } from './types'
 
 type UsePrayerAlarmsOptions = {
   now?: () => number
@@ -33,9 +35,14 @@ type PrayerAlarmsView = {
   sync: () => Promise<void>
 }
 
-function prayerAlarmSignature(silentMode: boolean, alarms: AlarmPayload[]): string {
+function prayerAlarmSignature(
+  silentMode: boolean,
+  alarms: AlarmPayload[],
+  access: ExactAlarmAccess,
+): string {
   return JSON.stringify({
     silentMode,
+    access,
     alarms: alarms.map(({ id, at, channelKey }) => ({ id, at, channelKey })),
   })
 }
@@ -56,6 +63,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
   const performSync = useCallback(async (): Promise<void> => {
     try {
       const currentTime = now()
+      const exactAlarm = readExactAlarmSnapshot()
       const [permission, storedPrefs, storedSilentMode, storedMethod, location] = await Promise.all(
         [
           readNotificationPermission(),
@@ -72,6 +80,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
       if (permission !== 'granted' || !notificationPrefs.enabled || location === null) {
         await cancelPrayerAlarms()
         lastAppliedSignatureRef.current = null
+        setPrayerAlarmSyncOutcome('ok')
         return
       }
 
@@ -81,13 +90,18 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
         notificationPrefs,
         now: currentTime,
       })
-      const signature = prayerAlarmSignature(silentMode, alarms)
-      if (lastAppliedSignatureRef.current === signature) return
+      const signature = prayerAlarmSignature(silentMode, alarms, exactAlarm.access)
+      if (lastAppliedSignatureRef.current === signature) {
+        setPrayerAlarmSyncOutcome('ok')
+        return
+      }
 
       await replacePrayerAlarms(alarms, silentMode, currentTime)
       lastAppliedSignatureRef.current = signature
+      setPrayerAlarmSyncOutcome('ok')
     } catch (cause: unknown) {
       lastAppliedSignatureRef.current = null
+      setPrayerAlarmSyncOutcome('failed')
       logger.error('Native prayer alarm synchronization failed', cause, {
         operation: 'sync',
       })
@@ -101,17 +115,19 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
       return active
     }
 
-    const operation = (async (): Promise<void> => {
-      do {
-        queuedRef.current = false
-        await performSync()
-      } while (queuedRef.current)
+    let operation!: Promise<void>
+    operation = (async (): Promise<void> => {
+      try {
+        do {
+          queuedRef.current = false
+          await performSync()
+        } while (queuedRef.current)
+      } finally {
+        if (runningRef.current === operation) runningRef.current = null
+      }
     })()
-    const tracked = operation.finally(() => {
-      if (runningRef.current === tracked) runningRef.current = null
-    })
-    runningRef.current = tracked
-    return tracked
+    runningRef.current = operation
+    return operation
   }, [performSync])
 
   useEffect(() => {

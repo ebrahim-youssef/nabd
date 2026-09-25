@@ -304,6 +304,71 @@ describe('useNotificationSettings', () => {
     expect(mockedOpenAppSettings).toHaveBeenCalledTimes(1)
   })
 
+  it('preserves optimistic preference writes over a refresh that started earlier', async () => {
+    let deferRefreshReads = false
+    let resolveStoredPrefs: ((value: string | null) => void) | undefined
+    let resolveStoredSilentMode: ((value: string | null) => void) | undefined
+    const storedPrefs = JSON.stringify({
+      ...DEFAULT_NOTIFICATION_PREFS,
+      enabled: true,
+    })
+    readPreference.mockImplementation(async (key: string) => {
+      if (!deferRefreshReads) {
+        return key === PREFERENCE_KEYS.notificationPrefs ? storedPrefs : '0'
+      }
+      if (key === PREFERENCE_KEYS.notificationPrefs) {
+        return new Promise<string | null>((resolve) => {
+          resolveStoredPrefs = resolve
+        })
+      }
+      if (key === PREFERENCE_KEYS.silentMode) {
+        return new Promise<string | null>((resolve) => {
+          resolveStoredSilentMode = resolve
+        })
+      }
+      return null
+    })
+    mockedCreateDeviceRepository.mockReturnValue({
+      readLocationCacheState: jest
+        .fn()
+        .mockResolvedValueOnce({
+          latitude: 30,
+          longitude: 31,
+          recordedAt: NOW,
+          fresh: true,
+        })
+        .mockResolvedValueOnce(null),
+    } as never)
+    mockedReadExactAlarmSnapshot
+      .mockReturnValueOnce({ apiLevel: 30, access: 'not-required' })
+      .mockReturnValue({ apiLevel: 32, access: 'denied' })
+    setPermission('granted')
+    const { result } = renderSettings()
+    await waitFor(() => expect(result.current.hasCoordinates).toBe(true))
+
+    deferRefreshReads = true
+    setPermission('denied')
+    act(() => appStateListener?.('active'))
+    await waitFor(() => expect(readPreference).toHaveBeenCalledTimes(4))
+
+    await act(async () => {
+      await result.current.setMoment('atIqamah', false)
+      await result.current.setSilentMode(true)
+    })
+    await act(async () => {
+      resolveStoredPrefs?.(storedPrefs)
+      resolveStoredSilentMode?.('0')
+      await Promise.resolve()
+    })
+
+    await waitFor(() => expect(result.current.permission).toBe('denied'))
+    expect(result.current.prefs.enabled).toBe(true)
+    expect(result.current.prefs.atIqamah).toBe(false)
+    expect(result.current.silentMode).toBe(true)
+    expect(result.current.hasCoordinates).toBe(false)
+    expect(result.current.exactAlarmStatus.state).toBe('settings-required')
+  })
+
   it('re-reads permission when the app becomes active', async () => {
     setPermission('denied')
     const { result } = renderSettings()

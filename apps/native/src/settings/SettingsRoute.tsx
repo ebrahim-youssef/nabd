@@ -10,12 +10,19 @@ import {
 import { useRouter } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useColorScheme } from 'nativewind'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { Pressable, Switch, View } from 'react-native'
 
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
+import { logger } from '../observability/logger'
+import { deviceCopy } from '../device/copy'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
+import {
+  getPrayerAlarmSyncOutcome,
+  requestPrayerReschedule,
+  subscribePrayerAlarmSyncOutcome,
+} from '../device/prayerAlarms'
 import {
   useNotificationSettings,
   type NotificationMomentKey,
@@ -107,6 +114,10 @@ export function SettingsRoute() {
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
   const { currentLevelId, canChangeLevel, changeLevel, isLoading: isLevelLoading } = useWirdLevel()
   const notificationSettings = useNotificationSettings()
+  const prayerAlarmSyncOutcome = useSyncExternalStore(
+    subscribePrayerAlarmSyncOutcome,
+    getPrayerAlarmSyncOutcome,
+  )
   const [hydrated, setHydrated] = useState(false)
   const [state, setState] = useState<SettingsState>({
     theme: DEFAULT_NATIVE_THEME,
@@ -139,19 +150,26 @@ export function SettingsRoute() {
     key: (typeof PREFERENCE_KEYS)[keyof typeof PREFERENCE_KEYS],
     value: string,
     updatedAt: number,
-  ) {
-    void preferences.write(key, value, updatedAt)
+  ): Promise<void> {
+    return preferences.write(key, value, updatedAt)
   }
 
   function changeTheme(theme: NativeThemePreference, updatedAt: number) {
     setState((previous) => ({ ...previous, theme }))
     setColorScheme(theme)
-    writePreference(PREFERENCE_KEYS.theme, theme, updatedAt)
+    void writePreference(PREFERENCE_KEYS.theme, theme, updatedAt)
   }
 
-  function changeMethod(methodId: CalculationMethodId, updatedAt: number) {
+  async function changeMethod(methodId: CalculationMethodId, updatedAt: number) {
     setState((previous) => ({ ...previous, methodId }))
-    writePreference(PREFERENCE_KEYS.calculationMethod, methodId, updatedAt)
+    try {
+      await writePreference(PREFERENCE_KEYS.calculationMethod, methodId, updatedAt)
+      requestPrayerReschedule()
+    } catch (cause: unknown) {
+      logger.error('Native prayer calculation method write failed', cause, {
+        operation: 'change-calculation-method',
+      })
+    }
   }
 
   const notificationStatus = notificationSettings.notificationStatus
@@ -164,6 +182,8 @@ export function SettingsRoute() {
     showNotificationDetails &&
     exactAlarmStatus.state !== 'not-required' &&
     exactAlarmStatus.state !== 'ready'
+  const showPrayerAlarmSyncFailure =
+    notificationSettings.prefs.enabled && prayerAlarmSyncOutcome === 'failed'
 
   return (
     <ScreenContainer testID="settings-screen">
@@ -205,7 +225,7 @@ export function SettingsRoute() {
                 key={method.id}
                 label={method.label}
                 selected={state.methodId === method.id}
-                onPress={() => changeMethod(method.id, Date.now())}
+                onPress={() => void changeMethod(method.id, Date.now())}
                 testID={`method-${method.id}`}
               />
             ))}
@@ -267,6 +287,21 @@ export function SettingsRoute() {
               >
                 {SETTINGS_COPY.notifications.locationRequired}
               </Text>
+            ) : null}
+            {showPrayerAlarmSyncFailure ? (
+              <View className="gap-2" testID="notification-alarm-sync-failure">
+                <Text
+                  className="text-small text-start text-muted-foreground"
+                  testID="notification-alarm-sync-failure-message"
+                >
+                  {deviceCopy.notifications.syncFailed}
+                </Text>
+                <ActionButton
+                  label={deviceCopy.actions.retry}
+                  onPress={requestPrayerReschedule}
+                  testID="notification-alarm-sync-retry"
+                />
+              </View>
             ) : null}
           </View>
           {showNotificationDetails ? (
