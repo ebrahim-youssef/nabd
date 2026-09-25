@@ -52,7 +52,6 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
   const runningRef = useRef<Promise<void> | null>(null)
   const queuedRef = useRef(false)
   const lastAppliedSignatureRef = useRef<string | null>(null)
-  const lastRunSucceededRef = useRef(false)
 
   const performSync = useCallback(async (): Promise<void> => {
     try {
@@ -73,24 +72,22 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
       if (permission !== 'granted' || !notificationPrefs.enabled || location === null) {
         await cancelPrayerAlarms()
         lastAppliedSignatureRef.current = null
-        lastRunSucceededRef.current = true
         return
       }
 
-      const schedule = buildPrayerSchedule({
+      const alarms = buildPrayerSchedule({
         coords: { latitude: location.latitude, longitude: location.longitude },
         methodId,
         notificationPrefs,
         now: currentTime,
       })
-      const signature = prayerAlarmSignature(silentMode, schedule.alarms)
-      if (lastRunSucceededRef.current && lastAppliedSignatureRef.current === signature) return
+      const signature = prayerAlarmSignature(silentMode, alarms)
+      if (lastAppliedSignatureRef.current === signature) return
 
-      await replacePrayerAlarms(schedule.alarms, silentMode, currentTime)
+      await replacePrayerAlarms(alarms, silentMode, currentTime)
       lastAppliedSignatureRef.current = signature
-      lastRunSucceededRef.current = true
     } catch (cause: unknown) {
-      lastRunSucceededRef.current = false
+      lastAppliedSignatureRef.current = null
       logger.error('Native prayer alarm synchronization failed', cause, {
         operation: 'sync',
       })

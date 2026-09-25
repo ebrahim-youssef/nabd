@@ -86,11 +86,7 @@ describe('usePrayerAlarms', () => {
     mockedReadPermission.mockResolvedValue('granted')
     mockedCancel.mockResolvedValue(undefined)
     mockedReplace.mockResolvedValue(undefined)
-    mockedBuildSchedule.mockReturnValue({
-      alarms: [alarm(101)],
-      frames: [],
-      boundaries: [],
-    })
+    mockedBuildSchedule.mockReturnValue([alarm(101)])
     setStoredValues()
     appStateListener = undefined
     rescheduleListener = undefined
@@ -174,17 +170,7 @@ describe('usePrayerAlarms', () => {
           }),
       )
       .mockResolvedValueOnce(undefined)
-    mockedBuildSchedule
-      .mockReturnValueOnce({
-        alarms: [alarm(101)],
-        frames: [],
-        boundaries: [],
-      })
-      .mockReturnValue({
-        alarms: [alarm(102)],
-        frames: [],
-        boundaries: [],
-      })
+    mockedBuildSchedule.mockReturnValueOnce([alarm(101)]).mockReturnValue([alarm(102)])
     const { result } = renderAlarms()
 
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
@@ -208,20 +194,12 @@ describe('usePrayerAlarms', () => {
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
 
     mockedReplace.mockClear()
-    mockedBuildSchedule.mockReturnValue({
-      alarms: [alarm(102)],
-      frames: [],
-      boundaries: [],
-    })
+    mockedBuildSchedule.mockReturnValue([alarm(102)])
     act(() => appStateListener?.('active'))
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
 
     mockedReplace.mockClear()
-    mockedBuildSchedule.mockReturnValue({
-      alarms: [alarm(103)],
-      frames: [],
-      boundaries: [],
-    })
+    mockedBuildSchedule.mockReturnValue([alarm(103)])
     act(() => rescheduleListener?.())
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
   })

@@ -1,6 +1,6 @@
 import { deviceCopy } from './copy'
 import type {
-  DeviceNotificationSnapshot,
+  DevicePermission,
   ExactAlarmSnapshot,
   ExactAlarmStatus,
   LocationAction,
@@ -9,8 +9,6 @@ import type {
   LocationStatus,
   NotificationAction,
   NotificationActionType,
-  NotificationCapabilitySnapshot,
-  NotificationEvaluation,
   NotificationSettingsSnapshot,
   NotificationStatus,
 } from './types'
@@ -26,18 +24,26 @@ export type {
   LocationFixState,
   LocationPermission,
   LocationStatus,
-  DeviceNotificationSnapshot,
   ExactAlarmAccess,
   ExactAlarmSnapshot,
   ExactAlarmStatus,
   NotificationAction,
   NotificationActionType,
-  NotificationCapabilitySnapshot,
-  NotificationEvaluation,
   NotificationPermission,
   NotificationSettingsSnapshot,
   NotificationStatus,
 } from './types'
+
+type DevicePermissionResponse = {
+  status: string
+  canAskAgain: boolean
+}
+
+export function mapDevicePermission(response: DevicePermissionResponse): DevicePermission {
+  if (response.status === 'granted') return 'granted'
+  if (response.status === 'undetermined') return 'undetermined'
+  return response.canAskAgain ? 'denied' : 'blocked'
+}
 
 const actionLabels: Record<LocationActionType, string> = {
   'open-app-settings': deviceCopy.actions.openAppSettings,
@@ -151,7 +157,6 @@ export function evaluateNotificationSettings(
 ): NotificationStatus {
   if (notifications.permission === 'blocked') {
     return {
-      capability: 'notifications',
       state: 'settings-required',
       message: deviceCopy.notifications.settingsRequired,
       action: notificationAction('open-app-settings'),
@@ -160,7 +165,6 @@ export function evaluateNotificationSettings(
 
   if (notifications.permission !== 'granted') {
     return {
-      capability: 'notifications',
       state: 'permission-required',
       message: deviceCopy.notifications.permissionRequired,
       action: notificationAction('request-notification-permission'),
@@ -169,24 +173,13 @@ export function evaluateNotificationSettings(
 
   if (!notifications.enabled) {
     return {
-      capability: 'notifications',
       state: 'disabled',
       message: deviceCopy.notifications.disabled,
       action: notificationAction('enable-notifications'),
     }
   }
 
-  if (notifications.deviceEnabled === false) {
-    return {
-      capability: 'notifications',
-      state: 'settings-required',
-      message: deviceCopy.notifications.deviceDisabled,
-      action: notificationAction('open-app-settings'),
-    }
-  }
-
   return {
-    capability: 'notifications',
     state: 'ready',
     message: deviceCopy.notifications.ready,
     action: null,
@@ -196,7 +189,6 @@ export function evaluateNotificationSettings(
 export function evaluateExactAlarm(exactAlarm: ExactAlarmSnapshot): ExactAlarmStatus {
   if (exactAlarm.apiLevel < 31) {
     return {
-      capability: 'exact-alarm',
       state: 'not-required',
       message: deviceCopy.exactAlarm.notRequired,
       action: null,
@@ -205,7 +197,6 @@ export function evaluateExactAlarm(exactAlarm: ExactAlarmSnapshot): ExactAlarmSt
 
   if (exactAlarm.access === 'granted') {
     return {
-      capability: 'exact-alarm',
       state: 'ready',
       message: deviceCopy.exactAlarm.ready,
       action: null,
@@ -214,7 +205,6 @@ export function evaluateExactAlarm(exactAlarm: ExactAlarmSnapshot): ExactAlarmSt
 
   if (exactAlarm.apiLevel >= 33) {
     return {
-      capability: 'exact-alarm',
       state: 'unavailable',
       message: deviceCopy.exactAlarm.unavailable,
       action: notificationAction('open-app-settings'),
@@ -222,21 +212,8 @@ export function evaluateExactAlarm(exactAlarm: ExactAlarmSnapshot): ExactAlarmSt
   }
 
   return {
-    capability: 'exact-alarm',
     state: 'settings-required',
     message: deviceCopy.exactAlarm.settingsRequired,
     action: notificationAction('open-exact-alarm-settings'),
-  }
-}
-
-export function evaluateNotifications(
-  snapshot: NotificationCapabilitySnapshot | DeviceNotificationSnapshot,
-): NotificationEvaluation {
-  const notifications = 'notifications' in snapshot ? snapshot.notifications : snapshot
-  const exactAlarm = snapshot.exactAlarm ?? { apiLevel: 30, access: 'not-required' }
-
-  return {
-    notifications: evaluateNotificationSettings(notifications),
-    exactAlarm: evaluateExactAlarm(exactAlarm),
   }
 }

@@ -92,6 +92,10 @@ function renderSettings() {
   return renderHook(() => useNotificationSettings({ now }))
 }
 
+async function waitForInitialLoad() {
+  await waitFor(() => expect(mockedReadExactAlarmSnapshot).toHaveBeenCalledTimes(1))
+}
+
 describe('useNotificationSettings', () => {
   beforeEach(() => {
     jest.clearAllMocks()
@@ -140,7 +144,7 @@ describe('useNotificationSettings', () => {
     setPermission('denied')
     setRequestedPermission('granted')
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.setEnabled(true)
@@ -162,7 +166,7 @@ describe('useNotificationSettings', () => {
     setPermission('denied')
     setRequestedPermission('granted')
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.runAction('request-notification-permission')
@@ -176,7 +180,7 @@ describe('useNotificationSettings', () => {
     setPermission('denied')
     setRequestedPermission('granted')
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.setEnabled(true)
@@ -189,7 +193,7 @@ describe('useNotificationSettings', () => {
 
   it('persists disabling the master switch', async () => {
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.setEnabled(false)
@@ -210,7 +214,7 @@ describe('useNotificationSettings', () => {
     setPermission('denied')
     setRequestedPermission('denied')
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.setEnabled(true)
@@ -224,7 +228,7 @@ describe('useNotificationSettings', () => {
   it('opens app settings instead of persisting when permission is blocked', async () => {
     setPermission('denied', false)
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.setEnabled(true)
@@ -237,7 +241,7 @@ describe('useNotificationSettings', () => {
 
   it('persists moment and silent-mode changes and requests reschedules', async () => {
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.setMoment('atIqamah', false)
@@ -262,7 +266,7 @@ describe('useNotificationSettings', () => {
   it('reverts an optimistic write when persistence fails', async () => {
     writePreference.mockRejectedValueOnce(new Error('write failed'))
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.setMoment('atAdhan', false)
@@ -276,7 +280,7 @@ describe('useNotificationSettings', () => {
   it('opens exact-alarm settings with the app package', async () => {
     mockedReadExactAlarmSnapshot.mockReturnValue({ apiLevel: 31, access: 'denied' })
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.runAction('open-exact-alarm-settings')
@@ -291,7 +295,7 @@ describe('useNotificationSettings', () => {
   it('falls back to app settings when exact-alarm settings cannot open', async () => {
     mockedIntentLauncher.startActivityAsync.mockRejectedValueOnce(new Error('unavailable'))
     const { result } = renderSettings()
-    await waitFor(() => expect(result.current.isLoading).toBe(false))
+    await waitForInitialLoad()
 
     await act(async () => {
       await result.current.runAction('open-exact-alarm-settings')

@@ -3,6 +3,7 @@ import * as Notifications from 'expo-notifications'
 import type { NotificationRequest, NotificationRequestInput } from 'expo-notifications'
 
 import { logger } from '../observability/logger'
+import { mapDevicePermission } from './logic'
 import { channelFor, ensureChannels } from './notificationChannels'
 import type { NotificationPermission } from './types'
 
@@ -14,29 +15,16 @@ type AndroidDateTrigger = {
 
 const PRAYER_NOTIFICATION_PREFIX = 'nabd-prayer-'
 
-type NotificationPermissionLike = {
-  status: string
-  canAskAgain?: boolean
-}
-
 type ScheduledIdentifier = Pick<NotificationRequest, 'identifier'>
 
 let foregroundHandlerConfigured = false
 
-function mapNotificationPermission(response: NotificationPermissionLike): NotificationPermission {
-  if (response.status === 'granted') return 'granted'
-  if (response.status === 'denied') return response.canAskAgain === false ? 'blocked' : 'denied'
-  return 'undetermined'
-}
-
-export { mapNotificationPermission }
-
 export async function readNotificationPermission(): Promise<NotificationPermission> {
-  return mapNotificationPermission(await Notifications.getPermissionsAsync())
+  return mapDevicePermission(await Notifications.getPermissionsAsync())
 }
 
 export async function requestNotificationPermission(): Promise<NotificationPermission> {
-  return mapNotificationPermission(
+  return mapDevicePermission(
     await Notifications.requestPermissionsAsync({
       ios: {
         allowAlert: true,

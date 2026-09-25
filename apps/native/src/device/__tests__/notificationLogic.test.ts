@@ -1,9 +1,4 @@
-import {
-  deviceCopy,
-  evaluateExactAlarm,
-  evaluateNotificationSettings,
-  evaluateNotifications,
-} from '../logic'
+import { deviceCopy, evaluateExactAlarm, evaluateNotificationSettings } from '../logic'
 import type { ExactAlarmSnapshot, NotificationSettingsSnapshot } from '../types'
 
 const baseSettings: NotificationSettingsSnapshot = {
@@ -47,19 +42,8 @@ describe('notification capability logic', () => {
     })
   })
 
-  it('reports a disabled device notification switch separately', () => {
-    const status = evaluateNotificationSettings({ ...baseSettings, deviceEnabled: false })
-
-    expect(status).toMatchObject({
-      state: 'settings-required',
-      action: { type: 'open-app-settings' },
-      message: deviceCopy.notifications.deviceDisabled,
-    })
-  })
-
   it('reports granted notification settings as ready', () => {
     expect(evaluateNotificationSettings(baseSettings)).toEqual({
-      capability: 'notifications',
       state: 'ready',
       message: deviceCopy.notifications.ready,
       action: null,
@@ -94,19 +78,6 @@ describe('notification capability logic', () => {
       state: 'unavailable',
       action: { type: 'open-app-settings' },
       message: deviceCopy.exactAlarm.unavailable,
-    })
-  })
-
-  it('evaluates notification and exact-alarm rows together', () => {
-    const evaluation = evaluateNotifications({
-      ...baseSettings,
-      exactAlarm: { apiLevel: 31, access: 'denied' },
-    })
-
-    expect(evaluation.notifications).toMatchObject({ state: 'ready' })
-    expect(evaluation.exactAlarm).toMatchObject({
-      state: 'settings-required',
-      action: { type: 'open-exact-alarm-settings' },
     })
   })
 })

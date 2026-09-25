@@ -61,13 +61,11 @@ const notificationSettings = {
   silentMode: false,
   hasCoordinates: true,
   notificationStatus: {
-    capability: 'notifications' as const,
     state: 'ready' as const,
     message: 'الإشعارات مفعّلة.',
     action: null,
   },
   exactAlarmStatus: {
-    capability: 'exact-alarm' as const,
     state: 'settings-required' as const,
     message: 'اسمح بالمنبّهات الدقيقة من إعدادات أندرويد لضبط مواقيت الصلاة.',
     action: {
@@ -75,7 +73,6 @@ const notificationSettings = {
       label: 'فتح إعدادات المنبّهات الدقيقة',
     },
   },
-  isLoading: false,
   isPending: isNotificationPending,
   setEnabled: setNotificationEnabled,
   setMoment: setNotificationMoment,
@@ -107,13 +104,11 @@ describe('SettingsRoute', () => {
       silentMode: false,
       hasCoordinates: true,
       notificationStatus: {
-        capability: 'notifications',
         state: 'ready',
         message: 'الإشعارات مفعّلة.',
         action: null,
       },
       exactAlarmStatus: {
-        capability: 'exact-alarm',
         state: 'settings-required',
         message: 'اسمح بالمنبّهات الدقيقة من إعدادات أندرويد لضبط مواقيت الصلاة.',
         action: {
@@ -220,44 +215,23 @@ describe('SettingsRoute', () => {
     expect(runNotificationAction).toHaveBeenCalledWith('open-exact-alarm-settings')
   })
 
-  it.each([31, 32])('shows the exact-alarm action on Android API %s', async (apiLevel) => {
-    Object.assign(notificationSettings, {
-      exactAlarmStatus: {
-        capability: 'exact-alarm',
-        state: 'settings-required',
-        message: 'اسمح بالمنبّهات الدقيقة من إعدادات أندرويد لضبط مواقيت الصلاة.',
-        action: {
-          type: 'open-exact-alarm-settings',
-          label: 'فتح إعدادات المنبّهات الدقيقة',
+  it.each(['not-required', 'ready'] as const)(
+    'hides the exact-alarm row when it is %s',
+    async (access) => {
+      Object.assign(notificationSettings, {
+        exactAlarmStatus: {
+          state: access,
+          message: 'المنبّهات الدقيقة متاحة.',
+          action: null,
         },
-      },
-    })
+      })
 
-    render(<SettingsRoute />)
+      render(<SettingsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy())
-    fireEvent.press(screen.getByTestId('notification-exact-alarm-action'))
-    expect(runNotificationAction).toHaveBeenCalledWith('open-exact-alarm-settings')
-  })
-
-  it.each([
-    { apiLevel: 30, access: 'not-required' as const },
-    { apiLevel: 35, access: 'granted' as const },
-  ])('hides the exact-alarm row when it is $access', async ({ access }) => {
-    Object.assign(notificationSettings, {
-      exactAlarmStatus: {
-        capability: 'exact-alarm',
-        state: access === 'granted' ? 'ready' : 'not-required',
-        message: 'المنبّهات الدقيقة متاحة.',
-        action: null,
-      },
-    })
-
-    render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('settings-notifications')).toBeTruthy())
-    expect(screen.queryByTestId('notification-exact-alarm')).toBeNull()
-  })
+      await waitFor(() => expect(screen.getByTestId('settings-notifications')).toBeTruthy())
+      expect(screen.queryByTestId('notification-exact-alarm')).toBeNull()
+    },
+  )
 
   it('shows the location requirement when coordinates are missing', async () => {
     Object.assign(notificationSettings, { hasCoordinates: false })

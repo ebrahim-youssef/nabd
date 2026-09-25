@@ -1,4 +1,6 @@
-export type LocationPermission = 'granted' | 'denied' | 'blocked' | 'undetermined'
+export type DevicePermission = 'granted' | 'denied' | 'blocked' | 'undetermined'
+export type LocationPermission = DevicePermission
+export type NotificationPermission = DevicePermission
 export type GpsState = 'enabled' | 'disabled' | 'unknown'
 export type ConnectivityState = 'online' | 'offline' | 'unknown'
 export type CoordinateCacheState = 'fresh' | 'stale' | 'missing'
@@ -31,8 +33,6 @@ export type LocationStatus = {
   action: LocationAction | null
 }
 
-export type NotificationPermission = 'undetermined' | 'denied' | 'blocked' | 'granted'
-
 export type ExactAlarmAccess = 'not-required' | 'granted' | 'denied' | 'unknown'
 
 export type NotificationActionType =
@@ -49,7 +49,6 @@ export type NotificationAction = {
 export type NotificationSettingsSnapshot = {
   permission: NotificationPermission
   enabled: boolean
-  deviceEnabled?: boolean
 }
 
 export type ExactAlarmSnapshot = {
@@ -57,34 +56,18 @@ export type ExactAlarmSnapshot = {
   access: ExactAlarmAccess
 }
 
-export type NotificationCapabilitySnapshot = NotificationSettingsSnapshot & {
-  exactAlarm?: ExactAlarmSnapshot
-}
-
-export type DeviceNotificationSnapshot = {
-  notifications: NotificationSettingsSnapshot
-  exactAlarm: ExactAlarmSnapshot
-}
-
 export type NotificationStatus =
-  | { capability: 'notifications'; state: 'ready'; message: string; action: null }
+  | { state: 'ready'; message: string; action: null }
   | {
-      capability: 'notifications'
       state: 'permission-required' | 'settings-required' | 'disabled'
       message: string
       action: NotificationAction
     }
 
 export type ExactAlarmStatus =
-  | { capability: 'exact-alarm'; state: 'ready' | 'not-required'; message: string; action: null }
+  | { state: 'ready' | 'not-required'; message: string; action: null }
   | {
-      capability: 'exact-alarm'
       state: 'settings-required' | 'unavailable'
       message: string
       action: NotificationAction
     }
-
-export type NotificationEvaluation = {
-  notifications: NotificationStatus
-  exactAlarm: ExactAlarmStatus
-}

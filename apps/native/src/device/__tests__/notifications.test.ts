@@ -21,7 +21,6 @@ import type { AlarmPayload } from '@nabd/shared'
 import {
   cancelPrayerAlarms,
   configureForegroundHandler,
-  mapNotificationPermission,
   readNotificationPermission,
   replacePrayerAlarms,
   requestNotificationPermission,
@@ -61,15 +60,6 @@ describe('native notification adapter', () => {
     mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([])
     mockedNotifications.scheduleNotificationAsync.mockResolvedValue('nabd-prayer-101')
     mockedNotifications.cancelScheduledNotificationAsync.mockResolvedValue(undefined)
-  })
-
-  it.each([
-    [{ status: 'granted', canAskAgain: true }, 'granted'],
-    [{ status: 'denied', canAskAgain: true }, 'denied'],
-    [{ status: 'denied', canAskAgain: false }, 'blocked'],
-    [{ status: 'undetermined', canAskAgain: true }, 'undetermined'],
-  ] as const)('maps %p to %s', (response, expected) => {
-    expect(mapNotificationPermission(response)).toBe(expected)
   })
 
   it('reads and requests notification permission', async () => {

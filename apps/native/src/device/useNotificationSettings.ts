@@ -26,7 +26,7 @@ import type {
 } from './types'
 
 export type NotificationMomentKey = Exclude<keyof NotificationPrefs, 'enabled'>
-export type NotificationWriteKey = 'enabled' | NotificationMomentKey | 'silentMode'
+type NotificationWriteKey = 'enabled' | NotificationMomentKey | 'silentMode'
 
 type NotificationSettingsState = {
   permission: NotificationPermission
@@ -45,14 +45,13 @@ type OptimisticWrite = {
   context: Record<string, unknown>
 }
 
-export type NotificationSettingsView = {
+type NotificationSettingsView = {
   permission: NotificationPermission
   prefs: NotificationPrefs
   silentMode: boolean
   hasCoordinates: boolean
   notificationStatus: NotificationStatus
   exactAlarmStatus: ExactAlarmStatus
-  isLoading: boolean
   isPending: (key: NotificationWriteKey) => boolean
   setEnabled: (value: boolean) => Promise<void>
   setMoment: (key: NotificationMomentKey, value: boolean) => Promise<void>
@@ -60,7 +59,7 @@ export type NotificationSettingsView = {
   runAction: (type: NotificationActionType) => Promise<void>
 }
 
-export type UseNotificationSettingsOptions = {
+type UseNotificationSettingsOptions = {
   now?: () => number
 }
 
@@ -84,7 +83,6 @@ export function useNotificationSettings(
   const now = options.now ?? Date.now
   const [state, setState] = useState<NotificationSettingsState>(INITIAL_STATE)
   const [pendingKeys, setPendingKeys] = useState<ReadonlySet<NotificationWriteKey>>(new Set())
-  const [isLoading, setIsLoading] = useState(true)
   const stateRef = useRef<NotificationSettingsState>(INITIAL_STATE)
   const pendingKeysRef = useRef<Set<NotificationWriteKey>>(new Set())
   const writeIdsRef = useRef(new Map<NotificationWriteKey, number>())
@@ -146,8 +144,6 @@ export function useNotificationSettings(
       updateState(() => next)
     } catch (cause: unknown) {
       logger.error('Native notification settings read failed', cause, { operation: 'read' })
-    } finally {
-      if (mountedRef.current && refreshId === refreshIdRef.current) setIsLoading(false)
     }
   }, [deviceRepository, now, preferences, updateState])
 
@@ -353,7 +349,6 @@ export function useNotificationSettings(
     hasCoordinates: state.hasCoordinates,
     notificationStatus,
     exactAlarmStatus,
-    isLoading,
     isPending,
     setEnabled,
     setMoment,
