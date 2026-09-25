@@ -88,6 +88,7 @@ export function useNotificationSettings(
   const writeIdsRef = useRef(new Map<NotificationWriteKey, number>())
   const mountedRef = useRef(false)
   const refreshIdRef = useRef(0)
+  const mutationRevisionRef = useRef(0)
 
   const updateState = useCallback(
     (update: (current: NotificationSettingsState) => NotificationSettingsState) => {
@@ -96,6 +97,14 @@ export function useNotificationSettings(
       if (mountedRef.current) setState(next)
     },
     [],
+  )
+
+  const applyMutation = useCallback(
+    (update: (current: NotificationSettingsState) => NotificationSettingsState) => {
+      mutationRevisionRef.current += 1
+      updateState(update)
+    },
+    [updateState],
   )
 
   const setPending = useCallback((key: NotificationWriteKey, pending: boolean) => {
@@ -125,6 +134,7 @@ export function useNotificationSettings(
 
   const refresh = useCallback(async (): Promise<void> => {
     const refreshId = ++refreshIdRef.current
+    const mutationRevision = mutationRevisionRef.current
     try {
       const observedAt = now()
       const [permission, storedPrefs, storedSilentMode, location] = await Promise.all([
@@ -141,7 +151,14 @@ export function useNotificationSettings(
         hasCoordinates: location !== null,
       }
       if (!mountedRef.current || refreshId !== refreshIdRef.current) return
-      updateState(() => next)
+      updateState((current) => {
+        if (mutationRevision === mutationRevisionRef.current) return next
+        return {
+          ...next,
+          prefs: current.prefs,
+          silentMode: current.silentMode,
+        }
+      })
     } catch (cause: unknown) {
       logger.error('Native notification settings read failed', cause, { operation: 'read' })
     }
@@ -157,11 +174,11 @@ export function useNotificationSettings(
       context,
     }: OptimisticWrite): Promise<void> => {
       const id = beginWrite(key)
-      updateState(update)
+      applyMutation(update)
       try {
         await persist()
       } catch (cause: unknown) {
-        if (isLatestWrite(key, id)) updateState(revert)
+        if (isLatestWrite(key, id)) applyMutation(revert)
         logger.error(errorMessage, cause, context)
         return
       } finally {
@@ -169,7 +186,7 @@ export function useNotificationSettings(
       }
       requestPrayerReschedule()
     },
-    [beginWrite, isLatestWrite, setPending, updateState],
+    [applyMutation, beginWrite, isLatestWrite, setPending],
   )
 
   const writeNotificationPrefs = useCallback(
@@ -242,7 +259,7 @@ export function useNotificationSettings(
           })
           return
         }
-        updateState((current) => ({ ...current, permission }))
+        applyMutation((current) => ({ ...current, permission }))
         if (permission === 'blocked') {
           await openApplicationSettings()
           return
@@ -256,7 +273,7 @@ export function useNotificationSettings(
 
       await writeNotificationPrefs('enabled', true)
     },
-    [openApplicationSettings, updateState, writeNotificationPrefs],
+    [applyMutation, openApplicationSettings, writeNotificationPrefs],
   )
 
   const setMoment = useCallback(
@@ -310,11 +327,11 @@ export function useNotificationSettings(
         })
         return
       }
-      updateState((current) => ({ ...current, permission }))
+      applyMutation((current) => ({ ...current, permission }))
       if (permission === 'granted') requestPrayerReschedule()
       if (permission === 'blocked') await openApplicationSettings()
     },
-    [openApplicationSettings, openExactAlarmSettings, setEnabled, updateState],
+    [applyMutation, openApplicationSettings, openExactAlarmSettings, setEnabled],
   )
 
   useEffect(() => {

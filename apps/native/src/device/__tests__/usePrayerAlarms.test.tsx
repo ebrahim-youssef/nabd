@@ -11,8 +11,9 @@ import {
   readNotificationPermission,
   replacePrayerAlarms,
 } from '../notifications'
+import { readExactAlarmSnapshot } from '../exactAlarm'
 import { buildPrayerSchedule } from '../schedule'
-import { subscribePrayerReschedule } from '../prayerAlarms'
+import { setPrayerAlarmSyncOutcome, subscribePrayerReschedule } from '../prayerAlarms'
 import { usePrayerAlarms } from '../usePrayerAlarms'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
@@ -23,7 +24,11 @@ jest.mock('../notifications', () => ({
   replacePrayerAlarms: jest.fn(),
 }))
 jest.mock('../schedule', () => ({ buildPrayerSchedule: jest.fn() }))
-jest.mock('../prayerAlarms', () => ({ subscribePrayerReschedule: jest.fn() }))
+jest.mock('../exactAlarm', () => ({ readExactAlarmSnapshot: jest.fn() }))
+jest.mock('../prayerAlarms', () => ({
+  setPrayerAlarmSyncOutcome: jest.fn(),
+  subscribePrayerReschedule: jest.fn(),
+}))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedReadPermission = readNotificationPermission as jest.MockedFunction<
@@ -32,6 +37,12 @@ const mockedReadPermission = readNotificationPermission as jest.MockedFunction<
 const mockedCancel = cancelPrayerAlarms as jest.MockedFunction<typeof cancelPrayerAlarms>
 const mockedReplace = replacePrayerAlarms as jest.MockedFunction<typeof replacePrayerAlarms>
 const mockedBuildSchedule = buildPrayerSchedule as jest.MockedFunction<typeof buildPrayerSchedule>
+const mockedReadExactAlarmSnapshot = readExactAlarmSnapshot as jest.MockedFunction<
+  typeof readExactAlarmSnapshot
+>
+const mockedSetSyncOutcome = setPrayerAlarmSyncOutcome as jest.MockedFunction<
+  typeof setPrayerAlarmSyncOutcome
+>
 const mockedSubscribe = subscribePrayerReschedule as jest.MockedFunction<
   typeof subscribePrayerReschedule
 >
@@ -86,7 +97,9 @@ describe('usePrayerAlarms', () => {
     mockedReadPermission.mockResolvedValue('granted')
     mockedCancel.mockResolvedValue(undefined)
     mockedReplace.mockResolvedValue(undefined)
+    mockedReadExactAlarmSnapshot.mockReturnValue({ apiLevel: 32, access: 'granted' })
     mockedBuildSchedule.mockReturnValue([alarm(101)])
+
     setStoredValues()
     appStateListener = undefined
     rescheduleListener = undefined
@@ -143,17 +156,35 @@ describe('usePrayerAlarms', () => {
     expect(mockedConfigure).toHaveBeenCalledTimes(1)
   })
 
-  it('skips an unchanged successful schedule and retries after failure', async () => {
-    mockedReplace.mockRejectedValueOnce(new Error('failed')).mockResolvedValue(undefined)
+  it('replaces unchanged alarms when exact-alarm access is granted', async () => {
+    mockedReadExactAlarmSnapshot
+      .mockReturnValueOnce({ apiLevel: 32, access: 'denied' })
+      .mockReturnValue({ apiLevel: 32, access: 'granted' })
     const { result } = renderAlarms()
 
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
     await act(async () => {
       await result.current.sync()
     })
+
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(2))
+    expect(mockedReadExactAlarmSnapshot).toHaveBeenCalledTimes(2)
+  })
+
+  it('skips an unchanged successful schedule and retries after failure', async () => {
+    mockedReplace.mockRejectedValueOnce(new Error('failed')).mockResolvedValue(undefined)
+    const { result } = renderAlarms()
+
+    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
+    expect(mockedSetSyncOutcome).toHaveBeenLastCalledWith('failed')
+    await act(async () => {
+      await result.current.sync()
+    })
+    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(2))
+    expect(mockedSetSyncOutcome).toHaveBeenLastCalledWith('ok')
 
     mockedReplace.mockClear()
+
     await act(async () => {
       await result.current.sync()
     })
@@ -186,6 +217,32 @@ describe('usePrayerAlarms', () => {
       resolveFirst?.()
       await Promise.all([first, second])
     })
+    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(2))
+  })
+
+  it('does not lose a request at the sync completion boundary', async () => {
+    let resolveFirst: (() => void) | undefined
+    const firstReplacement = new Promise<void>((resolve) => {
+      resolveFirst = resolve
+    })
+    mockedReplace.mockImplementationOnce(() => firstReplacement).mockResolvedValueOnce(undefined)
+    mockedBuildSchedule.mockReturnValueOnce([alarm(101)]).mockReturnValue([alarm(102)])
+    const { result } = renderAlarms()
+
+    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
+    let boundaryRequest: Promise<void> | undefined
+    firstReplacement.then(() => {
+      void Promise.resolve().then(() => {
+        boundaryRequest = result.current.sync()
+      })
+    })
+
+    await act(async () => {
+      resolveFirst?.()
+      await Promise.resolve()
+    })
+
+    await waitFor(() => expect(boundaryRequest).toBeDefined())
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(2))
   })
 
