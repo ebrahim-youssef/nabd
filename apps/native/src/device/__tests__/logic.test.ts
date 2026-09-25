@@ -1,4 +1,4 @@
-import { deviceCopy, evaluateLocation } from '../logic'
+import { deviceCopy, evaluateLocation, mapDevicePermission } from '../logic'
 import type { LocationCapabilitySnapshot } from '../types'
 
 const baseSnapshot: LocationCapabilitySnapshot = {
@@ -7,6 +7,17 @@ const baseSnapshot: LocationCapabilitySnapshot = {
   connectivity: 'online',
   coordinateCache: 'fresh',
 }
+
+describe('device permission mapping', () => {
+  it.each([
+    [{ status: 'undetermined', canAskAgain: true }, 'undetermined'],
+    [{ status: 'denied', canAskAgain: true }, 'denied'],
+    [{ status: 'denied', canAskAgain: false }, 'blocked'],
+    [{ status: 'granted', canAskAgain: true }, 'granted'],
+  ] as const)('maps a %s permission response to %s', (response, expected) => {
+    expect(mapDevicePermission(response)).toBe(expected)
+  })
+})
 
 describe('location status logic', () => {
   it('reports a ready fresh location with no action', () => {

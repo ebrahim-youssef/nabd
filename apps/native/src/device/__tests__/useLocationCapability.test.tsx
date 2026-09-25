@@ -7,6 +7,7 @@ import { AppState } from 'react-native'
 import type { CachedLocation } from '../db'
 import { createDeviceRepository } from '../db'
 import { useLocationCapability } from '../useLocationCapability'
+import { requestPrayerReschedule } from '../prayerAlarms'
 
 jest.mock('@react-native-community/netinfo', () => ({
   __esModule: true,
@@ -33,6 +34,9 @@ jest.mock('expo-intent-launcher', () => ({
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('../db', () => ({
   createDeviceRepository: jest.fn(),
+}))
+jest.mock('../prayerAlarms', () => ({
+  requestPrayerReschedule: jest.fn(),
 }))
 
 const mockedLocation = Location as jest.Mocked<typeof Location>
@@ -133,6 +137,7 @@ describe('useLocationCapability', () => {
       { latitude: 30.0444, longitude: 31.2357 },
       NOW,
     )
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
   })
 
   it('does not fetch for a successful fix', async () => {

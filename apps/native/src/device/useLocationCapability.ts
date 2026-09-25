@@ -8,6 +8,7 @@ import type { ConnectivityProvider } from './connectivity'
 import { createDeviceRepository } from './db'
 import type { CachedLocation } from './db'
 import { evaluateLocation } from './logic'
+import { requestPrayerReschedule } from './prayerAlarms'
 import {
   enableServices,
   getFix,
@@ -163,6 +164,7 @@ export function useLocationCapability(
         const coordinates = { latitude: fix.latitude, longitude: fix.longitude }
         const recordedAt = now()
         await repository.writeCachedLocation(coordinates, recordedAt)
+        requestPrayerReschedule()
         cacheFresh = true
         cached = { ...coordinates, recordedAt }
         commit(

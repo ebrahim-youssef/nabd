@@ -3,6 +3,10 @@ export const deviceCopy = {
     openAppSettings: 'فتح إعدادات التطبيق',
     openLocationSettings: 'فتح إعدادات الموقع',
     retryLocation: 'إعادة محاولة تحديد الموقع',
+    requestNotificationPermission: 'السماح بالإشعارات',
+    enableNotifications: 'تفعيل الإشعارات',
+    openExactAlarmSettings: 'فتح إعدادات المنبّهات الدقيقة',
+    retry: 'إعادة المحاولة',
   },
   location: {
     ready: 'تم تحديد الموقع.',
@@ -16,5 +20,18 @@ export const deviceCopy = {
     gpsDisabled: 'خدمة الموقع (GPS) مغلقة — فعّلها ثم أعد المحاولة.',
     noCache: 'تعذّر تحديد الموقع دون اتصال ولا يوجد موقع محفوظ.',
     unavailable: 'تعذّر الحصول على الموقع — أعد المحاولة لاحقًا.',
+  },
+  notifications: {
+    ready: 'الإشعارات مفعّلة.',
+    permissionRequired: 'اسمح بالإشعارات لتفعيل تنبيهات الصلاة.',
+    settingsRequired: 'الإشعارات محظورة — فعّلها من إعدادات التطبيق.',
+    disabled: 'تنبيهات الصلاة متوقفة من داخل التطبيق — فعّلها للمتابعة.',
+    syncFailed: 'تعذّر ضبط تنبيهات الصلاة — أعد المحاولة.',
+  },
+  exactAlarm: {
+    ready: 'المنبّهات الدقيقة متاحة.',
+    notRequired: 'المنبّهات الدقيقة غير مطلوبة على هذا الإصدار.',
+    settingsRequired: 'اسمح بالمنبّهات الدقيقة من إعدادات أندرويد لضبط مواقيت الصلاة.',
+    unavailable: 'تعذّر التحقق من المنبّهات الدقيقة — افتح إعدادات التطبيق.',
   },
 } as const

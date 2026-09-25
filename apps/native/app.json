@@ -30,6 +30,18 @@
       "expo-localization",
       "expo-sqlite",
       [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/adhan_fajr.mp3",
+            "./assets/sounds/adhan.mp3",
+            "./assets/sounds/before.mp3",
+            "./assets/sounds/iqama.mp3"
+          ],
+          "defaultChannel": "nabd-prayer-adhan-v1"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
@@ -37,7 +49,8 @@
           "imageWidth": 100,
           "resizeMode": "contain"
         }
-      ]
+      ],
+      "./plugins/withNabdAlarms"
     ],
     "android": {
       "package": "com.nabd.app",
