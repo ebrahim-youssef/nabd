@@ -4,7 +4,6 @@ import * as Location from 'expo-location'
 import {
   enableServices,
   getFix,
-  mapPermissionResponse,
   openAppSettings,
   openLocationSettings,
   readPermission,
@@ -38,15 +37,6 @@ describe('location adapter', () => {
 
   afterEach(() => {
     jest.useRealTimers()
-  })
-
-  it.each([
-    [{ status: 'undetermined', canAskAgain: true }, 'undetermined'],
-    [{ status: 'denied', canAskAgain: true }, 'denied'],
-    [{ status: 'denied', canAskAgain: false }, 'blocked'],
-    [{ status: 'granted', canAskAgain: true }, 'granted'],
-  ] as const)('maps a %s permission response to %s', (response, expected) => {
-    expect(mapPermissionResponse(response as never)).toBe(expected)
   })
 
   it('delegates permission reads and requests to expo-location', async () => {

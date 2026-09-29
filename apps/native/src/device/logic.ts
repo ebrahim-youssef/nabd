@@ -1,9 +1,16 @@
 import { deviceCopy } from './copy'
 import type {
+  DevicePermission,
+  ExactAlarmSnapshot,
+  ExactAlarmStatus,
   LocationAction,
   LocationActionType,
   LocationCapabilitySnapshot,
   LocationStatus,
+  NotificationAction,
+  NotificationActionType,
+  NotificationSettingsSnapshot,
+  NotificationStatus,
 } from './types'
 
 export { deviceCopy }
@@ -17,7 +24,26 @@ export type {
   LocationFixState,
   LocationPermission,
   LocationStatus,
+  ExactAlarmAccess,
+  ExactAlarmSnapshot,
+  ExactAlarmStatus,
+  NotificationAction,
+  NotificationActionType,
+  NotificationPermission,
+  NotificationSettingsSnapshot,
+  NotificationStatus,
 } from './types'
+
+type DevicePermissionResponse = {
+  status: string
+  canAskAgain: boolean
+}
+
+export function mapDevicePermission(response: DevicePermissionResponse): DevicePermission {
+  if (response.status === 'granted') return 'granted'
+  if (response.status === 'undetermined') return 'undetermined'
+  return response.canAskAgain ? 'denied' : 'blocked'
+}
 
 const actionLabels: Record<LocationActionType, string> = {
   'open-app-settings': deviceCopy.actions.openAppSettings,
@@ -113,3 +139,81 @@ const evaluateLocation = (location: LocationCapabilitySnapshot): LocationStatus 
 }
 
 export { evaluateLocation }
+
+const notificationActionLabels: Record<NotificationActionType, string> = {
+  'request-notification-permission': deviceCopy.actions.requestNotificationPermission,
+  'enable-notifications': deviceCopy.actions.enableNotifications,
+  'open-app-settings': deviceCopy.actions.openAppSettings,
+  'open-exact-alarm-settings': deviceCopy.actions.openExactAlarmSettings,
+}
+
+const notificationAction = (type: NotificationActionType): NotificationAction => ({
+  type,
+  label: notificationActionLabels[type],
+})
+
+export function evaluateNotificationSettings(
+  notifications: NotificationSettingsSnapshot,
+): NotificationStatus {
+  if (notifications.permission === 'blocked') {
+    return {
+      state: 'settings-required',
+      message: deviceCopy.notifications.settingsRequired,
+      action: notificationAction('open-app-settings'),
+    }
+  }
+
+  if (notifications.permission !== 'granted') {
+    return {
+      state: 'permission-required',
+      message: deviceCopy.notifications.permissionRequired,
+      action: notificationAction('request-notification-permission'),
+    }
+  }
+
+  if (!notifications.enabled) {
+    return {
+      state: 'disabled',
+      message: deviceCopy.notifications.disabled,
+      action: notificationAction('enable-notifications'),
+    }
+  }
+
+  return {
+    state: 'ready',
+    message: deviceCopy.notifications.ready,
+    action: null,
+  }
+}
+
+export function evaluateExactAlarm(exactAlarm: ExactAlarmSnapshot): ExactAlarmStatus {
+  if (exactAlarm.apiLevel < 31) {
+    return {
+      state: 'not-required',
+      message: deviceCopy.exactAlarm.notRequired,
+      action: null,
+    }
+  }
+
+  if (exactAlarm.access === 'granted') {
+    return {
+      state: 'ready',
+      message: deviceCopy.exactAlarm.ready,
+      action: null,
+    }
+  }
+
+  if (exactAlarm.apiLevel >= 33) {
+    return {
+      state: 'unavailable',
+      message: deviceCopy.exactAlarm.unavailable,
+      action: notificationAction('open-app-settings'),
+    }
+  }
+
+  return {
+    state: 'settings-required',
+    message: deviceCopy.exactAlarm.settingsRequired,
+    action: notificationAction('open-exact-alarm-settings'),
+  }
+}
