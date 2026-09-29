@@ -48,4 +48,3 @@ design-import/
 # Generated Serwist service worker bundle (build artifact)
 /public/sw.js
 /public/sw.js.map
-config.bat
