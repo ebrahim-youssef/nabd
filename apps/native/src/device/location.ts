@@ -1,9 +1,9 @@
 import Constants from 'expo-constants'
 import * as IntentLauncher from 'expo-intent-launcher'
 import * as Location from 'expo-location'
-import type { LocationPermissionResponse } from 'expo-location'
 
 import { logger } from '../observability/logger'
+import { mapDevicePermission } from './logic'
 import type { LocationPermission } from './types'
 
 export const LOCATION_FIX_TIMEOUT_MS = 15_000
@@ -12,25 +12,12 @@ const ANDROID_PACKAGE = 'com.nabd.app'
 export type LocationFixResult =
   { kind: 'ok'; latitude: number; longitude: number } | { kind: 'timeout' } | { kind: 'error' }
 
-export type LocationPermissionResponseLike = Pick<
-  LocationPermissionResponse,
-  'status' | 'canAskAgain'
->
-
-export function mapPermissionResponse(
-  response: LocationPermissionResponseLike,
-): LocationPermission {
-  if (response.status === 'granted') return 'granted'
-  if (response.status === 'undetermined') return 'undetermined'
-  return response.canAskAgain ? 'denied' : 'blocked'
-}
-
 export async function readPermission(): Promise<LocationPermission> {
-  return mapPermissionResponse(await Location.getForegroundPermissionsAsync())
+  return mapDevicePermission(await Location.getForegroundPermissionsAsync())
 }
 
 export async function requestPermission(): Promise<LocationPermission> {
-  return mapPermissionResponse(await Location.requestForegroundPermissionsAsync())
+  return mapDevicePermission(await Location.requestForegroundPermissionsAsync())
 }
 
 export async function servicesEnabled(): Promise<boolean> {
@@ -84,7 +71,7 @@ export async function getFix(timeoutMs = LOCATION_FIX_TIMEOUT_MS): Promise<Locat
   }
 }
 
-function androidPackage(): string {
+export function androidPackage(): string {
   const packageName = Constants.expoConfig?.android?.package
   return typeof packageName === 'string' && packageName.trim() !== ''
     ? packageName

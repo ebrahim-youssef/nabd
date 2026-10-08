@@ -22,6 +22,7 @@ import { Text } from '../shell/Text'
 import { logger } from '../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import { useLocationCapability } from '../device/useLocationCapability'
+import { requestPrayerReschedule } from '../device/prayerAlarms'
 
 const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 
@@ -84,9 +85,16 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
   const prayerStatus = statusLine(timeline)
   const showLocationMessage = locationStatus.state !== 'ready'
 
-  function changeMethod(methodId: CalculationMethodId) {
+  async function changeMethod(methodId: CalculationMethodId) {
     setMethodId(methodId)
-    void preferences.write(PREFERENCE_KEYS.calculationMethod, methodId, now())
+    try {
+      await preferences.write(PREFERENCE_KEYS.calculationMethod, methodId, now())
+      requestPrayerReschedule()
+    } catch (cause: unknown) {
+      logger.error('Native prayer calculation method write failed', cause, {
+        operation: 'change-calculation-method',
+      })
+    }
   }
 
   return (
@@ -104,7 +112,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
                 accessibilityState={{ selected: method.id === methodId }}
                 className={`rounded-card border px-4 py-3 ${method.id === methodId ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
                 key={method.id}
-                onPress={() => changeMethod(method.id)}
+                onPress={() => void changeMethod(method.id)}
                 testID={`prayer-method-${method.id}`}
               >
                 <Text
