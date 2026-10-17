@@ -3,6 +3,7 @@ const { AndroidConfig, withAndroidManifest } = require('expo/config-plugins')
 const PERMISSIONS = [
   'android.permission.USE_EXACT_ALARM',
   'android.permission.SCHEDULE_EXACT_ALARM',
+  'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
 ]
 
 function applyManifest(androidManifest) {
