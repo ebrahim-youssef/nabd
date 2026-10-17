@@ -1,147 +1,111 @@
-# Architecture — nabd
+# Architecture, nabd
 
-> Migration scope: the feature folders and Next.js route map below describe the legacy root
-> application. Their pure-logic and I/O boundaries remain parity requirements, while the
-> replacement folder and repository boundaries are governed by ADR-0014 and
-> `docs/migration/2026-08-10-execution-plan.md`.
+> The go-forward product is one app: the Expo React Native application in `apps/native`.
+> Android is first. Boundaries must remain suitable for a later iOS implementation, but no iOS
+> release is planned yet. The 2026-10-16 owner direction is recorded in
+> [ADR-0017](adr/0017-native-only.md).
 
-## Replacement shared-domain boundary
+## Product boundary
 
-`packages/shared` is the canonical owner of platform-neutral product code used by the root,
-SPA, and native clients:
+`apps/native` owns the product shell, routes, UI, SQLite repositories, permissions, notifications,
+location, alarms, and other platform behavior. `packages/shared` owns platform-neutral domain code:
 
-- `src/types`: domain and view-result shapes.
-- `src/content` and `src/copy`: Arabic product content and reusable copy.
+- `src/types`: domain and result types.
+- `src/content` and `src/copy`: Arabic content and reusable copy.
 - `src/logic`: pure calculations and state transitions.
-- `src/contracts`: repository interfaces only, never storage implementations.
-- `src/tokens`: cross-platform design-token values.
+- `src/contracts`: repository contracts.
+- `src/testing`: shared fixtures and test helpers.
+- `src/constants`: current constants, including the SPA-only `SITE_URL` pending removal with the
+  SPA.
+- `src/copy/landing.ts`: SPA-only landing copy pending removal with the SPA.
+- `src/tokens`: legacy web theme values; native theme-token ownership and removal with the SPA
+  remain pending.
 
-The root app's former pure/content modules are transitional compatibility re-exports from
-`@nabd/shared`; they must not acquire a second implementation. Dexie stays in root feature
-`db.ts` files, SQLite stays under `apps/native`, and SPA storage stays under `apps/spa`. Shared
-modules receive data, dates, time, and generated values as parameters and cannot import a
-framework, storage library, device API, network client, Node API, or browser global.
+The Vite SPA is cancelled. The root Next.js application is a read-only reference until
+NBD-108 deletes it. It is not an active product target, and no native code imports from it.
 
-Native opens the named SQLite database at the root `SQLiteProvider`, which applies ordered schema
-migrations before routes render. Native feature repositories keep parameterized SQLite access under
-`apps/native/src/<feature>/db.ts`; the onboarding slice links its singleton completion state to the
-immutable initial wird version in one exclusive transaction. Versions have no mutable `active` flag:
-the version in force is always derived from `effectiveFrom` and `createdAt` per ADR-0006.
+## The boundary rule
 
-The replacement SPA creates one React Router data router outside the React tree. `/` remains outside
-the application shell; `/app/*` owns the persistent RTL bottom navigation, route loading and error
-boundaries, and a fixed pre-paint appearance initializer. The NBD-83 subsection routes are bounded
-shell placeholders only; product data and screens arrive in NBD-84.
+Pure logic never touches I/O. Platform-neutral calculations live in `packages/shared/src/logic`,
+with data, dates, and time passed as parameters. The only native pure-logic module is
+`apps/native/src/device/logic.ts`. SQLite, filesystem, device APIs, notifications, and logging
+stay at the edges. Feature repositories live in `db.ts`; device behavior lives in
+`apps/native/src/device`.
+The central logger is in `apps/native/src/observability/logger.ts`.
 
-Every route in that tree is covered by an error boundary at one of two levels: a pathless boundary
-inside the shell keeps navigation usable when a page fails, and a full-page boundary on the landing,
-the `/app` shell route, and the public catch-all covers failures where no layout can be trusted.
+The versioned wird model remains the domain rule from ADR-0006. Definitions are immutable, entries
+are append-only, and the version in force is derived from effective date and creation time.
 
-Cloudflare Workers Static Assets serves `apps/spa/dist` without a Worker entry point and uses
-`single-page-application` fallback for direct application-route requests. Because that fallback
-answers every unmatched path with the same 200 document, the crawler boundary is stated as a
-default-deny: `_headers` sets `X-Robots-Tag: noindex, nofollow` on `/*` and detaches it for `/`
-alone, so `/` is the only indexable URL and no soft-404 path can leak into an index. `robots.txt`
-and the sitemap declare the same boundary for crawlers that read them, and non-public React routes
-add a runtime noindex directive for renderers that only read markup. The SPA has no manifest or
-service worker and makes no installability or offline-shell promise.
-
-## The one rule
-
-**Pure logic never touches I/O.** Every feature's calculations live in a pure `logic.ts`
-(data and time passed in as parameters — no DB, no `Date.now()`, no browser APIs, no React);
-every data access lives in a `db.ts` repository module. The lint boundary blocks `logic.ts`
-from importing `db.ts` or any I/O. This is what keeps the malleable-wird statistics testable
-and correct across redefinitions.
-
-## Layers & folder map
-
-nabd is organized by **feature**, not by technical layer (ADR-0002). Each feature is a
-self-contained folder; shared plumbing lives in a small set of top-level folders.
+## Folder map
 
 ```
-/app                  Next.js App Router routes only — UI shells, no data access
-  /(marketing)        public landing page (SEO), server-rendered
-  /(app)              authenticated app shell (mostly client)
-/components
-  /ui                 shadcn/ui generated components (never hand-edit)
-  /shared             cross-feature components
-/features
-  /<feature>          one folder per feature (wird, stats, counter, onboarding, …)
-    logic.ts          PURE functions: data + time in, values out; no I/O, no Date.now()
-    db.ts             repository: all Dexie/Supabase access for this feature; typed results
-    hooks/            React hooks gluing logic + db + stores to the UI
-    components/       feature-specific components
-    types.ts          feature-local types
-    __tests__/        colocated tests
-/lib
-  /db                 Dexie schema (db.ts) + Supabase client
-  logger.ts           central Logger (console.* is banned everywhere else)
-  utils.ts            cn() and small helpers
-  /pure               deterministic shared helpers (importable by logic.ts)
-  /impure             side-effecting helpers (clock provider, browser APIs)
-/content              authored static data (adhkar, intentions, wird templates); zero imports
-/stores               Zustand stores — UI state only
-/types                shared cross-feature types
-/e2e                  Playwright specs
+apps/native/
+  app/                         Expo Router route files and route layouts
+  src/
+    __tests__/                 native cross-cutting tests
+    adhkar/, counter/, home/,
+    intentions/, onboarding/,
+    prayer-times/, qada/, settings/,
+    stats/, wird/               flat feature folders; files, hooks, and db.ts sit side by side
+                               where present, with tests in each feature's __tests__/
+    db/                        SQLite opening, migrations, and database contracts
+    device/                    device services and hooks, plus the only native logic.ts;
+                               tests are in __tests__/
+    observability/             central logger
+    preferences/               app_preferences repository, theme preference, and tests
+    shell/                     native providers, shell components, and tests
+  modules/nabd-device/         Android Expo module, including exact-alarm status
+  plugins/                     Expo config plugins for native configuration
+  theme/                       palette.ts and tailwind-theme.cjs
+
+packages/shared/
+  src/constants/               current constants; SPA-only values are pending removal
+  src/content/                 Arabic product content
+  src/copy/                    reusable copy; landing.ts is SPA-only and pending removal
+  src/logic/                   platform-neutral pure logic
+  src/contracts/               platform-neutral repository contracts
+  src/testing/                 shared fixtures
+  src/types/                   domain types
+  src/tokens/                  legacy web theme values; native ownership and removal remain pending
 ```
 
-## Import-boundary table (lint-enforced)
+Expo Router route files may render feature components, but they do not contain SQLite queries or
+device implementation details. The route layer asks feature hooks or repositories for data and
+keeps navigation concerns local to `apps/native/app`.
 
-Enforced with ESLint (`eslint-plugin-boundaries` or `no-restricted-imports`). A deliberate
-bad import is committed once during Phase 0 to confirm the rule actually fires.
+## Import boundaries
 
-| Module | May import | Hard no |
+| Module | May import | Must not import |
 | --- | --- | --- |
-| `features/*/logic.ts` | `/lib/pure`, `/types`, own feature `types.ts` | `db.ts`, Dexie, Supabase, any I/O, `Date.now()`, React |
-| `features/*/db.ts` | `/lib/db`, `/content`, `/lib/logger`, `/types` | React, another feature's internals |
-| `features/*/hooks` | own `logic.ts` + `db.ts`, `/stores`, `/types` | `/app`, another feature's `db.ts` |
-| `features/*/components` | own hooks, `/components/ui`, `/components/shared` | any `db.ts` directly, Supabase directly |
-| `/stores` | `/types` | `db.ts`, feature `logic.ts`, any I/O (UI state only) |
-| `/content` | nothing | everything |
-| `/app` | features (components/hooks), `/components` | any `db.ts` directly, Supabase directly |
+| `packages/shared/src/logic` | shared types and other pure shared modules | SQLite, Expo, React Native, device APIs, network, filesystem, clock globals |
+| `apps/native/src/device/logic.ts` | device types, copy, and pure device helpers | Expo APIs, SQLite, React, `Date.now()` |
+| `apps/native/src/<feature>/db.ts` | the native database contract, shared types, logger | React components, another feature's internals |
+| `apps/native/src/<feature>/*` component and hook files | shared content, native theme tokens, and feature repositories | direct SQL in components, unrelated feature internals |
+| `apps/native/src/device` | Expo APIs, the Android module, logger, shared contracts | feature UI and route code |
+| `apps/native/app` | route layouts and feature entry components | direct SQL and platform implementation |
 
-The single most important edge: **`logic.ts` → `db.ts` is forbidden.** Data flows the other
-way — hooks call `db.ts` to fetch, hand the data to `logic.ts`, then call `db.ts` to persist.
+`packages/shared/eslint.config.mjs` enforces the shared purity restrictions. The native ESLint
+configuration does not enforce a logic-to-database boundary. The important data direction is
+`hook or use case -> repository -> SQLite`; shared logic and `apps/native/src/device/logic.ts`
+remain pure and never reach back into a repository.
 
-## Rendering strategy
+## Persistence
 
-**Mostly Client.** IndexedDB (Dexie) is browser-only, so every data-bound view is a Client
-Component reading through `useLiveQuery`. Server Components are limited to static shells and
-the public marketing/landing page (which needs SEO and no user data). `'use client'` is added
-only for state, events, effects, or browser APIs — never reflexively.
+SQLite is the native source of truth. The database is `nabd-native.db`, opened and migrated by
+`apps/native/src/db/database.ts`, currently at schema version 4. Feature repositories use
+parameterized queries and preserve append-only history where the domain requires it. Persistent
+preferences use the `app_preferences` table. No Supabase client, remote sync, or authentication
+belongs in this architecture.
 
-## Canonical patterns
+## Device boundary
 
-**Repository, not dependency injection.** nabd deliberately avoids a DI container (ADR-0002).
-Instead of injecting dependencies, it isolates them: pure logic in `logic.ts`, all I/O in
-`db.ts`, direct imports between them via hooks. Repositories return typed results
-(`{ ok: true, value } | { ok: false, error }`) — the UI never sees a raw exception.
+Android-only behavior is isolated in three places:
 
-```ts
-// features/counter/db.ts — repository module (all I/O for the counter feature)
-export async function completeDhikr(id: string, at: number): Promise<Result<void>> {
-  try {
-    await db.transaction('rw', db.entries, async () => { /* mark counter + linked wird item */ })
-    return { ok: true, value: undefined }
-  } catch (e) {
-    logger.error('counter.completeDhikr failed', e)
-    return { ok: false, error: 'complete_failed' }
-  }
-}
-```
+- `apps/native/src/device` for Expo-facing device services and platform-neutral scheduling seams.
+- `apps/native/modules/nabd-device` for Kotlin capabilities that Expo does not provide, including
+  exact-alarm status.
+- `apps/native/plugins` for manifest and build-time configuration.
 
-```ts
-// features/counter/hooks/useDhikrCounter.ts — glues store (UI) + db (I/O) + logic (pure)
-// reads live state from Dexie, keeps only the active tap-session count in the Zustand store
-```
-
-**State.** Zustand stores hold UI state only (active counter session, dialogs, filters).
-Persistent data is always read from Dexie via `useLiveQuery`; it is never mirrored into a
-store (that duplication is a classic source of stale-state bugs).
-
-**Versioned wird (the malleable-wird constraint).** A user's wird definition is stored as
-versioned records; entries reference the version in force on their day. Statistics are
-computed by `stats/logic.ts` against the correct version per day, so changing the wird
-(adding sunan, growing the Quran portion) never rewrites history. The versioning model is
-locked in ADR-0006 before any stats code is written.
+Location, notification permission, exact-alarm access, battery restrictions, connectivity, OEM
+background limits, app lifecycle, and Android API-level differences are separate states. A device
+feature is not complete until its state matrix has an actionable result for each relevant state.

@@ -1,6 +1,8 @@
 # ADR-0014 — SPA + native client split
 
 - **Status:** accepted (owner decision 2026-08-05), amended 2026-08-09 and 2026-08-10
+- **Status note:** Superseded for the go-forward product architecture by
+  [ADR-0017](./0017-native-only.md). Retained as the historical record of the SPA/native split.
 - **Date:** 2026-08-05
 
 ## Context

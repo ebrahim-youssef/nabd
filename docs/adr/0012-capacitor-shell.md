@@ -1,6 +1,8 @@
 # ADR-0012 — Capacitor Android shell (exact prayer alarms)
 
 - **Status:** superseded by ADR-0014
+- **Status note:** Its Capacitor decision is superseded in the final architecture by
+  [ADR-0017](./0017-native-only.md); this ADR remains the historical record.
 - **Date:** 2026-07-16
 
 ## Context

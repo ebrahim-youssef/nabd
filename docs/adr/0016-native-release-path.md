@@ -1,6 +1,8 @@
 # ADR-0016 — Native release path, build profiles, and exact-alarm distribution
 
 - **Status:** accepted
+- **Status note:** Its web and Cloudflare sequencing is superseded by
+  [ADR-0017](./0017-native-only.md); native release and exact-alarm rules remain where compatible.
 - **Date:** 2026-08-28
 
 ## Context
@@ -48,7 +50,7 @@ Feature branches produce nothing. The workflow's push trigger is restricted to `
 
 `native-release-apk` builds on pull requests that touch native code, which is the "release APK
 build on relevant pull requests" gate NBD-87 requires, and publishes the artefact on a push to
-`dev`. It stays out of the *required* status checks for the reason above: a paths-filtered workflow
+`dev`. It stays out of the _required_ status checks for the reason above: a paths-filtered workflow
 never reports on pull requests that miss the filter, so requiring it would deadlock them. It runs
 and must pass where it applies, without being a context every pull request has to satisfy. The gates that protect native correctness are the `native lint`, `native
 test` and `native typecheck` checks, and NBD-86 adds a clean-prebuild and compile gate that does

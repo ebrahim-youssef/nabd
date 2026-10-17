@@ -9,16 +9,20 @@ hold yourself to account (محاسبة), and look back over your worship as the 
 
 The interface is entirely in Arabic, right to left.
 
-## Migration status
+## Current state
 
-The currently working product is the root Next.js application and Capacitor shell. Two parity
-replacements are being built without redesigning the product: a Vite and React Router web client
-in `apps/spa`, and an Expo Android client in `apps/native`. All three clients now compile against
-the canonical domain rules and Arabic content in `packages/shared`.
+The product is one Expo React Native app in `apps/native`, with Android as the first platform.
+The code boundaries and `packages/shared` keep a future iOS target possible. Full parity with the
+current product is still in progress.
 
-The replacement clients do not yet have full feature parity and are not production releases. The
-Android client now has an Arabic onboarding gate that persists the selected level and initial wird
-in SQLite and restores them when reopened; final Android device verification remains an owner gate.
+- **Available now:** onboarding, wird, adhkar, intentions, prayer times, qada, statistics, local
+  SQLite persistence, and some device features.
+- **Still open:** daily adhkar and settings parity, detailed statistics, permission and notification
+  states, backup and restore, and final Android device verification.
+
+The root Next.js app remains a reference for comparison until parity is complete, then it is
+deleted. `apps/spa` is cancelled and will be deleted, not used as a product target. Google sign-in
+and Supabase cross-device sync remain out of the product under ADR-0014.
 
 ## What it does
 
@@ -46,24 +50,19 @@ in SQLite and restores them when reopened; final Android device verification rem
 
 ## Works offline
 
-The current application is offline-first: it stores data locally, then syncs it to an account.
-In the replacement architecture, full offline behavior belongs to the Android client. The new
-web client does not promise offline operation and does not include sync or sign-in in this phase.
+The Expo app works offline and stores data locally in SQLite through feature repositories. The
+product currently has no backend, sign-in, or cross-device sync.
 
 ## Where it runs
 
-- **Current release**: an installable web app with a Capacitor Android shell.
-- **Replacement in progress**: the regular web client in `apps/spa` now has a public route, an
-  `/app/*` shell, and a locally verifiable Cloudflare build; the Expo Android client lives in
-  `apps/native`. Product parity is not complete and neither client is approved for production yet.
+- **Current app:** the Expo React Native app in `apps/native`, with Android as the first release.
+- **Temporary reference:** the root Next.js app remains for comparison until parity is complete,
+  then it is deleted; `apps/spa` is cancelled and will be deleted.
 
 ## Tech
 
-The current client uses Next.js, Dexie, Supabase, Serwist, and Capacitor. The replacement uses
-Vite and React Router for web, Expo and SQLite for Android, and a platform-neutral shared
-TypeScript package. The SPA will be prepared for Cloudflare, while Sentry remains the error
-monitor. Verification spans Vitest, Playwright, React Native tests, and Maestro before the final
-owner device check.
+The app uses Expo, Expo Router, SQLite, and device APIs, with a platform-neutral TypeScript
+package in `packages/shared`. Android is first, with boundaries kept ready for iOS.
 
 ## Run locally
 

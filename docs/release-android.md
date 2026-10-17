@@ -1,4 +1,8 @@
-# Android release (bundled APK — ADR-0013)
+# Android release, bundled APK, ADR-0013
+
+> This document describes the legacy Capacitor APK. It is superseded by ADR-0016 and
+> [ADR-0017](adr/0017-native-only.md), and will be deleted in NBD-108. The active release path is
+> the Expo native APK and AAB flow.
 
 > Legacy release path only. ADR-0014 supersedes Capacitor with the Expo application under
 > `apps/native`. Its release APK and verification procedure are delivered by NBD-87 and NBD-89;

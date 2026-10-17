@@ -1,6 +1,9 @@
 # ADR-0003 — Branching & environments
 
 - **Status:** accepted
+- **Status note:** Its web deployment details and prior merge method are superseded by
+  [ADR-0017](./0017-native-only.md); branch naming remains where compatible, and current merges
+  use normal merge commits.
 - **Date:** 2026-07-13
 
 ## Context

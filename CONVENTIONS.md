@@ -1,127 +1,87 @@
-# CONVENTIONS.md — nabd
+# CONVENTIONS.md, nabd
 
-Code conventions. Every file should look like the same person wrote it.
+Code conventions for `apps/native` and `packages/shared`.
 
-## Exports & style
+## Exports and style
 
-- **Named exports everywhere.** Default exports only where the framework requires them
-  (Next.js `page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`, `route.ts` handlers,
-  `middleware.ts`).
-- **Functions only — no classes.** Behavior is composed from functions and modules. If a
-  pattern seems to want a class, it wants a factory function or a module instead.
-- **Comments explain the non-obvious.** Write a comment when logic is complex or has many
-  steps, when a constraint isn't visible from the code, or when something serves a
-  non-obvious use case. Don't narrate what the next line plainly does. Write comments in a
-  natural human voice, not as machine annotations.
+- Use named exports in shared and feature modules.
+- Expo Router route files under `apps/native/app` use the default export required by the router.
+- Keep functions small and focused. Do not add a class when a function or module is enough.
+- Comments explain a non-obvious constraint or reason. They do not narrate the next line.
 
 ## Naming
 
 | Kind | Convention | Example |
 | --- | --- | --- |
-| Logic / helper files | `camelCase.ts`, verb+noun for actions | `checkOffWird.ts`, `computeAreaStats.ts` |
+| Logic and helper files | `camelCase.ts`, verb plus noun for actions | `checkOffWird.ts` |
 | Components | `PascalCase.tsx` | `WirdChecklist.tsx` |
-| Static content / data files | `snake_case.ts` | `adhkar_morning.ts` |
-| Repository interfaces / types | `{Thing}Repository` | `WirdRepository` |
-| Hooks | `use{Thing}.ts` in a feature `hooks/` | `useDhikrCounter.ts` |
+| Static content | `snake_case.ts` | `adhkar_morning.ts` |
+| Repository interfaces | `{Thing}Repository` | `WirdRepository` |
+| Hooks | `use{Thing}.ts` | `useDhikrCounter.ts` |
+| Route files | Expo Router route names | `app/(tabs)/stats.tsx` |
 
-## Logging & errors
+Use full words. Booleans read as yes or no. Put units in names such as `timeoutMs` and
+`priceCents`.
 
-- **Central `Logger` only.** `console.*` is banned in committed code (lint-enforced). Import
-  the Logger from `/lib/logger`.
-- **Typed result objects.** Repository and use-case-style functions catch their own errors,
-  log full detail via the Logger, and return `{ ok: true, value } | { ok: false, error }`.
-  The UI never sees a raw exception.
-- **Logs are richer than user messages.** The detail sent to the Logger (and Sentry) must be
-  more specific than what the user sees — the user gets a short, friendly message; the log
-  carries the cause, ids, and context needed to debug.
+## Logic, repositories, and device code
 
-```ts
-export async function checkOffItem(id: string, at: number): Promise<Result<WirdEntry>> {
-  try {
-    const entry = await db.entries.add({ id, checkedAt: at })
-    return { ok: true, value: entry }
-  } catch (cause) {
-    logger.error('wird.checkOffItem failed', { id, at, cause })  // full detail
-    return { ok: false, error: 'checkoff_failed' }               // UI maps to a friendly line
-  }
-}
-```
+- Platform-neutral pure logic lives in `packages/shared/src/logic`; its purity boundary is
+  enforced by `packages/shared/eslint.config.mjs`. The only native pure-logic module is
+  `apps/native/src/device/logic.ts`.
+- Native feature folders are flat, with `db.ts`, component files, and hook files side by side
+  where present, and tests in `__tests__/`.
+- `apps/native/eslint.config.mjs` enforces React Hooks rules, `no-console`, and restricted direct
+  imports of React Native `Text` and `TextInput`; it does not enforce a logic-to-database boundary.
+- SQLite access belongs in feature repositories or the database layer, never in a component.
+- Expo APIs, permissions, notifications, alarms, location, filesystem, and background work belong
+  in `apps/native/src/device` or a platform adapter.
+- Android-only Kotlin stays in `apps/native/modules/nabd-device`; build-time native setup stays in
+  `apps/native/plugins`.
+- `packages/shared` owns domain types, Arabic content, copy, pure logic, contracts, and fixtures.
+  It must not import Expo, React Native, SQLite, device APIs, network clients, or filesystem APIs.
 
-## Constants
+## Logging and errors
 
-No magic numbers or strings. Extract them to named constants (a feature `constants.ts` or a
-shared module). A named constant beats a literal even when used once — the name is the
-documentation.
+Use the central logger in `apps/native/src/observability/logger.ts`. Do not commit direct
+`console.*` calls. Developer logs include the failed condition and non-secret context. User-facing
+errors explain the next action without exposing internal or account state.
 
-## Reuse before create
+Repository functions return typed result objects where a failure is expected. Catch and log the
+diagnostic cause at the I/O boundary instead of leaking a raw exception into the UI.
 
-Before writing anything new, search first:
+## Constants and tokens
 
-1. **Functions/components** — is there already a function or component that does this? Use it.
-2. **UI values** — check `DESIGN_SYSTEM.md` / the design tokens before hardcoding any color,
-   size, or shadow. New token beats new magic value.
-3. **Data shape** — check the schema and `/types` before naming anything DB-adjacent.
+No magic numbers or strings. Extract repeated or meaningful values into named constants. Visual
+values come from the native theme tokens in `apps/native/theme/palette.ts` and
+`apps/native/theme/tailwind-theme.cjs`. Components do not add raw colors, sizes, radii, or
+shadows.
 
-Only create once the search comes up empty.
+## RTL and accessibility
 
-## Shared domain ownership during migration
+Arabic is the default and the application is RTL. Use logical spacing and alignment utilities and
+avoid left or right assumptions. Interactive controls need accessible names, visible state, and a
+usable result for loading, empty, denied, offline, and error states.
 
-- Put platform-neutral domain types, Arabic product content, pure calculations, repository
-  contracts, and cross-platform tokens in `packages/shared` first.
-- Root `lib/pure`, `content`, and feature `logic.ts` compatibility files may re-export
-  `@nabd/shared`; do not copy the implementation back into a client.
-- Repository contracts live in shared, but Dexie, SQLite, Supabase, browser, Expo, and device I/O
-  implementations stay in their client.
-- Shared logic receives dates, times, ids, and data as parameters. `Date.now()`, `Math.random()`,
-  platform globals, and framework/I/O imports are lint errors.
+## Tests
 
-## Commits & versioning
+Tests ship with the code and are colocated:
 
-**Conventional Commits**, scope = the feature or module most affected, enforced by commitlint.
-
-```
-feat(wird): auto-mark linked item when dhikr counter completes
-fix(stats): keep history stable when the wird version changes mid-week
-chore(ci): add colocated-test-check workflow
-```
-
-**Version bump** in the same commit as the change:
-
-| Change type | Bump |
-| --- | --- |
-| `feat` | MINOR |
-| `fix`, `perf`, `refactor` | PATCH |
-| `docs`, `test`, `chore` | none |
-
-Pre-1.0: MAJOR stays `0`; a breaking change bumps MINOR.
-
-**Git hard rules:**
-
-- Never `git add -A` — stage specific files.
-- Never commit `.env*`, build artifacts, or generated files.
-- Never `--no-verify` — if a hook fails, fix the cause.
-- Delete the branch after merge.
-- Branch name: `<user>/<issue-number>-<slug>` (e.g. `ibrahim/42-checkoff-row`); the issue
-  number is the GitHub issue.
-
-## Testing patterns
-
-Tests are colocated in `features/<name>/__tests__/` and ship in the **same PR** as the code
-(CI-enforced — a PR touching a feature's `logic.ts`/`db.ts` without a test in the diff cannot
-merge).
-
-| Layer | Runner | Style |
+| Layer | Runner | Required focus |
 | --- | --- | --- |
-| `logic.ts` (pure) | Vitest (node) | synchronous, table-driven, zero mocks; property-based for combinatorial logic |
-| `db.ts` (repositories) | Vitest + fake-indexeddb | one test per method; empty/duplicate/concurrent edge cases |
-| components | Vitest (jsdom) + Testing Library | interaction correctness, not visual |
-| flows | Playwright (Chromium) | full user flow; offline path when applicable |
+| Shared pure logic | Vitest | table-driven behavior with no mocks for pure calculations |
+| Native logic and repositories | Jest | SQLite schemas, empty state, duplicates, concurrency, and restart persistence |
+| Native components | React Native Testing Library | interaction and accessibility state |
+| Device capabilities | Jest seams plus real-device checks | permission, toggle, connectivity, API level, OEM, lifecycle, and failure actions |
+| Backup and restore | Jest and Android verification | NBD-91 versioned export/import and non-empty-device union behavior |
 
-**Mandatory e2e paths** (must always have an e2e test when touched):
+Mandatory native behavior checks are SQLite restart persistence, the device state matrix, and
+backup and restore. A passing unit suite does not replace release APK verification.
 
-1. Offline persistence: check off wird → go offline → reload → still checked, zero network
-   requests.
-2. Sync to stats: reconnect → syncs to Supabase → appears in statistics.
-3. Counter to wird: dhikr counter completion → linked wird item auto-marked.
+## Commits, releases, and merges
 
-No numeric coverage gate — the colocated rule plus review is the bar.
+Use Conventional Commits. Bump the version for every release: minor for a new or visibly changed
+feature, patch for a fix, dependency, or content change, and major only for a breaking change or
+an owner decision. Keep all version fields in agreement and tag the release commit `v<version>`.
+
+Stage specific files only. Never stage `.env` files, generated artifacts, or unrelated changes.
+Pull requests merge with normal merge commits. Never rebase or squash.

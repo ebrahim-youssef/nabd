@@ -1,6 +1,8 @@
 # ADR-0013 — Bundled native WebView (static export in the APK)
 
 - **Status:** accepted (owner decision 2026-07-19); superseded by ADR-0014
+- **Status note:** Its Capacitor bundled-WebView decision is superseded in the final architecture
+  by [ADR-0017](./0017-native-only.md); this ADR remains the historical record.
 - **Date:** 2026-07-19
 
 ## Context

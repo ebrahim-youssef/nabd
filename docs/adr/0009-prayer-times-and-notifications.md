@@ -1,6 +1,9 @@
 # ADR-0009 — Prayer times (adhan.js) & prayer notifications
 
 - **Status:** accepted (2026-07-15)
+- **Status note:** Its browser notification and PWA portions are superseded by
+  [ADR-0017](./0017-native-only.md); prayer calculation and platform-neutral scheduling concerns
+  remain relevant.
 
 ## Context
 
