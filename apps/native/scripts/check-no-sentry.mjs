@@ -2,7 +2,8 @@ import { readdir, readFile } from 'node:fs/promises'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const nativeRoot = fileURLToPath(new URL('../apps/native/', import.meta.url))
+const nativeRoot = fileURLToPath(new URL('../', import.meta.url))
+const scannerPath = fileURLToPath(import.meta.url)
 const excludedDirectories = new Set(['.gradle', 'build', 'dist', 'node_modules'])
 const findings = []
 
@@ -14,6 +15,7 @@ async function scan(directory) {
     }
 
     const path = join(directory, entry.name)
+    if (path === scannerPath) continue
     const source = await readFile(path, 'utf8')
     if (
       entry.name.toLowerCase().includes('sentry') ||

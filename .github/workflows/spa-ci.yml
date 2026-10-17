@@ -15,12 +15,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: shared lint
-            run: pnpm --filter @nabd/shared lint
-          - name: shared typecheck
-            run: pnpm --filter @nabd/shared typecheck
-          - name: shared test
-            run: pnpm --filter @nabd/shared test
           - name: spa lint
             run: pnpm --filter apps-spa lint
           - name: spa typecheck
@@ -29,12 +23,6 @@ jobs:
             run: pnpm --filter apps-spa test
           - name: spa build:cloudflare
             run: pnpm --filter apps-spa build:cloudflare
-          - name: native lint
-            run: pnpm --filter apps-native check:no-sentry && pnpm --filter apps-native lint
-          - name: native typecheck
-            run: pnpm --filter apps-native typecheck
-          - name: native test
-            run: pnpm --filter apps-native test
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4

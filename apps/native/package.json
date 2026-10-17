@@ -7,7 +7,7 @@
     "start": "expo start",
     "build": "expo export --platform android",
     "lint": "eslint .",
-    "check:no-sentry": "node ../../scripts/check-native-no-sentry.mjs",
+    "check:no-sentry": "node scripts/check-no-sentry.mjs",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand"
   },
