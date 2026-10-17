@@ -205,6 +205,67 @@ describe('DailyAdhkarList', () => {
     expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
   })
 
+  it('clears the day before ignoring a tap after midnight without writing the old day', async () => {
+    withDailyItems([
+      {
+        id: 'istighfar',
+        label: 'الاستغفار',
+        kind: 'counter',
+        target: 1,
+        done: false,
+      },
+    ])
+    await render(<DailyAdhkarList />)
+    jest.setSystemTime(new Date('2026-09-21T12:00:00.000Z'))
+
+    await fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
+
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/١')
+    expect(mockRepository.completeLinkedWirdItem).not.toHaveBeenCalled()
+  })
+
+  it('ignores a stale failure after reset and recount so the newer completion stays done', async () => {
+    withDailyItems([
+      {
+        id: 'istighfar',
+        label: 'الاستغفار',
+        kind: 'counter',
+        target: 1,
+        done: false,
+      },
+    ])
+    let rejectFirstCompletion: (cause: Error) => void = () => undefined
+    const firstCompletion = new Promise<Result<WirdEntry | null>>((_, reject) => {
+      rejectFirstCompletion = reject
+    })
+    mockRepository.completeLinkedWirdItem
+      .mockReturnValueOnce(firstCompletion)
+      .mockResolvedValueOnce({ ok: true, value: null })
+
+    await render(<DailyAdhkarList />)
+    const card = screen.getByTestId('adhkar-daily-card-istighfar')
+    const reset = screen.getByTestId('adhkar-daily-reset-istighfar')
+
+    await act(async () => {
+      fireEvent.press(card)
+      await Promise.resolve()
+    })
+    await fireEvent.press(reset)
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      rejectFirstCompletion(new Error('write failed'))
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١')
+    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
+  })
+
   it('falls back to the content repeat when the linked item is unavailable', async () => {
     await render(<DailyAdhkarList />)
     const card = screen.getByTestId('adhkar-daily-card-istighfar')

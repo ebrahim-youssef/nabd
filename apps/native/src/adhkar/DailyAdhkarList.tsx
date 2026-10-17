@@ -22,6 +22,7 @@ export function DailyAdhkarList() {
   const [failedItems, setFailedItems] = useState<Record<string, boolean>>({})
   const countsRef = useRef<Record<string, number>>({})
   const dayRef = useRef(day)
+  const attemptGenerations = useRef(new Map<string, number>())
   const pendingActions = useRef(new Map<string, PendingAction>())
   const { areas, isLoading, refresh } = useWirdChecklist(day)
   const checklistItems = useMemo(
@@ -29,22 +30,31 @@ export function DailyAdhkarList() {
     [areas],
   )
 
+  const switchDay = useCallback((nextDay: DayId) => {
+    dayRef.current = nextDay
+    countsRef.current = {}
+    setCounts({})
+    setFailedItems({})
+    attemptGenerations.current.forEach((generation, itemId) => {
+      attemptGenerations.current.set(itemId, generation + 1)
+    })
+    setDay(nextDay)
+  }, [])
+
   useFocusEffect(
     useCallback(() => {
       const focusedDay = toDayId(new Date())
       if (focusedDay !== day) {
-        dayRef.current = focusedDay
-        countsRef.current = {}
-        setCounts({})
-        setFailedItems({})
-        setDay(focusedDay)
+        switchDay(focusedDay)
       }
       refresh()
       return undefined
-    }, [day, refresh]),
+    }, [day, refresh, switchDay]),
   )
 
   const reset = useCallback((itemId: string) => {
+    const generation = attemptGenerations.current.get(itemId) ?? 0
+    attemptGenerations.current.set(itemId, generation + 1)
     const next = { ...countsRef.current, [itemId]: 0 }
     countsRef.current = next
     setCounts(next)
@@ -59,6 +69,11 @@ export function DailyAdhkarList() {
   const tap = useCallback(
     (item: Dhikr, checklistItem: ChecklistItemView | undefined) => {
       if (isLoading) return undefined
+      const tappedDay = toDayId(new Date())
+      if (tappedDay !== day) {
+        switchDay(tappedDay)
+        return undefined
+      }
       const current = computeDailyItemState(
         countsRef.current[item.id],
         checklistItem?.target,
@@ -74,8 +89,14 @@ export function DailyAdhkarList() {
       if (count < current.target || !checklistItem) return undefined
 
       const rollbackCount = current.target - 1
+      const attemptGeneration = attemptGenerations.current.get(item.id) ?? 0
+      attemptGenerations.current.set(item.id, attemptGeneration)
       const markFailed = () => {
-        if (countsRef.current[item.id] !== count || dayRef.current !== day) return
+        if (
+          (attemptGenerations.current.get(item.id) ?? 0) !== attemptGeneration ||
+          dayRef.current !== day
+        )
+          return
         const rolledBack = { ...countsRef.current, [item.id]: rollbackCount }
         countsRef.current = rolledBack
         setCounts(rolledBack)
@@ -116,7 +137,7 @@ export function DailyAdhkarList() {
       pendingActions.current.set(item.id, tracked)
       return tracked
     },
-    [day, isLoading, refresh, repository],
+    [day, isLoading, refresh, repository, switchDay],
   )
 
   return (
