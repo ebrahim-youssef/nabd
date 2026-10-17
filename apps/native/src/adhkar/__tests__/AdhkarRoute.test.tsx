@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
-import { ADHKAR_COPY } from '@nabd/shared'
+import { ADHKAR_COPY, ADHKAR_LIBRARY } from '@nabd/shared'
 
 import { AdhkarRoute } from '../AdhkarRoute'
 
@@ -19,7 +19,13 @@ jest.mock('../../counter/db', () => ({
   createDhikrCompletionRepository: () => ({ completeLinkedWirdItem: jest.fn() }),
 }))
 
-jest.mock('lucide-react-native', () => ({ ArrowRight: () => null, RotateCcw: () => null }))
+jest.mock('lucide-react-native', () => ({
+  ArrowRight: () => null,
+  Check: () => null,
+  ChevronDown: () => null,
+  ChevronUp: () => null,
+  RotateCcw: () => null,
+}))
 
 jest.mock('../useAdhkarFlow', () => ({
   useAdhkarFlow: () => ({
@@ -44,6 +50,33 @@ describe('AdhkarRoute', () => {
 
     await fireEvent.press(screen.getByTestId('adhkar-category-evening'))
     expect(screen.getByTestId('adhkar-flow-evening')).toBeTruthy()
+  })
+
+  it('renders the repeatable list for after-prayer and sleep categories', async () => {
+    await render(<AdhkarRoute />)
+
+    await fireEvent.press(screen.getByTestId('adhkar-category-after-prayer'))
+    expect(screen.getByTestId('adhkar-list-after-prayer')).toBeTruthy()
+
+    await fireEvent.press(screen.getByTestId('adhkar-category-sleep'))
+    expect(screen.getByTestId('adhkar-list-sleep')).toBeTruthy()
+  })
+
+  it('resets repeatable counts when a category is remounted', async () => {
+    await render(<AdhkarRoute />)
+
+    await fireEvent.press(screen.getByTestId('adhkar-category-after-prayer'))
+    const itemId = ADHKAR_LIBRARY.find((entry) => entry.id === 'after-prayer')?.items[0]?.id
+    expect(itemId).toBeTruthy()
+    const progress = screen.getByTestId(`adhkar-list-progress-${itemId}`)
+
+    await fireEvent.press(screen.getByTestId(`adhkar-list-count-${itemId}`))
+    expect(progress).toHaveTextContent('١/١')
+
+    await fireEvent.press(screen.getByTestId('adhkar-category-sleep'))
+    await fireEvent.press(screen.getByTestId('adhkar-category-after-prayer'))
+
+    expect(screen.getByTestId(`adhkar-list-progress-${itemId}`)).toHaveTextContent('٠/١')
   })
 
   it('renders five daily cards when the daily category is selected', async () => {

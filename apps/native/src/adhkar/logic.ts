@@ -1,3 +1,25 @@
+import type { Dhikr, FlowState } from '@nabd/shared'
+
+export function normalizeFlowState(state: FlowState, items: Dhikr[]): FlowState | undefined {
+  if (
+    items.length === 0 ||
+    !Number.isInteger(state.index) ||
+    state.index < 0 ||
+    state.index >= items.length ||
+    !Number.isInteger(state.count) ||
+    state.count < 0 ||
+    typeof state.finished !== 'boolean'
+  ) {
+    return undefined
+  }
+
+  const active = items[state.index]
+  if (state.finished) {
+    return state.index === items.length - 1 && state.count === active.repeat ? state : undefined
+  }
+  return state.count < active.repeat ? state : undefined
+}
+
 export type DailyItemState = {
   target: number
   count: number

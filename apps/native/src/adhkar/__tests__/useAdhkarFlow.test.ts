@@ -110,4 +110,64 @@ describe('useAdhkarFlow', () => {
     expect(result.current.state.index).toBe(0)
     expect(mockRepository.writeFlowProgress).not.toHaveBeenCalled()
   })
+
+  it('discards a stored flow row whose active index is outside the category', async () => {
+    mockRepository.readFlowProgress.mockResolvedValue({
+      categoryId: 'morning',
+      day: DAY,
+      index: 99,
+      count: 0,
+      finished: false,
+    })
+
+    const { result } = renderHook(() => useAdhkarFlow('morning', ITEMS, DAY))
+
+    await waitFor(() => expect(mockRepository.readFlowProgress).toHaveBeenCalled())
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 0)))
+    expect(result.current.state).toEqual({ index: 0, count: 0, finished: false })
+  })
+
+  it('resumes a stored finished flow without appending another linked entry', async () => {
+    mockRepository.readFlowProgress.mockResolvedValue({
+      categoryId: 'morning',
+      day: DAY,
+      index: 1,
+      count: 1,
+      finished: true,
+    })
+
+    const { result } = renderHook(() => useAdhkarFlow('morning', ITEMS, DAY))
+
+    await waitFor(() => expect(result.current.state.finished).toBe(true))
+    expect(mockRepository.completeLinkedWirdItem).not.toHaveBeenCalled()
+  })
+
+  it('restarts the guided flow and clears persisted progress', async () => {
+    const { result } = renderHook(() => useAdhkarFlow('morning', ITEMS, DAY))
+
+    await waitFor(() => expect(mockRepository.isLinkedWirdItemDone).toHaveBeenCalled())
+    await act(async () => result.current.tap())
+    expect(result.current.state.index).toBe(1)
+
+    await act(async () => result.current.restart())
+
+    expect(result.current.state).toEqual({ index: 0, count: 0, finished: false })
+    expect(mockRepository.clearFlowProgress).toHaveBeenCalledWith('morning')
+  })
+
+  it('ignores a progress row returned for a different day', async () => {
+    mockRepository.readFlowProgress.mockResolvedValue({
+      categoryId: 'morning',
+      day: DAY,
+      index: 1,
+      count: 0,
+      finished: false,
+    })
+
+    const { result } = renderHook(() => useAdhkarFlow('morning', ITEMS, '2026-09-21'))
+
+    await waitFor(() => expect(mockRepository.readFlowProgress).toHaveBeenCalled())
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 0)))
+    expect(result.current.state).toEqual({ index: 0, count: 0, finished: false })
+  })
 })
