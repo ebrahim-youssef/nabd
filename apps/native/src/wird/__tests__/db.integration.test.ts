@@ -123,7 +123,7 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          nowIso: CREATED_AT + 1,
+          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: false, effectiveFrom: null })
       expect(versionRows(connection)).toHaveLength(1)
@@ -142,7 +142,7 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          nowIso: CREATED_AT + 1,
+          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: true, effectiveFrom: TODAY })
       expect(versionRows(connection)).toHaveLength(2)
@@ -171,7 +171,7 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          nowIso: CREATED_AT + 1,
+          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
       expect(versionRows(connection)).toEqual(
@@ -192,7 +192,7 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          nowIso: CREATED_AT + 1,
+          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: false, effectiveFrom: null })
       expect(versionRows(connection)).toHaveLength(1)
@@ -214,7 +214,7 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          nowIso: CREATED_AT + 1,
+          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: true, effectiveFrom: TODAY })
 
@@ -235,8 +235,8 @@ describe('native wird version healing', () => {
       const repository = createWirdRepository(database)
 
       const results = await Promise.all([
-        repository.healVersionFromLevels({ today: TODAY, nowIso: CREATED_AT + 1 }),
-        repository.healVersionFromLevels({ today: TODAY, nowIso: CREATED_AT + 2 }),
+        repository.healVersionFromLevels({ today: TODAY, createdAt: CREATED_AT + 1 }),
+        repository.healVersionFromLevels({ today: TODAY, createdAt: CREATED_AT + 2 }),
       ])
 
       expect(results.filter((result) => result.created)).toHaveLength(1)
@@ -254,7 +254,7 @@ describe('native wird version healing', () => {
       insertVersion(connection, VERSION_ID, TODAY, changedLevelDefinition, CREATED_AT)
       const repository = createWirdRepository(database)
       await expect(
-        repository.healVersionFromLevels({ today: TODAY, nowIso: CREATED_AT + 1 }),
+        repository.healVersionFromLevels({ today: TODAY, createdAt: CREATED_AT + 1 }),
       ).resolves.toEqual({ created: true, effectiveFrom: TODAY })
       connection.close()
 
@@ -264,7 +264,7 @@ describe('native wird version healing', () => {
         await expect(
           createWirdRepository(reopenedDatabase).healVersionFromLevels({
             today: TODAY,
-            nowIso: CREATED_AT + 2,
+            createdAt: CREATED_AT + 2,
           }),
         ).resolves.toEqual({ created: false, effectiveFrom: null })
         expect(versionRows(reopenedConnection)).toHaveLength(2)
@@ -286,7 +286,7 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(failingDatabase).healVersionFromLevels({
           today: TODAY,
-          nowIso: CREATED_AT + 1,
+          createdAt: CREATED_AT + 1,
         }),
       ).rejects.toThrow('injected SQLite failure')
       expect(versionRows(connection)).toHaveLength(1)

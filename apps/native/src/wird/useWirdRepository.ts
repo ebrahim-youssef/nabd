@@ -1,10 +1,10 @@
 import { useSQLiteContext } from 'expo-sqlite'
 import { useMemo } from 'react'
-import type { WirdRepository } from '@nabd/shared'
 
 import { createWirdRepository } from './db'
+import type { NativeWirdRepository } from './db'
 
-export function useWirdRepository(): WirdRepository {
+export function useWirdRepository(): NativeWirdRepository {
   const database = useSQLiteContext()
   return useMemo(() => createWirdRepository(database), [database])
 }

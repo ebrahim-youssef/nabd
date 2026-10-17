@@ -42,7 +42,7 @@ const asEntry = (row: EntryRow): WirdEntry => ({
 
 export type HealVersionInput = {
   today: DayId
-  nowIso: number
+  createdAt: number
 }
 
 export type HealVersionResult = {
@@ -104,7 +104,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
       return { ok: false, error: 'append_entry_failed' }
     }
   }
-  async function healVersionFromLevels({ today, nowIso }: HealVersionInput) {
+  async function healVersionFromLevels({ today, createdAt }: HealVersionInput) {
     let result: HealVersionResult = { created: false, effectiveFrom: null }
     await database.withExclusiveTransactionAsync(async (transaction) => {
       const versions = (
@@ -127,7 +127,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
         `INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (${SQLITE_ID}, ?, ?, ?)`,
         plan.effectiveFrom,
         JSON.stringify(plan.definition),
-        nowIso,
+        createdAt,
       )
       result = { created: true, effectiveFrom: plan.effectiveFrom }
     })
