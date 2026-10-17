@@ -225,8 +225,7 @@ The web track is cancelled by ADR-0017.
 ## R12 - Native only (2026-10-16)
 
 ADR-0017 makes `apps/native` the sole product and release target, with Android first and
-platform-neutral boundaries for a future iOS target. The root Next.js app remains reference-only until parity, while `apps/spa` is cancelled
-and scheduled for deletion.
+platform-neutral boundaries for a future iOS target. The root Next.js app remains reference-only until parity. The SPA was deleted in NBD-107.
 
 | ID | Status | Issue | Ticket | Acceptance criterion |
 | --- | --- | --- | --- | --- |
@@ -240,7 +239,7 @@ and scheduled for deletion.
 | NBD-104 | ⬜ todo | - | Wird version self-healing when shared level definitions change without rewriting history | A shared level-definition change creates the required current or future wird version without modifying historical entries |
 | NBD-105 | ⬜ todo | - | iOS-readiness pass, Android-only alarm and channel code behind a platform-neutral scheduling contract, with iOS behavior documented for notifications, audio, and location settings | Android-only alarm and channel code is isolated behind a platform-neutral scheduling contract and the iOS notification, audio, and location-settings behavior is documented |
 | NBD-106 | ✅ done | - | Native boundary and CI split, move `apps/native/scripts/check-no-sentry.mjs` into `apps/native`, turn `spa-ci.yml` into native and shared CI, and decide native theme-token ownership | Native and shared CI run the required gates from their owned boundaries, and native theme-token ownership is recorded. Theme-token ownership: apps/native/theme is the native source; the shared web theme values stay until NBD-107, which must rewrite apps/native/src/__tests__/theme-parity.test.ts before deleting them. |
-| NBD-107 | ⬜ todo | - | Delete `apps/spa`, Wrangler and Cloudflare config, SPA CI jobs, and SPA-only shared exports | `apps/spa`, Wrangler and Cloudflare configuration, SPA CI jobs, and SPA-only shared exports are absent |
+| NBD-107 | ✅ done | - | Delete the SPA, Wrangler and Cloudflare config, SPA CI jobs, and landing copy; keep SITE_URL until NBD-108 and theme tokens until NBD-111 | SPA, Wrangler and Cloudflare configuration, SPA CI jobs, and landing copy are absent; SITE_URL remains until NBD-108 and theme tokens until NBD-111 |
 | NBD-108 | ⬜ todo | - | Delete the root Next.js app, Capacitor shell, root `android/`, Supabase client code, Vercel configuration, and root CI jobs after NBD-89a passes, tagging the last commit that contains them `legacy-reference`; retire the live Supabase project separately | After NBD-89a passes, the listed root application, Capacitor, Android, Supabase client, Vercel configuration, and root CI files are absent, the `legacy-reference` tag is pushed, and live Supabase retirement is tracked as a separate manual step |
 | NBD-109 | ❌ merged into NBD-112 | - | Workspace cleanup, minimal root `package.json`, lockfile, lint-staged routing, `.gitignore`, and documentation | Delivered by NBD-112 |
 | NBD-110 | 🔶 partial (110a done) | - | Vite+ toolchain: (a) `vp staged` hooks, (b) Oxfmt, (c) Oxlint, (d) remove ESLint and Prettier, CI through `vp` | A commit from a non-interactive shell runs the staged checks and finishes, and CI formats and lints through `vp` with ESLint and Prettier removed |
