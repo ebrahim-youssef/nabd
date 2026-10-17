@@ -27,6 +27,8 @@ jobs:
             run: pnpm --filter apps-native typecheck
           - name: native test
             run: pnpm --filter apps-native test
+          - name: native build
+            run: pnpm --filter apps-native build
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4
