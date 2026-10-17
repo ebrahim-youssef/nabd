@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react-native'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
 import type { QadaEvent, WirdEntry, WirdRepository, WirdVersion } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
@@ -86,6 +86,7 @@ describe('StatsRoute', () => {
     expect(screen.getByTestId('stats-summary')).toHaveTextContent('٢/٣')
     expect(screen.getByText('الأساس')).toBeTruthy()
     expect(screen.getByText('الأول')).toBeTruthy()
+    expect(screen.getByText('الاثنين')).toBeTruthy()
     expect(screen.getByTestId('stats-qada-link')).toBeTruthy()
   })
 
@@ -100,5 +101,40 @@ describe('StatsRoute', () => {
     expect(screen.getByTestId('stats-bar-2026-09-15').props.style).toEqual(
       expect.objectContaining({ height: '50%' }),
     )
+  })
+
+  it('renders a recoverable error when stored wird JSON cannot be read', async () => {
+    const brokenRepository = repository()
+    brokenRepository.listVersions = jest.fn(async () => {
+      throw new SyntaxError('Unexpected end of JSON input')
+    })
+    mockedUseWirdRepository.mockReturnValue(brokenRepository)
+
+    render(<StatsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('stats-error')).toBeTruthy())
+    expect(screen.getByText('حدث خطأ ما. حاول مرة أخرى.')).toBeTruthy()
+    expect(screen.getByTestId('stats-retry')).toBeTruthy()
+    expect(screen.queryByTestId('stats-summary')).toBeNull()
+
+    brokenRepository.listVersions = jest.fn(async () => versions)
+    await fireEvent.press(screen.getByTestId('stats-retry'))
+
+    await waitFor(() => expect(screen.getByTestId('stats-summary')).toBeTruthy())
+  })
+
+  it('renders an empty stats projection without inventing item statistics', async () => {
+    const emptyRepository = repository()
+    emptyRepository.listVersions = jest.fn(async () => [])
+    emptyRepository.getEntriesInRange = jest.fn(async () => [])
+    emptyRepository.getAllEntries = jest.fn(async () => [])
+    mockedUseWirdRepository.mockReturnValue(emptyRepository)
+
+    render(<StatsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('stats-summary')).toBeTruthy())
+
+    expect(screen.getByTestId('stats-summary')).toHaveTextContent('٠/٠')
+    expect(screen.queryByTestId('stats-item-first')).toBeNull()
   })
 })

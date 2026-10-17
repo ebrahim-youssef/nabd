@@ -13,22 +13,13 @@ import { Pressable, View } from 'react-native'
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
+import { completionPercent, formatArabicWeekday, formatCompletion } from './logic'
 import { CHART_WINDOW_DAYS, STATS_WINDOW_DAYS, useStats } from './useStats'
-
-const PERCENT = 100
 const CHART_BAR_MIN_HEIGHT = 4
-
-function completionPercent(done: number, total: number): number {
-  return total > 0 ? Math.round((done / total) * PERCENT) : 0
-}
-
-function formatCompletion(done: number, total: number): string {
-  return `${toArabicIndic(done)}/${toArabicIndic(total)}`
-}
 
 export function StatsRoute() {
   const router = useRouter()
-  const { data, chartDays, exportRange, isLoading } = useStats()
+  const { data, chartDays, error, exportRange, isLoading, refresh } = useStats()
   const current = currentStreak(data.completions)
   const best = bestStreak(data.completions)
   const qadaTotal = QADA_PRAYERS.reduce((total, prayer) => total + data.qada[prayer.id], 0)
@@ -38,7 +29,26 @@ export function StatsRoute() {
       <View className="gap-6">
         <PageHeader backHref="/" title={shellCopy.nav.stats} />
         {isLoading ? <View className="h-40 w-full rounded-card bg-surface-2" /> : null}
-        {!isLoading ? (
+        {!isLoading && error ? (
+          <View
+            className="gap-4 rounded-card border border-border bg-surface p-4"
+            testID="stats-error"
+          >
+            <Text className="text-body text-start text-primary">{shellCopy.error}</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={shellCopy.retry}
+              className="rounded-button bg-primary px-5 py-4"
+              onPress={refresh}
+              testID="stats-retry"
+            >
+              <Text className="text-body text-center font-body-medium text-primary-foreground">
+                {shellCopy.retry}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
+        {!isLoading && !error ? (
           <>
             <View
               className="gap-3 rounded-card border border-border bg-surface p-4"
@@ -72,7 +82,9 @@ export function StatsRoute() {
                         }}
                         testID={`stats-bar-${day}`}
                       />
-                      <Text className="text-small text-muted-foreground">{day.slice(8)}</Text>
+                      <Text className="text-small text-muted-foreground">
+                        {formatArabicWeekday(day)}
+                      </Text>
                     </View>
                   )
                 })}
