@@ -260,6 +260,130 @@ describe('SettingsRoute', () => {
     await waitFor(() => expect(screen.queryByTestId('notification-alarm-sync-failure')).toBeNull())
   })
 
+  it('keeps the exact-alarm settings action visible for degraded sync on API 31 or 32', async () => {
+    setPrayerAlarmSyncOutcome('degraded')
+    Object.assign(notificationSettings, {
+      exactAlarmStatus: {
+        state: 'settings-required',
+        message: deviceCopy.exactAlarm.settingsRequired,
+        action: {
+          type: 'open-exact-alarm-settings',
+          label: deviceCopy.actions.openExactAlarmSettings,
+        },
+      },
+    })
+
+    await render(<SettingsRoute />)
+
+    await waitFor(() =>
+      expect(screen.getByTestId('notification-alarm-sync-degraded-notice')).toBeTruthy(),
+    )
+    expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy()
+    expect(screen.getByText(deviceCopy.exactAlarm.settingsRequired)).toBeTruthy()
+    expect(screen.getByTestId('notification-exact-alarm-action')).toHaveTextContent(
+      deviceCopy.actions.openExactAlarmSettings,
+    )
+    expect(screen.queryByTestId('notification-alarm-sync-degraded')).toBeNull()
+  })
+
+  it('uses app settings for degraded sync with an unavailable exact alarm on API 33 or newer', async () => {
+    setPrayerAlarmSyncOutcome('degraded')
+    Object.assign(notificationSettings, {
+      exactAlarmStatus: {
+        state: 'unavailable',
+        message: deviceCopy.exactAlarm.unavailable,
+        action: { type: 'open-app-settings', label: deviceCopy.actions.openAppSettings },
+      },
+    })
+
+    await render(<SettingsRoute />)
+
+    await waitFor(() =>
+      expect(screen.getByTestId('notification-alarm-sync-degraded-notice')).toBeTruthy(),
+    )
+    await waitFor(() => expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy())
+    expect(screen.getByText(deviceCopy.exactAlarm.unavailable)).toBeTruthy()
+    await fireEvent.press(screen.getByTestId('notification-exact-alarm-action'))
+
+    expect(runNotificationAction).toHaveBeenCalledWith('open-app-settings')
+  })
+
+  it('offers retry when degraded sync has no exact-alarm action', async () => {
+    setPrayerAlarmSyncOutcome('degraded')
+    Object.assign(notificationSettings, {
+      exactAlarmStatus: {
+        state: 'unavailable',
+        message: deviceCopy.exactAlarm.unavailable,
+        action: null,
+      },
+    })
+
+    await render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy())
+    expect(screen.getByTestId('notification-exact-alarm-retry')).toHaveTextContent(
+      deviceCopy.actions.retry,
+    )
+    await fireEvent.press(screen.getByTestId('notification-exact-alarm-retry'))
+
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the notification permission action and hides exact alarms until permission is granted', async () => {
+    Object.assign(notificationSettings, {
+      permission: 'denied',
+      notificationStatus: {
+        state: 'permission-required',
+        message: deviceCopy.notifications.permissionRequired,
+        action: {
+          type: 'request-notification-permission',
+          label: deviceCopy.actions.requestNotificationPermission,
+        },
+      },
+    })
+
+    await render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('notification-action')).toBeTruthy())
+    expect(screen.queryByTestId('notification-exact-alarm')).toBeNull()
+    await fireEvent.press(screen.getByTestId('notification-action'))
+
+    expect(runNotificationAction).toHaveBeenCalledWith('request-notification-permission')
+  })
+
+  it('hides degraded exact-alarm guidance until notification permission is granted', async () => {
+    setPrayerAlarmSyncOutcome('degraded')
+    Object.assign(notificationSettings, {
+      permission: 'denied',
+      notificationStatus: {
+        state: 'permission-required',
+        message: deviceCopy.notifications.permissionRequired,
+        action: {
+          type: 'request-notification-permission',
+          label: deviceCopy.actions.requestNotificationPermission,
+        },
+      },
+    })
+
+    await render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('notification-status')).toBeTruthy())
+    expect(screen.queryByTestId('notification-alarm-sync-degraded')).toBeNull()
+    expect(screen.queryByTestId('notification-exact-alarm')).toBeNull()
+  })
+
+  it('shows recovery guidance for reboot and clock or time-zone changes', async () => {
+    await render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('notification-lifecycle-guidance')).toBeTruthy())
+    expect(screen.getByTestId('notification-reboot-recovery')).toHaveTextContent(
+      deviceCopy.notifications.rebootRecovery,
+    )
+    expect(screen.getByTestId('notification-time-change-recovery')).toHaveTextContent(
+      deviceCopy.notifications.timeChangeRecovery,
+    )
+  })
+
   it.each(['not-required', 'ready'] as const)(
     'hides the exact-alarm row when it is %s',
     async (access) => {

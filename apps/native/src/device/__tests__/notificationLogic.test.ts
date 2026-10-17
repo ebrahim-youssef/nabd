@@ -1,4 +1,9 @@
-import { deviceCopy, evaluateExactAlarm, evaluateNotificationSettings } from '../logic'
+import {
+  deviceCopy,
+  evaluateExactAlarm,
+  evaluateNotificationSettings,
+  isExactAlarmSchedulingAllowed,
+} from '../logic'
 import type { ExactAlarmSnapshot, NotificationSettingsSnapshot } from '../types'
 
 const baseSettings: NotificationSettingsSnapshot = {
@@ -79,5 +84,17 @@ describe('notification capability logic', () => {
       action: { type: 'open-app-settings' },
       message: deviceCopy.exactAlarm.unavailable,
     })
+  })
+})
+
+describe('exact-alarm scheduling gate', () => {
+  it.each([11, 30])('allows scheduling on API %s without exact-alarm access', (apiLevel) => {
+    expect(isExactAlarmSchedulingAllowed({ apiLevel, access: 'unknown' })).toBe(true)
+  })
+
+  it('allows scheduling on API 31 and above only when access is granted', () => {
+    expect(isExactAlarmSchedulingAllowed({ apiLevel: 31, access: 'granted' })).toBe(true)
+    expect(isExactAlarmSchedulingAllowed({ apiLevel: 31, access: 'denied' })).toBe(false)
+    expect(isExactAlarmSchedulingAllowed({ apiLevel: 31, access: 'unknown' })).toBe(false)
   })
 })

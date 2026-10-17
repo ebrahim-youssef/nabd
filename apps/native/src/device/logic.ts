@@ -217,3 +217,7 @@ export function evaluateExactAlarm(exactAlarm: ExactAlarmSnapshot): ExactAlarmSt
     action: notificationAction('open-exact-alarm-settings'),
   }
 }
+
+export function isExactAlarmSchedulingAllowed(exactAlarm: ExactAlarmSnapshot): boolean {
+  return exactAlarm.apiLevel < 31 || exactAlarm.access === 'granted'
+}

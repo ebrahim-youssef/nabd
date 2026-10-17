@@ -382,6 +382,29 @@ describe('useNotificationSettings', () => {
     expect(mockedNotifications.getPermissionsAsync).toHaveBeenCalledTimes(1)
   })
 
+  it('refreshes notification and exact-alarm state after returning from settings', async () => {
+    setPermission('denied', false)
+    mockedReadExactAlarmSnapshot.mockReturnValue({ apiLevel: 32, access: 'denied' })
+    const { result } = await renderHook(() => useNotificationSettings({ now }))
+    await waitFor(() => expect(result.current.exactAlarmStatus.state).toBe('settings-required'))
+
+    mockedNotifications.getPermissionsAsync.mockClear()
+    setPermission('granted')
+    mockedReadExactAlarmSnapshot.mockReturnValue({ apiLevel: 32, access: 'granted' })
+
+    await act(async () => {
+      appStateListener?.('active')
+      await Promise.resolve()
+    })
+
+    await waitFor(() => {
+      expect(result.current.permission).toBe('granted')
+      expect(result.current.exactAlarmStatus.state).toBe('ready')
+    })
+    expect(mockedNotifications.getPermissionsAsync).toHaveBeenCalledTimes(1)
+    expect(mockedReadExactAlarmSnapshot).toHaveBeenCalledTimes(2)
+  })
+
   it('reports missing coordinates from the device repository', async () => {
     mockedCreateDeviceRepository.mockReturnValue({
       readLocationCacheState: jest.fn().mockResolvedValue(null),
