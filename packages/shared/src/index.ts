@@ -1,4 +1,3 @@
-export { landingCopy } from './copy/landing'
 export { shellCopy, NAV_ORDER } from './copy/shell'
 export type { ShellNavKey } from './copy/shell'
 export {
