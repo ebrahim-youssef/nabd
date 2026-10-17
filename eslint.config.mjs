@@ -30,7 +30,7 @@ const eslintConfig = defineConfig([
     'out/**',
     'build/**',
     'next-env.d.ts',
-    // New pnpm workspace packages (SPA/native/shared migration, ADR-0014): each has its own
+    // New pnpm workspace packages (native/shared migration, ADR-0014): each has its own
     // package.json + lint config and runs its own gate, not this Next.js-flavored one.
     'apps/**',
     'packages/**',

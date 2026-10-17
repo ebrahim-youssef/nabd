@@ -6,9 +6,9 @@ Instructions for any AI coding agent working in this repo. Read this first, ever
 
 [`docs/adr/0017-native-only.md`](./docs/adr/0017-native-only.md) makes the Expo app in
 `apps/native` the sole product and release target. Android is first, with platform-neutral
-boundaries for a future iOS target. The SPA in `apps/spa` is cancelled and will be deleted. The
-root Next.js app is the reference for parity: it stays, and keeps building, until native has every
-feature, and is deleted after that. Do not add features to the root app or `apps/spa`, and put
+boundaries for a future iOS target. The SPA was deleted in NBD-107. The root Next.js app is the
+reference for parity: it stays, and keeps building, until native has every feature, and is deleted
+after that. Do not add features to the root app, and put
 new code (logic, copy, types) in `apps/native`, not in `packages/shared`.
 
 The end state is the repository root as the Expo app: `packages/shared` is folded into the
