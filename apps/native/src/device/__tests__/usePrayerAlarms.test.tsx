@@ -11,7 +11,7 @@ import {
   readNotificationPermission,
   replacePrayerAlarms,
 } from '../notifications'
-import { readExactAlarmSnapshot } from '../exactAlarm'
+import { readExactAlarmSnapshot, subscribeTimeChange } from '../exactAlarm'
 import { buildPrayerSchedule } from '../schedule'
 import { setPrayerAlarmSyncOutcome, subscribePrayerReschedule } from '../prayerAlarms'
 import { usePrayerAlarms } from '../usePrayerAlarms'
@@ -24,7 +24,10 @@ jest.mock('../notifications', () => ({
   replacePrayerAlarms: jest.fn(),
 }))
 jest.mock('../schedule', () => ({ buildPrayerSchedule: jest.fn() }))
-jest.mock('../exactAlarm', () => ({ readExactAlarmSnapshot: jest.fn() }))
+jest.mock('../exactAlarm', () => ({
+  readExactAlarmSnapshot: jest.fn(),
+  subscribeTimeChange: jest.fn(),
+}))
 jest.mock('../prayerAlarms', () => ({
   setPrayerAlarmSyncOutcome: jest.fn(),
   subscribePrayerReschedule: jest.fn(),
@@ -40,6 +43,9 @@ const mockedBuildSchedule = buildPrayerSchedule as jest.MockedFunction<typeof bu
 const mockedReadExactAlarmSnapshot = readExactAlarmSnapshot as jest.MockedFunction<
   typeof readExactAlarmSnapshot
 >
+const mockedSubscribeTimeChange = subscribeTimeChange as jest.MockedFunction<
+  typeof subscribeTimeChange
+>
 const mockedSetSyncOutcome = setPrayerAlarmSyncOutcome as jest.MockedFunction<
   typeof setPrayerAlarmSyncOutcome
 >
@@ -51,10 +57,12 @@ const mockedConfigure = configureForegroundHandler as jest.MockedFunction<
 >
 const mockGetFirstAsync = jest.fn()
 const NOW = 1_800_000_000_000
+const DAY_MS = 24 * 60 * 60 * 1_000
 const now = () => NOW
 let appStateListener:
   ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void) | undefined
 let rescheduleListener: (() => void) | undefined
+let timeChangeListener: (() => void) | undefined
 
 function alarm(id: number, at = NOW + 60_000) {
   return {
@@ -103,12 +111,17 @@ describe('usePrayerAlarms', () => {
     setStoredValues()
     appStateListener = undefined
     rescheduleListener = undefined
+    timeChangeListener = undefined
     jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
       appStateListener = listener
       return { remove: jest.fn() } as never
     })
     mockedSubscribe.mockImplementation((listener) => {
       rescheduleListener = listener
+      return jest.fn()
+    })
+    mockedSubscribeTimeChange.mockImplementation((listener) => {
+      timeChangeListener = listener
       return jest.fn()
     })
   })
@@ -297,5 +310,29 @@ describe('usePrayerAlarms', () => {
     mockedBuildSchedule.mockReturnValue([alarm(103)])
     act(() => rescheduleListener?.())
     await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
+  })
+
+  it('rebuilds the schedule when the native clock changes', async () => {
+    let currentTime = NOW
+    const clockNow = () => currentTime
+    renderHook(() => usePrayerAlarms({ now: clockNow }))
+
+    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
+    mockedReplace.mockClear()
+    currentTime += DAY_MS
+    mockedBuildSchedule.mockReturnValue([alarm(102, currentTime + 60_000)])
+
+    await act(async () => {
+      timeChangeListener?.()
+      await Promise.resolve()
+    })
+
+    await waitFor(() =>
+      expect(mockedReplace).toHaveBeenCalledWith(
+        [alarm(102, currentTime + 60_000)],
+        false,
+        currentTime,
+      ),
+    )
   })
 })

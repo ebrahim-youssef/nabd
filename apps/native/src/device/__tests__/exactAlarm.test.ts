@@ -7,7 +7,7 @@ import { requireOptionalNativeModule } from 'expo'
 import { Platform } from 'react-native'
 
 import { logger } from '../../observability/logger'
-import { readExactAlarmSnapshot } from '../exactAlarm'
+import { readExactAlarmSnapshot, subscribeTimeChange } from '../exactAlarm'
 
 const mockedRequireOptionalNativeModule = requireOptionalNativeModule as jest.MockedFunction<
   typeof requireOptionalNativeModule
@@ -72,5 +72,25 @@ describe('exact-alarm snapshot', () => {
 
     expect(readExactAlarmSnapshot()).toEqual({ apiLevel: 35, access: 'unknown' })
     expect(logger.error).toHaveBeenCalled()
+  })
+
+  it('subscribes to native time changes and cleans up', () => {
+    const remove = jest.fn()
+    const addListener = jest.fn((_eventName: string, nativeListener: () => void) => {
+      nativeListener()
+      return { remove }
+    })
+    mockedRequireOptionalNativeModule.mockReturnValue({
+      getExactAlarmStatus: () => 'granted',
+      addListener,
+    } as never)
+    const listener = jest.fn()
+
+    const unsubscribe = subscribeTimeChange(listener)
+    unsubscribe()
+
+    expect(addListener).toHaveBeenCalledWith('onTimeChange', listener)
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(remove).toHaveBeenCalledTimes(1)
   })
 })

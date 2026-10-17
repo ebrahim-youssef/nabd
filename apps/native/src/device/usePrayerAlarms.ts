@@ -16,7 +16,7 @@ import {
   PREFERENCE_KEYS,
 } from '../preferences/db'
 import { createDeviceRepository } from './db'
-import { readExactAlarmSnapshot } from './exactAlarm'
+import { readExactAlarmSnapshot, subscribeTimeChange } from './exactAlarm'
 import { isExactAlarmSchedulingAllowed } from './logic'
 import {
   cancelPrayerAlarms,
@@ -162,10 +162,14 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
     const unsubscribe = subscribePrayerReschedule(() => {
       void sync()
     })
+    const unsubscribeTimeChange = subscribeTimeChange(() => {
+      void sync()
+    })
 
     return () => {
       appStateSubscription.remove()
       unsubscribe()
+      unsubscribeTimeChange()
     }
   }, [sync])
 
