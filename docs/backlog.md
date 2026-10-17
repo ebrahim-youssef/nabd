@@ -201,6 +201,7 @@ NBD-78 (uniform rise vs directional RTL slide).
 ADR-0014 remains the architecture decision. The confirmed execution order and gates are in
 [`docs/migration/2026-08-10-execution-plan.md`](./migration/2026-08-10-execution-plan.md).
 Strict behavior and design parity applies throughout; redesign is out of scope.
+The web track is cancelled by ADR-0017.
 
 | ID | Status | Issue | Ticket | Acceptance criterion |
 | --- | --- | ---: | --- | --- |
@@ -211,15 +212,47 @@ Strict behavior and design parity applies throughout; redesign is out of scope.
 | NBD-84 | ✅ done | [#171](https://github.com/ebrahim-youssef/nabd/issues/171) | Full SPA product parity | Every web capability assigned by ADR-0014 works under `/app/*` with the reference behavior and appearance |
 | NBD-85 | ✅ done | [#172](https://github.com/ebrahim-youssef/nabd/issues/172) | Native data and product parity | Every native product workflow works offline and survives process death using SQLite; merged in PR #218 |
 | NBD-86 | 🔶 partial | [#173](https://github.com/ebrahim-youssef/nabd/issues/173) | Native device-capability integration | Every device state has an actionable Arabic outcome and the APK is ready for owner verification |
-| NBD-87 | 🔶 partial | [#174](https://github.com/ebrahim-youssef/nabd/issues/174) | Replacement CI and automated verification | Every replacement-client quality gate runs and passes on pull requests. NBD-87a is done: seventeen required contexts on `dev` and `master` including the SPA Playwright suite. NBD-87b, the native gates, is outstanding |
-| NBD-88 | ⏸️ on hold | [#175](https://github.com/ebrahim-youssef/nabd/issues/175) | Cloudflare release preparation and Vercel retirement | A verified Cloudflare build and runbook are ready, and no Vercel integration or related file remains. Paused with the rest of the web track |
-| NBD-89 | ⬜ todo | [#176](https://github.com/ebrahim-youssef/nabd/issues/176) | Final APK, owner device verification, and production-readiness gate | Splits. NBD-89a, native: every ledger row and golden journey native owns passes against a release APK and the owner's full section D device matrix passes. NBD-89b, web: paused with the web track |
+| NBD-87 | 🔶 partial | [#174](https://github.com/ebrahim-youssef/nabd/issues/174) | Replacement CI and automated verification | The web portion is cancelled by ADR-0017; native gate ownership and the remaining native checks are tracked as NBD-87b |
+| NBD-88 | ❌ cancelled | [#175](https://github.com/ebrahim-youssef/nabd/issues/175) | Cloudflare release preparation and Vercel retirement | Cloudflare release preparation and Vercel retirement are cancelled by ADR-0017 |
+| NBD-89 | ⬜ todo | [#176](https://github.com/ebrahim-youssef/nabd/issues/176) | Final APK, owner device verification, and production-readiness gate | NBD-89a passes every native ledger row and golden journey against a release APK and the owner's full section D device matrix, while NBD-89b is cancelled by ADR-0017 |
 | NBD-90 | ✅ done | [ADR-0015](./adr/0015-post-migration-durability.md) | Post-migration durability decision | The four section F options are decided, the trigger is fixed at any Play submission, and the ADR is accepted |
-| NBD-91 | ⬜ todo | [#200](https://github.com/ebrahim-youssef/nabd/issues/200) | Durability implementation, export and import | A backup taken on one install restores onto a fresh install with every row intact, and onto a non-empty install without duplicating or destroying what was already there. This is section F option 1; option 2 ships in NBD-92 |
+| NBD-91 | ⬜ todo | [#200](https://github.com/ebrahim-youssef/nabd/issues/200) | Native durability implementation, export and import | A native backup taken on one install restores onto a fresh install with every row intact, and onto a non-empty install without duplicating or destroying what was already there, while the web portion is cancelled by ADR-0017 |
 | NBD-92 | ⬜ todo | [#201](https://github.com/ebrahim-youssef/nabd/issues/201) | EAS build and Play release path | `master` produces a signed AAB and APK through EAS from a custodied upload key, the Play listing with its permission declarations is submitted, and section F option 2 is delivered: Android application backup enabled, a restore verified, and its inclusion and exclusion rules stated |
 | NBD-94 | ✅ done | [#221](https://github.com/ebrahim-youssef/nabd/issues/221) | Native app opens on a router error | The release bundle resolves `apps/native/app` as the Expo Router root, shows the root navigator before SQLite is ready, and exposes a retryable Arabic migration error |
 | NBD-95 | ✅ done | [#222](https://github.com/ebrahim-youssef/nabd/issues/222) | Native theme hand-written, classic only, light, dark and follow phone | Native theme behavior is hand-written and supports classic, light, dark, and follow-phone modes |
 | NBD-96 | ✅ done | [#225](https://github.com/ebrahim-youssef/nabd/issues/225) | Native bundled fonts and no wird list flash | Tajawal, Aref Ruqaa and Amiri ship with the app so labels are not clipped on Xiaomi; ticking a wird item updates the list in place |
+
+## R12 - Native only (2026-10-16)
+
+ADR-0017 makes `apps/native` the sole product and release target, with Android first and
+platform-neutral boundaries for a future iOS target. The root Next.js app remains reference-only until parity, while `apps/spa` is cancelled
+and scheduled for deletion.
+
+| ID | Status | Issue | Ticket | Acceptance criterion |
+| --- | --- | --- | --- | --- |
+| NBD-97 | ✅ done | - | ADR-0017 and documentation sweep for native only | ADR-0017 and every document listed in the ticket record the native-only direction consistently |
+| NBD-98 | ⬜ todo | - | Daily adhkar parity, five-card daily list, per-item counters and reset, linked wird completion, full reference and next-up strip | The native app provides the five-card daily adhkar list with per-item counters and reset, linked wird completion, the full reference, and the next-up strip |
+| NBD-99 | ⬜ todo | - | Onboarding permission step, location, notification moments, denied and permanently-denied outcomes, optional battery step | Onboarding handles location and notification permission states, including denied and permanently denied outcomes, and offers the optional battery step |
+| NBD-100 | ⬜ todo | - | Settings surface parity, location management, battery exemption, sound previews, countdown control | Settings provides location management, battery exemption, sound previews, and countdown control |
+| NBD-101 | ⬜ todo | - | Exact-alarm gating, with no scheduling when access is denied, degraded state, Android 12 and 13+ verification, closing a gap inside NBD-86 | The native scheduler does not schedule exact alarms without access, shows the degraded state, and passes verification on Android 12 and Android 13 or later |
+| NBD-102 | ⬜ todo | - | Persistent countdown notification, three-day boundary model, background refresh, cached city, cleanup on disable, OEM and reboot matrix | The countdown notification follows the three-day boundary model, refreshes in the background with a cached city, cleans up when disabled, and passes the OEM and reboot matrix |
+| NBD-103 | ⬜ todo | - | Stats per-item detail parity, consistency, missed days, streaks, and voluntary attainment | Stats exposes per-item consistency, missed days, streaks, and voluntary attainment details |
+| NBD-104 | ⬜ todo | - | Wird version self-healing when shared level definitions change without rewriting history | A shared level-definition change creates the required current or future wird version without modifying historical entries |
+| NBD-105 | ⬜ todo | - | iOS-readiness pass, Android-only alarm and channel code behind a platform-neutral scheduling contract, with iOS behavior documented for notifications, audio, and location settings | Android-only alarm and channel code is isolated behind a platform-neutral scheduling contract and the iOS notification, audio, and location-settings behavior is documented |
+| NBD-106 | ⬜ todo | - | Native boundary and CI split, move `scripts/check-native-no-sentry.mjs` into `apps/native`, turn `spa-ci.yml` into native and shared CI, and decide native theme-token ownership | Native and shared CI run the required gates from their owned boundaries, and native theme-token ownership is recorded |
+| NBD-107 | ⬜ todo | - | Delete `apps/spa`, Wrangler and Cloudflare config, SPA CI jobs, and SPA-only shared exports | `apps/spa`, Wrangler and Cloudflare configuration, SPA CI jobs, and SPA-only shared exports are absent |
+| NBD-108 | ⬜ todo | - | Delete the root Next.js app, Capacitor shell, root `android/`, Supabase client code, Vercel configuration, and root CI jobs, after tagging the last commit that contains them `legacy-reference`; retire the live Supabase project separately | The listed root application, Capacitor, Android, Supabase client, Vercel configuration, and root CI files are absent, the `legacy-reference` tag is pushed, and live Supabase retirement is tracked as a separate manual step |
+| NBD-109 | ❌ merged into NBD-112 | - | Workspace cleanup, minimal root `package.json`, lockfile, lint-staged routing, `.gitignore`, and documentation | Delivered by NBD-112 |
+| NBD-110 | ⬜ todo | - | Vite+ toolchain: (a) `vp staged` hooks, (b) Oxfmt, (c) Oxlint, (d) remove ESLint and Prettier, CI through `vp` | A commit from a non-interactive shell runs the staged checks and finishes, and CI formats and lints through `vp` with ESLint and Prettier removed |
+| NBD-111 | ⬜ todo | - | Fold `packages/shared` into the native app, each module into the feature that owns it | No `@nabd/shared` import remains, `packages/` is deleted, and every former shared test runs under Jest |
+| NBD-112 | ⬜ todo | - | Move `apps/native` to `native/` and reduce the root to workspace tooling (absorbs NBD-109) | `native/` is the only application folder, and the Expo export, CI APK, and an EAS preview build pass |
+
+Amended 2026-10-17: the order is NBD-110a, NBD-106, NBD-107 with NBD-108, NBD-111, NBD-112,
+NBD-110b to NBD-110d, then the parity tickets. NBD-108 no longer waits for NBD-89a; the legacy app
+is read from the `legacy-reference` tag. See
+[`docs/migration/2026-10-17-consolidation-plan.md`](./migration/2026-10-17-consolidation-plan.md).
+
+Still open from R11: NBD-86, NBD-87b, NBD-89a, NBD-91, NBD-92, NBD-66, and NBD-67.
 
 ## Later (out of scope for MVP)
 

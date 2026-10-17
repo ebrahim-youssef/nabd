@@ -1,5 +1,11 @@
 # Migration execution plan - 2026-08-10
 
+> Status note, 2026-10-16: This plan is superseded for the go-forward product architecture by
+> [ADR-0017](../adr/0017-native-only.md). SPA work is cancelled. Remaining native parity, release,
+> and cleanup work is tracked in `docs/backlog.md` R12. This file remains as historical migration
+> evidence. Native product work has started; see [`parity-ledger.md`](parity-ledger.md) for the
+> current status.
+
 This plan supersedes the PR 0-3 delivery grouping in
 `docs/superpowers/plans/2026-08-09-migration-execution-brief.md`. The older brief remains in
 history as the record that led to this smaller ticket sequence.
@@ -257,7 +263,7 @@ contract; where it disagrees with the sections above, this amendment wins.
 | NBD-83 SPA shell          | done                 | #180                                                                                                                                                                                      |
 | NBD-84 SPA parity         | 10 of 13 slices done | #181 onboarding, #182 wird and celebration, #183 counters, #184 adhkar and libraries, #185 prayer times, #186 stats, #187 qada, #188 settings; intentions landed with the libraries slice |
 | NBD-84 slice 11 sharing   | in flight, unpushed  | branch `ibrahim/171-spa-sharing`, six files, 114 SPA unit tests green, `e2e/sharing.spec.ts` not yet run                                                                                  |
-| NBD-85 native product     | not started          | `apps/native/src` holds only `db`, `observability`, `onboarding`                                                                                                                          |
+| NBD-85 native product     | in progress          | `apps/native/src` now contains onboarding, home, wird, adhkar, counter, qada, stats, settings, prayer-times, intentions, device, SQLite, and shared native shell code                     |
 | NBD-86 device integration | not started          | PR #166 is an unrelated earlier attempt, see housekeeping below                                                                                                                           |
 | NBD-87 replacement CI     | not started          | `spa-ci.yml` runs shared, SPA and native lint/typecheck/test plus the Cloudflare build, but is not required and runs no Playwright                                                        |
 | NBD-88 Cloudflare release | not started          | Vercel workflows and configuration still present                                                                                                                                          |
@@ -463,8 +469,8 @@ it is the last step of all and not a side effect of any ticket here.
 
 ### Workflow
 
-One ticket, one branch, one pull request, one commit per slice, merged by **rebase-merge** rather
-than squash so the slice commits survive. The 2026-08-28 amendment to
+One ticket, one branch, one pull request, one commit per slice, merged with a **normal merge
+commit**, never rebase or squash. The 2026-08-28 amendment to
 [ADR-0003](../adr/0003-branching-and-environments.md) records this and why.
 
 Every pull request draws an automated review. Its comments are addressed on their merits and

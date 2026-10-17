@@ -1,6 +1,8 @@
 # ADR-0015 — Post-migration durability of devotional history
 
 - **Status:** accepted
+- **Status note:** Its SPA and legacy-client durability scope is superseded by
+  [ADR-0017](./0017-native-only.md); native durability and backup requirements remain.
 - **Date:** 2026-08-28
 - **Revised:** 2026-08-28
 

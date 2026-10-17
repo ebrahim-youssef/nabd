@@ -1,6 +1,8 @@
 # ADR-0002 — Architecture & module boundaries
 
 - **Status:** accepted
+- **Status note:** Its client storage and UI boundary details are superseded by
+  [ADR-0017](./0017-native-only.md); the pure-logic and repository boundary remains.
 - **Date:** 2026-07-13
 
 ## Context
@@ -34,7 +36,7 @@ duplicating DB data into the store).
 ## Consequences
 
 - The malleable-wird statistics are pure and directly testable with zero mocks (table-driven
-  + property-based).
+  - property-based).
 - An ESLint boundary rule enforces the import table in `docs/architecture.md`; Phase 0 commits
   a deliberate bad import to prove the rule fires.
 - Rendering is Mostly Client (Dexie is browser-only); server components are limited to static

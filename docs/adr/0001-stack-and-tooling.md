@@ -1,6 +1,8 @@
 # ADR-0001 — Stack & tooling
 
 - **Status:** accepted; superseded by ADR-0014 for the go-forward client architecture
+- **Status note:** The legacy stack is also superseded by [ADR-0017](./0017-native-only.md) for
+  the final product; this ADR remains the historical record.
 - **Date:** 2026-07-13
 
 ## Context

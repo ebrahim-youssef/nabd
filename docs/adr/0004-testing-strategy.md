@@ -1,6 +1,8 @@
 # ADR-0004 — Testing strategy
 
 - **Status:** accepted
+- **Status note:** Its web and Supabase test clients are superseded by
+  [ADR-0017](./0017-native-only.md); colocated tests and gate discipline remain.
 - **Date:** 2026-07-13
 
 ## Context
@@ -14,12 +16,12 @@ without a coverage-number theater.
 **Colocated tests, shipped in the same PR**, CI-enforced: a PR touching a feature's `logic.ts`
 or `db.ts` without a test file in the diff cannot merge. Per-layer matrix:
 
-| Layer | Runner | Style |
-| --- | --- | --- |
-| `logic.ts` (pure) | Vitest (node) | table-driven, zero mocks; **property-based** for combinatorial logic (esp. stats across wird versions) |
-| `db.ts` (repositories) | Vitest + `fake-indexeddb` | one test per method; empty/duplicate/concurrent edge cases |
-| components | Vitest (jsdom) + Testing Library | interaction, not visual |
-| flows | Playwright (Chromium) | full flow; offline path when applicable |
+| Layer                  | Runner                           | Style                                                                                                  |
+| ---------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `logic.ts` (pure)      | Vitest (node)                    | table-driven, zero mocks; **property-based** for combinatorial logic (esp. stats across wird versions) |
+| `db.ts` (repositories) | Vitest + `fake-indexeddb`        | one test per method; empty/duplicate/concurrent edge cases                                             |
+| components             | Vitest (jsdom) + Testing Library | interaction, not visual                                                                                |
+| flows                  | Playwright (Chromium)            | full flow; offline path when applicable                                                                |
 
 **Mandatory e2e paths** (always tested when touched): offline persistence (check off → offline
 → reload → still checked, zero network requests); sync → stats; dhikr counter completion →

@@ -2,32 +2,24 @@
 
 Instructions for any AI coding agent working in this repo. Read this first, every session.
 
-## Migration in progress — read before trusting this file
+## Product direction
 
-The repository is mid-migration from the Next.js application at the root to a Vite SPA
-(`apps/spa`) plus an Expo Android application (`apps/native`), sharing `packages/shared`.
+[`docs/adr/0017-native-only.md`](./docs/adr/0017-native-only.md) makes the Expo app in
+`apps/native` the sole product and release target. Android is first, with platform-neutral
+boundaries for a future iOS target. The SPA in `apps/spa` and the root Next.js app are being
+deleted; the legacy app stays readable through the `legacy-reference` Git tag. Do not add features
+to the root app or `apps/spa`.
 
-[`docs/adr/0014-spa-native-split.md`](./docs/adr/0014-spa-native-split.md), including its
-2026-08-10 amendment, and
-[`docs/migration/2026-08-10-execution-plan.md`](./docs/migration/2026-08-10-execution-plan.md)
-supersede parts of this file. When working in `apps/*` or `packages/shared`, those decisions win
-over anything here. Specifically, these statements below apply **only to the Next.js application
-at the root**, not to the new workspaces:
-
-- PWA, installable, offline-first, and the Serwist service worker. The SPA has none of these;
-  offline belongs to native only.
-- Supabase sync and auth. Neither new application has a backend or sign-in.
-- The `sync→stats` and offline-persistence e2e paths, and `@sentry/nextjs`. The SPA uses
-  `@sentry/react`, native uses `@sentry/react-native`.
+The end state is one folder, `native/`, holding all product code: `packages/shared` is folded into
+the features that own each module, and `apps/native` then moves to `native/`. Until that lands,
+`packages/shared` holds domain types, pure logic, Arabic content, copy, contracts, and testing
+fixtures. The order is in
+[`docs/migration/2026-10-17-consolidation-plan.md`](./docs/migration/2026-10-17-consolidation-plan.md).
+There is no backend or sign-in in the native product.
 
 Still binding everywhere, root and workspaces alike: the 8-phase loop, pure-logic separation,
 RTL-first with logical properties only, central Logger, no magic values, tests shipping with the
 code, green gates before push, and security review before merge.
-
-The execution contract for the remaining work is
-[`docs/migration/2026-08-10-execution-plan.md`](./docs/migration/2026-08-10-execution-plan.md).
-The 2026-08-09 brief is retained only as historical context. Rewrite this file in full only if a
-later, separately approved ticket removes the legacy application.
 
 ## What this is
 
@@ -38,9 +30,9 @@ Users: Muslims who want to keep a consistent daily wird. Core job: make the user
 daily wird and give them self-accountability and reflection over everything they committed
 to and did.
 
-Platform: PWA (installable, offline-first). Data: hybrid — local IndexedDB (Dexie) is the
-source of truth offline, synced to Supabase. Locales: Arabic (default ar, RTL — Arabic-only,
-no i18n layer).
+Platform: Expo React Native, Android first, with platform-neutral boundaries for iOS. Data: local
+SQLite through feature repositories, with no backend or sign-in. Locales: Arabic (default ar, RTL,
+Arabic-only, no i18n layer).
 
 ## The one workflow
 
@@ -49,23 +41,22 @@ Every piece of work — feature, fix, refactor — follows the 8-phase loop in
 **Read it at the start of every session.** No shortcuts, no reordering.
 
 **How to execute it (default, no need to ask):** plan non-trivial work first and research it
-before writing code; use Explore/subagents for the research sweep so the main context stays lean;
-delegate token-heavy coding to opencode/agy from a precise brief — the orchestrator reviews the
-diff, runs the gates, and commits (the delegate never commits). This is the standing default;
+before writing code; delegate token-heavy coding to a runner from a precise brief; the orchestrator
+reviews the diff, runs the gates, and commits (the runner never commits). This is the standing default;
 the user should not have to restate it per task.
 
 ## Where decisions live (do not re-litigate locked ones)
 
-| Question                         | Source of truth                   |
-| -------------------------------- | --------------------------------- |
-| What the app does and why        | `docs/product/spec.md`            |
-| Stack details & code patterns    | `docs/stack.md`                   |
-| Architecture & module boundaries | `docs/architecture.md` + ADR-0002 |
-| Code conventions                 | `CONVENTIONS.md`                  |
-| Visual tokens & UX rules         | `DESIGN_SYSTEM.md`                |
-| All locked decisions & rationale | `docs/adr/`                       |
-| Tickets & backlog                | `docs/backlog.md`                 |
-| How to run locally               | `docs/run-locally.md`             |
+| Question                         | Source of truth                              |
+| -------------------------------- | -------------------------------------------- |
+| What the app does and why        | `docs/product/spec.md`                       |
+| Stack details & code patterns    | `docs/stack.md`                              |
+| Architecture & module boundaries | `docs/architecture.md` + ADR-0002 + ADR-0017 |
+| Code conventions                 | `CONVENTIONS.md`                             |
+| Visual tokens & UX rules         | `DESIGN_SYSTEM.md`                           |
+| All locked decisions & rationale | `docs/adr/`                                  |
+| Tickets & backlog                | `docs/backlog.md`                            |
+| How to run locally               | `docs/run-locally.md`                        |
 
 If a design question is not answered in any of the above, it has not been decided:
 that is a conversation with the user (and likely a new ADR) — never an assumption to
@@ -75,21 +66,25 @@ code around.
 
 - **Follow the loop.** Every change runs through the 8 phases in `docs/workflow.md`. No
   reordering, no skipping spec intake.
-- **Feature folders, pure logic.** Each feature keeps pure functions in `logic.ts` (no I/O,
-  no `Date.now()` — data and time are passed in as parameters) and all Dexie/Supabase access
-  in `db.ts`. Lint blocks `logic.ts` from importing `db.ts` or any I/O.
-- **Dexie is the offline source of truth.** It is the only IndexedDB access; state syncs to
-  Supabase. UI reads via `useLiveQuery`, never a duplicated copy in a store.
-- **Tests ship with the code.** Colocated, same PR, CI-enforced. Mandatory e2e paths:
-  offline persistence, sync→stats, dhikr counter→wird auto-mark.
+- **Pure logic and feature folders.** Platform-neutral pure logic lives in
+  `packages/shared/src/logic`, where `packages/shared/eslint.config.mjs` enforces the
+  no-platform and no-clock-global restrictions. The only native pure-logic module is
+  `apps/native/src/device/logic.ts`. Native feature folders are flat, with `db.ts`, components,
+  and hooks side by side where present, and tests under `__tests__/`. The native ESLint config
+  enforces React Hooks rules, `no-console`, and restricted direct imports of React Native
+  `Text` and `TextInput`; it does not enforce a logic-to-database boundary.
+- **SQLite is the offline source of truth.** Feature repositories in `db.ts` own SQLite access.
+  UI reads live from the repository, never from a duplicated copy in a store.
+- **Tests ship with the code.** Colocated, same PR, CI-enforced. Mandatory native paths:
+  restart persistence, the device state matrix, and backup/restore.
 - **RTL-first.** CSS logical properties only (`ps-`, `pe-`, `me-`, `text-start`,
   `rounded-s-`); physical directional classes (`pl-`, `left-`) are banned.
 - **Central Logger, no `console.*`** in committed code. Logs carry full detail; users see a
   friendly message.
 - **No magic values, no hardcoded visual values.** Named constants for numbers/strings;
   design tokens for every color/size/shadow.
-- **Green before push.** `pnpm lint && pnpm typecheck && pnpm test && pnpm build` all exit 0
-  locally before any push. Never `git add -A`, never `--no-verify`.
+- **Green before push.** Run the shared and native gates listed in `docs/workflow.md`, and require
+  every command to exit 0 locally before any push. Never `git add -A`, never `--no-verify`.
 - **Plan device features fully; security-review before merge.** Any feature touching a device/OS
   capability (location, notifications, alarms, camera, filesystem, background work) is specced
   against the full state matrix first — see "Native / device-feature planning" in `docs/workflow.md`.
@@ -97,6 +92,5 @@ code around.
   `docs/workflow.md` Phase 7.
 - **One ticket, one branch, one PR.** A branch tracks a ticket, not a slice. A ticket that splits
   into slices keeps each slice as its own Conventional-Commits commit on that branch, and the whole
-  ticket merges in a single PR by **rebase-merge**, never squash — squash would collapse the slice
-  history that is the reason for keeping it. See the 2026-08-28 amendment in
-  `docs/adr/0003-branching-and-environments.md`.
+  ticket merges in a single PR using a normal merge commit through `gh pr merge --merge`, never
+  rebase or squash. See the 2026-08-28 amendment in `docs/adr/0003-branching-and-environments.md`.

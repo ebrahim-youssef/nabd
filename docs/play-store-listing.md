@@ -55,9 +55,6 @@ Fallback if the dash is not wanted: `نبض: رفيق الوِرد اليومي`
 • يعمل دون إنترنت: بياناتك محفوظة على جهازك أولًا، فتفتح التطبيق
   وتتابع وِردك ولو انقطعت الشبكة.
 
-• حسابٌ اختياري: سجّل الدخول لمزامنة بياناتك بين أجهزتك، أو استعمله
-  دون حساب كما تحب.
-
 نبض عربيٌّ بالكامل، من اليمين إلى اليسار، صُمِّم ليكون هادئًا لا يشتّتك،
 يعينك على القرب من الله بالمداومة، لا بالكثرة.
 ```
@@ -65,7 +62,7 @@ Fallback if the dash is not wanted: `نبض: رفيق الوِرد اليومي`
 **English mirror** (for an optional `en-US` listing — Arabic stays primary):
 
 - Short: `Your daily wird companion: prayers, adhkar, intentions, and self-review. Works offline.`
-- Full (summary): نبض (nabd) helps you keep a consistent daily wird — your prayers, adhkar, intentions (niyyāt) — and holds you to gentle self-accountability (muḥāsaba). On-device prayer times and adhan alarms, a referenced adhkar library with a counter, streaks and completion stats, and full offline support. Arabic-first, RTL. Optional account syncs across devices.
+- Full (summary): نبض (nabd) helps you keep a consistent daily wird: your prayers, adhkar, and intentions (niyyāt), with gentle self-accountability (muḥāsaba). On-device prayer times and adhan alarms, a referenced adhkar library with a counter, streaks and completion stats, and full offline support. Arabic-first, RTL. Data stays on the device.
 
 > Authoring note: keep this copy plain and warm. No marketing dashes, no emoji
 > headers, no "download now" endings — the same house style as the READMEs.
@@ -98,17 +95,17 @@ Screenshot captions (optional overlay text, if a designer adds them — natural 
 
 ## 3. Play Console forms
 
-### Data safety (verify against actual sync before submitting)
+### Data safety (verify in Play Console before submitting)
 
 - **Location**: used only to compute prayer times **on the device**; not collected,
   not sent to any server, not shared. Declare as _not collected_.
-- **Account (email)**: collected **only if** the user signs in (Supabase auth), for
-  sync and account identification. Encrypted in transit. User can request deletion.
-- **App activity (wird / prayer / dhikr records)**: stored locally (Dexie); synced to
-  Supabase **only when signed in**. Collected (when signed in), not shared with third
-  parties, encrypted in transit, deletable on request.
-- No advertising, no data sold, no third-party analytics beyond error reporting
-  (Sentry) — confirm whether Sentry captures user data before declaring.
+- **App activity (wird / prayer / dhikr records)**: stored in on-device SQLite. It is
+  not collected, sent to a server, or shared with third parties.
+- **Notifications**: local reminders and alarms only. Notification scheduling data stays on the
+  device and is not collected.
+- **Accounts and telemetry**: there is no account, sign-in, cross-device sync, advertising, or
+  analytics. The native package has no Sentry dependency and includes a `check:no-sentry` script
+  that scans the native tree for Sentry references.
 
 ### Permissions declaration
 
@@ -127,8 +124,8 @@ all "no" → expected **Everyone / 3+**.
 ### Category & contact
 
 - Category: **Lifestyle** (or Books & Reference). Tags: prayer, adhkar, Islam.
-- Privacy policy **URL required** (app uses location + notifications + optional account).
-  Draft wording is in the onboarding; host it (e.g. a Vercel route or a static page) and
+- Privacy policy **URL required** (app uses location and notifications).
+  Draft wording is in the onboarding; host it on the owner's chosen public page and
   paste the URL. **Owner task.**
 
 ---
