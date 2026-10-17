@@ -1,7 +1,8 @@
 import { compareDayId, toArabicIndic } from '@nabd/shared'
 import type { DayId } from '@nabd/shared'
 
-const PERCENT = 100
+export const PERCENT = 100
+const PERCENT_SYMBOL = '٪'
 const ARABIC_WEEKDAY_FORMATTER = new Intl.DateTimeFormat('ar-EG', {
   timeZone: 'UTC',
   weekday: 'long',
@@ -13,6 +14,10 @@ export function completionPercent(done: number, total: number): number {
 
 export function formatCompletion(done: number, total: number): string {
   return `${toArabicIndic(done)}/${toArabicIndic(total)}`
+}
+
+export function formatPercentage(percent: number): string {
+  return `${toArabicIndic(percent)}${PERCENT_SYMBOL}`
 }
 
 export function formatArabicWeekday(day: DayId): string {
