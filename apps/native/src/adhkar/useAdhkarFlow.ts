@@ -5,6 +5,7 @@ import { INITIAL_FLOW, tap as tapFlow, toDayId } from '@nabd/shared'
 import type { DayId, Dhikr, FlowState } from '@nabd/shared'
 
 import { createAdhkarRepository } from './db'
+import { normalizeFlowState } from './logic'
 
 export function useAdhkarFlow(
   categoryId: string,
@@ -40,10 +41,14 @@ export function useAdhkarFlow(
     void (async () => {
       const saved = await repository.readFlowProgress(categoryId, day)
       if (cancelled || hydrationVersion.current !== version) return
-      if (saved) {
-        current.current = saved
-        setStored({ key: flowKey, flow: saved })
-        setMarked({ key: flowKey, value: saved.finished })
+      const normalized =
+        saved && saved.categoryId === categoryId && saved.day === day
+          ? normalizeFlowState(saved, items)
+          : undefined
+      if (normalized) {
+        current.current = normalized
+        setStored({ key: flowKey, flow: normalized })
+        setMarked({ key: flowKey, value: normalized.finished })
         hydrated.current = true
         return
       }
@@ -60,7 +65,7 @@ export function useAdhkarFlow(
     return () => {
       cancelled = true
     }
-  }, [categoryId, day, flowKey, persisted, repository])
+  }, [categoryId, day, flowKey, items, persisted, repository])
 
   const tap = useCallback(() => {
     if (persisted && !hydrated.current) return
