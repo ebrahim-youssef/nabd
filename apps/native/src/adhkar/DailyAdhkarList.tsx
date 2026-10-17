@@ -21,6 +21,7 @@ export function DailyAdhkarList() {
   const [counts, setCounts] = useState<Record<string, number>>({})
   const [failedItems, setFailedItems] = useState<Record<string, boolean>>({})
   const countsRef = useRef<Record<string, number>>({})
+  const dayRef = useRef(day)
   const pendingActions = useRef(new Map<string, PendingAction>())
   const { areas, isLoading, refresh } = useWirdChecklist(day)
   const checklistItems = useMemo(
@@ -32,6 +33,7 @@ export function DailyAdhkarList() {
     useCallback(() => {
       const focusedDay = toDayId(new Date())
       if (focusedDay !== day) {
+        dayRef.current = focusedDay
         countsRef.current = {}
         setCounts({})
         setFailedItems({})
@@ -73,6 +75,7 @@ export function DailyAdhkarList() {
 
       const rollbackCount = current.target - 1
       const markFailed = () => {
+        if (countsRef.current[item.id] !== count || dayRef.current !== day) return
         const rolledBack = { ...countsRef.current, [item.id]: rollbackCount }
         countsRef.current = rolledBack
         setCounts(rolledBack)

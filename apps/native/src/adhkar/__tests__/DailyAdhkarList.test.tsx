@@ -165,6 +165,46 @@ describe('DailyAdhkarList', () => {
     expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
   })
 
+  it('does not roll back a reset after a target-reaching completion fails', async () => {
+    withDailyItems([
+      {
+        id: 'istighfar',
+        label: 'الاستغفار',
+        kind: 'counter',
+        target: 3,
+        done: false,
+      },
+    ])
+    let resolveCompletion: (result: Result<WirdEntry | null>) => void = () => undefined
+    const completion = new Promise<Result<WirdEntry | null>>((resolve) => {
+      resolveCompletion = resolve
+    })
+    mockRepository.completeLinkedWirdItem.mockReturnValueOnce(completion)
+
+    await render(<DailyAdhkarList />)
+    const card = screen.getByTestId('adhkar-daily-card-istighfar')
+
+    await act(async () => {
+      await fireEvent.press(card)
+    })
+    await act(async () => {
+      await fireEvent.press(card)
+    })
+    await act(async () => {
+      fireEvent.press(card)
+    })
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('adhkar-daily-reset-istighfar'))
+    })
+
+    await act(async () => {
+      resolveCompletion({ ok: false, error: 'write failed' })
+    })
+
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/٣')
+    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
+  })
+
   it('falls back to the content repeat when the linked item is unavailable', async () => {
     await render(<DailyAdhkarList />)
     const card = screen.getByTestId('adhkar-daily-card-istighfar')
