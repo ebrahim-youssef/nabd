@@ -182,6 +182,8 @@ export function SettingsRoute() {
     showNotificationDetails &&
     exactAlarmStatus.state !== 'not-required' &&
     exactAlarmStatus.state !== 'ready'
+  const showPrayerAlarmSyncDegraded =
+    showNotificationDetails && prayerAlarmSyncOutcome === 'degraded'
   const showPrayerAlarmSyncFailure =
     notificationSettings.prefs.enabled && prayerAlarmSyncOutcome === 'failed'
 
@@ -354,7 +356,15 @@ export function SettingsRoute() {
                   value={notificationSettings.silentMode}
                 />
               </View>
-              {showExactAlarm ? (
+              {showPrayerAlarmSyncDegraded ? (
+                <Text
+                  className="text-small text-start text-muted-foreground"
+                  testID="notification-alarm-sync-degraded-notice"
+                >
+                  {deviceCopy.notifications.syncDegradedNotice}
+                </Text>
+              ) : null}
+              {showExactAlarm || showPrayerAlarmSyncDegraded ? (
                 <View
                   className="gap-2 rounded-card border border-border bg-surface p-4"
                   testID="notification-exact-alarm"
@@ -368,9 +378,32 @@ export function SettingsRoute() {
                       onPress={() => void notificationSettings.runAction(exactAlarmAction.type)}
                       testID="notification-exact-alarm-action"
                     />
+                  ) : showPrayerAlarmSyncDegraded ? (
+                    <ActionButton
+                      label={deviceCopy.actions.retry}
+                      onPress={requestPrayerReschedule}
+                      testID="notification-exact-alarm-retry"
+                    />
                   ) : null}
                 </View>
               ) : null}
+              <View className="gap-2" testID="notification-lifecycle-guidance">
+                <Text className="text-small text-start text-muted-foreground">
+                  {deviceCopy.notifications.recoveryHeading}
+                </Text>
+                <Text
+                  className="text-small text-start text-muted-foreground"
+                  testID="notification-reboot-recovery"
+                >
+                  {deviceCopy.notifications.rebootRecovery}
+                </Text>
+                <Text
+                  className="text-small text-start text-muted-foreground"
+                  testID="notification-time-change-recovery"
+                >
+                  {deviceCopy.notifications.timeChangeRecovery}
+                </Text>
+              </View>
             </View>
           ) : null}
         </View>
