@@ -6,14 +6,15 @@ Instructions for any AI coding agent working in this repo. Read this first, ever
 
 [`docs/adr/0017-native-only.md`](./docs/adr/0017-native-only.md) makes the Expo app in
 `apps/native` the sole product and release target. Android is first, with platform-neutral
-boundaries for a future iOS target. The SPA in `apps/spa` and the root Next.js app are being
-deleted; the legacy app stays readable through the `legacy-reference` Git tag. Do not add features
-to the root app or `apps/spa`.
+boundaries for a future iOS target. The SPA in `apps/spa` is cancelled and will be deleted. The
+root Next.js app is the reference for parity: it stays, and keeps building, until native has every
+feature, and is deleted after that. Do not add features to the root app or `apps/spa`, and put
+new code (logic, copy, types) in `apps/native`, not in `packages/shared`.
 
-The end state is one folder, `native/`, holding all product code: `packages/shared` is folded into
-the features that own each module, and `apps/native` then moves to `native/`. Until that lands,
-`packages/shared` holds domain types, pure logic, Arabic content, copy, contracts, and testing
-fixtures. The order is in
+The end state is the repository root as the Expo app: `packages/shared` is folded into the
+features that own each module, `apps/native` is lifted to the root, and the pnpm workspace goes.
+Until then, `packages/shared` holds the existing domain types, pure logic, Arabic content, copy,
+contracts, and testing fixtures. The order is in
 [`docs/migration/2026-10-17-consolidation-plan.md`](./docs/migration/2026-10-17-consolidation-plan.md).
 There is no backend or sign-in in the native product.
 

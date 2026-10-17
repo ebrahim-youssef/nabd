@@ -241,15 +241,15 @@ and scheduled for deletion.
 | NBD-105 | ⬜ todo | - | iOS-readiness pass, Android-only alarm and channel code behind a platform-neutral scheduling contract, with iOS behavior documented for notifications, audio, and location settings | Android-only alarm and channel code is isolated behind a platform-neutral scheduling contract and the iOS notification, audio, and location-settings behavior is documented |
 | NBD-106 | ⬜ todo | - | Native boundary and CI split, move `scripts/check-native-no-sentry.mjs` into `apps/native`, turn `spa-ci.yml` into native and shared CI, and decide native theme-token ownership | Native and shared CI run the required gates from their owned boundaries, and native theme-token ownership is recorded |
 | NBD-107 | ⬜ todo | - | Delete `apps/spa`, Wrangler and Cloudflare config, SPA CI jobs, and SPA-only shared exports | `apps/spa`, Wrangler and Cloudflare configuration, SPA CI jobs, and SPA-only shared exports are absent |
-| NBD-108 | ⬜ todo | - | Delete the root Next.js app, Capacitor shell, root `android/`, Supabase client code, Vercel configuration, and root CI jobs, after tagging the last commit that contains them `legacy-reference`; retire the live Supabase project separately | The listed root application, Capacitor, Android, Supabase client, Vercel configuration, and root CI files are absent, the `legacy-reference` tag is pushed, and live Supabase retirement is tracked as a separate manual step |
+| NBD-108 | ⬜ todo | - | Delete the root Next.js app, Capacitor shell, root `android/`, Supabase client code, Vercel configuration, and root CI jobs after NBD-89a passes, tagging the last commit that contains them `legacy-reference`; retire the live Supabase project separately | After NBD-89a passes, the listed root application, Capacitor, Android, Supabase client, Vercel configuration, and root CI files are absent, the `legacy-reference` tag is pushed, and live Supabase retirement is tracked as a separate manual step |
 | NBD-109 | ❌ merged into NBD-112 | - | Workspace cleanup, minimal root `package.json`, lockfile, lint-staged routing, `.gitignore`, and documentation | Delivered by NBD-112 |
 | NBD-110 | ⬜ todo | - | Vite+ toolchain: (a) `vp staged` hooks, (b) Oxfmt, (c) Oxlint, (d) remove ESLint and Prettier, CI through `vp` | A commit from a non-interactive shell runs the staged checks and finishes, and CI formats and lints through `vp` with ESLint and Prettier removed |
-| NBD-111 | ⬜ todo | - | Fold `packages/shared` into the native app, each module into the feature that owns it | No `@nabd/shared` import remains, `packages/` is deleted, and every former shared test runs under Jest |
-| NBD-112 | ⬜ todo | - | Move `apps/native` to `native/` and reduce the root to workspace tooling (absorbs NBD-109) | `native/` is the only application folder, and the Expo export, CI APK, and an EAS preview build pass |
+| NBD-111 | ⬜ todo | - | Fold `packages/shared` into the native app after NBD-108, each module into the feature that owns it | No `@nabd/shared` import remains, `packages/` is deleted, and every former shared test runs under Jest |
+| NBD-112 | ⬜ todo | - | Lift `apps/native` to the repository root and remove the pnpm workspace (absorbs NBD-109) | The repository root is the Expo app with no `apps/` or `packages/` folder, and the Expo export, CI APK, and an EAS preview build pass from the root |
 
-Amended 2026-10-17: the order is NBD-110a, NBD-106, NBD-107 with NBD-108, NBD-111, NBD-112,
-NBD-110b to NBD-110d, then the parity tickets. NBD-108 no longer waits for NBD-89a; the legacy app
-is read from the `legacy-reference` tag. See
+Amended 2026-10-17: the order is NBD-110a, NBD-106, NBD-107, the parity tickets (NBD-98 to
+NBD-105, NBD-91), NBD-89a, NBD-108, NBD-111, NBD-112, NBD-110b to NBD-110d, then NBD-92. New code
+goes into `apps/native`, not `packages/shared`. See
 [`docs/migration/2026-10-17-consolidation-plan.md`](./migration/2026-10-17-consolidation-plan.md).
 
 Still open from R11: NBD-86, NBD-87b, NBD-89a, NBD-91, NBD-92, NBD-66, and NBD-67.

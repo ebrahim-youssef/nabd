@@ -67,16 +67,18 @@ The deletion work follows the removal survey and keeps native and shared gates i
 
 ## Amendment 2026-10-17
 
-The owner narrowed the end state further: the repository keeps one application folder, `native/`,
-with all product code in it.
+The owner narrowed the end state further: the repository root becomes the Expo app itself, with
+all product code in it and no `apps/`, `packages/` or `native/` folder.
 
-- `packages/shared` is folded into the native app. Each module moves to the feature that owns it,
-  and the purity rule moves from the package boundary to a lint rule on `logic.ts` files. This
-  replaces the "`packages/shared` remains" paragraph above.
-- The root Next.js app is deleted before parity instead of after it. The last commit that contains
-  it is tagged `legacy-reference`, and parity work reads the old behavior from that tag.
-- `apps/native` moves to `native/` at the repository root once the deletions and the fold-in are
-  done.
+- The root Next.js app stays, and keeps building, until native has every feature (the parity
+  tickets and NBD-89a). It is deleted after that, and its last commit is tagged
+  `legacy-reference`.
+- New code goes into `apps/native` only, never into the root app or `packages/shared`.
+- After the Next.js app is deleted, `packages/shared` is folded into the native app. Each module
+  moves to the feature that owns it, and the purity rule moves from the package boundary to a lint
+  rule on `logic.ts` files. This replaces the "`packages/shared` remains" paragraph above.
+- The native app is then lifted from `apps/native` to the repository root, and the pnpm workspace
+  is removed.
 - The developer toolchain moves to Vite+ (Oxfmt, Oxlint, `vp staged`). Metro, Jest with
   `jest-expo`, `tsc --noEmit`, and commitlint stay.
 
