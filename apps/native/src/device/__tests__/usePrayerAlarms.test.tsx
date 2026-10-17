@@ -156,19 +156,57 @@ describe('usePrayerAlarms', () => {
     expect(mockedConfigure).toHaveBeenCalledTimes(1)
   })
 
-  it('replaces unchanged alarms when exact-alarm access is granted', async () => {
+  it('schedules below API 31 without exact-alarm access', async () => {
+    mockedReadExactAlarmSnapshot.mockReturnValue({ apiLevel: 30, access: 'unknown' })
+
+    renderAlarms()
+
+    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
+    expect(mockedCancel).not.toHaveBeenCalled()
+    expect(mockedSetSyncOutcome).toHaveBeenLastCalledWith('ok')
+  })
+
+  it('cancels while exact-alarm access is denied and schedules after access is granted', async () => {
     mockedReadExactAlarmSnapshot
       .mockReturnValueOnce({ apiLevel: 32, access: 'denied' })
       .mockReturnValue({ apiLevel: 32, access: 'granted' })
     const { result } = renderAlarms()
 
-    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(mockedCancel).toHaveBeenCalledTimes(1))
+    expect(mockedReplace).not.toHaveBeenCalled()
+    expect(mockedSetSyncOutcome).toHaveBeenLastCalledWith('degraded')
+
     await act(async () => {
       await result.current.sync()
     })
 
-    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(2))
-    expect(mockedReadExactAlarmSnapshot).toHaveBeenCalledTimes(2)
+    await waitFor(() => expect(mockedReplace).toHaveBeenCalledTimes(1))
+    expect(mockedReadExactAlarmSnapshot).toHaveBeenCalledTimes(3)
+  })
+
+  it('cancels when exact-alarm access is revoked before replacement', async () => {
+    mockedReadExactAlarmSnapshot
+      .mockReturnValueOnce({ apiLevel: 32, access: 'granted' })
+      .mockReturnValueOnce({ apiLevel: 32, access: 'denied' })
+
+    renderAlarms()
+
+    await waitFor(() => expect(mockedCancel).toHaveBeenCalledTimes(1))
+    expect(mockedReplace).not.toHaveBeenCalled()
+    expect(mockedSetSyncOutcome).toHaveBeenLastCalledWith('degraded')
+  })
+
+  it.each([
+    [{ apiLevel: 32, access: 'unknown' as const }],
+    [{ apiLevel: 35, access: 'denied' as const }],
+  ])('fails closed for an unavailable exact-alarm state', async (snapshot) => {
+    mockedReadExactAlarmSnapshot.mockReturnValue(snapshot)
+
+    renderAlarms()
+
+    await waitFor(() => expect(mockedCancel).toHaveBeenCalledTimes(1))
+    expect(mockedReplace).not.toHaveBeenCalled()
+    expect(mockedSetSyncOutcome).toHaveBeenLastCalledWith('degraded')
   })
 
   it('skips an unchanged successful schedule and retries after failure', async () => {

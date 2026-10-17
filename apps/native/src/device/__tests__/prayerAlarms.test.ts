@@ -21,6 +21,18 @@ describe('prayer alarm reschedule events', () => {
     expect(listener).toHaveBeenCalledTimes(1)
   })
 
+  it('publishes a degraded outcome when exact-alarm access blocks scheduling', () => {
+    const listener = jest.fn()
+    const unsubscribe = subscribePrayerAlarmSyncOutcome(listener)
+
+    setPrayerAlarmSyncOutcome('degraded')
+
+    expect(getPrayerAlarmSyncOutcome()).toBe('degraded')
+    expect(listener).toHaveBeenCalledWith('degraded')
+
+    unsubscribe()
+  })
+
   it('notifies subscribers and unsubscribes cleanly', () => {
     const first = jest.fn()
     const second = jest.fn()

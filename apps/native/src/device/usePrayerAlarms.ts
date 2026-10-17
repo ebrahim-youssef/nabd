@@ -17,6 +17,7 @@ import {
 } from '../preferences/db'
 import { createDeviceRepository } from './db'
 import { readExactAlarmSnapshot } from './exactAlarm'
+import { isExactAlarmSchedulingAllowed } from './logic'
 import {
   cancelPrayerAlarms,
   configureForegroundHandler,
@@ -63,7 +64,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
   const performSync = useCallback(async (): Promise<void> => {
     try {
       const currentTime = now()
-      const exactAlarm = readExactAlarmSnapshot()
+      const initialExactAlarm = readExactAlarmSnapshot()
       const [permission, storedPrefs, storedSilentMode, storedMethod, location] = await Promise.all(
         [
           readNotificationPermission(),
@@ -84,13 +85,28 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
         return
       }
 
+      if (!isExactAlarmSchedulingAllowed(initialExactAlarm)) {
+        await cancelPrayerAlarms()
+        lastAppliedSignatureRef.current = null
+        setPrayerAlarmSyncOutcome('degraded')
+        return
+      }
+
       const alarms = buildPrayerSchedule({
         coords: { latitude: location.latitude, longitude: location.longitude },
         methodId,
         notificationPrefs,
         now: currentTime,
       })
-      const signature = prayerAlarmSignature(silentMode, alarms, exactAlarm.access)
+      const currentExactAlarm = readExactAlarmSnapshot()
+      if (!isExactAlarmSchedulingAllowed(currentExactAlarm)) {
+        await cancelPrayerAlarms()
+        lastAppliedSignatureRef.current = null
+        setPrayerAlarmSyncOutcome('degraded')
+        return
+      }
+
+      const signature = prayerAlarmSignature(silentMode, alarms, currentExactAlarm.access)
       if (lastAppliedSignatureRef.current === signature) {
         setPrayerAlarmSyncOutcome('ok')
         return
