@@ -9,6 +9,7 @@ import { logger } from '../observability/logger'
 import { Text } from '../shell/Text'
 import { useWirdChecklist } from '../wird/useWirdChecklist'
 import { createDhikrCompletionRepository } from '../counter/db'
+import { ADHKAR_NATIVE_COPY } from './copy'
 import { computeDailyItemState } from './logic'
 
 type PendingAction = Promise<void>
@@ -18,6 +19,7 @@ export function DailyAdhkarList() {
   const repository = useMemo(() => createDhikrCompletionRepository(database), [database])
   const [day, setDay] = useState<DayId>(() => toDayId(new Date()))
   const [counts, setCounts] = useState<Record<string, number>>({})
+  const [failedItems, setFailedItems] = useState<Record<string, boolean>>({})
   const countsRef = useRef<Record<string, number>>({})
   const pendingActions = useRef(new Map<string, PendingAction>())
   const { areas, isLoading, refresh } = useWirdChecklist(day)
@@ -32,6 +34,7 @@ export function DailyAdhkarList() {
       if (focusedDay !== day) {
         countsRef.current = {}
         setCounts({})
+        setFailedItems({})
         setDay(focusedDay)
       }
       refresh()
@@ -43,6 +46,12 @@ export function DailyAdhkarList() {
     const next = { ...countsRef.current, [itemId]: 0 }
     countsRef.current = next
     setCounts(next)
+    setFailedItems((current) => {
+      if (!current[itemId]) return current
+      const nextFailures = { ...current }
+      delete nextFailures[itemId]
+      return nextFailures
+    })
   }, [])
 
   const tap = useCallback(
@@ -62,13 +71,39 @@ export function DailyAdhkarList() {
       setCounts(next)
       if (count < current.target || !checklistItem) return undefined
 
+      const rollbackCount = current.target - 1
+      const markFailed = () => {
+        const rolledBack = { ...countsRef.current, [item.id]: rollbackCount }
+        countsRef.current = rolledBack
+        setCounts(rolledBack)
+        setFailedItems((currentFailures) => ({ ...currentFailures, [item.id]: true }))
+      }
+      const clearFailure = () => {
+        setFailedItems((currentFailures) => {
+          if (!currentFailures[item.id]) return currentFailures
+          const nextFailures = { ...currentFailures }
+          delete nextFailures[item.id]
+          return nextFailures
+        })
+      }
+
       const previous = pendingActions.current.get(item.id) ?? Promise.resolve()
       const action = previous.then(async () => {
         const result = await repository.completeLinkedWirdItem(day, item.id, Date.now())
-        if (result.ok) refresh()
+        if (result.ok) {
+          clearFailure()
+          refresh()
+          return
+        }
+        markFailed()
+        logger.error('Native daily adhkar completion was not saved', null, {
+          itemId: item.id,
+          day,
+        })
       })
       const tracked = action
         .catch((cause: unknown) => {
+          markFailed()
           logger.error('Native daily adhkar tap failed', cause, { itemId: item.id, day })
         })
         .finally(() => {
@@ -120,6 +155,11 @@ export function DailyAdhkarList() {
                 </View>
               </View>
             </Pressable>
+            {failedItems[item.id] && (
+              <Text accessibilityRole="alert" className="text-small text-start text-destructive">
+                {ADHKAR_NATIVE_COPY.completionFailed}
+              </Text>
+            )}
             <Pressable
               accessibilityRole="button"
               className="min-h-11 justify-center py-2"

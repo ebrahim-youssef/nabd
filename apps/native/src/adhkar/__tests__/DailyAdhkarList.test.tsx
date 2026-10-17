@@ -69,13 +69,100 @@ describe('DailyAdhkarList', () => {
     await render(<DailyAdhkarList />)
     const card = screen.getByTestId('adhkar-daily-card-istighfar')
 
-    await fireEvent.press(card)
-    await fireEvent.press(card)
-    await fireEvent.press(card)
-    await fireEvent.press(card)
+    await act(async () => {
+      await fireEvent.press(card)
+    })
+    await act(async () => {
+      await fireEvent.press(card)
+    })
+    await act(async () => {
+      await fireEvent.press(card)
+    })
+    await act(async () => {
+      await fireEvent.press(card)
+    })
 
     expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٣/٣')
     expect(mockRepository.completeLinkedWirdItem).toHaveBeenCalledTimes(1)
+  })
+
+  it('rolls back a failed completion and lets the user retry it', async () => {
+    withDailyItems([
+      {
+        id: 'istighfar',
+        label: 'الاستغفار',
+        kind: 'counter',
+        target: 1,
+        done: false,
+      },
+    ])
+    mockRepository.completeLinkedWirdItem.mockResolvedValueOnce({
+      ok: false,
+      error: 'write failed',
+    })
+
+    await render(<DailyAdhkarList />)
+    const card = screen.getByTestId('adhkar-daily-card-istighfar')
+
+    await act(async () => {
+      await fireEvent.press(card)
+    })
+
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/١')
+    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
+      checked: false,
+      disabled: false,
+    })
+    expect(screen.getByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeTruthy()
+
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
+    })
+
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١')
+    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
+      checked: true,
+      disabled: true,
+    })
+    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
+  })
+
+  it('rolls back a rejected completion and lets the user retry it', async () => {
+    withDailyItems([
+      {
+        id: 'istighfar',
+        label: 'الاستغفار',
+        kind: 'counter',
+        target: 1,
+        done: false,
+      },
+    ])
+    mockRepository.completeLinkedWirdItem.mockRejectedValueOnce(new Error('write failed'))
+
+    await render(<DailyAdhkarList />)
+    const card = screen.getByTestId('adhkar-daily-card-istighfar')
+
+    await act(async () => {
+      await fireEvent.press(card)
+    })
+
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/١')
+    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
+      checked: false,
+      disabled: false,
+    })
+    expect(screen.getByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeTruthy()
+
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
+    })
+
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١')
+    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
+      checked: true,
+      disabled: true,
+    })
+    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
   })
 
   it('falls back to the content repeat when the linked item is unavailable', async () => {
