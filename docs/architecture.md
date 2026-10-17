@@ -15,13 +15,11 @@ location, alarms, and other platform behavior. `packages/shared` owns platform-n
 - `src/logic`: pure calculations and state transitions.
 - `src/contracts`: repository contracts.
 - `src/testing`: shared fixtures and test helpers.
-- `src/constants`: current constants, including the SPA-only `SITE_URL` pending removal with the
-  SPA.
-- `src/copy/landing.ts`: SPA-only landing copy pending removal with the SPA.
-- `src/tokens`: legacy web theme values; native theme-token ownership and removal with the SPA
-  remain pending.
+- `src/constants`: current constants, including `SITE_URL`, which remains until NBD-108.
+- `src/tokens`: legacy web theme values; native theme-token ownership and removal remain pending
+  until NBD-111.
 
-The Vite SPA is cancelled. The root Next.js application is a read-only reference until
+The Vite SPA was deleted in NBD-107. The root Next.js application is a read-only reference until
 NBD-108 deletes it. It is not an active product target, and no native code imports from it.
 
 ## The boundary rule
@@ -59,14 +57,14 @@ apps/native/
   theme/                       palette.ts and tailwind-theme.cjs
 
 packages/shared/
-  src/constants/               current constants; SPA-only values are pending removal
+  src/constants/               current constants; SITE_URL remains until NBD-108
   src/content/                 Arabic product content
-  src/copy/                    reusable copy; landing.ts is SPA-only and pending removal
+  src/copy/                    reusable copy for the native product
   src/logic/                   platform-neutral pure logic
   src/contracts/               platform-neutral repository contracts
   src/testing/                 shared fixtures
   src/types/                   domain types
-  src/tokens/                  legacy web theme values; native ownership and removal remain pending
+  src/tokens/                  legacy web theme values; native ownership and removal remain pending until NBD-111
 ```
 
 Expo Router route files may render feature components, but they do not contain SQLite queries or

@@ -1,4 +1,4 @@
-export type PrayerAlarmSyncOutcome = 'ok' | 'failed'
+export type PrayerAlarmSyncOutcome = 'ok' | 'degraded' | 'failed'
 
 type PrayerRescheduleListener = () => void
 type PrayerAlarmSyncOutcomeListener = (outcome: PrayerAlarmSyncOutcome) => void

@@ -32,4 +32,9 @@ class ExactAlarmStatusTest {
   fun returnsGrantedWhenExactAlarmsAreAllowedOnApi33() {
     assertEquals("granted", exactAlarmStatus(33) { true })
   }
+
+  @Test
+  fun returnsDeniedWhenExactAlarmsAreNotAllowedOnApi34AndAbove() {
+    assertEquals("denied", exactAlarmStatus(34) { false })
+  }
 }

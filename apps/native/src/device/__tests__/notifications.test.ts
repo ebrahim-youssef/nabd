@@ -111,6 +111,13 @@ describe('native notification adapter', () => {
     })
   })
 
+  it('rebuilds the prayer schedule when no pending alarms remain', async () => {
+    await replacePrayerAlarms([alarm()], false, NOW)
+
+    expect(mockedNotifications.cancelScheduledNotificationAsync).not.toHaveBeenCalled()
+    expect(mockedNotifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1)
+  })
+
   it('uses normal channels when silent mode is off', async () => {
     await replacePrayerAlarms([alarm({ channelKey: 'adhanFajr' })], false, NOW)
 
