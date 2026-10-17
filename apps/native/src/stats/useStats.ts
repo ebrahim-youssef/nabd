@@ -1,6 +1,5 @@
 import {
   bestStreak,
-  compareDayId,
   currentStreak,
   dayAreaStats,
   daysInRange,
@@ -12,7 +11,14 @@ import {
   toDayId,
   versionInForce,
 } from '@nabd/shared'
-import type { DayCompletion, ItemStat, RangeSummary, AreaStat, QadaEvent } from '@nabd/shared'
+import type {
+  AreaStat,
+  DayCompletion,
+  ItemStat,
+  QadaEvent,
+  RangeSummary,
+  WirdRepository,
+} from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 import { Share } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'
@@ -21,6 +27,7 @@ import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
 import { logger } from '../observability/logger'
 import { createQadaRepository } from '../qada/db'
 import { useWirdRepository } from '../wird/useWirdRepository'
+import { earliestDay } from './logic'
 
 export const STATS_WINDOW_DAYS = 30
 export const CHART_WINDOW_DAYS = 7
@@ -35,20 +42,19 @@ type StatsData = {
 
 const EMPTY_SUMMARY: RangeSummary = { days: 0, total: 0, done: 0, completedDays: 0 }
 
-function earliestDay(
-  versions: { effectiveFrom: string }[],
-  entries: { day: string }[],
-  today: string,
-): string {
-  let earliest = today
-  for (const version of versions)
-    if (compareDayId(version.effectiveFrom, earliest) < 0) earliest = version.effectiveFrom
-  for (const entry of entries) if (compareDayId(entry.day, earliest) < 0) earliest = entry.day
-  return compareDayId(earliest, today) > 0 ? today : earliest
-}
+type StatsProjection =
+  | {
+      status: 'ready'
+      versions: Awaited<ReturnType<WirdRepository['listVersions']>>
+      entries: Awaited<ReturnType<WirdRepository['getEntriesInRange']>>
+      allEntries: Awaited<ReturnType<WirdRepository['getAllEntries']>>
+      qadaEvents: QadaEvent[]
+    }
+  | { status: 'error' }
 
 export function useStats(): {
   isLoading: boolean
+  error: boolean
   days: string[]
   chartDays: string[]
   data: StatsData
@@ -61,14 +67,19 @@ export function useStats(): {
   const [today] = useState(() => toDayId(new Date()))
   const days = useMemo(() => lastNDays(today, STATS_WINDOW_DAYS), [today])
   const chartDays = useMemo(() => lastNDays(today, CHART_WINDOW_DAYS), [today])
-  const read = useCallback(async () => {
-    const [versions, entries, allEntries, qadaEvents] = await Promise.all([
-      wird.listVersions(),
-      wird.getEntriesInRange(days[0], days[days.length - 1]),
-      wird.getAllEntries(),
-      qada.listQadaEvents(),
-    ])
-    return { versions, entries, allEntries, qadaEvents }
+  const read = useCallback(async (): Promise<StatsProjection> => {
+    try {
+      const [versions, entries, allEntries, qadaEvents] = await Promise.all([
+        wird.listVersions(),
+        wird.getEntriesInRange(days[0], days[days.length - 1]),
+        wird.getAllEntries(),
+        qada.listQadaEvents(),
+      ])
+      return { status: 'ready', versions, entries, allEntries, qadaEvents }
+    } catch (cause: unknown) {
+      logger.error('Native stats projection failed', cause)
+      return { status: 'error' }
+    }
   }, [days, qada, wird])
   const { data: persisted, isLoading, refresh } = useLiveRepositoryQuery(read)
 
@@ -106,7 +117,7 @@ export function useStats(): {
   )
 
   const data = useMemo<StatsData>(() => {
-    if (!persisted) {
+    if (!persisted || persisted.status === 'error') {
       return {
         completions: [],
         summary: EMPTY_SUMMARY,
@@ -139,7 +150,15 @@ export function useStats(): {
     }
   }, [days, persisted, today])
 
-  return { isLoading, days, chartDays, data, refresh, exportRange }
+  return {
+    isLoading,
+    error: persisted?.status === 'error',
+    days,
+    chartDays,
+    data,
+    refresh,
+    exportRange,
+  }
 }
 
 export { bestStreak, currentStreak }

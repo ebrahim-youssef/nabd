@@ -67,10 +67,11 @@ code around.
 
 - **Follow the loop.** Every change runs through the 8 phases in `docs/workflow.md`. No
   reordering, no skipping spec intake.
-- **Pure logic and feature folders.** Platform-neutral pure logic lives in
-  `packages/shared/src/logic`, where `packages/shared/eslint.config.mjs` enforces the
-  no-platform and no-clock-global restrictions. The only native pure-logic module is
-  `apps/native/src/device/logic.ts`. Native feature folders are flat, with `db.ts`, components,
+- **Pure logic and feature folders.** Existing pure logic in `packages/shared/src/logic` stays
+  there until NBD-111, where `packages/shared/eslint.config.mjs` enforces the no-platform and
+  no-clock-global restrictions. New pure logic goes in `apps/native/src/<feature>/logic.ts`
+  (ADR 0017 amendment): no I/O, no clock globals, time and data passed in. No lint rule enforces
+  that yet; NBD-111 moves the shared purity rule onto `logic.ts` files. Native feature folders are flat, with `db.ts`, components,
   and hooks side by side where present, and tests under `__tests__/`. The native ESLint config
   enforces React Hooks rules, `no-console`, and restricted direct imports of React Native
   `Text` and `TextInput`; it does not enforce a logic-to-database boundary.
