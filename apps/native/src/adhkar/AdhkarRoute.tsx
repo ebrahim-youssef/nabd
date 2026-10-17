@@ -1,4 +1,4 @@
-import { ADHKAR_COPY, ADHKAR_LIBRARY, LIST_CATEGORIES } from '@nabd/shared'
+import { ADHKAR_COPY, ADHKAR_LIBRARY, DAILY_CATEGORY_ID, LIST_CATEGORIES } from '@nabd/shared'
 import type { AdhkarCategory } from '@nabd/shared'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
@@ -8,6 +8,7 @@ import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
 import { AdhkarList } from './AdhkarList'
 import { AdhkarFlow } from './AdhkarFlow'
+import { DailyAdhkarList } from './DailyAdhkarList'
 
 export function AdhkarRoute() {
   const [selected, setSelected] = useState(ADHKAR_LIBRARY[0]?.id ?? '')
@@ -46,6 +47,7 @@ export function AdhkarRoute() {
 }
 
 function CategoryContent({ category }: { category: AdhkarCategory }) {
+  if (category.id === DAILY_CATEGORY_ID) return <DailyAdhkarList />
   return LIST_CATEGORIES.has(category.id) ? (
     <AdhkarList category={category} />
   ) : (

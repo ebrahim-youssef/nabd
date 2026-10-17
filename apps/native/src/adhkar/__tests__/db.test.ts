@@ -103,4 +103,16 @@ describe('native adhkar repository', () => {
       value: null,
     })
   })
+
+  it('ignores an unmapped category without opening a transaction', async () => {
+    const database = databaseWithTransaction()
+    const repository = createAdhkarRepository(database)
+
+    await expect(repository.isLinkedWirdItemDone(DAY, 'istighfar')).resolves.toBe(false)
+    await expect(repository.completeLinkedWirdItem(DAY, 'istighfar', 11)).resolves.toEqual({
+      ok: true,
+      value: null,
+    })
+    expect(database.withExclusiveTransactionAsync).not.toHaveBeenCalled()
+  })
 })
