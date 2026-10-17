@@ -68,4 +68,14 @@ describe('AdhkarFlow', () => {
     await fireEvent.press(screen.getByTestId('adhkar-restart-morning'))
     expect(mockFlow.restart).toHaveBeenCalledTimes(1)
   })
+
+  it('keeps the complete reference available after the flow finishes', async () => {
+    mockFlow.state = { index: 4, count: 1, finished: true }
+
+    await render(<AdhkarFlow category={CATEGORY} />)
+    await fireEvent.press(screen.getByTestId('adhkar-flow-reference-toggle'))
+
+    expect(screen.getAllByTestId(/adhkar-flow-reference-item-/)).toHaveLength(5)
+    expect(screen.getByText('فضل الأول')).toBeTruthy()
+  })
 })
