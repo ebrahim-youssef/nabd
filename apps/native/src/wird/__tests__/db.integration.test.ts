@@ -21,6 +21,13 @@ const changedLevelDefinition = {
   ),
 }
 
+const changedLevelTwoDefinition = {
+  ...WIRD_LEVELS[1].wird,
+  items: WIRD_LEVELS[1].wird.items.map((item, index) =>
+    index === 0 ? { ...item, label: `${item.label} changed` } : item,
+  ),
+}
+
 const customDefinition = {
   areas: [{ id: 'custom-area', label: 'ورد مخصص', order: 0 }],
   items: [{ id: 'custom-item', areaId: 'custom-area', label: 'دعاء', kind: 'checkbox' as const }],
@@ -133,7 +140,7 @@ describe('native wird version healing', () => {
     }
   })
 
-  it('creates a changed level definition effective today when today has no entries', async () => {
+  it('creates a changed level definition effective tomorrow even with no entries today', async () => {
     const { directory, connection } = fresh()
     try {
       const database = await migrate(connection)
@@ -144,12 +151,12 @@ describe('native wird version healing', () => {
           today: TODAY,
           createdAt: CREATED_AT + 1,
         }),
-      ).resolves.toEqual({ created: true, effectiveFrom: TODAY })
+      ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
       expect(versionRows(connection)).toHaveLength(2)
       expect(versionRows(connection)).toEqual(
         expect.arrayContaining([
           expect.objectContaining({
-            effective_from: TODAY,
+            effective_from: TOMORROW,
             definition_json: JSON.stringify(WIRD_LEVELS[0].wird),
             created_at: CREATED_AT + 1,
           }),
@@ -176,6 +183,60 @@ describe('native wird version healing', () => {
       ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
       expect(versionRows(connection)).toEqual(
         expect.arrayContaining([expect.objectContaining({ effective_from: TOMORROW })]),
+      )
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps a level scheduled for tomorrow', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, 'version-today', TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      insertVersion(connection, 'version-scheduled', TOMORROW, WIRD_LEVELS[1].wird, CREATED_AT + 1)
+
+      await expect(
+        createWirdRepository(database).healVersionFromLevels({
+          today: TODAY,
+          createdAt: CREATED_AT + 2,
+        }),
+      ).resolves.toEqual({ created: false, effectiveFrom: null })
+      expect(versionRows(connection)).toHaveLength(2)
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it("heals a stale level scheduled for tomorrow to its own level's new definition", async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, 'version-today', TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      insertVersion(
+        connection,
+        'version-scheduled',
+        TOMORROW,
+        changedLevelTwoDefinition,
+        CREATED_AT + 1,
+      )
+
+      await expect(
+        createWirdRepository(database).healVersionFromLevels({
+          today: TODAY,
+          createdAt: CREATED_AT + 2,
+        }),
+      ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
+      expect(versionRows(connection)).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            effective_from: TOMORROW,
+            definition_json: JSON.stringify(WIRD_LEVELS[1].wird),
+            created_at: CREATED_AT + 2,
+          }),
+        ]),
       )
     } finally {
       connection.close()
@@ -216,7 +277,7 @@ describe('native wird version healing', () => {
           today: TODAY,
           createdAt: CREATED_AT + 1,
         }),
-      ).resolves.toEqual({ created: true, effectiveFrom: TODAY })
+      ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
 
       expect(versionRows(connection)).toEqual([...oldVersions, expect.anything()])
       expect(versionRows(connection)[0]).toEqual(oldVersions[0])
@@ -255,7 +316,7 @@ describe('native wird version healing', () => {
       const repository = createWirdRepository(database)
       await expect(
         repository.healVersionFromLevels({ today: TODAY, createdAt: CREATED_AT + 1 }),
-      ).resolves.toEqual({ created: true, effectiveFrom: TODAY })
+      ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
       connection.close()
 
       const reopenedConnection = new DatabaseSync(join(directory, 'nabd.db'))

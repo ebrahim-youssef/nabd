@@ -112,16 +112,9 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
           'SELECT id, effective_from, definition_json, created_at FROM wird_versions',
         )
       ).map(asVersion)
-      const current = versionInForce(versions, today)
-      const entriesToday = await transaction.getAllAsync<{ id: string }>(
-        'SELECT id FROM wird_entries WHERE day = ?',
-        today,
-      )
-      const plan = planVersionHealing(current, WIRD_LEVELS, today, entriesToday.length > 0)
+      const current = versionInForce(versions, nextDay(today))
+      const plan = planVersionHealing(current, WIRD_LEVELS, today)
       if (!plan) return
-
-      const targetVersion = versionInForce(versions, plan.effectiveFrom)
-      if (targetVersion && sameDefinition(targetVersion.definition, plan.definition)) return
 
       await transaction.runAsync(
         `INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (${SQLITE_ID}, ?, ?, ?)`,

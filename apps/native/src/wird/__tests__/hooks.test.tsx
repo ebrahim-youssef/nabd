@@ -74,7 +74,6 @@ function createDatabase(
     },
     getAllAsync: async <T,>(source: string, ...parameters: SqlValue[]) => {
       if (source.includes('ORDER BY effective_from, created_at')) listVersionsCalls += 1
-      if (source.includes('SELECT id FROM wird_entries')) healedDays.push(String(parameters[0]))
       if (source.includes('wird_versions')) {
         return versions as T[]
       }
@@ -87,6 +86,7 @@ function createDatabase(
     },
     runAsync: async (source, ...parameters) => {
       if (source.includes('INSERT INTO wird_versions')) {
+        healedDays.push(String(parameters[0]))
         versions.push({
           id: `version-${versions.length + 1}`,
           effective_from: String(parameters[0]),
@@ -152,8 +152,8 @@ describe('native wird hooks', () => {
     expect(getListVersionsCalls()).toBe(1)
   })
 
-  it("heals today's version when viewing a past day", async () => {
-    const today = '2026-09-15'
+  it("heals tomorrow's version when viewing a past day", async () => {
+    const tomorrow = '2026-09-16'
     jest.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026)
     jest.spyOn(Date.prototype, 'getMonth').mockReturnValue(8)
     jest.spyOn(Date.prototype, 'getDate').mockReturnValue(15)
@@ -165,7 +165,7 @@ describe('native wird hooks', () => {
     await render(<Harness day={DAY} />)
 
     await screen.findByTestId('item-label')
-    expect(getHealedDays()).toEqual([today])
+    expect(getHealedDays()).toEqual([tomorrow])
   })
 
   it('heals today without changing an old day entry', async () => {

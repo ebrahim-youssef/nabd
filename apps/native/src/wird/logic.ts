@@ -12,7 +12,6 @@ export function planVersionHealing(
   current: WirdVersion | null,
   levels: WirdLevelDefinition[],
   today: DayId,
-  hasEntriesToday: boolean,
 ): VersionHealingPlan | null {
   if (!current) return null
 
@@ -21,6 +20,6 @@ export function planVersionHealing(
 
   return {
     definition: level.wird,
-    effectiveFrom: hasEntriesToday ? nextDay(today) : today,
+    effectiveFrom: nextDay(today),
   }
 }

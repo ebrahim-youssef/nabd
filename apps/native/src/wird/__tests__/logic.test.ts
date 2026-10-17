@@ -14,7 +14,7 @@ function version(definition: WirdDefinition): WirdVersion {
 }
 
 describe('planVersionHealing', () => {
-  it('plans the matched level definition for today when today has no entries', () => {
+  it('plans the matched level definition for tomorrow', () => {
     const changedDefinition = {
       ...WIRD_LEVELS[0].wird,
       items: WIRD_LEVELS[0].wird.items.map((item, index) =>
@@ -22,21 +22,7 @@ describe('planVersionHealing', () => {
       ),
     }
 
-    expect(planVersionHealing(version(changedDefinition), WIRD_LEVELS, TODAY, false)).toEqual({
-      definition: WIRD_LEVELS[0].wird,
-      effectiveFrom: TODAY,
-    })
-  })
-
-  it('plans the matched level definition for tomorrow when today has entries', () => {
-    const changedDefinition = {
-      ...WIRD_LEVELS[0].wird,
-      items: WIRD_LEVELS[0].wird.items.map((item, index) =>
-        index === 0 ? { ...item, label: `${item.label} changed` } : item,
-      ),
-    }
-
-    expect(planVersionHealing(version(changedDefinition), WIRD_LEVELS, TODAY, true)).toEqual({
+    expect(planVersionHealing(version(changedDefinition), WIRD_LEVELS, TODAY)).toEqual({
       definition: WIRD_LEVELS[0].wird,
       effectiveFrom: '2026-10-19',
     })
@@ -53,6 +39,6 @@ describe('planVersionHealing', () => {
       }),
     ],
   ])('returns no plan for %s', (_caseName, current) => {
-    expect(planVersionHealing(current, WIRD_LEVELS, TODAY, false)).toBeNull()
+    expect(planVersionHealing(current, WIRD_LEVELS, TODAY)).toBeNull()
   })
 })
