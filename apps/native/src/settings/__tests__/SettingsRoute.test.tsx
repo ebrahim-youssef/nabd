@@ -8,6 +8,7 @@ import { deviceCopy } from '../../device/copy'
 import { useNotificationSettings } from '../../device/useNotificationSettings'
 import { requestPrayerReschedule, setPrayerAlarmSyncOutcome } from '../../device/prayerAlarms'
 import { logger } from '../../observability/logger'
+import { useBackup, type BackupPreview } from '../../backup/useBackup'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 import { useWirdRepository } from '../../wird/useWirdRepository'
 
@@ -26,6 +27,7 @@ jest.mock('../../device/prayerAlarms', () => ({
   ...jest.requireActual('../../device/prayerAlarms'),
   requestPrayerReschedule: jest.fn(),
 }))
+jest.mock('../../backup/useBackup', () => ({ useBackup: jest.fn() }))
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null, Check: () => null }))
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: {
@@ -53,6 +55,7 @@ const mockedUseWirdRepository = useWirdRepository as jest.MockedFunction<typeof 
 const mockedUseNotificationSettings = useNotificationSettings as jest.MockedFunction<
   typeof useNotificationSettings
 >
+const mockedUseBackup = useBackup as jest.MockedFunction<typeof useBackup>
 
 const readPreference = jest.fn()
 const writePreference = jest.fn()
@@ -86,6 +89,32 @@ const notificationSettings = {
   setSilentMode: setNotificationSilentMode,
   runAction: runNotificationAction,
 } as unknown as ReturnType<typeof useNotificationSettings>
+
+const backupCounts = {
+  onboarding_state: 0,
+  wird_versions: 0,
+  wird_entries: 0,
+  qada_events: 0,
+  adhkar_flow_progress: 0,
+  app_preferences: 1,
+}
+const backupPreview = {
+  backup: {
+    formatVersion: 1 as const,
+    schemaVersion: 1,
+    exportedAt: '2026-10-18T10:00:00.000Z',
+    data: {
+      onboarding_state: [],
+      wird_versions: [],
+      wird_entries: [],
+      qada_events: [],
+      adhkar_flow_progress: [],
+      app_preferences: [],
+    },
+  },
+  counts: backupCounts,
+} satisfies BackupPreview
+const confirmRestore = jest.fn(async () => ({ ok: true as const, value: backupCounts }))
 
 describe('SettingsRoute', () => {
   beforeEach(() => {
@@ -131,6 +160,15 @@ describe('SettingsRoute', () => {
     setNotificationSilentMode.mockResolvedValue(undefined)
     runNotificationAction.mockResolvedValue(undefined)
     mockedUseNotificationSettings.mockReturnValue(notificationSettings)
+    mockedUseBackup.mockReturnValue({
+      cancelRestore: jest.fn(),
+      chooseFile: jest.fn(),
+      confirmRestore,
+      exportBackup: jest.fn(),
+      isBusy: false,
+      preview: backupPreview,
+      status: null,
+    })
     mockedUseWirdRepository.mockReturnValue({
       listVersions: jest.fn(async () => [
         {
@@ -224,6 +262,20 @@ describe('SettingsRoute', () => {
       ),
     )
     expect(requestPrayerReschedule).not.toHaveBeenCalled()
+  })
+
+  it('remounts settings state after a successful backup restore', async () => {
+    render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('backup-preview')).toBeTruthy())
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('backup-confirm'))
+    })
+
+    await waitFor(() => expect(mockedUseNotificationSettings.mock.calls.length).toBeGreaterThan(1))
+    await waitFor(() => expect(screen.getByTestId('settings-screen')).toBeTruthy())
+    expect(confirmRestore).toHaveBeenCalledTimes(1)
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
   })
 
   it('renders the notification controls in the settings section', async () => {

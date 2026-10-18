@@ -109,6 +109,20 @@ function ActionButton({
 }
 
 export function SettingsRoute() {
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  return (
+    <SettingsContent
+      key={refreshKey}
+      onRestored={() => {
+        requestPrayerReschedule()
+        setRefreshKey((current) => current + 1)
+      }}
+    />
+  )
+}
+
+function SettingsContent({ onRestored }: { onRestored: () => void }) {
   const database = useSQLiteContext()
   const router = useRouter()
   const { setColorScheme } = useColorScheme()
@@ -452,7 +466,7 @@ export function SettingsRoute() {
             </Pressable>
           ))}
         </View>
-        <BackupSection />
+        <BackupSection onRestored={onRestored} />
       </View>
     </ScreenContainer>
   )
