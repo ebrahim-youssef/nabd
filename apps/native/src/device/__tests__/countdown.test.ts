@@ -57,7 +57,7 @@ describe('countdown state', () => {
 })
 
 describe('countdown boundaries', () => {
-  it('calculates the next two boundaries by local calendar date across spring-forward', () => {
+  it('calculates a month of boundaries by local calendar date across spring-forward', () => {
     const originalTimeZone = process.env.TZ
     process.env.TZ = 'America/New_York'
     try {
@@ -67,7 +67,8 @@ describe('countdown boundaries', () => {
         ...new Set(result.map((boundary) => new Date(boundary.at).toLocaleDateString('en-CA'))),
       ]
 
-      expect(dates).toHaveLength(3)
+      expect(dates).toHaveLength(30)
+      expect(dates.slice(0, 3)).toEqual(['2027-03-13', '2027-03-14', '2027-03-15'])
       expect(new Date(result[6].at).getTime() - new Date(result[0].at).getTime()).not.toBe(
         24 * 60 * 60 * 1000,
       )
