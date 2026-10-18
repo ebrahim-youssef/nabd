@@ -8,9 +8,12 @@ import {
 
 const COORDINATES = { latitude: 30.0444, longitude: 31.2357 }
 
-function createStore(city: string | null = null): jest.Mocked<CityPreferenceStore> {
+function createStore(
+  city: string | null = null,
+  coordinatesKey: string | null = null,
+): jest.Mocked<CityPreferenceStore> {
   return {
-    read: jest.fn().mockResolvedValue(city),
+    read: jest.fn(async (key) => (key === PREFERENCE_KEYS.city ? city : coordinatesKey)),
     write: jest.fn().mockResolvedValue(undefined),
   }
 }
@@ -41,6 +44,28 @@ describe('reverse geocode city lookup', () => {
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
     expect(store.write).toHaveBeenCalledWith(PREFERENCE_KEYS.city, 'القاهرة', 1234)
+    expect(store.write).toHaveBeenCalledWith(PREFERENCE_KEYS.cityCoordinates, '30.04,31.24', 1234)
+  })
+
+  it('returns the cached city without a request when the rounded location is unchanged', async () => {
+    const store = createStore('القاهرة', '30.04,31.24')
+    jest.spyOn(global, 'fetch')
+
+    await expect(resolveCityLabel(COORDINATES, true, store, 1234)).resolves.toBe('القاهرة')
+
+    expect(fetch).not.toHaveBeenCalled()
+    expect(store.write).not.toHaveBeenCalled()
+  })
+
+  it('looks the city up again after the location moves', async () => {
+    const store = createStore('الإسكندرية', '31.20,29.92')
+    jest.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => ({ city: 'القاهرة' }),
+    } as Response)
+
+    await expect(resolveCityLabel(COORDINATES, true, store, 1234)).resolves.toBe('القاهرة')
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('returns the cached city and logs when the request times out', async () => {

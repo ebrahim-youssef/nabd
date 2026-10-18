@@ -7,9 +7,11 @@ const REVERSE_GEOCODE_ENDPOINT = 'https://api.bigdatacloud.net/data/reverse-geoc
 const COORDINATE_DECIMAL_PLACES = 2
 export const REVERSE_GEOCODE_TIMEOUT_MS = 5_000
 
+type CityPreferenceKey = typeof PREFERENCE_KEYS.city | typeof PREFERENCE_KEYS.cityCoordinates
+
 export type CityPreferenceStore = {
-  read: (key: typeof PREFERENCE_KEYS.city) => Promise<string | null>
-  write: (key: typeof PREFERENCE_KEYS.city, value: string, updatedAt: number) => Promise<void>
+  read: (key: CityPreferenceKey) => Promise<string | null>
+  write: (key: CityPreferenceKey, value: string, updatedAt: number) => Promise<void>
 }
 
 type ReverseGeocodeResponse = {
@@ -23,12 +25,18 @@ function cachedCity(value: string | null): string | null {
   return city ? city : null
 }
 
-async function readCachedCity(preferences: CityPreferenceStore): Promise<string | null> {
+type CachedCity = { city: string | null; coordinatesKey: string | null }
+
+async function readCachedCity(preferences: CityPreferenceStore): Promise<CachedCity> {
   try {
-    return cachedCity(await preferences.read(PREFERENCE_KEYS.city))
+    const [city, coordinatesKey] = await Promise.all([
+      preferences.read(PREFERENCE_KEYS.city),
+      preferences.read(PREFERENCE_KEYS.cityCoordinates),
+    ])
+    return { city: cachedCity(city), coordinatesKey }
   } catch (cause: unknown) {
     logger.warn('Reverse geocode city cache read failed', { operation: 'read', error: cause })
-    return null
+    return { city: null, coordinatesKey: null }
   }
 }
 
@@ -49,9 +57,12 @@ export async function resolveCityLabel(
 ): Promise<string | null> {
   if (!countdownEnabled) return null
 
-  const cached = await readCachedCity(preferences)
   const latitude = coordinates.latitude.toFixed(COORDINATE_DECIMAL_PLACES)
   const longitude = coordinates.longitude.toFixed(COORDINATE_DECIMAL_PLACES)
+  const coordinatesKey = `${latitude},${longitude}`
+  const { city: cached, coordinatesKey: cachedCoordinatesKey } = await readCachedCity(preferences)
+  // ADR-0009 Amendment 1: coordinates leave the device once per place, not on every sync.
+  if (cached && cachedCoordinatesKey === coordinatesKey) return cached
   const controller = new AbortController()
   let timedOut = false
   let timeoutId: ReturnType<typeof setTimeout> | undefined
@@ -98,6 +109,7 @@ export async function resolveCityLabel(
 
     try {
       await preferences.write(PREFERENCE_KEYS.city, city, updatedAt)
+      await preferences.write(PREFERENCE_KEYS.cityCoordinates, coordinatesKey, updatedAt)
     } catch (cause: unknown) {
       logger.warn('Reverse geocode city cache write failed', { operation: 'write', error: cause })
     }
