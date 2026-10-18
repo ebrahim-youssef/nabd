@@ -48,7 +48,7 @@ function prayerAlarmSignature(
   })
 }
 
-function selectedMethod(value: string | null): CalculationMethodId {
+export function selectedMethod(value: string | null): CalculationMethodId {
   return isCalculationMethodId(value) ? value : DEFAULT_METHOD_ID
 }
 

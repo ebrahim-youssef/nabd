@@ -3,6 +3,7 @@ import { join } from 'node:path'
 
 const DEVICE_SOURCE_DIRECTORY = join(__dirname, '..')
 const TEST_DIRECTORY = join(__dirname, '__tests__')
+const SCOPED_REVERSE_GEOCODE_FILE = join(DEVICE_SOURCE_DIRECTORY, 'reverseGeocode.ts')
 const NETWORK_CLIENT_MODULES = new Set([
   'axios',
   'got',
@@ -37,11 +38,11 @@ describe('device privacy boundary', () => {
     expect(importedNetworkClients).toEqual([])
   })
 
-  it('does not call a global network client from device source', () => {
+  it('limits global network access to the ADR-scoped reverse geocoder', () => {
     const networkClientFiles = nonTestSourceFiles().filter((path) =>
       GLOBAL_NETWORK_API_PATTERN.test(readFileSync(path, 'utf8')),
     )
 
-    expect(networkClientFiles).toEqual([])
+    expect(networkClientFiles).toEqual([SCOPED_REVERSE_GEOCODE_FILE])
   })
 })

@@ -34,6 +34,18 @@ class NabdDeviceModule : Module() {
       }
     }
 
+    Function("setCountdown") { payloadJson: String ->
+      CountdownNotificationService.set(context, payloadJson)
+    }
+
+    Function("clearCountdown") {
+      CountdownNotificationService.clear(context)
+    }
+
+    Function("getCountdownStatus") {
+      CountdownNotificationService.status(context)
+    }
+
     Function("isIgnoringBatteryOptimizations") {
       val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
       powerManager.isIgnoringBatteryOptimizations(context.packageName)
