@@ -45,8 +45,7 @@ object CountdownFormatter {
   fun format(payloadJson: String, now: Long, apiLevel: Int): CountdownNotificationContent? {
     val payload = parsePayload(payloadJson) ?: return null
     val sorted = payload.boundaries.sortedBy { it.at }
-    val lastBoundary = sorted.lastOrNull() ?: return null
-    if (lastBoundary.at <= now) return null
+    if (sorted.isEmpty()) return null
 
     for (point in sorted.asReversed()) {
       if (point.at <= now && now - point.at < AFTER_WINDOW_MS) {

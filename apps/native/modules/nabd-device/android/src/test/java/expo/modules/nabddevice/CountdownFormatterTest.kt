@@ -58,10 +58,17 @@ class CountdownFormatterTest {
   }
 
   @Test
-  fun returnsNullWhenTheLastBoundaryIsPast() {
-    val payload = payload(boundary("العشاء", now - 1L))
+  fun returnsNullOnceTheLastBoundaryLeavesTheSinceWindow() {
+    val payload = payload(boundary("العشاء", now - 30 * MINUTE_MS))
 
     assertNull(CountdownFormatter.format(payload, now, API_23))
+  }
+
+  @Test
+  fun keepsSinceTextForTheLastBoundaryOfThePayload() {
+    val payload = payload(boundary("العشاء", now - 10 * MINUTE_MS))
+
+    assertEquals("أذّن العشاء منذ ١٠ دقيقة", CountdownFormatter.format(payload, now, API_23)?.text)
   }
 
   @Test
