@@ -1,11 +1,15 @@
 package expo.modules.nabddevice
 
 import android.app.AlarmManager
+import android.content.ActivityNotFoundException
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Settings
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -40,6 +44,22 @@ class NabdDeviceModule : Module() {
 
     Function("getCountdownStatus") {
       CountdownNotificationService.status(context)
+    }
+
+    Function("isIgnoringBatteryOptimizations") {
+      val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
+      powerManager.isIgnoringBatteryOptimizations(context.packageName)
+    }
+
+    Function("requestIgnoreBatteryOptimizations") {
+      val packageUri = Uri.parse("package:${context.packageName}")
+      when {
+        startBatteryOptimizationIntent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, packageUri) ->
+          "exemptionDialog"
+        startBatteryOptimizationIntent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS) ->
+          "settingsList"
+        else -> "none"
+      }
     }
 
     OnCreate {
@@ -78,5 +98,20 @@ class NabdDeviceModule : Module() {
     timeChangeReceiver = null
     val reactContext = appContext.reactContext ?: return
     reactContext.unregisterReceiver(receiver)
+  }
+
+  private fun startBatteryOptimizationIntent(action: String, data: Uri? = null): Boolean {
+    return try {
+      val intent = Intent(action).apply {
+        if (data != null) this.data = data
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+      }
+      context.startActivity(intent)
+      true
+    } catch (_: ActivityNotFoundException) {
+      false
+    } catch (_: SecurityException) {
+      false
+    }
   }
 }

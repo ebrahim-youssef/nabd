@@ -50,7 +50,16 @@
           "resizeMode": "contain"
         }
       ],
-      "./plugins/withNabdAlarms"
+      "./plugins/withNabdAlarms",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      "expo-sharing"
     ],
     "android": {
       "package": "com.nabd.app",

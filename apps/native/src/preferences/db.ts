@@ -15,6 +15,7 @@ export const PREFERENCE_KEYS = {
   locationRecordedAt: 'nabd:cached-location-recorded-at',
   notificationPrefs: 'nabd:notification-prefs',
   silentMode: 'nabd:notification-silent-mode',
+  countdownEnabled: 'nabd:notification-countdown-enabled',
   theme: 'nabd:theme',
 } as const
 
