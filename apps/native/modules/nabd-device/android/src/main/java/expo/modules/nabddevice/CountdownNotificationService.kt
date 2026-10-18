@@ -27,7 +27,10 @@ private const val RESULT_PERMISSION_DENIED = "permission-denied"
 private const val RESULT_CHANNEL_BLOCKED = "channel-blocked"
 private const val RESULT_INVALID = "invalid"
 
+// One lock for set, clear, status and the worker refresh, so a refresh that already read the
+// payload cannot post after clear() has run.
 object CountdownNotificationService {
+  @Synchronized
   fun set(context: Context, payloadJson: String): String {
     val now = System.currentTimeMillis()
     if (CountdownFormatter.format(payloadJson, now, Build.VERSION.SDK_INT) == null) {
@@ -43,6 +46,7 @@ object CountdownNotificationService {
     return postStored(context, now)
   }
 
+  @Synchronized
   fun clear(context: Context) {
     WorkManager.getInstance(context).cancelUniqueWork(COUNTDOWN_WORK_NAME)
     NotificationManagerCompat.from(context).cancel(COUNTDOWN_NOTIFICATION_ID)
@@ -52,6 +56,7 @@ object CountdownNotificationService {
       .apply()
   }
 
+  @Synchronized
   fun status(context: Context): String {
     val payload = storedPayload(context) ?: run {
       clear(context)
@@ -65,6 +70,7 @@ object CountdownNotificationService {
     return notificationAccess(context)
   }
 
+  @Synchronized
   fun refresh(context: Context) {
     val result = postStored(context, System.currentTimeMillis())
     if (result == RESULT_INVALID) clear(context)
@@ -90,6 +96,8 @@ object CountdownNotificationService {
     val builder = NotificationCompat.Builder(context, COUNTDOWN_CHANNEL_ID)
       .setSmallIcon(context.applicationInfo.icon)
       .setOngoing(true)
+      // Channels set importance from Android 8; before that the builder priority applies.
+      .setPriority(NotificationCompat.PRIORITY_LOW)
       .setOnlyAlertOnce(true)
       .setSilent(true)
       .setShowWhen(content.whenMillis != null)
