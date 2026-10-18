@@ -1,16 +1,15 @@
 import {
-  QUESTIONS,
   WIRD_LEVELS,
   isDayId,
-  isComplete,
   levelById,
   type Answers,
   type LevelId,
-  type WirdDefinition,
   type WirdVersion,
 } from '@nabd/shared'
 
 import { ONBOARDING_STATE_ID } from './constants'
+import { hasCanonicalAnswers, parseAnswers } from './logic'
+import { parseDefinition } from '../wird/logic'
 
 type SqlValue = string | number | null
 
@@ -64,89 +63,6 @@ const INSERT_ONBOARDING = `INSERT INTO onboarding_state
 const INSERT_WIRD = `INSERT INTO wird_versions
   (id, effective_from, definition_json, created_at)
   VALUES (?, ?, ?, ?)`
-
-function parseAnswers(source: string): Answers | null {
-  try {
-    const value: unknown = JSON.parse(source)
-    if (!value || typeof value !== 'object' || Array.isArray(value)) return null
-    const answers = Object.entries(value).every(
-      ([key, answer]) => typeof key === 'string' && typeof answer === 'string',
-    )
-      ? (value as Answers)
-      : null
-    return answers && hasCanonicalAnswers(answers) ? answers : null
-  } catch {
-    return null
-  }
-}
-
-function hasCanonicalAnswers(answers: Answers): boolean {
-  return Object.keys(answers).length === QUESTIONS.length && isComplete(QUESTIONS, answers)
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function isPositiveInteger(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value > 0
-}
-
-function isWeekday(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 6
-}
-
-function isSchedule(value: unknown): boolean {
-  if (value === undefined) return true
-  if (!isRecord(value)) return false
-  if (value.type === 'daily') return true
-  if (value.type === 'monthly-goal') return isPositiveInteger(value.target)
-  return value.type === 'weekdays' && Array.isArray(value.days) && value.days.every(isWeekday)
-}
-
-function parseDefinition(source: string): WirdDefinition | null {
-  try {
-    const value: unknown = JSON.parse(source)
-    if (!isRecord(value) || !Array.isArray(value.areas) || !Array.isArray(value.items)) return null
-    const validAreas = value.areas.every(
-      (area) =>
-        isRecord(area) &&
-        typeof area.id === 'string' &&
-        typeof area.label === 'string' &&
-        typeof area.order === 'number' &&
-        Number.isFinite(area.order),
-    )
-    const areaIds = new Set(
-      value.areas.filter(isRecord).map((area) => (typeof area.id === 'string' ? area.id : '')),
-    )
-    const validItems = value.items.every((item) => {
-      if (
-        !isRecord(item) ||
-        typeof item.id !== 'string' ||
-        typeof item.areaId !== 'string' ||
-        !areaIds.has(item.areaId) ||
-        typeof item.label !== 'string' ||
-        (item.kind !== 'checkbox' && item.kind !== 'counter') ||
-        !isSchedule(item.schedule)
-      ) {
-        return false
-      }
-      if (item.kind === 'counter' && !isPositiveInteger(item.target)) return false
-      if (item.target !== undefined && !isPositiveInteger(item.target)) return false
-      if (item.optional !== undefined && typeof item.optional !== 'boolean') return false
-      if (item.minimum !== undefined && typeof item.minimum !== 'string') return false
-      return (
-        item.targetDays === undefined ||
-        (Array.isArray(item.targetDays) && item.targetDays.every(isWeekday))
-      )
-    })
-    return validAreas && areaIds.size === value.areas.length && validItems
-      ? (value as WirdDefinition)
-      : null
-  } catch {
-    return null
-  }
-}
 
 function parsePersisted(
   row: OnboardingRow | null,

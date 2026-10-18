@@ -58,7 +58,8 @@
           "recordAudioAndroid": false,
           "enableBackgroundPlayback": false
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "android": {
       "package": "com.nabd.app",
