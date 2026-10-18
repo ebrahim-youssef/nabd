@@ -58,6 +58,8 @@ export function useSoundPreview() {
             resetAfterError(activePreview, new Error(status.error))
           }
           if (status.didJustFinish && activePreviewRef.current === activePreview) {
+            activePreviewRef.current = null
+            releasePreview(activePreview)
             setCurrentId(null)
           }
         })

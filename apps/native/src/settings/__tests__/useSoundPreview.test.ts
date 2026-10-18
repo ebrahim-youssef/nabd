@@ -110,7 +110,7 @@ describe('useSoundPreview', () => {
     expect(players[0].release).toHaveBeenCalledTimes(1)
   })
 
-  it('returns to idle when the preview plays to the end', async () => {
+  it('returns to idle and releases the player when the preview plays to the end', async () => {
     const { result } = await renderHook(() => useSoundPreview())
     await act(async () => {
       result.current.play('iqama')
@@ -124,6 +124,7 @@ describe('useSoundPreview', () => {
     await act(async () => statusListener({ error: null, didJustFinish: true }))
 
     expect(result.current.currentId).toBeNull()
+    expect(players[0].release).toHaveBeenCalledTimes(1)
   })
 
   it('configures foreground playback that follows the phone silent setting', async () => {
