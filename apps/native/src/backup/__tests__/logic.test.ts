@@ -1,4 +1,5 @@
 import { CURRENT_SCHEMA_VERSION } from '../../db/database'
+import { WIRD_LEVELS } from '@nabd/shared'
 import {
   BACKUP_TABLES,
   BACKUP_FORMAT_VERSION,
@@ -15,7 +16,7 @@ const rows: BackupRows = {
   onboarding_state: [
     {
       id: 1,
-      answers_json: '{"q1":"often"}',
+      answers_json: JSON.stringify({ prayers: 'always', quran: 'hizb', adhkar: 'daily' }),
       selected_level_id: 'level-1',
       completed_at: 1_700_000_000_000,
       effective_from: '2026-10-18',
@@ -26,7 +27,7 @@ const rows: BackupRows = {
     {
       id: 'version-1',
       effective_from: '2026-10-18',
-      definition_json: '{"areas":[],"items":[]}',
+      definition_json: JSON.stringify(WIRD_LEVELS[0].wird),
       created_at: 1_700_000_000_000,
     },
   ],
@@ -129,6 +130,52 @@ describe('backup logic', () => {
 
     expect(parseBackup(text)).toEqual({ ok: false, error: 'invalid_row:wird_entries' })
   })
+
+  it.each([
+    ['an empty definition', '{}'],
+    ['items that are not an array', JSON.stringify({ areas: [], items: {} })],
+  ])('rejects %s', (_description, definitionJson) => {
+    const text = serializedBackup((value) => {
+      const versions = (value.data as Record<string, unknown>).wird_versions as Record<
+        string,
+        unknown
+      >[]
+      versions[0].definition_json = definitionJson
+    })
+
+    expect(parseBackup(text)).toEqual({ ok: false, error: 'invalid_row:wird_versions' })
+  })
+
+  it('rejects a definition with an item missing its id', () => {
+    const text = serializedBackup((value) => {
+      const versions = (value.data as Record<string, unknown>).wird_versions as Record<
+        string,
+        unknown
+      >[]
+      const definition = JSON.parse(String(versions[0].definition_json)) as {
+        items: Record<string, unknown>[]
+      }
+      delete definition.items[0].id
+      versions[0].definition_json = JSON.stringify(definition)
+    })
+
+    expect(parseBackup(text)).toEqual({ ok: false, error: 'invalid_row:wird_versions' })
+  })
+
+  it.each(['{', '{}', JSON.stringify({ prayers: 'always', quran: 'hizb', unknown: 'daily' })])(
+    'rejects malformed answers JSON %s',
+    (answersJson) => {
+      const text = serializedBackup((value) => {
+        const onboarding = (value.data as Record<string, unknown>).onboarding_state as Record<
+          string,
+          unknown
+        >[]
+        onboarding[0].answers_json = answersJson
+      })
+
+      expect(parseBackup(text)).toEqual({ ok: false, error: 'invalid_row:onboarding_state' })
+    },
+  )
 
   it('rejects text over the raw byte cap before parsing it', () => {
     expect(parseBackup('x'.repeat(BACKUP_MAX_BYTES + 1))).toEqual({

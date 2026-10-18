@@ -1,5 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
+import { WIRD_LEVELS } from '@nabd/shared'
 
 import { createBackupRepository } from '../db'
 import { serializeBackup, type BackupRows } from '../logic'
@@ -131,13 +132,23 @@ describe('useBackup', () => {
     const deviceRows: BackupRows = {
       ...emptyRows,
       wird_versions: [
-        { id: 'version-1', effective_from: '2026-10-18', definition_json: '{}', created_at: 1 },
+        {
+          id: 'version-1',
+          effective_from: '2026-10-18',
+          definition_json: JSON.stringify(WIRD_LEVELS[0].wird),
+          created_at: 1,
+        },
       ],
     }
     const conflictingRows: BackupRows = {
       ...emptyRows,
       wird_versions: [
-        { id: 'version-1', effective_from: '2026-10-18', definition_json: '{}', created_at: 2 },
+        {
+          id: 'version-1',
+          effective_from: '2026-10-18',
+          definition_json: JSON.stringify(WIRD_LEVELS[0].wird),
+          created_at: 2,
+        },
       ],
     }
     mockedPickBackupText.mockResolvedValue({

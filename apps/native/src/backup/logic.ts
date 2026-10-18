@@ -1,6 +1,8 @@
 import { QADA_PRAYERS, WIRD_LEVELS, isDayId, type Result } from '@nabd/shared'
 
 import { CURRENT_SCHEMA_VERSION } from '../db/database'
+import { parseAnswers } from '../onboarding/logic'
+import { parseDefinition } from '../wird/logic'
 import type { BackupEnvelope, BackupRows, BackupTable, RestorePlan } from './types'
 
 export const BACKUP_FORMAT_VERSION = 1
@@ -79,15 +81,6 @@ function isSqliteFlag(value: unknown): value is number {
   return value === SQLITE_TRUE || value === SQLITE_FALSE
 }
 
-function isJsonObjectText(value: unknown): value is string {
-  if (!isNonEmptyString(value)) return false
-  try {
-    return isRecord(JSON.parse(value))
-  } catch {
-    return false
-  }
-}
-
 function isIsoDate(value: unknown): value is string {
   return typeof value === 'string' && ISO_DATE_PATTERN.test(value)
 }
@@ -106,7 +99,8 @@ function isValidRow(table: BackupTable, row: RecordValue): boolean {
   if (table === 'onboarding_state') {
     return (
       row.id === ONBOARDING_STATE_ID &&
-      isJsonObjectText(row.answers_json) &&
+      typeof row.answers_json === 'string' &&
+      parseAnswers(row.answers_json) !== null &&
       isKnownLevel(row.selected_level_id) &&
       isInteger(row.completed_at) &&
       isDayId(row.effective_from as string) &&
@@ -117,7 +111,8 @@ function isValidRow(table: BackupTable, row: RecordValue): boolean {
     return (
       isNonEmptyString(row.id) &&
       isDayId(row.effective_from as string) &&
-      isJsonObjectText(row.definition_json) &&
+      typeof row.definition_json === 'string' &&
+      parseDefinition(row.definition_json) !== null &&
       isInteger(row.created_at)
     )
   }

@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import { WIRD_LEVELS } from '@nabd/shared'
 
 import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
@@ -14,7 +15,7 @@ const rows: BackupRows = {
   onboarding_state: [
     {
       id: 1,
-      answers_json: '{"q1":"often"}',
+      answers_json: JSON.stringify({ prayers: 'always', quran: 'hizb', adhkar: 'daily' }),
       selected_level_id: 'level-1',
       completed_at: 1_760_000_000_000,
       effective_from: '2026-10-18',
@@ -25,7 +26,7 @@ const rows: BackupRows = {
     {
       id: 'version-1',
       effective_from: '2026-10-18',
-      definition_json: '{"areas":[],"items":[]}',
+      definition_json: JSON.stringify(WIRD_LEVELS[0].wird),
       created_at: 1_760_000_000_000,
     },
   ],
