@@ -3,5 +3,7 @@ export const NATIVE_SETTINGS_COPY = {
   notifications: {
     silentTitle: 'التنبيه ولو كان الجهاز صامتًا',
     silentBody: 'يشغّل الأذان عبر قناة المنبّه فيُسمع رغم الوضع الصامت أو الاهتزاز.',
+    countdownTitle: 'إشعار العدّ التنازلي الدائم',
+    countdownBody: 'إشعار مستمر يعرض ما مضى على الصلاة السابقة والوقت الباقي للصلاة التالية.',
   },
 } as const
