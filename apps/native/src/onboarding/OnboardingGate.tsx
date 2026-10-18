@@ -10,6 +10,7 @@ import {
   type LevelId,
 } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
+import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
@@ -17,10 +18,16 @@ import { Text } from '../shell/Text'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { HomeScreen } from '../home/HomeScreen'
 import { logger } from '../observability/logger'
+import { useBatteryOptimization } from '../device/useBatteryOptimization'
+import { useLocationCapability } from '../device/useLocationCapability'
+import { useNotificationSettings } from '../device/useNotificationSettings'
 import { ONBOARDING_COPY } from './constants'
 import { createOnboardingRepository, type PersistedOnboarding } from './db'
+import { OnboardingButton } from './OnboardingButton'
+import { PermissionsStep } from './PermissionsStep'
+import { PowerStep } from './PowerStep'
 
-type Screen = 'welcome' | 'questions' | 'level'
+type Screen = 'welcome' | 'questions' | 'level' | 'permissions' | 'power'
 type GateState =
   | { status: 'loading' }
   | { status: 'ready'; persisted: PersistedOnboarding | null }
@@ -28,29 +35,17 @@ type GateState =
 
 const LEVEL_VERSION_PREFIX = 'initial-wird-'
 
-type ButtonProps = {
-  label: string
-  onPress: () => void
-  disabled?: boolean
-  testID?: string
+type DeviceSetup = {
+  battery: ReturnType<typeof useBatteryOptimization>
+  location: ReturnType<typeof useLocationCapability>
+  notifications: ReturnType<typeof useNotificationSettings>
 }
 
-function Button({ label, onPress, disabled = false, testID }: ButtonProps) {
-  return (
-    <Pressable
-      accessibilityLabel={label}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      className={`mt-6 rounded-button bg-primary px-5 py-4 ${disabled ? 'opacity-50' : ''}`}
-      disabled={disabled}
-      onPress={onPress}
-      testID={testID}
-    >
-      <Text className="text-body text-center font-body-medium text-primary-foreground">
-        {label}
-      </Text>
-    </Pressable>
-  )
+function OnboardingDeviceSetup({ children }: { children: (setup: DeviceSetup) => ReactNode }) {
+  const battery = useBatteryOptimization()
+  const location = useLocationCapability()
+  const notifications = useNotificationSettings()
+  return children({ battery, location, notifications })
 }
 
 function LoadingState() {
@@ -101,7 +96,10 @@ export function OnboardingGate({ now }: { now: () => Date }) {
     return (
       <ScreenContainer testID="gate-error">
         <Text className="text-body text-start text-foreground">{SHARED_COPY.seedError}</Text>
-        <Button label={ONBOARDING_COPY.retry} onPress={() => setGate({ status: 'loading' })} />
+        <OnboardingButton
+          label={ONBOARDING_COPY.retry}
+          onPress={() => setGate({ status: 'loading' })}
+        />
       </ScreenContainer>
     )
   }
@@ -133,7 +131,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
             </View>
           ))}
         </View>
-        <Button
+        <OnboardingButton
           label={SHARED_COPY.welcomeStart}
           onPress={() => setScreen('questions')}
           testID="onboarding-begin"
@@ -186,7 +184,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
             </View>
           ))}
         </View>
-        <Button
+        <OnboardingButton
           disabled={!answered}
           label={SHARED_COPY.submit}
           onPress={() => {
@@ -224,6 +222,41 @@ export function OnboardingGate({ now }: { now: () => Date }) {
     }
   }
 
+  if (screen === 'permissions') {
+    return (
+      <OnboardingDeviceSetup>
+        {({ battery, location, notifications }) => (
+          <ScreenContainer testID="onboarding-permissions-screen">
+            <PermissionsStep
+              location={location}
+              notifications={notifications}
+              isFinalStep={battery.status !== 'optimized'}
+              onContinue={() => {
+                if (battery.status === 'optimized') {
+                  setScreen('power')
+                  return
+                }
+                void complete()
+              }}
+            />
+          </ScreenContainer>
+        )}
+      </OnboardingDeviceSetup>
+    )
+  }
+
+  if (screen === 'power') {
+    return (
+      <OnboardingDeviceSetup>
+        {({ battery }) => (
+          <ScreenContainer testID="onboarding-power-screen">
+            <PowerStep onRequest={battery.request} onFinish={() => void complete()} />
+          </ScreenContainer>
+        )}
+      </OnboardingDeviceSetup>
+    )
+  }
+
   return (
     <ScreenContainer testID="onboarding-level">
       <Text accessibilityRole="header" className="font-display text-title text-start text-primary">
@@ -257,10 +290,10 @@ export function OnboardingGate({ now }: { now: () => Date }) {
           )
         })}
       </View>
-      <Button
+      <OnboardingButton
         disabled={submitting}
-        label={submitting ? ONBOARDING_COPY.loading : SHARED_COPY.finish}
-        onPress={() => void complete()}
+        label={submitting ? ONBOARDING_COPY.loading : SHARED_COPY.confirm}
+        onPress={() => setScreen('permissions')}
         testID="onboarding-confirm"
       />
     </ScreenContainer>

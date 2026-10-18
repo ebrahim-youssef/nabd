@@ -1,6 +1,7 @@
 import { deviceCopy } from './copy'
 import type {
   DevicePermission,
+  BatteryOptimizationStatus,
   ExactAlarmSnapshot,
   ExactAlarmStatus,
   LocationAction,
@@ -15,6 +16,8 @@ import type {
 
 export { deviceCopy }
 export type {
+  BatteryOptimizationRequestResult,
+  BatteryOptimizationStatus,
   ConnectivityState,
   CoordinateCacheState,
   GpsState,
@@ -43,6 +46,12 @@ export function mapDevicePermission(response: DevicePermissionResponse): DeviceP
   if (response.status === 'granted') return 'granted'
   if (response.status === 'undetermined') return 'undetermined'
   return response.canAskAgain ? 'denied' : 'blocked'
+}
+
+export function mapBatteryOptimizationStatus(value: unknown): BatteryOptimizationStatus {
+  if (value === true) return 'exempt'
+  if (value === false) return 'optimized'
+  return 'unsupported'
 }
 
 const actionLabels: Record<LocationActionType, string> = {
