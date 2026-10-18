@@ -16,14 +16,9 @@ import {
   PREFERENCE_KEYS,
 } from '../preferences/db'
 import { createDeviceRepository } from './db'
-import { readExactAlarmSnapshot, subscribeTimeChange } from './exactAlarm'
 import { isExactAlarmSchedulingAllowed } from './logic'
-import {
-  cancelPrayerAlarms,
-  configureForegroundHandler,
-  readNotificationPermission,
-  replacePrayerAlarms,
-} from './notifications'
+import { configureForegroundHandler, readNotificationPermission } from './notifications'
+import { devicePlatform } from './platform'
 import { buildPrayerSchedule } from './schedule'
 import { setPrayerAlarmSyncOutcome, subscribePrayerReschedule } from './prayerAlarms'
 import type { ExactAlarmAccess } from './types'
@@ -64,7 +59,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
   const performSync = useCallback(async (): Promise<void> => {
     try {
       const currentTime = now()
-      const initialExactAlarm = readExactAlarmSnapshot()
+      const initialExactAlarm = devicePlatform.readExactTimingStatus()
       const [permission, storedPrefs, storedSilentMode, storedMethod, location] = await Promise.all(
         [
           readNotificationPermission(),
@@ -79,14 +74,17 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
       const methodId = selectedMethod(storedMethod)
 
       if (permission !== 'granted' || !notificationPrefs.enabled || location === null) {
-        await cancelPrayerAlarms()
+        await devicePlatform.cancelPrayerAlerts()
         lastAppliedSignatureRef.current = null
         setPrayerAlarmSyncOutcome('ok')
         return
       }
 
-      if (!isExactAlarmSchedulingAllowed(initialExactAlarm)) {
-        await cancelPrayerAlarms()
+      if (
+        initialExactAlarm === 'unsupported' ||
+        !isExactAlarmSchedulingAllowed(initialExactAlarm)
+      ) {
+        await devicePlatform.cancelPrayerAlerts()
         lastAppliedSignatureRef.current = null
         setPrayerAlarmSyncOutcome('degraded')
         return
@@ -98,9 +96,12 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
         notificationPrefs,
         now: currentTime,
       })
-      const currentExactAlarm = readExactAlarmSnapshot()
-      if (!isExactAlarmSchedulingAllowed(currentExactAlarm)) {
-        await cancelPrayerAlarms()
+      const currentExactAlarm = devicePlatform.readExactTimingStatus()
+      if (
+        currentExactAlarm === 'unsupported' ||
+        !isExactAlarmSchedulingAllowed(currentExactAlarm)
+      ) {
+        await devicePlatform.cancelPrayerAlerts()
         lastAppliedSignatureRef.current = null
         setPrayerAlarmSyncOutcome('degraded')
         return
@@ -112,7 +113,14 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
         return
       }
 
-      await replacePrayerAlarms(alarms, silentMode, currentTime)
+      const preparation = await devicePlatform.prepareNotificationDelivery()
+      if (preparation === 'unsupported') {
+        await devicePlatform.cancelPrayerAlerts()
+        lastAppliedSignatureRef.current = null
+        setPrayerAlarmSyncOutcome('degraded')
+        return
+      }
+      await devicePlatform.schedulePrayerAlerts(alarms, silentMode, currentTime)
       lastAppliedSignatureRef.current = signature
       setPrayerAlarmSyncOutcome('ok')
     } catch (cause: unknown) {
@@ -162,7 +170,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
     const unsubscribe = subscribePrayerReschedule(() => {
       void sync()
     })
-    const unsubscribeTimeChange = subscribeTimeChange(() => {
+    const unsubscribeTimeChange = devicePlatform.subscribeToClockChanges(() => {
       void sync()
     })
 

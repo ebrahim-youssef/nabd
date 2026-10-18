@@ -8,16 +8,9 @@ import type { ConnectivityProvider } from './connectivity'
 import { createDeviceRepository } from './db'
 import type { CachedLocation } from './db'
 import { evaluateLocation } from './logic'
+import { devicePlatform } from './platform'
 import { requestPrayerReschedule } from './prayerAlarms'
-import {
-  enableServices,
-  getFix,
-  openAppSettings,
-  openLocationSettings,
-  readPermission,
-  requestPermission,
-  servicesEnabled,
-} from './location'
+import { getFix, readPermission, requestPermission, servicesEnabled } from './location'
 import type {
   ConnectivityState,
   GpsState,
@@ -87,9 +80,9 @@ function currentSnapshot(snapshot: LocationCapabilitySnapshot, connectivity: Con
 }
 
 async function enableServicesOrOpenSettings(): Promise<boolean> {
-  const enabled = await enableServices()
-  if (!enabled) await openLocationSettings()
-  return enabled
+  const enabled = await devicePlatform.enableLocationServices()
+  if (enabled !== true) await devicePlatform.openLocationSettings()
+  return enabled === true
 }
 
 export function useLocationCapability(
@@ -233,7 +226,7 @@ export function useLocationCapability(
 
         try {
           if (action === 'open-app-settings') {
-            await openAppSettings()
+            await devicePlatform.openAppSettings()
             return
           }
 
@@ -245,7 +238,7 @@ export function useLocationCapability(
               }
               return
             }
-            await openLocationSettings()
+            await devicePlatform.openLocationSettings()
             return
           }
 

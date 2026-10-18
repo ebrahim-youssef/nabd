@@ -8,13 +8,12 @@ import {
   parseStoredNotificationPrefs,
   PREFERENCE_KEYS,
 } from '../preferences/db'
-import { clearCountdownNotification, setCountdownNotification } from './countdownNotification'
 import { createDeviceRepository } from './db'
-import { subscribeTimeChange } from './exactAlarm'
+import { devicePlatform } from './platform'
 import { subscribePrayerReschedule } from './prayerAlarms'
 import { resolveCityLabel } from './reverseGeocode'
 import { selectedMethod } from './usePrayerAlarms'
-import type { CountdownNotificationResult } from './countdownNotification'
+import type { CountdownNotificationResult } from './platform'
 
 const COUNTDOWN_ENABLED = '1'
 
@@ -48,7 +47,7 @@ export function useCountdownNotification(
       // The countdown is part of prayer notifications, so the master switch turns it off too.
       const notificationsEnabled = parseStoredNotificationPrefs(storedNotificationPrefs).enabled
       if (enabled !== COUNTDOWN_ENABLED || !notificationsEnabled) {
-        clearCountdownNotification()
+        devicePlatform.clearCountdownNotification()
         setStatus(null)
         return
       }
@@ -58,7 +57,7 @@ export function useCountdownNotification(
         deviceRepository.readLocationCacheState(currentTime),
       ])
       if (location === null) {
-        clearCountdownNotification()
+        devicePlatform.clearCountdownNotification()
         setStatus(null)
         return
       }
@@ -66,7 +65,12 @@ export function useCountdownNotification(
       const coordinates = { latitude: location.latitude, longitude: location.longitude }
       const city = await resolveCityLabel(coordinates, true, preferences, currentTime)
       setStatus(
-        setCountdownNotification(currentTime, coordinates, city, selectedMethod(storedMethod)),
+        devicePlatform.setCountdownNotification(
+          currentTime,
+          coordinates,
+          city,
+          selectedMethod(storedMethod),
+        ),
       )
     } catch (cause: unknown) {
       setStatus('error')
@@ -106,7 +110,7 @@ export function useCountdownNotification(
     const unsubscribe = subscribePrayerReschedule(() => {
       void sync()
     })
-    const unsubscribeTimeChange = subscribeTimeChange(() => {
+    const unsubscribeTimeChange = devicePlatform.subscribeToClockChanges(() => {
       void sync()
     })
 

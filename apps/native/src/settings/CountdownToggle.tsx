@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AppState, Switch, View } from 'react-native'
 
-import {
-  getCountdownNotificationStatus,
-  type CountdownNotificationResult,
-} from '../device/countdownNotification'
+import { devicePlatform, type CountdownNotificationResult } from '../device/platform'
 import { requestPrayerReschedule } from '../device/prayerAlarms'
 import type { NotificationPermission } from '../device/types'
 import { Text } from '../shell/Text'
@@ -25,7 +22,7 @@ export function CountdownToggle({
   const disabled = notificationPermission !== 'granted' || !notificationsEnabled
 
   useEffect(() => {
-    const readStatus = () => setStatus(getCountdownNotificationStatus())
+    const readStatus = () => setStatus(devicePlatform.getCountdownNotificationStatus())
     readStatus()
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') readStatus()

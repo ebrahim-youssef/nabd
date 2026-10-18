@@ -1,5 +1,4 @@
 import { DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@nabd/shared'
-import * as IntentLauncher from 'expo-intent-launcher'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState } from 'react-native'
@@ -12,10 +11,9 @@ import {
   PREFERENCE_KEYS,
 } from '../preferences/db'
 import { createDeviceRepository } from './db'
-import { readExactAlarmSnapshot } from './exactAlarm'
-import { androidPackage, openAppSettings } from './location'
 import { evaluateExactAlarm, evaluateNotificationSettings } from './logic'
 import { readNotificationPermission, requestNotificationPermission } from './notifications'
+import { devicePlatform } from './platform'
 import { requestPrayerReschedule } from './prayerAlarms'
 import type {
   ExactAlarmSnapshot,
@@ -143,11 +141,12 @@ export function useNotificationSettings(
         preferences.read(PREFERENCE_KEYS.silentMode),
         deviceRepository.readLocationCacheState(observedAt),
       ])
+      const exactTiming = devicePlatform.readExactTimingStatus()
       const next: NotificationSettingsState = {
         permission,
         prefs: parseStoredNotificationPrefs(storedPrefs),
         silentMode: parseStoredSilentMode(storedSilentMode),
-        exactAlarm: readExactAlarmSnapshot(),
+        exactAlarm: exactTiming === 'unsupported' ? INITIAL_EXACT_ALARM : exactTiming,
         hasCoordinates: location !== null,
       }
       if (!mountedRef.current || refreshId !== refreshIdRef.current) return
@@ -208,7 +207,7 @@ export function useNotificationSettings(
 
   const openApplicationSettings = useCallback(async (): Promise<void> => {
     try {
-      await openAppSettings()
+      await devicePlatform.openAppSettings()
     } catch (cause: unknown) {
       logger.error('Native notification app settings action failed', cause, {
         action: 'open-app-settings',
@@ -218,16 +217,13 @@ export function useNotificationSettings(
 
   const openExactAlarmSettings = useCallback(async (): Promise<void> => {
     try {
-      await IntentLauncher.startActivityAsync(
-        IntentLauncher.ActivityAction.REQUEST_SCHEDULE_EXACT_ALARM,
-        { data: `package:${androidPackage()}` },
-      )
+      await devicePlatform.openExactTimingSettings()
     } catch (cause: unknown) {
       logger.error('Native exact alarm settings action failed', cause, {
         action: 'open-exact-alarm-settings',
       })
       try {
-        await openAppSettings()
+        await devicePlatform.openAppSettings()
       } catch (fallbackCause: unknown) {
         logger.error('Native notification app settings fallback failed', fallbackCause, {
           action: 'open-app-settings',
