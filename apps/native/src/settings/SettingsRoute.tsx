@@ -34,6 +34,7 @@ import {
 } from '../preferences/theme'
 import { NATIVE_SETTINGS_COPY } from './constants'
 import { useWirdLevel } from '../wird/useWirdLevel'
+import { BackupSection } from '../backup/BackupSection'
 
 type SettingsState = {
   theme: NativeThemePreference
@@ -108,6 +109,20 @@ function ActionButton({
 }
 
 export function SettingsRoute() {
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  return (
+    <SettingsContent
+      key={refreshKey}
+      onRestored={() => {
+        requestPrayerReschedule()
+        setRefreshKey((current) => current + 1)
+      }}
+    />
+  )
+}
+
+function SettingsContent({ onRestored }: { onRestored: () => void }) {
   const database = useSQLiteContext()
   const router = useRouter()
   const { setColorScheme } = useColorScheme()
@@ -451,6 +466,7 @@ export function SettingsRoute() {
             </Pressable>
           ))}
         </View>
+        <BackupSection onRestored={onRestored} />
       </View>
     </ScreenContainer>
   )
