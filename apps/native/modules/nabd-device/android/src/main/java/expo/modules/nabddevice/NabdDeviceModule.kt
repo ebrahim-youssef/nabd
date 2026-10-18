@@ -30,6 +30,18 @@ class NabdDeviceModule : Module() {
       }
     }
 
+    Function("setCountdown") { payloadJson: String ->
+      CountdownNotificationService.set(context, payloadJson)
+    }
+
+    Function("clearCountdown") {
+      CountdownNotificationService.clear(context)
+    }
+
+    Function("getCountdownStatus") {
+      CountdownNotificationService.status(context)
+    }
+
     OnCreate {
       registerTimeChangeReceiver()
     }
