@@ -25,6 +25,8 @@ jest.mock('../../device/useNotificationSettings', () => ({
 }))
 jest.mock('../../device/prayerAlarms', () => ({ requestPrayerReschedule: jest.fn() }))
 jest.mock('../../backup/useBackup', () => ({ useBackup: jest.fn() }))
+const mockSetColorScheme = jest.fn()
+jest.mock('nativewind', () => ({ useColorScheme: () => ({ setColorScheme: mockSetColorScheme }) }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedUseBatteryOptimization = useBatteryOptimization as jest.MockedFunction<
@@ -312,6 +314,7 @@ describe('OnboardingGate', () => {
     await screen.findByTestId('onboarding-welcome')
     expect(mockedRequestPrayerReschedule).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('home-shell')).toBeNull()
+    await waitFor(() => expect(mockSetColorScheme).toHaveBeenCalledWith('system'))
 
     view.unmount()
   })

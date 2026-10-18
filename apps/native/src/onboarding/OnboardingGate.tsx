@@ -10,6 +10,7 @@ import {
   type LevelId,
 } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
+import { useColorScheme } from 'nativewind'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, Pressable, View } from 'react-native'
@@ -25,6 +26,8 @@ import { requestPrayerReschedule } from '../device/prayerAlarms'
 import { BackupImport } from '../backup/BackupSection'
 import { BACKUP_COPY } from '../backup/copy'
 import { useBackup } from '../backup/useBackup'
+import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
+import { readStoredTheme } from '../preferences/theme'
 import { ONBOARDING_COPY } from './constants'
 import { createOnboardingRepository, type PersistedOnboarding } from './db'
 import { OnboardingButton } from './OnboardingButton'
@@ -77,6 +80,17 @@ export function OnboardingGate({ now }: { now: () => Date }) {
   const [submitting, setSubmitting] = useState(false)
   const completionInFlight = useRef(false)
   const backup = useBackup()
+  const { setColorScheme } = useColorScheme()
+
+  // The tabs layout reads the theme once at mount, so a restore must apply it here.
+  async function applyRestoredTheme() {
+    try {
+      const stored = await createPreferencesRepository(database).read(PREFERENCE_KEYS.theme)
+      setColorScheme(readStoredTheme(stored))
+    } catch (cause: unknown) {
+      logger.error('Native restored theme apply failed', cause)
+    }
+  }
 
   useEffect(() => {
     if (gate.status !== 'loading') return
@@ -154,6 +168,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
             importTestID="onboarding-restore"
             onRestored={() => {
               requestPrayerReschedule()
+              void applyRestoredTheme()
               setGate({ status: 'loading' })
             }}
           />

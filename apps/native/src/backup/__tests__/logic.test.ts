@@ -162,6 +162,22 @@ describe('backup logic', () => {
     expect(parseBackup(text)).toEqual({ ok: false, error: 'invalid_row:wird_versions' })
   })
 
+  it('rejects a definition with two items that share an id', () => {
+    const text = serializedBackup((value) => {
+      const versions = (value.data as Record<string, unknown>).wird_versions as Record<
+        string,
+        unknown
+      >[]
+      const definition = JSON.parse(String(versions[0].definition_json)) as {
+        items: Record<string, unknown>[]
+      }
+      definition.items[1].id = definition.items[0].id
+      versions[0].definition_json = JSON.stringify(definition)
+    })
+
+    expect(parseBackup(text)).toEqual({ ok: false, error: 'invalid_row:wird_versions' })
+  })
+
   it.each(['{', '{}', JSON.stringify({ prayers: 'always', quran: 'hizb', unknown: 'daily' })])(
     'rejects malformed answers JSON %s',
     (answersJson) => {

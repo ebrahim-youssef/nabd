@@ -80,7 +80,11 @@ export function parseDefinition(source: string): WirdDefinition | null {
         (Array.isArray(item.targetDays) && item.targetDays.every(isWeekday))
       )
     })
-    return validAreas && areaIds.size === value.areas.length && validItems
+    const itemIds = new Set(value.items.filter(isRecord).map((item) => item.id))
+    return validAreas &&
+      areaIds.size === value.areas.length &&
+      validItems &&
+      itemIds.size === value.items.length
       ? (value as WirdDefinition)
       : null
   } catch {
