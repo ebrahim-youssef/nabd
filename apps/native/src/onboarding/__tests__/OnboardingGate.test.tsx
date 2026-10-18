@@ -34,6 +34,8 @@ const mockedUseNotificationSettings = useNotificationSettings as jest.MockedFunc
 >
 const FIXED_DATE = new Date(2026, 7, 10, 0, 30)
 const NOW = () => FIXED_DATE
+// The first render in this file loads every onboarding module and can exceed the default 1s on CI.
+const COLD_RENDER_TIMEOUT_MS = 10_000
 
 type StateRow = {
   answers_json: string
@@ -151,7 +153,7 @@ describe('OnboardingGate', () => {
       withExclusiveTransactionAsync: jest.fn(),
     }
     const view = await renderGate(loadingDatabase)
-    await screen.findByTestId('onboarding-welcome')
+    await screen.findByTestId('onboarding-welcome', {}, { timeout: COLD_RENDER_TIMEOUT_MS })
     for (const point of ONBOARDING_COPY.welcomePoints) {
       expect(screen.getByText(point)).toBeTruthy()
     }
