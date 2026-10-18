@@ -336,38 +336,52 @@ describe('OnboardingGate', () => {
     view.unmount()
   })
 
-  it('offers retry guidance for denied notifications and still finishes onboarding', async () => {
+  it('enables notifications after a denied retry grants permission', async () => {
     const runAction = jest.fn()
-    mockedUseBatteryOptimization.mockReturnValue({ status: 'exempt', request: jest.fn() })
-    mockedUseNotificationSettings.mockReturnValue({
-      permission: 'denied',
+    let rerender: ReturnType<typeof render>['rerender'] | undefined
+    const deniedNotifications = {
+      permission: 'denied' as 'denied' | 'granted',
       prefs: { ...DEFAULT_NOTIFICATION_PREFS, enabled: false },
       silentMode: false,
       hasCoordinates: true,
       notificationStatus: {
-        state: 'permission-required',
+        state: 'permission-required' as const,
         message: deviceCopy.notifications.permissionRequired,
         action: {
-          type: 'request-notification-permission',
+          type: 'request-notification-permission' as const,
           label: deviceCopy.actions.requestNotificationPermission,
         },
       },
-      exactAlarmStatus: { state: 'not-required', message: '', action: null },
+      exactAlarmStatus: { state: 'not-required' as const, message: '', action: null },
       isPending: jest.fn(() => false),
-      setEnabled: jest.fn(),
+      setEnabled: jest.fn(async (value: boolean) => {
+        if (!value) return
+        deniedNotifications.permission = 'granted'
+        deniedNotifications.prefs.enabled = true
+        rerender?.(<OnboardingGate now={NOW} />)
+      }),
       setMoment: jest.fn(),
       setSilentMode: jest.fn(),
       runAction,
-    })
+    }
+    mockedUseBatteryOptimization.mockReturnValue({ status: 'exempt', request: jest.fn() })
+    mockedUseNotificationSettings.mockReturnValue(deniedNotifications)
     const persisted = createPersistedDatabase()
     const view = await reachPermissions(persisted.database)
+    rerender = view.rerender
 
     expect(screen.getByText(NATIVE_ONBOARDING_COPY.notificationsDenied)).toBeTruthy()
+    expect(screen.getByTestId('onboarding-notifications').props.disabled).toBe(true)
+    expect(screen.getByTestId('onboarding-notifications').props.accessibilityState.disabled).toBe(
+      true,
+    )
     await fireEvent.press(screen.getByTestId('onboarding-notifications-retry'))
-    expect(runAction).toHaveBeenCalledWith('request-notification-permission')
-    await fireEvent.press(screen.getByTestId('onboarding-permissions-continue'))
-    await screen.findByTestId('home-shell')
-    expect(persisted.database.runAsync).toHaveBeenCalledTimes(2)
+    expect(deniedNotifications.setEnabled).toHaveBeenCalledWith(true)
+    expect(runAction).not.toHaveBeenCalled()
+    expect(deniedNotifications.permission).toBe('granted')
+    expect(deniedNotifications.prefs.enabled).toBe(true)
+    expect(screen.getByTestId('onboarding-notification-moments')).toBeTruthy()
+    expect(screen.getAllByRole('switch')).toHaveLength(6)
 
     view.unmount()
   })
@@ -396,6 +410,10 @@ describe('OnboardingGate', () => {
     })
     const view = await reachPermissions(createPersistedDatabase().database)
 
+    expect(screen.getByTestId('onboarding-notifications').props.disabled).toBe(true)
+    expect(screen.getByTestId('onboarding-notifications').props.accessibilityState.disabled).toBe(
+      true,
+    )
     await fireEvent.press(screen.getByTestId('onboarding-notifications-settings'))
     expect(runAction).toHaveBeenCalledWith('open-app-settings')
 

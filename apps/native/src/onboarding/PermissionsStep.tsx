@@ -68,6 +68,7 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
   const showMoments = notifications.permission === 'granted' && notifications.prefs.enabled
   const showDenied = notifications.permission === 'denied'
   const showBlocked = notifications.permission === 'blocked'
+  const notificationsDisabled = showDenied || showBlocked
 
   return (
     <View className="gap-3 rounded-card border border-border bg-surface p-4">
@@ -84,7 +85,11 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
         <Switch
           accessibilityLabel={ONBOARDING_COPY.notificationsToggle}
           accessibilityRole="switch"
-          accessibilityState={{ checked: notifications.prefs.enabled }}
+          accessibilityState={{
+            checked: notifications.prefs.enabled,
+            disabled: notificationsDisabled,
+          }}
+          disabled={notificationsDisabled}
           onValueChange={(value) => void notifications.setEnabled(value)}
           testID="onboarding-notifications"
           value={notifications.prefs.enabled}
@@ -100,7 +105,7 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
           </Text>
           <OnboardingButton
             label={deviceCopy.actions.retry}
-            onPress={() => void notifications.runAction('request-notification-permission')}
+            onPress={() => void notifications.setEnabled(true)}
             testID="onboarding-notifications-retry"
           />
         </>
