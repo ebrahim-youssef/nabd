@@ -79,6 +79,31 @@ describe('BackupSection', () => {
     expect(confirmRestore).toHaveBeenCalledTimes(1)
   })
 
+  it('notifies the owner after a successful restore', async () => {
+    const onRestored = jest.fn()
+    const confirmRestore = jest.fn().mockResolvedValue({ ok: true, value: counts })
+    mockedUseBackup.mockReturnValue(state({ preview, confirmRestore }))
+
+    await render(<BackupSection onRestored={onRestored} />)
+    await fireEvent.press(screen.getByTestId('backup-confirm'))
+
+    expect(onRestored).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not notify the owner after a failed restore', async () => {
+    const onRestored = jest.fn()
+    const confirmRestore = jest.fn().mockResolvedValue({
+      ok: false,
+      error: { reason: 'write_failed' },
+    })
+    mockedUseBackup.mockReturnValue(state({ preview, confirmRestore }))
+
+    await render(<BackupSection onRestored={onRestored} />)
+    await fireEvent.press(screen.getByTestId('backup-confirm'))
+
+    expect(onRestored).not.toHaveBeenCalled()
+  })
+
   it('cancels a preview without writing anything', async () => {
     const cancelRestore = jest.fn()
     const confirmRestore = jest.fn()

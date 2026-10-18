@@ -5,6 +5,12 @@ import { BACKUP_COPY, BACKUP_TABLE_LABELS, backupStatusMessage, countLabel } fro
 import { BACKUP_TABLES } from './logic'
 import { useBackup } from './useBackup'
 
+type BackupImportProps = ReturnType<typeof useBackup> & {
+  importLabel?: string
+  importTestID?: string
+  onRestored?: () => void
+}
+
 function BackupButton({
   label,
   onPress,
@@ -37,9 +43,96 @@ function BackupButton({
   )
 }
 
-export function BackupSection() {
-  const { cancelRestore, chooseFile, confirmRestore, exportBackup, isBusy, preview, status } =
-    useBackup()
+export function BackupImport({
+  cancelRestore,
+  chooseFile,
+  confirmRestore,
+  importLabel = BACKUP_COPY.import,
+  importTestID = 'backup-import',
+  isBusy,
+  onRestored,
+  preview,
+  status,
+}: BackupImportProps) {
+  async function handleConfirm() {
+    const result = await confirmRestore()
+    if (result?.ok) onRestored?.()
+  }
+
+  return (
+    <>
+      {preview ? (
+        <View className="gap-3" testID="backup-preview">
+          <Text className="font-display text-body text-start text-primary" selectable>
+            {BACKUP_COPY.previewTitle}
+          </Text>
+          <Text className="text-small text-start text-muted-foreground" selectable>
+            {BACKUP_COPY.previewBody}
+          </Text>
+          <View className="gap-2">
+            {BACKUP_TABLES.map((table) => (
+              <View className="flex-row items-center justify-between gap-3" key={table}>
+                <Text className="text-small text-start text-foreground" selectable>
+                  {BACKUP_TABLE_LABELS[table]}
+                </Text>
+                <Text
+                  className="text-small text-start font-body-medium text-primary"
+                  selectable
+                  testID={`backup-count-${table}`}
+                >
+                  {countLabel(preview.counts[table])}
+                </Text>
+              </View>
+            ))}
+          </View>
+          <View className="gap-2">
+            <BackupButton
+              disabled={isBusy}
+              label={BACKUP_COPY.confirm}
+              onPress={handleConfirm}
+              primary
+              testID="backup-confirm"
+            />
+            <BackupButton
+              disabled={isBusy}
+              label={BACKUP_COPY.cancel}
+              onPress={cancelRestore}
+              testID="backup-cancel"
+            />
+          </View>
+        </View>
+      ) : (
+        <BackupButton
+          disabled={isBusy}
+          label={importLabel}
+          onPress={() => void chooseFile()}
+          testID={importTestID}
+        />
+      )}
+      {isBusy ? (
+        <Text
+          className="text-small text-start text-muted-foreground"
+          selectable
+          testID="backup-busy"
+        >
+          {BACKUP_COPY.busy}
+        </Text>
+      ) : null}
+      {status ? (
+        <Text
+          className="text-small text-start text-muted-foreground"
+          selectable
+          testID="backup-status"
+        >
+          {backupStatusMessage(status)}
+        </Text>
+      ) : null}
+    </>
+  )
+}
+
+export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) {
+  const backup = useBackup()
 
   return (
     <View className="gap-3" testID="settings-backup">
@@ -50,81 +143,20 @@ export function BackupSection() {
         <Text className="text-body text-start text-foreground" selectable>
           {BACKUP_COPY.description}
         </Text>
-        {preview ? (
-          <View className="gap-3" testID="backup-preview">
-            <Text className="font-display text-body text-start text-primary" selectable>
-              {BACKUP_COPY.previewTitle}
-            </Text>
-            <Text className="text-small text-start text-muted-foreground" selectable>
-              {BACKUP_COPY.previewBody}
-            </Text>
-            <View className="gap-2">
-              {BACKUP_TABLES.map((table) => (
-                <View className="flex-row items-center justify-between gap-3" key={table}>
-                  <Text className="text-small text-start text-foreground" selectable>
-                    {BACKUP_TABLE_LABELS[table]}
-                  </Text>
-                  <Text
-                    className="text-small text-start font-body-medium text-primary"
-                    selectable
-                    testID={`backup-count-${table}`}
-                  >
-                    {countLabel(preview.counts[table])}
-                  </Text>
-                </View>
-              ))}
-            </View>
-            <View className="gap-2">
-              <BackupButton
-                disabled={isBusy}
-                label={BACKUP_COPY.confirm}
-                onPress={() => void confirmRestore()}
-                primary
-                testID="backup-confirm"
-              />
-              <BackupButton
-                disabled={isBusy}
-                label={BACKUP_COPY.cancel}
-                onPress={cancelRestore}
-                testID="backup-cancel"
-              />
-            </View>
-          </View>
+        {backup.preview ? (
+          <BackupImport {...backup} onRestored={onRestored} />
         ) : (
           <View className="gap-2">
             <BackupButton
-              disabled={isBusy}
+              disabled={backup.isBusy}
               label={BACKUP_COPY.export}
-              onPress={() => void exportBackup()}
+              onPress={() => void backup.exportBackup()}
               primary
               testID="backup-export"
             />
-            <BackupButton
-              disabled={isBusy}
-              label={BACKUP_COPY.import}
-              onPress={() => void chooseFile()}
-              testID="backup-import"
-            />
+            <BackupImport {...backup} onRestored={onRestored} />
           </View>
         )}
-        {isBusy ? (
-          <Text
-            className="text-small text-start text-muted-foreground"
-            selectable
-            testID="backup-busy"
-          >
-            {BACKUP_COPY.busy}
-          </Text>
-        ) : null}
-        {status ? (
-          <Text
-            className="text-small text-start text-muted-foreground"
-            selectable
-            testID="backup-status"
-          >
-            {backupStatusMessage(status)}
-          </Text>
-        ) : null}
       </View>
     </View>
   )

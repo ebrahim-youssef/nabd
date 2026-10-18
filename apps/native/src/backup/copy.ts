@@ -14,6 +14,8 @@ export const BACKUP_TABLE_LABELS: Record<BackupTable, string> = {
 export const BACKUP_COPY = {
   title: 'النسخ الاحتياطي',
   description: 'احفظ بيانات نبض في ملف يمكنك مشاركته واستيراده لاحقًا.',
+  onboardingRestoreTitle: 'استعادة من نسخة احتياطية',
+  onboardingRestoreBody: 'إذا كانت لديك نسخة محفوظة، يمكنك استعادة بياناتك قبل بدء الاستخدام.',
   export: 'تصدير نسخة احتياطية',
   import: 'استيراد نسخة احتياطية',
   busy: 'جارٍ تجهيز النسخة الاحتياطية…',
