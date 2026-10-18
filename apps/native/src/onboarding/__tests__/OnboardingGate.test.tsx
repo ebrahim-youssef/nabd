@@ -1,11 +1,13 @@
 import { DEFAULT_NOTIFICATION_PREFS, ONBOARDING_COPY, QUESTIONS, WIRD_LEVELS } from '@nabd/shared'
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import { deviceCopy } from '../../device/copy'
 import { useBatteryOptimization } from '../../device/useBatteryOptimization'
 import { useLocationCapability } from '../../device/useLocationCapability'
 import { useNotificationSettings } from '../../device/useNotificationSettings'
+import { requestPrayerReschedule } from '../../device/prayerAlarms'
+import { useBackup, type BackupPreview } from '../../backup/useBackup'
 import { OnboardingGate } from '../OnboardingGate'
 import { NATIVE_ONBOARDING_COPY } from '../copy'
 import type { OnboardingDatabase } from '../db'
@@ -21,6 +23,8 @@ jest.mock('../../device/useLocationCapability', () => ({
 jest.mock('../../device/useNotificationSettings', () => ({
   useNotificationSettings: jest.fn(),
 }))
+jest.mock('../../device/prayerAlarms', () => ({ requestPrayerReschedule: jest.fn() }))
+jest.mock('../../backup/useBackup', () => ({ useBackup: jest.fn() }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedUseBatteryOptimization = useBatteryOptimization as jest.MockedFunction<
@@ -31,6 +35,10 @@ const mockedUseLocationCapability = useLocationCapability as jest.MockedFunction
 >
 const mockedUseNotificationSettings = useNotificationSettings as jest.MockedFunction<
   typeof useNotificationSettings
+>
+const mockedUseBackup = useBackup as jest.MockedFunction<typeof useBackup>
+const mockedRequestPrayerReschedule = requestPrayerReschedule as jest.MockedFunction<
+  typeof requestPrayerReschedule
 >
 const FIXED_DATE = new Date(2026, 7, 10, 0, 30)
 const NOW = () => FIXED_DATE
@@ -87,6 +95,32 @@ function createPersistedDatabase() {
   return { database, state: () => state }
 }
 
+const RESTORE_COUNTS = {
+  onboarding_state: 1,
+  wird_versions: 1,
+  wird_entries: 0,
+  qada_events: 0,
+  adhkar_flow_progress: 0,
+  app_preferences: 0,
+}
+
+const RESTORE_PREVIEW = {
+  backup: {
+    formatVersion: 1 as const,
+    schemaVersion: 1,
+    exportedAt: '2026-10-18T10:00:00.000Z',
+    data: {
+      onboarding_state: [],
+      wird_versions: [],
+      wird_entries: [],
+      qada_events: [],
+      adhkar_flow_progress: [],
+      app_preferences: [],
+    },
+  },
+  counts: RESTORE_COUNTS,
+} satisfies BackupPreview
+
 async function renderGate(database: OnboardingDatabase) {
   mockedUseSQLiteContext.mockReturnValue(database as never)
   return render(<OnboardingGate now={NOW} />)
@@ -109,6 +143,16 @@ async function reachPermissions(database: OnboardingDatabase) {
 
 describe('OnboardingGate', () => {
   beforeEach(() => {
+    mockedUseBackup.mockReturnValue({
+      cancelRestore: jest.fn(),
+      chooseFile: jest.fn(),
+      confirmRestore: jest.fn(),
+      exportBackup: jest.fn(),
+      isBusy: false,
+      preview: null,
+      status: null,
+    })
+    mockedRequestPrayerReschedule.mockReset()
     mockedUseBatteryOptimization.mockReturnValue({
       status: 'optimized',
       request: jest.fn(),
@@ -166,6 +210,184 @@ describe('OnboardingGate', () => {
     await renderGate(failingDatabase)
     await screen.findByTestId('gate-error')
     expect(screen.getByRole('button', { name: 'إعادة المحاولة' })).toBeTruthy()
+  })
+
+  it('shows a restore action on the welcome screen', async () => {
+    const view = await renderGate(createPersistedDatabase().database)
+
+    await screen.findByTestId('onboarding-welcome')
+    expect(screen.getByTestId('onboarding-restore')).toHaveTextContent('استعادة من نسخة احتياطية')
+
+    view.unmount()
+  })
+
+  it('lands on Home after restoring onboarding state from the welcome screen', async () => {
+    const persisted = createPersistedDatabase()
+    let preview: BackupPreview | null = null
+    const chooseFile = jest.fn(async () => {
+      preview = RESTORE_PREVIEW
+      return { ok: true as const, value: RESTORE_PREVIEW }
+    })
+    const confirmRestore = jest.fn(async () => {
+      preview = null
+      await persisted.database.runAsync(
+        'INSERT INTO wird_versions',
+        'initial-wird-level-1',
+        '2026-08-10',
+        JSON.stringify(WIRD_LEVELS[0].wird),
+        FIXED_DATE.getTime(),
+      )
+      await persisted.database.runAsync(
+        'INSERT INTO onboarding_state',
+        'onboarding',
+        JSON.stringify(
+          Object.fromEntries(QUESTIONS.map((question) => [question.id, question.options[0].id])),
+        ),
+        WIRD_LEVELS[0].id,
+        FIXED_DATE.getTime(),
+        '2026-08-10',
+        'initial-wird-level-1',
+      )
+      return { ok: true as const, value: RESTORE_COUNTS }
+    })
+    mockedUseBackup.mockImplementation(() => ({
+      cancelRestore: jest.fn(() => {
+        preview = null
+      }),
+      chooseFile,
+      confirmRestore,
+      exportBackup: jest.fn(),
+      isBusy: false,
+      preview,
+      status: null,
+    }))
+
+    const view = await renderGate(persisted.database)
+    await screen.findByTestId('onboarding-welcome')
+    await fireEvent.press(screen.getByTestId('onboarding-restore'))
+    view.rerender(<OnboardingGate now={NOW} />)
+    await screen.findByTestId('backup-preview')
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('backup-confirm'))
+    })
+
+    await screen.findByTestId('home-shell')
+    expect(confirmRestore).toHaveBeenCalledTimes(1)
+    expect(mockedRequestPrayerReschedule).toHaveBeenCalledTimes(1)
+
+    view.unmount()
+  })
+
+  it('stays in onboarding when a restored backup has no onboarding state', async () => {
+    let preview: BackupPreview | null = null
+    const chooseFile = jest.fn(async () => {
+      preview = RESTORE_PREVIEW
+      return { ok: true as const, value: RESTORE_PREVIEW }
+    })
+    const confirmRestore = jest.fn(async () => {
+      preview = null
+      return { ok: true as const, value: { ...RESTORE_COUNTS, onboarding_state: 0 } }
+    })
+    mockedUseBackup.mockImplementation(() => ({
+      cancelRestore: jest.fn(() => {
+        preview = null
+      }),
+      chooseFile,
+      confirmRestore,
+      exportBackup: jest.fn(),
+      isBusy: false,
+      preview,
+      status: null,
+    }))
+
+    const view = await renderGate(createPersistedDatabase().database)
+    await screen.findByTestId('onboarding-welcome')
+    await fireEvent.press(screen.getByTestId('onboarding-restore'))
+    view.rerender(<OnboardingGate now={NOW} />)
+    await screen.findByTestId('backup-preview')
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('backup-confirm'))
+    })
+
+    await screen.findByTestId('onboarding-welcome')
+    expect(mockedRequestPrayerReschedule).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('home-shell')).toBeNull()
+
+    view.unmount()
+  })
+
+  it('cancels a welcome restore without writing or rescheduling', async () => {
+    const persisted = createPersistedDatabase()
+    let preview: BackupPreview | null = null
+    const chooseFile = jest.fn(async () => {
+      preview = RESTORE_PREVIEW
+      return { ok: true as const, value: RESTORE_PREVIEW }
+    })
+    const cancelRestore = jest.fn(() => {
+      preview = null
+    })
+    const confirmRestore = jest.fn()
+    mockedUseBackup.mockImplementation(() => ({
+      cancelRestore,
+      chooseFile,
+      confirmRestore,
+      exportBackup: jest.fn(),
+      isBusy: false,
+      preview,
+      status: null,
+    }))
+
+    const view = await renderGate(persisted.database)
+    await screen.findByTestId('onboarding-welcome')
+    await fireEvent.press(screen.getByTestId('onboarding-restore'))
+    view.rerender(<OnboardingGate now={NOW} />)
+    await screen.findByTestId('backup-preview')
+    await fireEvent.press(screen.getByTestId('backup-cancel'))
+    view.rerender(<OnboardingGate now={NOW} />)
+
+    expect(cancelRestore).toHaveBeenCalledTimes(1)
+    expect(confirmRestore).not.toHaveBeenCalled()
+    expect(persisted.state()).toBeNull()
+    expect(mockedRequestPrayerReschedule).not.toHaveBeenCalled()
+    expect(screen.getByTestId('onboarding-welcome')).toBeTruthy()
+
+    view.unmount()
+  })
+
+  it('does not reschedule after a failed welcome restore', async () => {
+    let preview: BackupPreview | null = null
+    const chooseFile = jest.fn(async () => {
+      preview = RESTORE_PREVIEW
+      return { ok: true as const, value: RESTORE_PREVIEW }
+    })
+    const confirmRestore = jest.fn(async () => ({
+      ok: false as const,
+      error: { reason: 'write_failed' as const },
+    }))
+    mockedUseBackup.mockImplementation(() => ({
+      cancelRestore: jest.fn(),
+      chooseFile,
+      confirmRestore,
+      exportBackup: jest.fn(),
+      isBusy: false,
+      preview,
+      status: null,
+    }))
+
+    const view = await renderGate(createPersistedDatabase().database)
+    await screen.findByTestId('onboarding-welcome')
+    await fireEvent.press(screen.getByTestId('onboarding-restore'))
+    view.rerender(<OnboardingGate now={NOW} />)
+    await screen.findByTestId('backup-preview')
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('backup-confirm'))
+    })
+
+    expect(confirmRestore).toHaveBeenCalledTimes(1)
+    expect(mockedRequestPrayerReschedule).not.toHaveBeenCalled()
+    expect(screen.getByTestId('backup-preview')).toBeTruthy()
+
+    view.unmount()
   })
 
   it('completes the reference questionnaire, permits a manual level, and restores after remount', async () => {

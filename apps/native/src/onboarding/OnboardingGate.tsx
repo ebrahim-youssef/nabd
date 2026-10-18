@@ -21,6 +21,10 @@ import { logger } from '../observability/logger'
 import { useBatteryOptimization } from '../device/useBatteryOptimization'
 import { useLocationCapability } from '../device/useLocationCapability'
 import { useNotificationSettings } from '../device/useNotificationSettings'
+import { requestPrayerReschedule } from '../device/prayerAlarms'
+import { BackupImport } from '../backup/BackupSection'
+import { BACKUP_COPY } from '../backup/copy'
+import { useBackup } from '../backup/useBackup'
 import { ONBOARDING_COPY } from './constants'
 import { createOnboardingRepository, type PersistedOnboarding } from './db'
 import { OnboardingButton } from './OnboardingButton'
@@ -72,6 +76,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
   const [selectedLevelId, setSelectedLevelId] = useState<LevelId | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const completionInFlight = useRef(false)
+  const backup = useBackup()
 
   useEffect(() => {
     if (gate.status !== 'loading') return
@@ -136,6 +141,23 @@ export function OnboardingGate({ now }: { now: () => Date }) {
           onPress={() => setScreen('questions')}
           testID="onboarding-begin"
         />
+        <View className="mt-6 gap-2" testID="onboarding-restore-card">
+          <Text className="font-display text-label text-start text-muted-foreground">
+            {BACKUP_COPY.onboardingRestoreTitle}
+          </Text>
+          <Text className="text-small text-start text-muted-foreground">
+            {BACKUP_COPY.onboardingRestoreBody}
+          </Text>
+          <BackupImport
+            {...backup}
+            importLabel={BACKUP_COPY.onboardingRestoreTitle}
+            importTestID="onboarding-restore"
+            onRestored={() => {
+              requestPrayerReschedule()
+              setGate({ status: 'loading' })
+            }}
+          />
+        </View>
       </ScreenContainer>
     )
   }
