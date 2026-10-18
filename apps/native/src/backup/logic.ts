@@ -13,7 +13,7 @@ const MIN_NON_EMPTY_STRING_LENGTH = 1
 const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/
 const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor'])
 
-const TABLES = [
+export const BACKUP_TABLES = [
   'onboarding_state',
   'wird_versions',
   'wird_entries',
@@ -21,6 +21,11 @@ const TABLES = [
   'adhkar_flow_progress',
   'app_preferences',
 ] as const satisfies readonly BackupTable[]
+
+export function conflictTableFrom(error: string): BackupTable | undefined {
+  const table = error.split(':')[1]
+  return BACKUP_TABLES.includes(table as BackupTable) ? (table as BackupTable) : undefined
+}
 
 const PRIMARY_KEYS: Record<BackupTable, string> = {
   onboarding_state: 'id',
@@ -164,7 +169,7 @@ function duplicateKey(rows: readonly RecordValue[], key: string): boolean {
 
 function validateRows(data: RecordValue): Result<BackupRows> {
   const rows = {} as BackupRows
-  for (const table of TABLES) {
+  for (const table of BACKUP_TABLES) {
     const tableRows = data[table]
     if (!Array.isArray(tableRows)) return { ok: false, error: `missing_table:${table}` }
     if (tableRows.some((row) => !isRecord(row))) {
@@ -234,7 +239,9 @@ export function parseBackup(text: string): Result<BackupEnvelope> {
   if (!isRecord(parsed.data)) return { ok: false, error: 'invalid_data' }
   if (hasForbiddenKey(parsed.data)) return { ok: false, error: 'prototype_pollution_key' }
 
-  const unknownTable = Object.keys(parsed.data).some((key) => !TABLES.includes(key as BackupTable))
+  const unknownTable = Object.keys(parsed.data).some(
+    (key) => !BACKUP_TABLES.includes(key as BackupTable),
+  )
   if (unknownTable) return { ok: false, error: 'unknown_table' }
 
   const validated = validateRows(parsed.data)
@@ -325,7 +332,7 @@ export function planRestore(backup: BackupEnvelope, deviceRows: BackupRows): Res
     deviceRows.app_preferences,
   )
 
-  const counts = TABLES.reduce(
+  const counts = BACKUP_TABLES.reduce(
     (result, table) => {
       result[table] = inserts[table].length
       return result

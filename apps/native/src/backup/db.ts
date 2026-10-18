@@ -1,6 +1,6 @@
 import { logger } from '../observability/logger'
 import type { ProductDatabase } from '../db/productDatabase'
-import { planRestore } from './logic'
+import { conflictTableFrom, planRestore } from './logic'
 import type {
   AdhkarFlowProgressRow,
   AppPreferenceRow,
@@ -13,15 +13,6 @@ import type {
   WirdEntryRow,
   WirdVersionRow,
 } from './types'
-
-const BACKUP_TABLES: readonly BackupTable[] = [
-  'onboarding_state',
-  'wird_versions',
-  'wird_entries',
-  'qada_events',
-  'adhkar_flow_progress',
-  'app_preferences',
-]
 
 const SELECT_ONBOARDING_STATE =
   'SELECT id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id FROM onboarding_state'
@@ -82,11 +73,6 @@ async function readSnapshotRows(database: ProductDatabase): Promise<BackupRows> 
   )
   rows.app_preferences = await database.getAllAsync<AppPreferenceRow>(SELECT_APP_PREFERENCES)
   return rows
-}
-
-function conflictTable(error: string): BackupTable | undefined {
-  const table = error.split(':')[1]
-  return BACKUP_TABLES.includes(table as BackupTable) ? (table as BackupTable) : undefined
 }
 
 async function insertWirdVersions(database: ProductDatabase, rows: readonly WirdVersionRow[]) {
@@ -187,7 +173,7 @@ export function createBackupRepository(database: ProductDatabase) {
           const deviceRows = await readSnapshotRows(transaction)
           const planned = planRestore(backup, deviceRows)
           if (!planned.ok) {
-            const table = conflictTable(planned.error)
+            const table = conflictTableFrom(planned.error)
             if (table) throw new RestoreConflictError(table)
             throw new Error(`Backup restore planning failed: ${planned.error}`)
           }

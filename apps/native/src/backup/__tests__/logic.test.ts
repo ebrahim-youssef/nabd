@@ -1,7 +1,9 @@
 import { CURRENT_SCHEMA_VERSION } from '../../db/database'
 import {
+  BACKUP_TABLES,
   BACKUP_FORMAT_VERSION,
   BACKUP_MAX_BYTES,
+  conflictTableFrom,
   parseBackup,
   planRestore,
   serializeBackup,
@@ -70,6 +72,19 @@ function serializedBackup(change: (value: Record<string, unknown>) => void): str
 }
 
 describe('backup logic', () => {
+  it('centralizes backup tables and conflict parsing', () => {
+    expect(BACKUP_TABLES).toEqual([
+      'onboarding_state',
+      'wird_versions',
+      'wird_entries',
+      'qada_events',
+      'adhkar_flow_progress',
+      'app_preferences',
+    ])
+    expect(conflictTableFrom('restore_conflict:wird_versions:version-1')).toBe('wird_versions')
+    expect(conflictTableFrom('invalid_error')).toBeUndefined()
+  })
+
   it('round trips the versioned SQLite envelope', () => {
     const exportedAt = '2026-10-18T10:00:00.000Z'
 
