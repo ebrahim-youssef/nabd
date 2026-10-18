@@ -12,28 +12,30 @@ const PERCENTAGE_MAX = 100
 
 export function AdhkarFlow({ category }: { category: AdhkarCategory }) {
   const { state, tap, restart, markedInWird } = useAdhkarFlow(category.id, category.items)
-  const [referenceOpen, setReferenceOpen] = useState(false)
   const theme = useThemeTokens()
 
   if (state.finished) {
     return (
-      <View
-        className="items-center gap-3 rounded-card bg-primary p-6"
-        testID={`adhkar-flow-${category.id}`}
-      >
-        <Text className="text-body text-on-primary">{ADHKAR_COPY.finished}</Text>
-        {markedInWird && (
-          <Text className="text-small text-on-primary">{ADHKAR_COPY.markedInWird}</Text>
-        )}
-        <Pressable
-          accessibilityRole="button"
-          className="flex-row items-center gap-2 rounded-button border border-on-primary px-4 py-2"
-          onPress={restart}
-          testID={`adhkar-restart-${category.id}`}
+      <View className="gap-4">
+        <View
+          className="items-center gap-3 rounded-card bg-primary p-6"
+          testID={`adhkar-flow-${category.id}`}
         >
-          <RotateCcw accessible={false} color={theme.hex['on-primary']} size={ICON_SIZE} />
-          <Text className="text-small text-on-primary">{ADHKAR_COPY.restart}</Text>
-        </Pressable>
+          <Text className="text-body text-on-primary">{ADHKAR_COPY.finished}</Text>
+          {markedInWird && (
+            <Text className="text-small text-on-primary">{ADHKAR_COPY.markedInWird}</Text>
+          )}
+          <Pressable
+            accessibilityRole="button"
+            className="flex-row items-center gap-2 rounded-button border border-on-primary px-4 py-2"
+            onPress={restart}
+            testID={`adhkar-restart-${category.id}`}
+          >
+            <RotateCcw accessible={false} color={theme.hex['on-primary']} size={ICON_SIZE} />
+            <Text className="text-small text-on-primary">{ADHKAR_COPY.restart}</Text>
+          </Pressable>
+        </View>
+        <AdhkarReference category={category} />
       </View>
     )
   }
@@ -90,54 +92,57 @@ export function AdhkarFlow({ category }: { category: AdhkarCategory }) {
         </ScrollView>
       )}
 
-      <View
-        className="overflow-hidden rounded-card border border-border bg-surface"
-        testID="adhkar-flow-reference-section"
+      <AdhkarReference category={category} />
+    </View>
+  )
+}
+
+function AdhkarReference({ category }: { category: AdhkarCategory }) {
+  const [referenceOpen, setReferenceOpen] = useState(false)
+  const theme = useThemeTokens()
+
+  return (
+    <View
+      className="overflow-hidden rounded-card border border-border bg-surface"
+      testID="adhkar-flow-reference-section"
+    >
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ expanded: referenceOpen }}
+        className="flex-row items-center justify-between gap-3 p-4"
+        onPress={() => setReferenceOpen((previous) => !previous)}
+        testID="adhkar-flow-reference-toggle"
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: referenceOpen }}
-          className="flex-row items-center justify-between gap-3 p-4"
-          onPress={() => setReferenceOpen((previous) => !previous)}
-          testID="adhkar-flow-reference-toggle"
-        >
-          <Text className="text-body text-foreground">
-            {ADHKAR_COPY.allSectionAdhkar} ({toArabicIndic(category.items.length)})
-          </Text>
-          {referenceOpen ? (
-            <ChevronUp accessible={false} color={theme.hex['muted-foreground']} size={ICON_SIZE} />
-          ) : (
-            <ChevronDown
-              accessible={false}
-              color={theme.hex['muted-foreground']}
-              size={ICON_SIZE}
-            />
-          )}
-        </Pressable>
-        {referenceOpen && (
-          <View className="gap-3 px-4 pb-4" testID="adhkar-flow-reference">
-            {category.items.map((item) => (
-              <View
-                className="gap-2 rounded-card border border-border bg-surface-2 p-4"
-                key={item.id}
-                testID={`adhkar-flow-reference-item-${item.id}`}
-              >
-                <Text className="font-scripture text-scripture text-foreground text-start">
-                  {item.text}
-                </Text>
-                <View className="flex-row flex-wrap items-center gap-3">
-                  <Text className="text-small text-gold">×{toArabicIndic(item.repeat)}</Text>
-                  {item.virtue && (
-                    <Text className="text-small text-muted-foreground text-start">
-                      {item.virtue}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))}
-          </View>
+        <Text className="text-body text-foreground">
+          {ADHKAR_COPY.allSectionAdhkar} ({toArabicIndic(category.items.length)})
+        </Text>
+        {referenceOpen ? (
+          <ChevronUp accessible={false} color={theme.hex['muted-foreground']} size={ICON_SIZE} />
+        ) : (
+          <ChevronDown accessible={false} color={theme.hex['muted-foreground']} size={ICON_SIZE} />
         )}
-      </View>
+      </Pressable>
+      {referenceOpen && (
+        <View className="gap-3 px-4 pb-4" testID="adhkar-flow-reference">
+          {category.items.map((item) => (
+            <View
+              className="gap-2 rounded-card border border-border bg-surface-2 p-4"
+              key={item.id}
+              testID={`adhkar-flow-reference-item-${item.id}`}
+            >
+              <Text className="font-scripture text-scripture text-foreground text-start">
+                {item.text}
+              </Text>
+              <View className="flex-row flex-wrap items-center gap-3">
+                <Text className="text-small text-gold">×{toArabicIndic(item.repeat)}</Text>
+                {item.virtue && (
+                  <Text className="text-small text-muted-foreground text-start">{item.virtue}</Text>
+                )}
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
     </View>
   )
 }
