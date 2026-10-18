@@ -4,7 +4,7 @@ import type { NotificationRequest, NotificationRequestInput } from 'expo-notific
 
 import { logger } from '../observability/logger'
 import { mapDevicePermission } from './logic'
-import { channelFor, ensureChannels } from './notificationChannels'
+import { channelFor } from './notificationChannels'
 import type { NotificationPermission } from './types'
 
 type AndroidDateTrigger = {
@@ -147,7 +147,6 @@ export async function replacePrayerAlarms(
   silentMode: boolean,
   now: number,
 ): Promise<void> {
-  await ensureChannels()
   const snapshot = (await Notifications.getAllScheduledNotificationsAsync()).filter(
     isPrayerNotification,
   )

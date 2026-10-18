@@ -1,5 +1,3 @@
-import Constants from 'expo-constants'
-import * as IntentLauncher from 'expo-intent-launcher'
 import * as Location from 'expo-location'
 
 import { logger } from '../observability/logger'
@@ -7,7 +5,6 @@ import { mapDevicePermission } from './logic'
 import type { LocationPermission } from './types'
 
 export const LOCATION_FIX_TIMEOUT_MS = 15_000
-const ANDROID_PACKAGE = 'com.nabd.app'
 
 export type LocationFixResult =
   { kind: 'ok'; latitude: number; longitude: number } | { kind: 'timeout' } | { kind: 'error' }
@@ -69,22 +66,4 @@ export async function getFix(timeoutMs = LOCATION_FIX_TIMEOUT_MS): Promise<Locat
   } finally {
     if (timeoutId !== undefined) clearTimeout(timeoutId)
   }
-}
-
-export function androidPackage(): string {
-  const packageName = Constants.expoConfig?.android?.package
-  return typeof packageName === 'string' && packageName.trim() !== ''
-    ? packageName
-    : ANDROID_PACKAGE
-}
-
-export function openAppSettings(): Promise<IntentLauncher.IntentLauncherResult> {
-  return IntentLauncher.startActivityAsync(
-    IntentLauncher.ActivityAction.APPLICATION_DETAILS_SETTINGS,
-    { data: 'package:' + androidPackage() },
-  )
-}
-
-export function openLocationSettings(): Promise<IntentLauncher.IntentLauncherResult> {
-  return IntentLauncher.startActivityAsync(IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS)
 }
