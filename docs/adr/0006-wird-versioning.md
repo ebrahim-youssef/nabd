@@ -68,3 +68,15 @@ WirdEntry    { id, day: DayId, versionId, itemId, done: boolean, at: number }
 - The Dexie schema and Supabase tables model versions as first-class, immutable records; entries
   are append-only and never mutated (a "correction" is a new entry, not an edit).
 - This unblocks NBD-5 (Dexie schema + sync), NBD-7 (durable checklist), and NBD-8 (statistics).
+
+## Amendment 2026-10-18: native self-healing (NBD-104)
+
+When a shared level definition changes in an app update, the native app inserts a new version
+for the next day, never for today, so section 2 holds. Healing looks at the version in force
+tomorrow, so a level the user already scheduled is kept. A healed version is stamped just after
+the version it heals, so a level the user picks later still wins.
+
+Accepted limit: a version's level is found by its counter target, as in the legacy app. A
+release that changes a level's counter target would leave existing installs on the old
+definition. No shipped change does this today. Issue #249 tracks giving versions a stable level
+identity before any such release.
