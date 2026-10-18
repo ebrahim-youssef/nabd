@@ -33,6 +33,7 @@ jest.mock('../../preferences/db', () => ({
     calculationMethod: 'nabd:prayer-calculation-method',
     latitude: 'nabd:cached-latitude',
     longitude: 'nabd:cached-longitude',
+    countdownEnabled: 'nabd:notification-countdown-enabled',
     theme: 'nabd:theme',
   },
   createPreferencesRepository: jest.fn(),
@@ -44,6 +45,10 @@ jest.mock('../../preferences/theme', () => ({
     value === 'light' || value === 'dark' || value === 'system' ? value : 'system',
 }))
 jest.mock('../../wird/useWirdRepository', () => ({ useWirdRepository: jest.fn() }))
+jest.mock('../LocationSection', () => ({ LocationSection: () => null }))
+jest.mock('../useCountdownPreference', () => ({
+  useCountdownPreference: () => ({ enabled: false, setEnabled: jest.fn(async () => undefined) }),
+}))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedCreatePreferencesRepository = createPreferencesRepository as jest.MockedFunction<

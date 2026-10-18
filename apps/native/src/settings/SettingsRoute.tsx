@@ -33,6 +33,8 @@ import {
   type NativeThemePreference,
 } from '../preferences/theme'
 import { NATIVE_SETTINGS_COPY } from './constants'
+import { CountdownToggle } from './CountdownToggle'
+import { LocationSection } from './LocationSection'
 import { useWirdLevel } from '../wird/useWirdLevel'
 
 type SettingsState = {
@@ -234,6 +236,8 @@ export function SettingsRoute() {
           </View>
         </View>
 
+        <LocationSection />
+
         <View className="gap-3" testID="settings-notifications">
           <Text className="font-display text-label text-start text-muted-foreground">
             {SETTINGS_COPY.groups.notifications}
@@ -282,6 +286,7 @@ export function SettingsRoute() {
                 />
               ) : null}
             </View>
+            <CountdownToggle notificationPermission={notificationSettings.permission} />
             {!notificationSettings.hasCoordinates ? (
               <Text
                 className="text-small text-start text-muted-foreground"
