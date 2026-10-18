@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { AppState } from 'react-native'
 
-import { getCountdownNotificationStatus } from '../../device/countdownNotification'
+import { devicePlatform } from '../../device/platform'
 import { requestPrayerReschedule } from '../../device/prayerAlarms'
 import { NATIVE_SETTINGS_COPY } from '../constants'
 import { useCountdownPreference } from '../useCountdownPreference'
@@ -10,8 +10,10 @@ import { CountdownToggle } from '../CountdownToggle'
 jest.mock('../useCountdownPreference', () => ({
   useCountdownPreference: jest.fn(),
 }))
-jest.mock('../../device/countdownNotification', () => ({
-  getCountdownNotificationStatus: jest.fn(),
+jest.mock('../../device/platform', () => ({
+  devicePlatform: {
+    getCountdownNotificationStatus: jest.fn(),
+  },
 }))
 jest.mock('../../device/prayerAlarms', () => ({
   requestPrayerReschedule: jest.fn(),
@@ -20,8 +22,8 @@ jest.mock('../../device/prayerAlarms', () => ({
 const mockedUseCountdownPreference = useCountdownPreference as jest.MockedFunction<
   typeof useCountdownPreference
 >
-const mockedGetStatus = getCountdownNotificationStatus as jest.MockedFunction<
-  typeof getCountdownNotificationStatus
+const mockedGetStatus = devicePlatform.getCountdownNotificationStatus as jest.MockedFunction<
+  typeof devicePlatform.getCountdownNotificationStatus
 >
 const mockedRequestPrayerReschedule = requestPrayerReschedule as jest.MockedFunction<
   typeof requestPrayerReschedule
