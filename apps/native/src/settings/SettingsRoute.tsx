@@ -35,6 +35,7 @@ import {
 import { NATIVE_SETTINGS_COPY } from './constants'
 import { CountdownToggle } from './CountdownToggle'
 import { LocationSection } from './LocationSection'
+import { SoundPreviewSection } from './SoundPreviewSection'
 import { useWirdLevel } from '../wird/useWirdLevel'
 
 type SettingsState = {
@@ -412,6 +413,8 @@ export function SettingsRoute() {
             </View>
           ) : null}
         </View>
+
+        <SoundPreviewSection />
 
         <View className="gap-3" testID="settings-level">
           <Text className="font-display text-label text-start text-muted-foreground">

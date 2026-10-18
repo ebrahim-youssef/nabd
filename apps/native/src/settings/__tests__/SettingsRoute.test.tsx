@@ -46,6 +46,7 @@ jest.mock('../../preferences/theme', () => ({
 }))
 jest.mock('../../wird/useWirdRepository', () => ({ useWirdRepository: jest.fn() }))
 jest.mock('../LocationSection', () => ({ LocationSection: () => null }))
+jest.mock('../SoundPreviewSection', () => ({ SoundPreviewSection: () => null }))
 jest.mock('../useCountdownPreference', () => ({
   useCountdownPreference: () => ({ enabled: false, setEnabled: jest.fn(async () => undefined) }),
 }))
