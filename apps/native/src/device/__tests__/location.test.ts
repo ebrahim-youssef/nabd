@@ -1,15 +1,18 @@
-import * as IntentLauncher from 'expo-intent-launcher'
 import * as Location from 'expo-location'
 
 import {
   enableServices,
   getFix,
-  openAppSettings,
-  openLocationSettings,
   readPermission,
   requestPermission,
   servicesEnabled,
 } from '../location'
+import * as IntentLauncher from 'expo-intent-launcher'
+import { androidDevicePlatform } from '../platform/android'
+
+jest.mock('expo-constants', () => ({
+  expoConfig: { android: { package: 'com.nabd.app' } },
+}))
 
 jest.mock('expo-location', () => ({
   Accuracy: { High: 4 },
@@ -101,8 +104,8 @@ describe('location adapter', () => {
   it('opens app and location settings intents with the Android actions', async () => {
     mockedIntentLauncher.startActivityAsync.mockResolvedValue({ resultCode: -1 } as never)
 
-    await openAppSettings()
-    await openLocationSettings()
+    await androidDevicePlatform.openAppSettings()
+    await androidDevicePlatform.openLocationSettings()
 
     expect(mockedIntentLauncher.startActivityAsync).toHaveBeenNthCalledWith(
       1,

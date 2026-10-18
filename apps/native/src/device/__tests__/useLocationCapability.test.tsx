@@ -1,11 +1,11 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
-import * as IntentLauncher from 'expo-intent-launcher'
 import * as Location from 'expo-location'
 import { useSQLiteContext } from 'expo-sqlite'
 import { AppState } from 'react-native'
 
 import type { CachedLocation } from '../db'
 import { createDeviceRepository } from '../db'
+import { devicePlatform } from '../platform'
 import { useLocationCapability } from '../useLocationCapability'
 import { requestPrayerReschedule } from '../prayerAlarms'
 
@@ -24,12 +24,12 @@ jest.mock('expo-location', () => ({
   enableNetworkProviderAsync: jest.fn(),
   getCurrentPositionAsync: jest.fn(),
 }))
-jest.mock('expo-intent-launcher', () => ({
-  ActivityAction: {
-    APPLICATION_DETAILS_SETTINGS: 'android.settings.APPLICATION_DETAILS_SETTINGS',
-    LOCATION_SOURCE_SETTINGS: 'android.settings.LOCATION_SOURCE_SETTINGS',
+jest.mock('../platform', () => ({
+  devicePlatform: {
+    enableLocationServices: jest.fn(),
+    openAppSettings: jest.fn(),
+    openLocationSettings: jest.fn(),
   },
-  startActivityAsync: jest.fn(),
 }))
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('../db', () => ({
@@ -40,7 +40,12 @@ jest.mock('../prayerAlarms', () => ({
 }))
 
 const mockedLocation = Location as jest.Mocked<typeof Location>
-const mockedIntentLauncher = IntentLauncher as jest.Mocked<typeof IntentLauncher>
+const mockedEnableLocationServices = devicePlatform.enableLocationServices as jest.MockedFunction<
+  typeof devicePlatform.enableLocationServices
+>
+const mockedOpenLocationSettings = devicePlatform.openLocationSettings as jest.MockedFunction<
+  typeof devicePlatform.openLocationSettings
+>
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedCreateDeviceRepository = createDeviceRepository as jest.MockedFunction<
   typeof createDeviceRepository
@@ -94,7 +99,8 @@ function grantPermission() {
   mockedLocation.getCurrentPositionAsync.mockResolvedValue({
     coords: { latitude: 30.0444, longitude: 31.2357 },
   } as never)
-  mockedIntentLauncher.startActivityAsync.mockResolvedValue({ resultCode: -1 } as never)
+  mockedEnableLocationServices.mockResolvedValue(true)
+  mockedOpenLocationSettings.mockResolvedValue('opened')
 }
 
 function renderLocation(
@@ -317,13 +323,13 @@ describe('useLocationCapability', () => {
     })
 
     await waitFor(() => expect(result.current.status.state).toBe('ready'))
-    expect(mockedLocation.enableNetworkProviderAsync).toHaveBeenCalledTimes(1)
-    expect(mockedIntentLauncher.startActivityAsync).not.toHaveBeenCalled()
+    expect(mockedEnableLocationServices).toHaveBeenCalledTimes(1)
+    expect(mockedOpenLocationSettings).not.toHaveBeenCalled()
   })
 
   it('falls back to location settings when the services dialog is rejected', async () => {
     mockedLocation.hasServicesEnabledAsync.mockResolvedValue(false)
-    mockedLocation.enableNetworkProviderAsync.mockRejectedValue(new Error('dismissed'))
+    mockedEnableLocationServices.mockResolvedValue(false)
     const { result } = renderLocation()
 
     await waitFor(() => expect(result.current.status.state).toBe('gps-disabled'))
@@ -331,9 +337,7 @@ describe('useLocationCapability', () => {
       await result.current.runAction()
     })
 
-    expect(mockedIntentLauncher.startActivityAsync).toHaveBeenCalledWith(
-      'android.settings.LOCATION_SOURCE_SETTINGS',
-    )
+    expect(mockedOpenLocationSettings).toHaveBeenCalledTimes(1)
     expect(mockedLocation.getCurrentPositionAsync).not.toHaveBeenCalled()
   })
 

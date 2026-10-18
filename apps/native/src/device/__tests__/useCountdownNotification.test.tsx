@@ -4,29 +4,32 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { AppState } from 'react-native'
 
 import { PREFERENCE_KEYS } from '../../preferences/db'
-import { clearCountdownNotification, setCountdownNotification } from '../countdownNotification'
-import { subscribeTimeChange } from '../exactAlarm'
+import { devicePlatform } from '../platform'
 import { resolveCityLabel } from '../reverseGeocode'
 import { subscribePrayerReschedule } from '../prayerAlarms'
 import { useCountdownNotification } from '../useCountdownNotification'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
-jest.mock('../countdownNotification', () => ({
-  clearCountdownNotification: jest.fn(),
-  setCountdownNotification: jest.fn(),
+jest.mock('../platform', () => ({
+  devicePlatform: {
+    clearCountdownNotification: jest.fn(),
+    setCountdownNotification: jest.fn(),
+    subscribeToClockChanges: jest.fn(),
+  },
 }))
-jest.mock('../exactAlarm', () => ({ subscribeTimeChange: jest.fn() }))
 jest.mock('../reverseGeocode', () => ({ resolveCityLabel: jest.fn() }))
 jest.mock('../prayerAlarms', () => ({ subscribePrayerReschedule: jest.fn() }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
-const mockedClear = clearCountdownNotification as jest.MockedFunction<
-  typeof clearCountdownNotification
+const mockedClear = devicePlatform.clearCountdownNotification as jest.MockedFunction<
+  typeof devicePlatform.clearCountdownNotification
 >
-const mockedSet = setCountdownNotification as jest.MockedFunction<typeof setCountdownNotification>
+const mockedSet = devicePlatform.setCountdownNotification as jest.MockedFunction<
+  typeof devicePlatform.setCountdownNotification
+>
 const mockedResolveCityLabel = resolveCityLabel as jest.MockedFunction<typeof resolveCityLabel>
-const mockedSubscribeTimeChange = subscribeTimeChange as jest.MockedFunction<
-  typeof subscribeTimeChange
+const mockedSubscribeTimeChange = devicePlatform.subscribeToClockChanges as jest.MockedFunction<
+  typeof devicePlatform.subscribeToClockChanges
 >
 const mockedSubscribePrayerReschedule = subscribePrayerReschedule as jest.MockedFunction<
   typeof subscribePrayerReschedule
@@ -65,7 +68,7 @@ describe('useCountdownNotification', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockedUseSQLiteContext.mockReturnValue({ getFirstAsync: mockGetFirstAsync } as never)
-    mockedClear.mockImplementation(() => undefined)
+    mockedClear.mockImplementation(() => 'cleared')
     mockedSet.mockReturnValue('posted')
     mockedResolveCityLabel.mockResolvedValue('القاهرة')
     unsubscribeTimeChange = jest.fn()
