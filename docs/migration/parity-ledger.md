@@ -68,35 +68,36 @@ Device behavior is isolated under `apps/native/src/device`:
 Each device feature must cover permission, OS toggle, connectivity, accuracy or mode, Android API
 level, OEM battery behavior, foreground and background lifecycle, killed and force-stopped state,
 reboot behavior, and an actionable failure result. Android-only code stays behind the device and
-plugin boundaries. iOS portability is tracked by NBD-105.
+plugin boundaries. iOS portability is implemented through `apps/native/src/device/platform` and
+documented under NBD-105.
 
 ## D. Status on 2026-10-16
 
-| Feature                                | Status                    | Native file or boundary                                             | Ticket           |
-| -------------------------------------- | ------------------------- | ------------------------------------------------------------------- | ---------------- |
-| Onboarding core flow and SQLite seed   | partial                   | `apps/native/src/onboarding/OnboardingGate.tsx`, `onboarding/db.ts` | NBD-85, NBD-99   |
-| Onboarding permissions                 | missing                   | `apps/native/src/onboarding` and `src/device`                       | NBD-99           |
-| Home, checklist, and summary           | done for core flow        | `apps/native/src/home`, `src/wird`                                  | NBD-85           |
-| Wird versioning and next-day changes   | partial                   | `apps/native/src/wird`                                              | NBD-104          |
-| Required and voluntary scheduling      | done                      | `apps/native/src/wird`, `packages/shared/src/logic`                 | NBD-85           |
-| Completion celebration and share       | done                      | `apps/native/src/wird/CompletionCelebration.tsx`                    | NBD-85           |
-| Wird dhikr counter                     | done                      | `apps/native/src/counter`, `src/wird/WirdChecklist.tsx`             | NBD-85           |
-| Guided morning and evening adhkar      | partial to done           | `apps/native/src/adhkar/useAdhkarFlow.ts`                           | NBD-98           |
-| Daily adhkar category                  | missing                   | `apps/native/src/adhkar`                                            | NBD-98           |
-| Repeatable adhkar lists and references | partial                   | `apps/native/src/adhkar`                                            | NBD-98           |
-| Intentions                             | done                      | `apps/native/src/intentions/IntentionsRoute.tsx`                    | NBD-85           |
-| Prayer calculation page                | done for core calculation | `apps/native/src/prayer-times/PrayerTimesRoute.tsx`                 | NBD-85           |
-| Location capability                    | partial                   | `apps/native/src/device/useLocationCapability.ts`                   | NBD-100          |
-| Prayer notifications                   | partial to done           | `apps/native/src/device/usePrayerAlarms.ts`, `notifications.ts`     | NBD-100, NBD-102 |
-| Exact-alarm gating                     | partial                   | `apps/native/src/device/usePrayerAlarms.ts`, Kotlin module          | NBD-101          |
-| Qada                                   | done                      | `apps/native/src/qada/QadaLedger.tsx`                               | NBD-85           |
-| Statistics and charts                  | partial                   | `apps/native/src/stats/StatsRoute.tsx`                              | NBD-103          |
-| Complete export and import             | missing                   | `apps/native/src/stats`, SQLite repositories                        | NBD-91           |
-| Appearance                             | partial                   | `apps/native/src/settings/SettingsRoute.tsx`, `src/preferences`     | NBD-100          |
-| Settings parity                        | partial                   | `apps/native/src/settings`, `src/device`                            | NBD-100          |
-| iOS-ready native boundaries            | planned                   | `apps/native/src/device`, Kotlin module, plugins                    | NBD-105          |
-| Native boundary and CI split           | planned                   | workspace scripts and CI configuration                              | NBD-106          |
-| Android release verification           | planned                   | EAS release APK flow                                                | NBD-89a, NBD-92  |
+| Feature                                | Status                    | Native file or boundary                                                         | Ticket           |
+| -------------------------------------- | ------------------------- | ------------------------------------------------------------------------------- | ---------------- |
+| Onboarding core flow and SQLite seed   | partial                   | `apps/native/src/onboarding/OnboardingGate.tsx`, `onboarding/db.ts`             | NBD-85, NBD-99   |
+| Onboarding permissions                 | missing                   | `apps/native/src/onboarding` and `src/device`                                   | NBD-99           |
+| Home, checklist, and summary           | done for core flow        | `apps/native/src/home`, `src/wird`                                              | NBD-85           |
+| Wird versioning and next-day changes   | partial                   | `apps/native/src/wird`                                                          | NBD-104          |
+| Required and voluntary scheduling      | done                      | `apps/native/src/wird`, `packages/shared/src/logic`                             | NBD-85           |
+| Completion celebration and share       | done                      | `apps/native/src/wird/CompletionCelebration.tsx`                                | NBD-85           |
+| Wird dhikr counter                     | done                      | `apps/native/src/counter`, `src/wird/WirdChecklist.tsx`                         | NBD-85           |
+| Guided morning and evening adhkar      | partial to done           | `apps/native/src/adhkar/useAdhkarFlow.ts`                                       | NBD-98           |
+| Daily adhkar category                  | missing                   | `apps/native/src/adhkar`                                                        | NBD-98           |
+| Repeatable adhkar lists and references | partial                   | `apps/native/src/adhkar`                                                        | NBD-98           |
+| Intentions                             | done                      | `apps/native/src/intentions/IntentionsRoute.tsx`                                | NBD-85           |
+| Prayer calculation page                | done for core calculation | `apps/native/src/prayer-times/PrayerTimesRoute.tsx`                             | NBD-85           |
+| Location capability                    | partial                   | `apps/native/src/device/useLocationCapability.ts`                               | NBD-100          |
+| Prayer notifications                   | partial to done           | `apps/native/src/device/usePrayerAlarms.ts`, `notifications.ts`                 | NBD-100, NBD-102 |
+| Exact-alarm gating                     | partial                   | `apps/native/src/device/usePrayerAlarms.ts`, Kotlin module                      | NBD-101          |
+| Qada                                   | done                      | `apps/native/src/qada/QadaLedger.tsx`                                           | NBD-85           |
+| Statistics and charts                  | partial                   | `apps/native/src/stats/StatsRoute.tsx`                                          | NBD-103          |
+| Complete export and import             | missing                   | `apps/native/src/stats`, SQLite repositories                                    | NBD-91           |
+| Appearance                             | partial                   | `apps/native/src/settings/SettingsRoute.tsx`, `src/preferences`                 | NBD-100          |
+| Settings parity                        | partial                   | `apps/native/src/settings`, `src/device`                                        | NBD-100          |
+| iOS-ready native boundaries            | done                      | `apps/native/src/device/platform`, `docs/native/ios.md`, Kotlin module, plugins | NBD-105          |
+| Native boundary and CI split           | planned                   | workspace scripts and CI configuration                                          | NBD-106          |
+| Android release verification           | planned                   | EAS release APK flow                                                            | NBD-89a, NBD-92  |
 
 ## E. Stale-point reconciliation
 
