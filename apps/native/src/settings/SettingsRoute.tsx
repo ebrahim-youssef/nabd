@@ -33,6 +33,7 @@ import {
   type NativeThemePreference,
 } from '../preferences/theme'
 import { NATIVE_SETTINGS_COPY } from './constants'
+import { BatterySection } from './BatterySection'
 import { CountdownToggle } from './CountdownToggle'
 import { LocationSection } from './LocationSection'
 import { SoundPreviewSection } from './SoundPreviewSection'
@@ -413,6 +414,8 @@ export function SettingsRoute() {
             </View>
           ) : null}
         </View>
+
+        <BatterySection />
 
         <SoundPreviewSection />
 
