@@ -34,6 +34,7 @@ import {
 } from '../preferences/theme'
 import { NATIVE_SETTINGS_COPY } from './constants'
 import { useWirdLevel } from '../wird/useWirdLevel'
+import { BackupSection } from '../backup/BackupSection'
 
 type SettingsState = {
   theme: NativeThemePreference
@@ -451,6 +452,7 @@ export function SettingsRoute() {
             </Pressable>
           ))}
         </View>
+        <BackupSection />
       </View>
     </ScreenContainer>
   )
