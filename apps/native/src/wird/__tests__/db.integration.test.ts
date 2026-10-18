@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
-import { WIRD_LEVELS } from '@nabd/shared'
+import { versionInForce, WIRD_LEVELS } from '@nabd/shared'
 
 import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
@@ -130,7 +130,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: false, effectiveFrom: null })
       expect(versionRows(connection)).toHaveLength(1)
@@ -149,7 +148,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
       expect(versionRows(connection)).toHaveLength(2)
@@ -168,6 +166,28 @@ describe('native wird version healing', () => {
     }
   })
 
+  it('lets a later manual level version outrank a healed version', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, changedLevelDefinition, CREATED_AT)
+      const repository = createWirdRepository(database)
+
+      await expect(
+        repository.healVersionFromLevels({
+          today: TODAY,
+        }),
+      ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
+      insertVersion(connection, 'version-manual', TOMORROW, WIRD_LEVELS[1].wird, CREATED_AT + 1_000)
+
+      const versions = await repository.listVersions()
+      expect(versionInForce(versions, TOMORROW)?.id).toBe('version-manual')
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('creates a changed level definition effective tomorrow when today has entries', async () => {
     const { directory, connection } = fresh()
     try {
@@ -178,7 +198,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
       expect(versionRows(connection)).toEqual(
@@ -200,7 +219,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 2,
         }),
       ).resolves.toEqual({ created: false, effectiveFrom: null })
       expect(versionRows(connection)).toHaveLength(2)
@@ -226,7 +244,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 2,
         }),
       ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
       expect(versionRows(connection)).toEqual(
@@ -253,7 +270,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: false, effectiveFrom: null })
       expect(versionRows(connection)).toHaveLength(1)
@@ -275,7 +291,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(database).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 1,
         }),
       ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
 
@@ -296,8 +311,8 @@ describe('native wird version healing', () => {
       const repository = createWirdRepository(database)
 
       const results = await Promise.all([
-        repository.healVersionFromLevels({ today: TODAY, createdAt: CREATED_AT + 1 }),
-        repository.healVersionFromLevels({ today: TODAY, createdAt: CREATED_AT + 2 }),
+        repository.healVersionFromLevels({ today: TODAY }),
+        repository.healVersionFromLevels({ today: TODAY }),
       ])
 
       expect(results.filter((result) => result.created)).toHaveLength(1)
@@ -314,9 +329,10 @@ describe('native wird version healing', () => {
       const database = await migrate(connection)
       insertVersion(connection, VERSION_ID, TODAY, changedLevelDefinition, CREATED_AT)
       const repository = createWirdRepository(database)
-      await expect(
-        repository.healVersionFromLevels({ today: TODAY, createdAt: CREATED_AT + 1 }),
-      ).resolves.toEqual({ created: true, effectiveFrom: TOMORROW })
+      await expect(repository.healVersionFromLevels({ today: TODAY })).resolves.toEqual({
+        created: true,
+        effectiveFrom: TOMORROW,
+      })
       connection.close()
 
       const reopenedConnection = new DatabaseSync(join(directory, 'nabd.db'))
@@ -325,7 +341,6 @@ describe('native wird version healing', () => {
         await expect(
           createWirdRepository(reopenedDatabase).healVersionFromLevels({
             today: TODAY,
-            createdAt: CREATED_AT + 2,
           }),
         ).resolves.toEqual({ created: false, effectiveFrom: null })
         expect(versionRows(reopenedConnection)).toHaveLength(2)
@@ -347,7 +362,6 @@ describe('native wird version healing', () => {
       await expect(
         createWirdRepository(failingDatabase).healVersionFromLevels({
           today: TODAY,
-          createdAt: CREATED_AT + 1,
         }),
       ).rejects.toThrow('injected SQLite failure')
       expect(versionRows(connection)).toHaveLength(1)

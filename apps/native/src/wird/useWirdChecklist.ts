@@ -25,7 +25,6 @@ export function useWirdChecklist(day: DayId): ChecklistState {
     const healing = repository
       .healVersionFromLevels({
         today,
-        createdAt: Date.now(),
       })
       .catch((cause: unknown) => {
         logger.error('Native wird version healing failed', cause, { day })
