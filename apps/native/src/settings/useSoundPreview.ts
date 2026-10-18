@@ -83,9 +83,10 @@ export function useSoundPreview() {
   const stop = useCallback(() => {
     const activePreview = activePreviewRef.current
     if (!activePreview) return
-    activePreview.player.pause()
+    activePreviewRef.current = null
+    releasePreview(activePreview)
     setCurrentId(null)
-  }, [])
+  }, [releasePreview])
 
   useEffect(() => {
     void setAudioModeAsync({ playsInSilentMode: false, shouldPlayInBackground: false }).catch(

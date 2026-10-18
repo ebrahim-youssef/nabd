@@ -61,7 +61,7 @@ describe('useSoundPreview', () => {
     expect(result.current.currentId).toBe('adhan')
   })
 
-  it('pauses the active preview and returns to idle when stopped', async () => {
+  it('releases the active preview and returns to idle when stopped', async () => {
     const { result } = await renderHook(() => useSoundPreview())
 
     await act(async () => {
@@ -73,7 +73,7 @@ describe('useSoundPreview', () => {
     })
 
     expect(players[0].pause).toHaveBeenCalledTimes(1)
-    expect(players[0].release).not.toHaveBeenCalled()
+    expect(players[0].release).toHaveBeenCalledTimes(1)
     expect(result.current.currentId).toBeNull()
   })
 
