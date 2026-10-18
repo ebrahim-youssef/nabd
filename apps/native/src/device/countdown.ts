@@ -10,7 +10,9 @@ import {
   type TimelineStatus,
 } from '@nabd/shared'
 
-const COUNTDOWN_DAY_COUNT = 3
+// The Kotlin worker cannot compute prayer times, so the payload carries a month ahead; every
+// app open replaces it, and it only lapses if the app stays closed for the whole month.
+const COUNTDOWN_DAY_COUNT = 30
 const PRAYER_IDS = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 
 export type CountdownPrayerId = (typeof PRAYER_IDS)[number]

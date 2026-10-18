@@ -61,7 +61,7 @@ describe('countdown notification wrapper', () => {
     },
   )
 
-  it('builds the native payload from three-day boundaries and city', () => {
+  it('builds the native payload from the countdown boundaries and city', () => {
     const setCountdown = jest.fn(() => 'posted')
     mockedRequireOptionalNativeModule.mockReturnValue({ setCountdown } as never)
 

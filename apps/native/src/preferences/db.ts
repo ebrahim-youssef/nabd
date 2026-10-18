@@ -9,7 +9,6 @@ import type { ProductDatabase } from '../db/productDatabase'
 export const PREFERENCE_KEYS = {
   celebratedDay: 'nabd:celebrated-day',
   calculationMethod: 'nabd:prayer-calculation-method',
-  cityCoordinates: 'nabd:city-coordinates',
   city: 'nabd:city',
   latitude: 'nabd:cached-latitude',
   longitude: 'nabd:cached-longitude',
