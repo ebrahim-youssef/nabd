@@ -54,6 +54,10 @@ jobs:
       - name: Assemble release APK
         working-directory: apps/native/android
         run: ./gradlew assembleRelease
+      # The Kotlin JVM tests in modules/nabd-device run nowhere else.
+      - name: Native module unit tests
+        working-directory: apps/native/android
+        run: ./gradlew :nabd-device:testReleaseUnitTest
       - uses: actions/upload-artifact@v4
         with:
           name: nabd-apk-${{ github.run_number }}-${{ github.sha }}
