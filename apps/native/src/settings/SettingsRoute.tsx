@@ -33,6 +33,10 @@ import {
   type NativeThemePreference,
 } from '../preferences/theme'
 import { NATIVE_SETTINGS_COPY } from './constants'
+import { BatterySection } from './BatterySection'
+import { CountdownToggle } from './CountdownToggle'
+import { LocationSection } from './LocationSection'
+import { SoundPreviewSection } from './SoundPreviewSection'
 import { useWirdLevel } from '../wird/useWirdLevel'
 import { BackupSection } from '../backup/BackupSection'
 
@@ -249,6 +253,8 @@ function SettingsContent({ onRestored }: { onRestored: () => void }) {
           </View>
         </View>
 
+        <LocationSection />
+
         <View className="gap-3" testID="settings-notifications">
           <Text className="font-display text-label text-start text-muted-foreground">
             {SETTINGS_COPY.groups.notifications}
@@ -297,6 +303,10 @@ function SettingsContent({ onRestored }: { onRestored: () => void }) {
                 />
               ) : null}
             </View>
+            <CountdownToggle
+              notificationPermission={notificationSettings.permission}
+              notificationsEnabled={notificationSettings.prefs.enabled}
+            />
             {!notificationSettings.hasCoordinates ? (
               <Text
                 className="text-small text-start text-muted-foreground"
@@ -422,6 +432,10 @@ function SettingsContent({ onRestored }: { onRestored: () => void }) {
             </View>
           ) : null}
         </View>
+
+        <BatterySection />
+
+        <SoundPreviewSection />
 
         <View className="gap-3" testID="settings-level">
           <Text className="font-display text-label text-start text-muted-foreground">
