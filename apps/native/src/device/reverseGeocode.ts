@@ -7,11 +7,9 @@ const REVERSE_GEOCODE_ENDPOINT = 'https://api.bigdatacloud.net/data/reverse-geoc
 const COORDINATE_DECIMAL_PLACES = 2
 export const REVERSE_GEOCODE_TIMEOUT_MS = 5_000
 
-type CityPreferenceKey = typeof PREFERENCE_KEYS.city | typeof PREFERENCE_KEYS.cityCoordinates
-
 export type CityPreferenceStore = {
-  read: (key: CityPreferenceKey) => Promise<string | null>
-  write: (key: CityPreferenceKey, value: string, updatedAt: number) => Promise<void>
+  read: (key: typeof PREFERENCE_KEYS.city) => Promise<string | null>
+  write: (key: typeof PREFERENCE_KEYS.city, value: string, updatedAt: number) => Promise<void>
 }
 
 type ReverseGeocodeResponse = {
@@ -27,13 +25,26 @@ function cachedCity(value: string | null): string | null {
 
 type CachedCity = { city: string | null; coordinatesKey: string | null }
 
+// City and location key live in one row so a single write keeps them consistent. A plain string
+// is an older cached city with no key: usable as a fallback, never as a cache hit.
+function parseCachedCity(value: string | null): CachedCity {
+  try {
+    const parsed: unknown = JSON.parse(value ?? '')
+    if (typeof parsed === 'object' && parsed !== null) {
+      const { city, coordinatesKey } = parsed as Record<string, unknown>
+      if (typeof city === 'string' && typeof coordinatesKey === 'string') {
+        return { city: cachedCity(city), coordinatesKey }
+      }
+    }
+  } catch {
+    // Not JSON: fall through to the plain-string form.
+  }
+  return { city: cachedCity(value), coordinatesKey: null }
+}
+
 async function readCachedCity(preferences: CityPreferenceStore): Promise<CachedCity> {
   try {
-    const [city, coordinatesKey] = await Promise.all([
-      preferences.read(PREFERENCE_KEYS.city),
-      preferences.read(PREFERENCE_KEYS.cityCoordinates),
-    ])
-    return { city: cachedCity(city), coordinatesKey }
+    return parseCachedCity(await preferences.read(PREFERENCE_KEYS.city))
   } catch (cause: unknown) {
     logger.warn('Reverse geocode city cache read failed', { operation: 'read', error: cause })
     return { city: null, coordinatesKey: null }
@@ -108,8 +119,11 @@ export async function resolveCityLabel(
     }
 
     try {
-      await preferences.write(PREFERENCE_KEYS.city, city, updatedAt)
-      await preferences.write(PREFERENCE_KEYS.cityCoordinates, coordinatesKey, updatedAt)
+      await preferences.write(
+        PREFERENCE_KEYS.city,
+        JSON.stringify({ city, coordinatesKey }),
+        updatedAt,
+      )
     } catch (cause: unknown) {
       logger.warn('Reverse geocode city cache write failed', { operation: 'write', error: cause })
     }

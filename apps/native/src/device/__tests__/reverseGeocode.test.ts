@@ -12,8 +12,10 @@ function createStore(
   city: string | null = null,
   coordinatesKey: string | null = null,
 ): jest.Mocked<CityPreferenceStore> {
+  const stored =
+    city !== null && coordinatesKey !== null ? JSON.stringify({ city, coordinatesKey }) : city
   return {
-    read: jest.fn(async (key) => (key === PREFERENCE_KEYS.city ? city : coordinatesKey)),
+    read: jest.fn().mockResolvedValue(stored),
     write: jest.fn().mockResolvedValue(undefined),
   }
 }
@@ -43,8 +45,12 @@ describe('reverse geocode city lookup', () => {
       'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=30.04&longitude=31.24&localityLanguage=ar',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
-    expect(store.write).toHaveBeenCalledWith(PREFERENCE_KEYS.city, 'القاهرة', 1234)
-    expect(store.write).toHaveBeenCalledWith(PREFERENCE_KEYS.cityCoordinates, '30.04,31.24', 1234)
+    expect(store.write).toHaveBeenCalledTimes(1)
+    expect(store.write).toHaveBeenCalledWith(
+      PREFERENCE_KEYS.city,
+      JSON.stringify({ city: 'القاهرة', coordinatesKey: '30.04,31.24' }),
+      1234,
+    )
   })
 
   it('returns the cached city without a request when the rounded location is unchanged', async () => {
