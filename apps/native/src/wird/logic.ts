@@ -1,4 +1,28 @@
-import type { WirdDefinition } from '@nabd/shared'
+import { levelMatching, nextDay, sameDefinition } from '@nabd/shared'
+import type { DayId, WirdDefinition, WirdVersion } from '@nabd/shared'
+
+export type WirdLevelDefinition = { wird: WirdDefinition }
+
+export type VersionHealingPlan = {
+  definition: WirdDefinition
+  effectiveFrom: DayId
+}
+
+export function planVersionHealing(
+  current: WirdVersion | null,
+  levels: WirdLevelDefinition[],
+  today: DayId,
+): VersionHealingPlan | null {
+  if (!current) return null
+
+  const level = levelMatching(current.definition, levels)
+  if (!level || sameDefinition(current.definition, level.wird)) return null
+
+  return {
+    definition: level.wird,
+    effectiveFrom: nextDay(today),
+  }
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)

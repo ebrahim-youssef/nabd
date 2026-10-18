@@ -146,6 +146,7 @@ describe('SettingsRoute', () => {
       getAllEntries: jest.fn(),
       addVersion: jest.fn(),
       appendEntry: jest.fn(),
+      healVersionFromLevels: jest.fn(),
       setWirdLevel,
     })
     setWirdLevel.mockResolvedValue({ ok: true, value: undefined })

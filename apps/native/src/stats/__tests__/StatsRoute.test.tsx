@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
-import type { QadaEvent, WirdEntry, WirdRepository, WirdVersion } from '@nabd/shared'
+import type { QadaEvent, WirdEntry, WirdVersion } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import StatsRoute from '../../../app/(tabs)/stats'
 import { createQadaRepository } from '../../qada/db'
 import { useWirdRepository } from '../../wird/useWirdRepository'
+import type { NativeWirdRepository } from '../../wird/db'
 import { ItemStatsSection } from '../ItemStatsSection'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
@@ -45,7 +46,7 @@ const entries: WirdEntry[] = [
 
 const qadaEvents: QadaEvent[] = [{ id: 'q1', prayerId: 'fajr', delta: 2, at: 3 }]
 
-function repository(): WirdRepository {
+function repository(): NativeWirdRepository {
   return {
     listVersions: jest.fn(async () => versions),
     getDayEntries: jest.fn(),
@@ -54,6 +55,7 @@ function repository(): WirdRepository {
     getAllEntries: jest.fn(async () => entries),
     addVersion: jest.fn(),
     appendEntry: jest.fn(),
+    healVersionFromLevels: jest.fn(),
     setWirdLevel: jest.fn(),
   }
 }

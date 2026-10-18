@@ -1,4 +1,9 @@
-import { deviceCopy, evaluateLocation, mapDevicePermission } from '../logic'
+import {
+  deviceCopy,
+  evaluateLocation,
+  mapBatteryOptimizationStatus,
+  mapDevicePermission,
+} from '../logic'
 import type { LocationCapabilitySnapshot } from '../types'
 
 const baseSnapshot: LocationCapabilitySnapshot = {
@@ -16,6 +21,16 @@ describe('device permission mapping', () => {
     [{ status: 'granted', canAskAgain: true }, 'granted'],
   ] as const)('maps a %s permission response to %s', (response, expected) => {
     expect(mapDevicePermission(response)).toBe(expected)
+  })
+})
+
+describe('battery optimization mapping', () => {
+  it.each([
+    [true, 'exempt'],
+    [false, 'optimized'],
+    ['unexpected', 'unsupported'],
+  ] as const)('maps %s to %s', (value, expected) => {
+    expect(mapBatteryOptimizationStatus(value)).toBe(expected)
   })
 })
 

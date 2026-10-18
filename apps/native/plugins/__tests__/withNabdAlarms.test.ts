@@ -30,9 +30,10 @@ describe('withNabdAlarms', () => {
     expect(names).toEqual([
       'android.permission.USE_EXACT_ALARM',
       'android.permission.SCHEDULE_EXACT_ALARM',
+      'android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS',
     ])
     expect(entries[1].$['android:maxSdkVersion']).toBe('32')
-    expect(plugin._internals.PERMISSIONS).toHaveLength(2)
+    expect(plugin._internals.PERMISSIONS).toHaveLength(3)
   })
 
   it('does not duplicate permissions or lose the cap when applied twice', () => {
@@ -41,7 +42,7 @@ describe('withNabdAlarms', () => {
     plugin._internals.applyManifest(manifest)
 
     const entries = manifest.manifest['uses-permission']
-    expect(entries).toHaveLength(2)
+    expect(entries).toHaveLength(3)
     expect(entries[1].$['android:maxSdkVersion']).toBe('32')
   })
 })
