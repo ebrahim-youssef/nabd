@@ -168,7 +168,7 @@ describe('native wird hooks', () => {
     expect(getHealedDays()).toEqual([tomorrow])
   })
 
-  it('heals today without changing an old day entry', async () => {
+  it("keeps today's definition and old entries while healing for tomorrow", async () => {
     const oldEntry: EntryRow = {
       id: 'entry-history',
       day: '2026-09-13',
@@ -223,6 +223,20 @@ describe('native wird hooks', () => {
     expect(errorSpy).toHaveBeenCalledWith('Native wird version healing failed', expect.any(Error), {
       day: DAY,
     })
+  })
+
+  it('retries healing on the next read after a failure', async () => {
+    jest.spyOn(logger, 'error').mockImplementation(() => undefined)
+    const { database, getHealCalls } = createDatabase({ failHealing: true })
+    mockedUseSQLiteContext.mockReturnValue(database as never)
+
+    await render(<Harness />)
+    await screen.findByTestId('item')
+    expect(getHealCalls()).toBe(1)
+
+    await fireEvent.press(screen.getByTestId('item'))
+
+    await waitFor(() => expect(getHealCalls()).toBe(2))
   })
 
   it('writes a toggle and re-reads the checklist state', async () => {

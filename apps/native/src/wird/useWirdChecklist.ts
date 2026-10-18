@@ -29,6 +29,7 @@ export function useWirdChecklist(day: DayId): ChecklistState {
       })
       .catch((cause: unknown) => {
         logger.error('Native wird version healing failed', cause, { day })
+        healingByDay.current.delete(today)
         return null
       })
     healingByDay.current.set(today, healing)
