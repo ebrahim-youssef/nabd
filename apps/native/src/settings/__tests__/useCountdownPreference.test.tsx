@@ -66,6 +66,41 @@ describe('useCountdownPreference', () => {
     }
   })
 
+  it('keeps a toggle made before the stored value finishes loading', async () => {
+    const { connection, database } = createDatabase()
+    try {
+      await migrateDatabase(database)
+      let releaseRead!: () => void
+      const readGate = new Promise<void>((resolve) => {
+        releaseRead = resolve
+      })
+      const slowReadDatabase = {
+        ...database,
+        getFirstAsync: async <T,>(source: string, ...parameters: SqlValue[]) => {
+          const storedBeforeToggle = await database.getFirstAsync<T>(source, ...parameters)
+          await readGate
+          return storedBeforeToggle
+        },
+      }
+      mockedUseSQLiteContext.mockReturnValue(
+        slowReadDatabase as unknown as ReturnType<typeof useSQLiteContext>,
+      )
+
+      const hook = await renderHook(() => useCountdownPreference())
+      await act(async () => {
+        await hook.result.current.setEnabled(true)
+      })
+      await act(async () => {
+        releaseRead()
+        await readGate
+      })
+
+      expect(hook.result.current.enabled).toBe(true)
+    } finally {
+      connection.close()
+    }
+  })
+
   it('switches back when the preference write fails', async () => {
     const { connection, database } = createDatabase()
     try {

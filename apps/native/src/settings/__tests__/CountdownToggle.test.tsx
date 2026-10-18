@@ -19,7 +19,7 @@ describe('CountdownToggle', () => {
   })
 
   it('writes the preference when notifications are permitted', async () => {
-    await render(<CountdownToggle notificationPermission="granted" />)
+    await render(<CountdownToggle notificationPermission="granted" notificationsEnabled />)
 
     await fireEvent(screen.getByTestId('notification-countdown'), 'valueChange', true)
 
@@ -27,7 +27,13 @@ describe('CountdownToggle', () => {
   })
 
   it('disables the preference when notifications are not permitted', async () => {
-    await render(<CountdownToggle notificationPermission="denied" />)
+    await render(<CountdownToggle notificationPermission="denied" notificationsEnabled />)
+
+    expect(screen.getByTestId('notification-countdown').props.disabled).toBe(true)
+  })
+
+  it('disables the preference when the notifications switch is off', async () => {
+    await render(<CountdownToggle notificationPermission="granted" notificationsEnabled={false} />)
 
     expect(screen.getByTestId('notification-countdown').props.disabled).toBe(true)
   })

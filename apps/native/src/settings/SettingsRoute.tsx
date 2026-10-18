@@ -288,7 +288,10 @@ export function SettingsRoute() {
                 />
               ) : null}
             </View>
-            <CountdownToggle notificationPermission={notificationSettings.permission} />
+            <CountdownToggle
+              notificationPermission={notificationSettings.permission}
+              notificationsEnabled={notificationSettings.prefs.enabled}
+            />
             {!notificationSettings.hasCoordinates ? (
               <Text
                 className="text-small text-start text-muted-foreground"

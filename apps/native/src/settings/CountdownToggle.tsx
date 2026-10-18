@@ -7,11 +7,15 @@ import { useCountdownPreference } from './useCountdownPreference'
 
 type CountdownToggleProps = {
   notificationPermission: NotificationPermission
+  notificationsEnabled: boolean
 }
 
-export function CountdownToggle({ notificationPermission }: CountdownToggleProps) {
+export function CountdownToggle({
+  notificationPermission,
+  notificationsEnabled,
+}: CountdownToggleProps) {
   const { enabled, setEnabled } = useCountdownPreference()
-  const disabled = notificationPermission !== 'granted'
+  const disabled = notificationPermission !== 'granted' || !notificationsEnabled
 
   return (
     <View
