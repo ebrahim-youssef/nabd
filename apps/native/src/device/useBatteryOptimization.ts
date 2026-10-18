@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AppState } from 'react-native'
 
-import { readBatteryOptimizationStatus, requestBatteryOptimizationExemption } from './battery'
+import { devicePlatform } from './platform'
 import type { BatteryOptimizationRequestResult, BatteryOptimizationStatus } from './types'
 
 export type BatteryOptimizationView = {
@@ -11,15 +11,15 @@ export type BatteryOptimizationView = {
 
 export function useBatteryOptimization(): BatteryOptimizationView {
   const [status, setStatus] = useState<BatteryOptimizationStatus>(() =>
-    readBatteryOptimizationStatus(),
+    devicePlatform.readBatteryProtectionStatus(),
   )
 
   const refresh = useCallback(() => {
-    setStatus(readBatteryOptimizationStatus())
+    setStatus(devicePlatform.readBatteryProtectionStatus())
   }, [])
 
   const request = useCallback(
-    (): BatteryOptimizationRequestResult => requestBatteryOptimizationExemption(),
+    (): BatteryOptimizationRequestResult => devicePlatform.requestBatteryProtection(),
     [],
   )
 
