@@ -30,7 +30,7 @@ build          expo export --platform android
 lint           eslint .
 typecheck      tsc --noEmit
 test           jest --runInBand
-check:no-sentry  node apps/native/scripts/check-no-sentry.mjs
+check:no-sentry  node scripts/check-no-sentry.mjs
 ```
 
 `packages/shared/package.json` defines `lint`, `typecheck`, and `test` using ESLint, TypeScript,
