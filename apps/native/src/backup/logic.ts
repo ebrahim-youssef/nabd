@@ -3,7 +3,7 @@ import { WIRD_LEVELS } from '../content/levels'
 import { isDayId } from '../lib/day'
 import { QADA_PRAYERS } from '../qada/logic'
 
-import { CURRENT_SCHEMA_VERSION } from '../db/database'
+import { CURRENT_SCHEMA_VERSION } from '../db/schemaVersion'
 import { parseAnswers } from '../onboarding/logic'
 import { parseDefinition } from '../wird/logic'
 import type { BackupEnvelope, BackupRows, BackupTable, RestorePlan } from './types'

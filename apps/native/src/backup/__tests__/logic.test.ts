@@ -1,4 +1,4 @@
-import { CURRENT_SCHEMA_VERSION } from '../../db/database'
+import { CURRENT_SCHEMA_VERSION } from '../../db/schemaVersion'
 import { WIRD_LEVELS } from '../../content/levels'
 import {
   BACKUP_TABLES,

@@ -31,6 +31,15 @@ const PURE_LOGIC_RESTRICTED_IMPORTS = [
   'happy-dom',
   '@testing-library/dom',
   '@testing-library/*',
+  '**/db/*',
+  '**/db/database',
+  '**/db/sqlite*',
+  '!**/db/schemaVersion',
+  '**/device/*',
+  '!**/device/logic',
+  '!**/device/types',
+  '!**/device/copy',
+  '**/observability/*',
 ]
 
 const PURE_LOGIC_MESSAGE =
