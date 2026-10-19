@@ -1,12 +1,9 @@
-import {
-  CALCULATION_METHODS,
-  DEFAULT_METHOD_ID,
-  SETTINGS_COPY,
-  WIRD_LEVELS,
-  shellCopy,
-  toDayId,
-  type CalculationMethodId,
-} from '@nabd/shared'
+import type { CalculationMethodId } from '../prayer-times/logic'
+import { WIRD_LEVELS } from '../content/levels'
+import { toDayId } from '../lib/day'
+import { CALCULATION_METHODS, DEFAULT_METHOD_ID } from '../prayer-times/logic'
+import { shellCopy } from '../shell/copy'
+import { SETTINGS_COPY } from './copy'
 import { useRouter } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useColorScheme } from 'nativewind'
