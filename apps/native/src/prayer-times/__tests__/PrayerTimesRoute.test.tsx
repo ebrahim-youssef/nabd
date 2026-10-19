@@ -59,6 +59,7 @@ const refreshingStatus: LocationStatus = {
 
 function makeLocationView(overrides: Partial<LocationCapabilityView> = {}): LocationCapabilityView {
   return {
+    permission: 'granted',
     status: readyStatus,
     coordinates: { latitude: 30.0444, longitude: 31.2357 },
     isRefreshing: false,
