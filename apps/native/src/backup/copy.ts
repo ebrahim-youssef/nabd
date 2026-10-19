@@ -1,3 +1,4 @@
+import { toArabicIndic } from '@nabd/shared'
 import type { BackupTable } from './types'
 import type { BackupStatus } from './useBackup'
 import { BACKUP_TABLES } from './logic'
@@ -21,6 +22,7 @@ export const BACKUP_COPY = {
   busy: 'جارٍ تجهيز النسخة الاحتياطية…',
   previewTitle: 'مراجعة الاستيراد',
   previewBody: 'ستُضاف السجلات التالية إلى بياناتك، ولن تُستبدل السجلات الموجودة.',
+  previewEmpty: 'كل ما في هذا الملف موجود على جهازك بالفعل.',
   confirm: 'تأكيد الاستيراد',
   cancel: 'إلغاء',
   status: {
@@ -38,7 +40,11 @@ export const BACKUP_COPY = {
 } as const
 
 export function countLabel(count: number): string {
-  return count === 1 ? 'سجل واحد' : `${count} سجلات`
+  if (count === 0) return 'لا سجلات'
+  if (count === 1) return 'سجل واحد'
+  if (count === 2) return 'سجلان'
+  if (count <= 10) return `${toArabicIndic(count)} سجلات`
+  return `${toArabicIndic(count)} سجلًا`
 }
 
 function totalRestoreCount(counts: Record<BackupTable, number>): number {

@@ -54,6 +54,8 @@ export function BackupImport({
   preview,
   status,
 }: BackupImportProps) {
+  const previewTables = preview ? BACKUP_TABLES.filter((table) => preview.counts[table] > 0) : []
+
   async function handleConfirm() {
     const result = await confirmRestore()
     if (result?.ok) onRestored?.()
@@ -63,36 +65,50 @@ export function BackupImport({
     <>
       {preview ? (
         <View className="gap-3" testID="backup-preview">
-          <Text className="font-display text-body text-start text-primary" selectable>
-            {BACKUP_COPY.previewTitle}
-          </Text>
-          <Text className="text-small text-start text-muted-foreground" selectable>
-            {BACKUP_COPY.previewBody}
-          </Text>
-          <View className="gap-2">
-            {BACKUP_TABLES.map((table) => (
-              <View className="flex-row items-center justify-between gap-3" key={table}>
-                <Text className="text-small text-start text-foreground" selectable>
-                  {BACKUP_TABLE_LABELS[table]}
-                </Text>
-                <Text
-                  className="text-small text-start font-body-medium text-primary"
-                  selectable
-                  testID={`backup-count-${table}`}
-                >
-                  {countLabel(preview.counts[table])}
-                </Text>
+          {previewTables.length > 0 ? (
+            <>
+              <Text className="font-display text-body text-start text-primary" selectable>
+                {BACKUP_COPY.previewTitle}
+              </Text>
+              <Text className="text-small text-start text-muted-foreground" selectable>
+                {BACKUP_COPY.previewBody}
+              </Text>
+              <View className="gap-2">
+                {previewTables.map((table) => (
+                  <View className="flex-row items-center justify-between gap-3" key={table}>
+                    <Text className="text-small text-start text-foreground" selectable>
+                      {BACKUP_TABLE_LABELS[table]}
+                    </Text>
+                    <Text
+                      className="text-small text-start font-body-medium text-primary"
+                      selectable
+                      testID={`backup-count-${table}`}
+                    >
+                      {countLabel(preview.counts[table])}
+                    </Text>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            </>
+          ) : (
+            <Text
+              className="text-body text-start text-foreground"
+              selectable
+              testID="backup-preview-empty"
+            >
+              {BACKUP_COPY.previewEmpty}
+            </Text>
+          )}
           <View className="gap-2">
-            <BackupButton
-              disabled={isBusy}
-              label={BACKUP_COPY.confirm}
-              onPress={handleConfirm}
-              primary
-              testID="backup-confirm"
-            />
+            {previewTables.length > 0 ? (
+              <BackupButton
+                disabled={isBusy}
+                label={BACKUP_COPY.confirm}
+                onPress={handleConfirm}
+                primary
+                testID="backup-confirm"
+              />
+            ) : null}
             <BackupButton
               disabled={isBusy}
               label={BACKUP_COPY.cancel}

@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
-import { BACKUP_COPY } from '../copy'
+import { BACKUP_COPY, countLabel } from '../copy'
 import type { BackupStatus } from '../useBackup'
 import { BackupSection } from '../BackupSection'
 import { useBackup } from '../useBackup'
@@ -33,6 +33,11 @@ const preview = {
     },
   },
   counts,
+}
+
+const emptyPreview = {
+  ...preview,
+  counts: { ...counts, app_preferences: 0 },
 }
 
 function state(overrides: Partial<ReturnType<typeof useBackup>> = {}) {
@@ -73,10 +78,38 @@ describe('BackupSection', () => {
     await render(<BackupSection />)
 
     expect(screen.getByTestId('backup-preview')).toBeTruthy()
-    expect(screen.getByTestId('backup-count-app_preferences')).toHaveTextContent('2 سجلات')
+    expect(screen.getByTestId('backup-count-app_preferences')).toHaveTextContent('سجلان')
     await fireEvent.press(screen.getByTestId('backup-confirm'))
 
     expect(confirmRestore).toHaveBeenCalledTimes(1)
+    expect(screen.queryByTestId('backup-count-onboarding_state')).toBeNull()
+  })
+
+  it('shows only a close action when the preview has no new records', async () => {
+    const cancelRestore = jest.fn()
+    const confirmRestore = jest.fn()
+    mockedUseBackup.mockReturnValue(state({ preview: emptyPreview, cancelRestore, confirmRestore }))
+
+    await render(<BackupSection />)
+
+    expect(screen.getByTestId('backup-preview-empty')).toHaveTextContent(
+      'كل ما في هذا الملف موجود على جهازك بالفعل.',
+    )
+    expect(screen.queryByTestId('backup-count-app_preferences')).toBeNull()
+    expect(screen.queryByTestId('backup-confirm')).toBeNull()
+    expect(screen.getByTestId('backup-cancel')).toBeTruthy()
+  })
+
+  it.each([
+    [0, 'لا سجلات'],
+    [1, 'سجل واحد'],
+    [2, 'سجلان'],
+    [3, '٣ سجلات'],
+    [10, '١٠ سجلات'],
+    [11, '١١ سجلًا'],
+    [100, '١٠٠ سجلًا'],
+  ])('formats %s backup records for Arabic UI as %s', (count, expected) => {
+    expect(countLabel(count)).toBe(expected)
   })
 
   it('notifies the owner after a successful restore', async () => {
