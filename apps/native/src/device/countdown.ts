@@ -1,14 +1,14 @@
+import type { CalculationMethodId } from '../prayer-times/logic'
+import type { TimelineStatus } from '../prayer-times/types'
+import type { Coords } from './types'
+import { PRAYER_LABELS } from '../prayer-times/copy'
 import {
   AFTER_WINDOW_MS,
   computeDayTimes,
   DEFAULT_METHOD_ID,
-  PRAYER_LABELS,
   statusLine,
   timelineStatus,
-  type CalculationMethodId,
-  type Coords,
-  type TimelineStatus,
-} from '@nabd/shared'
+} from '../prayer-times/logic'
 
 // The Kotlin worker cannot compute prayer times, so the payload carries a month ahead; every
 // app open replaces it, and it only lapses if the app stays closed for the whole month.

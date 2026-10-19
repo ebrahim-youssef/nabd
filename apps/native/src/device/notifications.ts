@@ -1,5 +1,5 @@
 import { requireOptionalNativeModule } from 'expo'
-import type { AlarmPayload } from '@nabd/shared'
+import type { AlarmPayload } from '../prayer-times/logic'
 import * as Notifications from 'expo-notifications'
 import type { NotificationRequest } from 'expo-notifications'
 
