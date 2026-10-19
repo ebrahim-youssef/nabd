@@ -30,6 +30,7 @@ export type LocationRefreshOptions = {
 }
 
 export type LocationCapabilityView = {
+  permission: LocationPermission
   status: LocationStatus
   coordinates: { latitude: number; longitude: number } | null
   isRefreshing: boolean
@@ -292,6 +293,7 @@ export function useLocationCapability(
   const status = evaluateLocation(currentSnapshot(view.snapshot, connectivity))
 
   return {
+    permission: view.snapshot.permission,
     status,
     coordinates: view.coordinates,
     isRefreshing,

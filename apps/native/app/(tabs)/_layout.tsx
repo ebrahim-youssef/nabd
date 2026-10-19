@@ -4,6 +4,7 @@ import { useColorScheme } from 'nativewind'
 import { useEffect, useMemo } from 'react'
 
 import { BottomNav } from '../../src/shell/BottomNav'
+import { useOnboardingComplete } from '../../src/onboarding/completion'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../src/preferences/db'
 import { readStoredTheme } from '../../src/preferences/theme'
 import { logger } from '../../src/observability/logger'
@@ -28,10 +29,15 @@ function NativeAppearanceBootstrap() {
 }
 
 function TabsContent() {
+  const isOnboardingComplete = useOnboardingComplete()
+
   return (
     <>
       <NativeAppearanceBootstrap />
-      <Tabs screenOptions={{ headerShown: false }} tabBar={() => <BottomNav />} />
+      <Tabs
+        screenOptions={{ headerShown: false }}
+        tabBar={() => <BottomNav isVisible={isOnboardingComplete} />}
+      />
     </>
   )
 }

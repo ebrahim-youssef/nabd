@@ -1,101 +1,30 @@
-import {
-  CALCULATION_METHODS,
-  computeDayTimes,
-  DEFAULT_METHOD_ID,
-  isCalculationMethodId,
-  PRAYER_LABELS,
-  PRAYER_TIMES_COPY,
-  SETTINGS_COPY,
-  shellCopy,
-  statusLine,
-  timelineStatus,
-  toArabicIndic,
-} from '@nabd/shared'
-import type { CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/shared'
-import { useSQLiteContext } from 'expo-sqlite'
-import { useEffect, useMemo, useState } from 'react'
+import { CALCULATION_METHODS, SETTINGS_COPY, shellCopy } from '@nabd/shared'
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
-import { logger } from '../observability/logger'
-import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
-import { useLocationCapability } from '../device/useLocationCapability'
-import { requestPrayerReschedule } from '../device/prayerAlarms'
-
-const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
+import { formatPrayerTime } from './formatPrayerTime'
+import { useTodayPrayerTimes } from './useTodayPrayerTimes'
 
 type PrayerTimesRouteProps = {
   now?: () => number
   today?: () => Date
 }
 
-function formatPrayerTime(at: number): string {
-  const date = new Date(at)
-  return `${toArabicIndic(date.getHours())}:${toArabicIndic(date.getMinutes()).padStart(2, '٠')}`
-}
-
-function prayerPoints(times: DayPrayerTimes): TimePoint[] {
-  return PRAYER_ORDER.map((id) => ({ id, label: PRAYER_LABELS[id], at: times[id] }))
-}
-
-function nextDay(date: Date): Date {
-  const next = new Date(date)
-  next.setDate(next.getDate() + 1)
-  return next
-}
-
 export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProps = {}) {
-  const database = useSQLiteContext()
-  const preferences = useMemo(() => createPreferencesRepository(database), [database])
-  const { status: locationStatus, coordinates, isRefreshing, runAction } = useLocationCapability()
-  const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
-
-  useEffect(() => {
-    let active = true
-    void preferences
-      .read(PREFERENCE_KEYS.calculationMethod)
-      .then((method) => {
-        if (!active) return
-        setMethodId(isCalculationMethodId(method) ? method : DEFAULT_METHOD_ID)
-      })
-      .catch((cause: unknown) => {
-        logger.error('Native prayer time preferences load failed', cause)
-      })
-
-    return () => {
-      active = false
-    }
-  }, [preferences])
-
-  const instant = now()
-  const date = today ? today() : new Date(instant)
-  const times = coordinates ? computeDayTimes(coordinates, date, methodId) : null
-  const tomorrowTimes = coordinates ? computeDayTimes(coordinates, nextDay(date), methodId) : null
-  const points = times
-    ? [
-        ...prayerPoints(times),
-        ...(tomorrowTimes
-          ? [{ id: 'tomorrow-fajr', label: PRAYER_TIMES_COPY.tomorrowFajr, at: tomorrowTimes.fajr }]
-          : []),
-      ]
-    : []
-  const timeline = timelineStatus(points, instant)
-  const prayerStatus = statusLine(timeline)
+  const {
+    changeMethod,
+    isRefreshing,
+    methodId,
+    points,
+    prayerStatus,
+    runAction,
+    status: locationStatus,
+    times,
+    timeline,
+  } = useTodayPrayerTimes({ now, today })
   const showLocationMessage = locationStatus.state !== 'ready'
-
-  async function changeMethod(methodId: CalculationMethodId) {
-    setMethodId(methodId)
-    try {
-      await preferences.write(PREFERENCE_KEYS.calculationMethod, methodId, now())
-      requestPrayerReschedule()
-    } catch (cause: unknown) {
-      logger.error('Native prayer calculation method write failed', cause, {
-        operation: 'change-calculation-method',
-      })
-    }
-  }
 
   return (
     <ScreenContainer testID="prayer-times-screen">

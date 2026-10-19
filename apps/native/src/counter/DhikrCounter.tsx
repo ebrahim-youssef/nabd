@@ -31,11 +31,16 @@ export function DhikrCounter({ day, itemId, label, target, done }: DhikrCounterP
           done ? 'border-primary bg-primary/10' : 'border-border bg-surface'
         }`}
       >
-        <Text className={`text-body ${done ? 'text-muted-foreground' : 'text-foreground'}`}>
+        <Text
+          className={`min-w-0 flex-1 text-body ${done ? 'text-muted-foreground' : 'text-foreground'}`}
+        >
           {label}
         </Text>
         {done ? (
-          <View className="h-6 w-6 shrink-0 items-center justify-center rounded-icon border-2 border-primary bg-primary">
+          <View
+            className="h-6 w-6 shrink-0 items-center justify-center rounded-icon border-2 border-primary bg-primary"
+            testID={`dhikr-check-${itemId}`}
+          >
             <Text className="text-body text-on-primary">{CHECKMARK}</Text>
           </View>
         ) : (

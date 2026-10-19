@@ -51,7 +51,7 @@ type NotificationSettingsView = {
   notificationStatus: NotificationStatus
   exactAlarmStatus: ExactAlarmStatus
   isPending: (key: NotificationWriteKey) => boolean
-  setEnabled: (value: boolean) => Promise<void>
+  setEnabled: (value: boolean) => Promise<NotificationPermission | null>
   setMoment: (key: NotificationMomentKey, value: boolean) => Promise<void>
   setSilentMode: (value: boolean) => Promise<void>
   runAction: (type: NotificationActionType) => Promise<void>
@@ -233,16 +233,16 @@ export function useNotificationSettings(
   }, [])
 
   const setEnabled = useCallback(
-    async (value: boolean): Promise<void> => {
+    async (value: boolean): Promise<NotificationPermission | null> => {
       if (!value) {
         await writeNotificationPrefs('enabled', false)
-        return
+        return null
       }
 
       const currentPermission = stateRef.current.permission
       if (currentPermission === 'blocked') {
         await openApplicationSettings()
-        return
+        return 'blocked'
       }
 
       if (currentPermission !== 'granted') {
@@ -253,21 +253,22 @@ export function useNotificationSettings(
           logger.error('Native notification permission request failed', cause, {
             operation: 'request',
           })
-          return
+          return null
         }
         applyMutation((current) => ({ ...current, permission }))
         if (permission === 'blocked') {
           await openApplicationSettings()
-          return
+          return 'blocked'
         }
-        if (permission !== 'granted') return
+        if (permission !== 'granted') return permission
         if (stateRef.current.prefs.enabled) {
           requestPrayerReschedule()
-          return
+          return 'granted'
         }
       }
 
       await writeNotificationPrefs('enabled', true)
+      return 'granted'
     },
     [applyMutation, openApplicationSettings, writeNotificationPrefs],
   )

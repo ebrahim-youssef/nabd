@@ -1,9 +1,11 @@
 import { areaProgress, toArabicIndic, WIRD_COPY } from '@nabd/shared'
-import type { ChecklistAreaView, ChecklistItemView } from '@nabd/shared'
+import type { ChecklistAreaView, ChecklistItemView, DayPrayerTimes } from '@nabd/shared'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 
 import { DhikrCounter } from '../counter/DhikrCounter'
+import { formatPrayerTime } from '../prayer-times/formatPrayerTime'
+import { useTodayPrayerTimes } from '../prayer-times/useTodayPrayerTimes'
 import { Text } from '../shell/Text'
 import { useToggleItem } from './useToggleItem'
 import { useWirdDay } from './WirdDayProvider'
@@ -16,9 +18,17 @@ const HEADER_TEST_PREFIX = 'area-header-'
 const COUNT_TEST_PREFIX = 'area-count-'
 const ITEM_TEST_PREFIX = 'wird-item-'
 const MONTHLY_TEST_PREFIX = 'monthly-progress-'
+const PRAYERS_AREA_ID = 'prayers'
+
+function prayerTimeFor(times: DayPrayerTimes | null, itemId: string): number | undefined {
+  if (!times || !(itemId in times)) return undefined
+  return times[itemId as keyof DayPrayerTimes]
+}
+
 export function WirdChecklist() {
   const { day: initialDay, areas, isLoading, versionId, refresh } = useWirdDay()
   const { toggle, pendingItemIds, hasError } = useToggleItem(versionId, refresh)
+  const { prayerStatus, times } = useTodayPrayerTimes()
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
 
   if (isLoading && areas.length === 0) {
@@ -51,6 +61,11 @@ export function WirdChecklist() {
         return (
           <View className="gap-2" key={area.id}>
             <AreaHeader area={area} isOpen={isOpen} onToggle={() => toggleArea(area.id)} />
+            {area.id === PRAYERS_AREA_ID && prayerStatus ? (
+              <Text className="text-body text-start text-primary" testID="prayer-status">
+                {prayerStatus}
+              </Text>
+            ) : null}
             {isOpen && (
               <View className="gap-2" testID={`${ITEMS_TEST_PREFIX}${area.id}`}>
                 {area.items.map((item) =>
@@ -67,6 +82,9 @@ export function WirdChecklist() {
                     <ChecklistRow
                       disabled={pendingItemIds.has(item.id)}
                       item={item}
+                      prayerTime={
+                        area.id === PRAYERS_AREA_ID ? prayerTimeFor(times, item.id) : undefined
+                      }
                       key={item.id}
                       onToggle={() => void toggle(initialDay, item.id, !item.done)}
                     />
@@ -130,10 +148,12 @@ function AreaHeader({
 function ChecklistRow({
   item,
   disabled,
+  prayerTime,
   onToggle,
 }: {
   item: ChecklistItemView
   disabled: boolean
+  prayerTime?: number
   onToggle: () => void
 }) {
   let detail = item.minimum || item.monthlyProgress
@@ -186,6 +206,14 @@ function ChecklistRow({
             {WIRD_COPY.voluntary}
           </Text>
         )}
+        {prayerTime !== undefined ? (
+          <Text
+            className="shrink-0 text-small text-muted-foreground"
+            testID={`prayer-time-${item.id}`}
+          >
+            {formatPrayerTime(prayerTime)}
+          </Text>
+        ) : null}
       </View>
     </Pressable>
   )

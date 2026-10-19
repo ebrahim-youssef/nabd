@@ -47,6 +47,16 @@ describe('BottomNav', () => {
     expect(screen.getByText(shellCopy.nav.settings)).toBeTruthy()
   })
 
+  it('stays absent during onboarding and appears after completion', async () => {
+    const view = await render(<BottomNav isVisible={false} />)
+
+    expect(screen.queryByTestId('bottom-nav')).toBeNull()
+
+    await view.rerender(<BottomNav isVisible />)
+
+    expect(screen.getByTestId('bottom-nav')).toBeTruthy()
+  })
+
   it.each([
     ['/', 'nav-home'],
     ['/qada', 'nav-stats'],

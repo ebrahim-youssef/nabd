@@ -85,7 +85,7 @@ export function CompletionCelebration() {
           <Pressable
             accessibilityLabel={WIRD_COPY.celebrationDismiss}
             accessibilityRole="button"
-            className="rounded-button bg-surface px-6 py-3"
+            className="rounded-button bg-on-primary px-6 py-3"
             onPress={() => setShow(false)}
             testID={DISMISS_TEST_ID}
           >

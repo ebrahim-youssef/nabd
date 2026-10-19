@@ -1,15 +1,18 @@
 import { ONBOARDING_COPY } from '@nabd/shared'
 import { View } from 'react-native'
 
+import type { BatteryOptimizationStatus } from '../device/types'
+import { NATIVE_SETTINGS_COPY } from '../settings/constants'
 import { Text } from '../shell/Text'
 import { OnboardingButton } from './OnboardingButton'
 
 type PowerStepProps = {
+  status: BatteryOptimizationStatus
   onRequest: () => void
   onFinish: () => void
 }
 
-export function PowerStep({ onRequest, onFinish }: PowerStepProps) {
+export function PowerStep({ status, onRequest, onFinish }: PowerStepProps) {
   return (
     <View testID="onboarding-power">
       <Text accessibilityRole="header" className="font-display text-title text-start text-primary">
@@ -26,11 +29,20 @@ export function PowerStep({ onRequest, onFinish }: PowerStepProps) {
             </Text>
           ))}
         </View>
-        <OnboardingButton
-          label={ONBOARDING_COPY.powerButton}
-          onPress={onRequest}
-          testID="onboarding-power-enable"
-        />
+        {status === 'optimized' ? (
+          <OnboardingButton
+            label={ONBOARDING_COPY.powerButton}
+            onPress={onRequest}
+            testID="onboarding-power-enable"
+          />
+        ) : status === 'exempt' ? (
+          <Text
+            className="text-body text-start text-foreground"
+            testID="onboarding-power-protected"
+          >
+            {NATIVE_SETTINGS_COPY.battery.protectionEnabled}
+          </Text>
+        ) : null}
       </View>
       <OnboardingButton
         label={ONBOARDING_COPY.finish}

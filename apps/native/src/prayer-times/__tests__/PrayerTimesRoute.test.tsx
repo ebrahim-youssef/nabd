@@ -12,6 +12,10 @@ import type { LocationStatus } from '../../device/types'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('expo-router', () => {
+  const actual = jest.requireActual('expo-router')
+  return { ...actual, useFocusEffect: jest.fn() }
+})
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null }))
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: {
@@ -59,6 +63,7 @@ const refreshingStatus: LocationStatus = {
 
 function makeLocationView(overrides: Partial<LocationCapabilityView> = {}): LocationCapabilityView {
   return {
+    permission: 'granted',
     status: readyStatus,
     coordinates: { latitude: 30.0444, longitude: 31.2357 },
     isRefreshing: false,

@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { WIRD_COPY } from '@nabd/shared'
 import { Share } from 'react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 
@@ -43,17 +44,23 @@ describe('CompletionCelebration', () => {
     })
     jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' })
 
-    const first = render(<CompletionCelebration />)
+    const first = await render(<CompletionCelebration />)
     await screen.findByTestId('completion-celebration')
     expect(write).toHaveBeenCalledWith(PREFERENCE_KEYS.celebratedDay, DAY, expect.any(Number))
+    expect(screen.getByTestId('celebration-dismiss').props.className).toEqual(
+      expect.stringContaining('bg-on-primary'),
+    )
+    expect(screen.getByText(WIRD_COPY.celebrationDismiss).props.className).toEqual(
+      expect.stringContaining('text-primary'),
+    )
 
-    fireEvent.press(screen.getByTestId('celebration-share'))
+    await fireEvent.press(screen.getByTestId('celebration-share'))
     await waitFor(() => expect(Share.share).toHaveBeenCalled())
     expect(Share.share).toHaveBeenCalledWith({ message: expect.any(String) })
 
-    fireEvent.press(screen.getByTestId('celebration-dismiss'))
+    await fireEvent.press(screen.getByTestId('celebration-dismiss'))
     first.unmount()
-    render(<CompletionCelebration />)
+    await render(<CompletionCelebration />)
     await waitFor(() => expect(screen.queryByTestId('completion-celebration')).toBeNull())
   })
 })
