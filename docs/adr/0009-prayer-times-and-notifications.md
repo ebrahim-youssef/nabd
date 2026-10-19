@@ -86,3 +86,9 @@ Preferences (set in onboarding, editable later): master enable + per-moment togg
 - **Rationale:** the owner explicitly asked for the city label and accepted this trade-off. It is
   the only place a coordinate leaves the device, and it is user-initiated. If a fully offline city
   name is wanted later, revisit with an on-device geocoder (no clean cross-OEM option today).
+
+## Native prayer alarms (2026-10-19)
+
+Prayer and adhkar alerts are scheduled with Android AlarmManager and posted by nabd-device.
+This avoids Android 16 autogroup silencing and alarm-usage downgrades because expo-notifications
+cannot set a notification group or category.

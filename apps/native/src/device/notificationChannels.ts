@@ -50,6 +50,10 @@ export function channelFor(momentKind: NotificationMomentKind, silentMode: boole
   return silentMode ? channel.alarmId : channel.id
 }
 
+export function soundFor(momentKind: NotificationMomentKind): string {
+  return NOTIFICATION_CHANNELS[momentKind].sound.replace(/\.[^.]+$/, '')
+}
+
 function channelConfig(channel: ChannelDefinition, alarm: boolean): NotificationChannelInput {
   return {
     name: alarm ? channel.alarmName : channel.name,

@@ -1,21 +1,31 @@
+import { requireOptionalNativeModule } from 'expo'
 import type { AlarmPayload } from '@nabd/shared'
 import * as Notifications from 'expo-notifications'
-import type { NotificationRequest, NotificationRequestInput } from 'expo-notifications'
+import type { NotificationRequest } from 'expo-notifications'
 
 import { logger } from '../observability/logger'
 import { mapDevicePermission } from './logic'
-import { channelFor } from './notificationChannels'
+import { channelFor, soundFor } from './notificationChannels'
 import type { NotificationPermission } from './types'
 
-type AndroidDateTrigger = {
-  type: 'date'
-  value: number
-  channelId?: string | null
-}
-
 const PRAYER_NOTIFICATION_PREFIX = 'nabd-prayer-'
+const NATIVE_MODULE_NAME = 'NabdDevice'
+// Must match SNAPSHOT_VERSION in PrayerAlarmSnapshot.kt.
+const NATIVE_SNAPSHOT_VERSION = 1
 
 type ScheduledIdentifier = Pick<NotificationRequest, 'identifier'>
+
+type NativePrayerAlarmModule = {
+  replacePrayerAlarms: (snapshotJson: string) => unknown
+  cancelPrayerAlarms: () => unknown
+}
+
+export class ExactAlarmDeniedError extends Error {
+  constructor() {
+    super('Prayer alarms could not be scheduled because exact alarm access is denied')
+    this.name = 'ExactAlarmDeniedError'
+  }
+}
 
 let foregroundHandlerConfigured = false
 
@@ -38,108 +48,96 @@ function isPrayerNotification(request: ScheduledIdentifier): boolean {
   return request.identifier.startsWith(PRAYER_NOTIFICATION_PREFIX)
 }
 
-function notificationForAlarm(alarm: AlarmPayload, silentMode: boolean): NotificationRequestInput {
-  return {
-    identifier: `${PRAYER_NOTIFICATION_PREFIX}${alarm.id}`,
-    content: {
-      title: alarm.title,
-      body: alarm.body,
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: alarm.at,
-      channelId: channelFor(alarm.channelKey, silentMode),
-    },
+async function migrateScheduledNotifications(): Promise<void> {
+  let requests: NotificationRequest[]
+  try {
+    requests = await Notifications.getAllScheduledNotificationsAsync()
+  } catch (cause: unknown) {
+    logger.warn('Expo prayer notification migration could not list scheduled requests', {
+      operation: 'migrate-scheduled-prayer-notifications',
+      error: cause,
+    })
+    throw new Error(
+      'Expo prayer notification migration could not list scheduled prayer notifications',
+    )
   }
-}
 
-async function cancelRequests(requests: ScheduledIdentifier[], operation: string): Promise<void> {
-  let firstFailure: unknown
-  let failed = false
   for (const request of requests) {
     if (!isPrayerNotification(request)) continue
     try {
       await Notifications.cancelScheduledNotificationAsync(request.identifier)
     } catch (cause: unknown) {
-      if (!failed) firstFailure = cause
-      failed = true
-      logger.error('Native prayer notification cancellation failed', cause, {
-        operation,
+      logger.warn('Expo prayer notification migration could not cancel a scheduled request', {
+        operation: 'migrate-scheduled-prayer-notifications',
         identifier: request.identifier,
+        error: cause,
       })
+      throw new Error(
+        `Expo prayer notification migration could not cancel scheduled prayer notification ${request.identifier}`,
+      )
     }
   }
-  if (failed) throw firstFailure
 }
 
-function isAndroidDateTrigger(trigger: unknown): trigger is AndroidDateTrigger {
-  if (typeof trigger !== 'object' || trigger === null || !('type' in trigger)) return false
-  if (trigger.type !== 'date') return false
-  if (!('value' in trigger) || typeof trigger.value !== 'number') return false
-  if (!Number.isFinite(trigger.value)) return false
-  if (
-    'channelId' in trigger &&
-    trigger.channelId !== null &&
-    trigger.channelId !== undefined &&
-    typeof trigger.channelId !== 'string'
-  ) {
-    return false
-  }
-  return true
-}
-
-function restoreRequest(
-  request: NotificationRequest,
-  operation: string,
-  now: number,
-): NotificationRequestInput | null {
-  if (!isAndroidDateTrigger(request.trigger)) {
-    logger.warn('Native prayer notification rollback skipped an unsupported trigger', {
-      operation,
-      identifier: request.identifier,
-    })
-    return null
-  }
-  if (request.trigger.value <= now) {
-    logger.warn('Native prayer notification rollback skipped a past trigger', {
-      operation,
-      identifier: request.identifier,
-      value: request.trigger.value,
-      now,
-    })
-    return null
-  }
-  return {
-    identifier: request.identifier,
-    content: {
-      title: request.content.title,
-      body: request.content.body,
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: request.trigger.value,
-      channelId: request.trigger.channelId ?? undefined,
-    },
-  }
-}
-
-async function restoreRequests(
-  requests: NotificationRequest[],
-  operation: string,
-  now: number,
-): Promise<void> {
-  for (const request of requests) {
-    const restored = restoreRequest(request, operation, now)
-    if (!restored) continue
-    try {
-      await Notifications.scheduleNotificationAsync(restored)
-    } catch (cause: unknown) {
-      logger.error('Native prayer notification rollback failed', cause, {
-        operation,
-        identifier: request.identifier,
-      })
+async function migratePresentedNotifications(): Promise<void> {
+  try {
+    const notifications = await Notifications.getPresentedNotificationsAsync()
+    for (const notification of notifications) {
+      if (!isPrayerNotification(notification.request)) continue
+      try {
+        await Notifications.dismissNotificationAsync(notification.request.identifier)
+      } catch (cause: unknown) {
+        logger.warn('Expo prayer notification migration could not dismiss a presented request', {
+          operation: 'migrate-presented-prayer-notifications',
+          identifier: notification.request.identifier,
+          error: cause,
+        })
+      }
     }
+  } catch (cause: unknown) {
+    logger.warn('Expo prayer notification migration could not list presented requests', {
+      operation: 'migrate-presented-prayer-notifications',
+      error: cause,
+    })
   }
+}
+
+async function migrateExpoPrayerNotifications(): Promise<void> {
+  await Promise.all([migrateScheduledNotifications(), migratePresentedNotifications()])
+}
+
+function nativeModule(): NativePrayerAlarmModule | null {
+  return requireOptionalNativeModule<NativePrayerAlarmModule>(NATIVE_MODULE_NAME)
+}
+
+function nativeReplaceResult(result: unknown): void {
+  if (result === 'scheduled') return
+  if (result === 'exact-denied') {
+    throw new ExactAlarmDeniedError()
+  }
+  if (result === 'invalid') {
+    throw new Error(
+      'Prayer alarms could not be scheduled because the native prayer alarm snapshot is invalid',
+    )
+  }
+  throw new Error('Prayer alarms could not be scheduled because the native result was invalid')
+}
+
+function alarmSnapshot(alarms: AlarmPayload[], silentMode: boolean, now: number): string {
+  return JSON.stringify({
+    version: NATIVE_SNAPSHOT_VERSION,
+    alarms: alarms
+      .filter((alarm) => alarm.at > now)
+      .map((alarm) => ({
+        id: String(alarm.id),
+        at: alarm.at,
+        title: alarm.title,
+        body: alarm.body,
+        sound: soundFor(alarm.channelKey),
+        channelId: channelFor(alarm.channelKey, silentMode),
+        isAlarmChannel: silentMode,
+      })),
+  })
 }
 
 export async function replacePrayerAlarms(
@@ -147,49 +145,39 @@ export async function replacePrayerAlarms(
   silentMode: boolean,
   now: number,
 ): Promise<void> {
-  const snapshot = (await Notifications.getAllScheduledNotificationsAsync()).filter(
-    isPrayerNotification,
-  )
-  const scheduled = new Set<string>()
-  let failure: unknown
-  let failed = false
-
-  try {
-    await cancelRequests(snapshot, 'replace-cancel-snapshot')
-
-    for (const alarm of alarms) {
-      if (alarm.at <= now) continue
-      const identifier = `${PRAYER_NOTIFICATION_PREFIX}${alarm.id}`
-      await Notifications.scheduleNotificationAsync(notificationForAlarm(alarm, silentMode))
-      scheduled.add(identifier)
-    }
-  } catch (cause: unknown) {
-    failure = cause
-    failed = true
-  }
-
-  if (!failed) return
-
-  try {
-    await cancelRequests(
-      [...scheduled].map((identifier) => ({ identifier })),
-      'replace-rollback-cancel',
-    )
-  } catch (rollbackCause: unknown) {
-    logger.warn('Native prayer notification rollback cancellation failed', {
-      operation: 'replace-rollback-cancel',
-      error: rollbackCause,
-    })
-  }
-  await restoreRequests(snapshot, 'replace-rollback-restore', now)
-  throw failure
+  await migrateExpoPrayerNotifications()
+  const native = nativeModule()
+  if (!native) throw new Error('The native prayer alarm module is unavailable')
+  nativeReplaceResult(native.replacePrayerAlarms(alarmSnapshot(alarms, silentMode, now)))
 }
 
 export async function cancelPrayerAlarms(): Promise<void> {
-  const snapshot = (await Notifications.getAllScheduledNotificationsAsync()).filter(
-    isPrayerNotification,
-  )
-  await cancelRequests(snapshot, 'cancel-prayer-alarms')
+  const native = nativeModule()
+  let firstError: unknown
+  let hasError = false
+
+  if (!native) {
+    firstError = new Error('The native prayer alarm module is unavailable')
+    hasError = true
+  } else {
+    try {
+      await native.cancelPrayerAlarms()
+    } catch (cause: unknown) {
+      firstError = cause
+      hasError = true
+    }
+  }
+
+  try {
+    await migrateExpoPrayerNotifications()
+  } catch (cause: unknown) {
+    if (!hasError) {
+      firstError = cause
+      hasError = true
+    }
+  }
+
+  if (hasError) throw firstError
 }
 
 export function configureForegroundHandler(): void {
