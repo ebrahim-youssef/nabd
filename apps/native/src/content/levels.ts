@@ -1,4 +1,4 @@
-import type { WirdDefinition, WirdItem } from '../types/wird'
+import type { WirdDefinition, WirdItem } from '../wird/types'
 
 // The wird levels the onboarding questionnaire (NBD-6) places a new user in. Levels define
 // the difficulty and time commitment of the daily wird (spec §1). Three levels ship since

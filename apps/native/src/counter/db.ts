@@ -1,5 +1,7 @@
-import { latestStateByItem, versionInForce } from '@nabd/shared'
-import type { DhikrCompletionRepository, Result, WirdEntry } from '@nabd/shared'
+import { latestStateByItem, versionInForce } from '../wird/logic'
+import type { DhikrCompletionRepository } from '../db/contracts'
+import type { Result } from '../lib/result'
+import type { WirdEntry } from '../wird/types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 type EntryRow = {
   id: string
