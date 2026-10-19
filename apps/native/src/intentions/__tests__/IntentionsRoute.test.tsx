@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
-import { INTENTIONS_COPY, INTENTIONS_LIBRARY, toArabicIndic } from '@nabd/shared'
+import { INTENTIONS_LIBRARY } from '../../content/intentions'
+import { toArabicIndic } from '../../lib/format'
+import { INTENTIONS_COPY } from '../copy'
 
 import { IntentionsRoute } from '../IntentionsRoute'
 

@@ -1,9 +1,5 @@
-import {
-  DEFAULT_METHOD_ID,
-  isCalculationMethodId,
-  type AlarmPayload,
-  type CalculationMethodId,
-} from '@nabd/shared'
+import type { AlarmPayload, CalculationMethodId } from '../prayer-times/logic'
+import { DEFAULT_METHOD_ID, isCalculationMethodId } from '../prayer-times/logic'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { AppState } from 'react-native'

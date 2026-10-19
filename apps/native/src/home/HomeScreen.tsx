@@ -1,4 +1,6 @@
-import { WIRD_LEVELS, levelById, toDayId } from '@nabd/shared'
+import { WIRD_LEVELS } from '../content/levels'
+import { toDayId } from '../lib/day'
+import { levelById } from '../onboarding/logic'
 import { useEffect, useState } from 'react'
 import { AppState, View } from 'react-native'
 

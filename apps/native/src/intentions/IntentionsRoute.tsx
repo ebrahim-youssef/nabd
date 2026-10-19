@@ -2,7 +2,9 @@ import { ChevronDown, ChevronUp } from 'lucide-react-native'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 
-import { INTENTIONS_COPY, INTENTIONS_LIBRARY, toArabicIndic } from '@nabd/shared'
+import { INTENTIONS_LIBRARY } from '../content/intentions'
+import { toArabicIndic } from '../lib/format'
+import { INTENTIONS_COPY } from './copy'
 
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
