@@ -20,6 +20,7 @@ function locationView(
   action: LocationCapabilityView['status']['action'],
 ): LocationCapabilityView {
   return {
+    permission: 'undetermined',
     status: { state, message, action },
     coordinates: null,
     isRefreshing: false,

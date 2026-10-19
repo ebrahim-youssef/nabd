@@ -1,4 +1,5 @@
 import { ONBOARDING_COPY } from '@nabd/shared'
+import { useState } from 'react'
 import { Switch, View } from 'react-native'
 
 import { deviceCopy } from '../device/copy'
@@ -31,6 +32,8 @@ type PermissionsStepProps = {
 
 function LocationSetup({ location }: { location: LocationView }) {
   const ready = location.status.state === 'ready'
+  const showMessage =
+    location.status.state !== 'permission-required' || location.permission === 'denied'
   const actionLabel =
     location.status.action?.type === 'retry-location'
       ? ONBOARDING_COPY.locationButton
@@ -55,9 +58,11 @@ function LocationSetup({ location }: { location: LocationView }) {
             onPress={() => void location.runAction()}
             testID="onboarding-location"
           />
-          <Text className="text-small text-start text-gold" testID="onboarding-location-message">
-            {location.status.message}
-          </Text>
+          {showMessage ? (
+            <Text className="text-small text-start text-gold" testID="onboarding-location-message">
+              {location.status.message}
+            </Text>
+          ) : null}
         </>
       )}
     </View>
@@ -65,10 +70,15 @@ function LocationSetup({ location }: { location: LocationView }) {
 }
 
 function NotificationSetup({ notifications }: { notifications: NotificationView }) {
+  const [notificationRequestDenied, setNotificationRequestDenied] = useState(false)
   const showMoments = notifications.permission === 'granted' && notifications.prefs.enabled
-  const showDenied = notifications.permission === 'denied'
+  const showDenied = notifications.permission === 'denied' && notificationRequestDenied
   const showBlocked = notifications.permission === 'blocked'
-  const notificationsDisabled = showDenied || showBlocked
+
+  const handleEnabledChange = async (value: boolean) => {
+    const permission = await notifications.setEnabled(value)
+    if (value && permission === 'denied') setNotificationRequestDenied(true)
+  }
 
   return (
     <View className="gap-3 rounded-card border border-border bg-surface p-4">
@@ -87,10 +97,10 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
           accessibilityRole="switch"
           accessibilityState={{
             checked: notifications.prefs.enabled,
-            disabled: notificationsDisabled,
+            disabled: showBlocked,
           }}
-          disabled={notificationsDisabled}
-          onValueChange={(value) => void notifications.setEnabled(value)}
+          disabled={showBlocked}
+          onValueChange={handleEnabledChange}
           testID="onboarding-notifications"
           value={notifications.prefs.enabled}
         />
