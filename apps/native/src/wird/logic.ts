@@ -1,4 +1,5 @@
-import { compareDayId, monthOf, nextDay, weekdayOf } from '../lib/day'
+import { monthOf, nextDay, weekdayOf } from '../lib/day'
+import { isScheduledOn, latestStateByItem } from '../lib/wird'
 import type {
   ChecklistAreaView,
   ChecklistItemView,
@@ -6,7 +7,6 @@ import type {
   TodaySummary,
   WirdDefinition,
   WirdEntry,
-  WirdItem,
   WirdVersion,
 } from './types'
 
@@ -15,25 +15,6 @@ export type WirdLevelDefinition = { wird: WirdDefinition }
 export type VersionHealingPlan = {
   definition: WirdDefinition
   effectiveFrom: DayId
-}
-
-export function versionInForce(versions: WirdVersion[], day: DayId): WirdVersion | null {
-  let best: WirdVersion | null = null
-  for (const version of versions) {
-    if (compareDayId(version.effectiveFrom, day) > 0) continue
-    if (best === null) {
-      best = version
-      continue
-    }
-    const byDay = compareDayId(version.effectiveFrom, best.effectiveFrom)
-    if (byDay > 0 || (byDay === 0 && version.createdAt > best.createdAt)) best = version
-  }
-  return best
-}
-
-export function isScheduledOn(item: WirdItem, day: DayId): boolean {
-  if (item.schedule?.type !== 'weekdays') return true
-  return item.schedule.days.includes(weekdayOf(day))
 }
 
 export function monthlyDoneDays(entries: WirdEntry[], itemId: string, month: string): number {
@@ -46,19 +27,6 @@ export function monthlyDoneDays(entries: WirdEntry[], itemId: string, month: str
   let done = 0
   for (const state of latestByDay.values()) if (state.done) done += 1
   return done
-}
-
-export function latestStateByItem(entries: WirdEntry[]): Map<string, boolean> {
-  const latestAt = new Map<string, number>()
-  const state = new Map<string, boolean>()
-  for (const entry of entries) {
-    const seen = latestAt.get(entry.itemId)
-    if (seen === undefined || entry.at > seen) {
-      latestAt.set(entry.itemId, entry.at)
-      state.set(entry.itemId, entry.done)
-    }
-  }
-  return state
 }
 
 export function levelMatching<L extends { wird: WirdDefinition }>(

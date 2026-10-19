@@ -1,6 +1,7 @@
 import { WIRD_LEVELS } from '../content/levels'
 import { nextDay } from '../lib/day'
-import { sameDefinition, versionInForce } from './logic'
+import { versionInForce } from '../lib/wird'
+import { sameDefinition } from './logic'
 import type { WirdRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
 import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
