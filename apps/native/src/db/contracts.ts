@@ -1,7 +1,7 @@
-import type { FlowState } from '../logic/adhkar'
-import type { QadaPrayerId } from '../logic/qada'
-import type { Result } from '../types/result'
-import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from '../types/wird'
+import type { FlowState } from '../adhkar/logic'
+import type { QadaPrayerId } from '../qada/logic'
+import type { Result } from '../lib/result'
+import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from '../wird/types'
 
 // Contracts describe product persistence without choosing Dexie, SQLite, ids, clocks, or sync.
 // Each platform owns those details and passes explicit day/time values into its adapter.

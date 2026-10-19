@@ -1,4 +1,5 @@
-import type { CalculationMethodId, Coords } from '@nabd/shared'
+import type { CalculationMethodId } from '../../prayer-times/logic'
+import type { Coords } from '../types'
 
 import { boundaries, currentCountdown, type CountdownBoundary } from '../countdown'
 
