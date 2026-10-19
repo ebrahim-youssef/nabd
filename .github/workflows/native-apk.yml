@@ -10,14 +10,12 @@ on:
   pull_request:
     paths:
       - 'apps/native/**'
-      - 'packages/shared/**'
       - '.github/workflows/native-apk.yml'
   push:
     branches:
       - dev
     paths:
       - 'apps/native/**'
-      - 'packages/shared/**'
       - '.github/workflows/native-apk.yml'
 
 concurrency:
