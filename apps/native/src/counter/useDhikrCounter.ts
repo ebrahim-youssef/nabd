@@ -1,7 +1,7 @@
 import { useSQLiteContext } from 'expo-sqlite'
 import { useMemo, useRef, useState } from 'react'
 
-import type { DayId } from '@nabd/shared'
+import type { DayId } from '../wird/types'
 
 import { createDhikrCompletionRepository } from './db'
 import { useWirdDay } from '../wird/WirdDayProvider'

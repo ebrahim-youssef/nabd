@@ -1,12 +1,10 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
-import {
-  ADHKAR_COPY,
-  ADHKAR_LIBRARY,
-  INTENTIONS_COPY,
-  INTENTIONS_LIBRARY,
-  toArabicIndic,
-} from '@nabd/shared'
+import { COPY as ADHKAR_COPY } from '../../adhkar/copy'
+import { ADHKAR_LIBRARY } from '../../content/adhkar'
+import { INTENTIONS_LIBRARY } from '../../content/intentions'
+import { INTENTIONS_COPY } from '../../intentions/copy'
+import { toArabicIndic } from '../../lib/format'
 
 import { LibrariesRoute } from '../LibrariesRoute'
 

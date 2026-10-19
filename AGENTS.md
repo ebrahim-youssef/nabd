@@ -7,14 +7,9 @@ Instructions for any AI coding agent working in this repo. Read this first, ever
 [`docs/adr/0017-native-only.md`](./docs/adr/0017-native-only.md) makes the Expo app in
 `apps/native` the sole product and release target. Android is first, with platform-neutral
 boundaries for a future iOS target. The legacy SPA and root application were deleted in NBD-108.
-The repository currently contains `apps/native` as the product and `packages/shared` as the
-temporary platform-neutral package. Put new code (logic, copy, types) in `apps/native`, not in
-`packages/shared`.
-
-The end state is the repository root as the Expo app: `packages/shared` is folded into the
-features that own each module, `apps/native` is lifted to the root, and the pnpm workspace goes.
-Until then, `packages/shared` holds the existing domain types, pure logic, Arabic content, copy,
-contracts, and testing fixtures. The order is in
+All product code, domain logic, Arabic content, copy, contracts, and tests now live in the
+feature folders under `apps/native`. The end state is the repository root as the Expo app:
+`apps/native` will be lifted to the root in NBD-112 and the pnpm workspace will go. The order is in
 [`docs/migration/2026-10-17-consolidation-plan.md`](./docs/migration/2026-10-17-consolidation-plan.md).
 There is no backend or sign-in in the native product.
 
@@ -67,14 +62,12 @@ code around.
 
 - **Follow the loop.** Every change runs through the 8 phases in `docs/workflow.md`. No
   reordering, no skipping spec intake.
-- **Pure logic and feature folders.** Existing pure logic in `packages/shared/src/logic` stays
-  there until NBD-111, where `packages/shared/eslint.config.mjs` enforces the no-platform and
-  no-clock-global restrictions. New pure logic goes in `apps/native/src/<feature>/logic.ts`
-  (ADR 0017 amendment): no I/O, no clock globals, time and data passed in. No lint rule enforces
-  that yet; NBD-111 moves the shared purity rule onto `logic.ts` files. Native feature folders are flat, with `db.ts`, components,
-  and hooks side by side where present, and tests under `__tests__/`. The native ESLint config
-  enforces React Hooks rules, `no-console`, and restricted direct imports of React Native
-  `Text` and `TextInput`; it does not enforce a logic-to-database boundary.
+- **Pure logic and feature folders.** Pure logic goes in `apps/native/src/<feature>/logic.ts`
+  and cross-feature helpers go in `apps/native/src/lib`. Logic has no I/O or clock globals; time
+  and data are passed in. Native feature folders are flat, with `db.ts`, components, and hooks
+  side by side where present, and tests under `__tests__/`. The native ESLint config enforces
+  React Hooks rules, `no-console`, pure-logic restrictions, and restricted direct imports of
+  React Native `Text` and `TextInput`.
 - **SQLite is the offline source of truth.** Feature repositories in `db.ts` own SQLite access.
   UI reads live from the repository, never from a duplicated copy in a store.
 - **Tests ship with the code.** Colocated, same PR, CI-enforced. Mandatory native paths:

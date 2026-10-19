@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
-import { DEFAULT_NOTIFICATION_PREFS, WIRD_LEVELS } from '@nabd/shared'
+import { WIRD_LEVELS } from '../../content/levels'
+import { DEFAULT_NOTIFICATION_PREFS } from '../../device/logic'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import { SettingsRoute } from '../SettingsRoute'

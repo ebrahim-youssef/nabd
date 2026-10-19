@@ -1,11 +1,9 @@
-import {
-  WIRD_LEVELS,
-  isDayId,
-  levelById,
-  type Answers,
-  type LevelId,
-  type WirdVersion,
-} from '@nabd/shared'
+import type { LevelId } from '../content/levels'
+import type { WirdVersion } from '../wird/types'
+import type { Answers } from './types'
+import { WIRD_LEVELS } from '../content/levels'
+import { isDayId } from '../lib/day'
+import { levelById } from './logic'
 
 import { ONBOARDING_STATE_ID } from './constants'
 import { hasCanonicalAnswers, parseAnswers } from './logic'

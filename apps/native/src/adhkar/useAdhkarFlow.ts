@@ -1,8 +1,11 @@
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { INITIAL_FLOW, tap as tapFlow, toDayId } from '@nabd/shared'
-import type { DayId, Dhikr, FlowState } from '@nabd/shared'
+import { toDayId } from '../lib/day'
+import { INITIAL_FLOW, tap as tapFlow } from './logic'
+import type { Dhikr } from '../content/adhkar'
+import type { DayId } from '../wird/types'
+import type { FlowState } from './logic'
 
 import { createAdhkarRepository } from './db'
 import { normalizeFlowState } from './logic'

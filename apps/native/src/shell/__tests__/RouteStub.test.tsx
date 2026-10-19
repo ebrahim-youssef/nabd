@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from '../copy'
 
 import { PageHeader } from '../PageHeader'
 import { RouteStub } from '../RouteStub'

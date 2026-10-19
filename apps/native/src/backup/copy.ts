@@ -1,4 +1,4 @@
-import { toArabicIndic } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
 import type { BackupTable } from './types'
 import type { BackupStatus } from './useBackup'
 import { BACKUP_TABLES } from './logic'

@@ -12,8 +12,8 @@ The interface is entirely in Arabic, right to left.
 ## Current state
 
 The product is one Expo React Native app in `apps/native`, with Android as the first platform.
-The code boundaries and `packages/shared` keep a future iOS target possible. Full parity with the
-current product is still in progress.
+The feature boundaries keep a future iOS target possible. Full parity with the current product is
+still in progress.
 
 - **Available now:** onboarding, wird, adhkar, intentions, prayer times, qada, statistics, local
   SQLite persistence, and some device features.
@@ -55,13 +55,12 @@ product currently has no backend, sign-in, or cross-device sync.
 ## Where it runs
 
 - **Current app:** the Expo React Native app in `apps/native`, with Android as the first release.
-- **Current code boundary:** `packages/shared` remains a temporary shared package until NBD-111
-  and NBD-112.
+- **Current code boundary:** feature folders under `apps/native/src` own their code and tests.
 
 ## Tech
 
-The app uses Expo, Expo Router, SQLite, and device APIs, with a platform-neutral TypeScript
-package in `packages/shared`. Android is first, with boundaries kept ready for iOS.
+The app uses Expo, Expo Router, SQLite, and device APIs. Android is first, with feature boundaries
+kept ready for iOS.
 
 ## Run locally
 

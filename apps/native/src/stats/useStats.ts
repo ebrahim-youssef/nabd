@@ -1,24 +1,16 @@
+import { daysInRange, lastNDays, toDayId } from '../lib/day'
+import { qadaRemaining } from '../qada/logic'
+import { versionInForce } from '../lib/wird'
 import {
   bestStreak,
   currentStreak,
   dayAreaStats,
-  daysInRange,
   itemStats,
-  lastNDays,
-  qadaRemaining,
   rangeCompletion,
   summarize,
-  toDayId,
-  versionInForce,
-} from '@nabd/shared'
-import type {
-  AreaStat,
-  DayCompletion,
-  ItemStat,
-  QadaEvent,
-  RangeSummary,
-  WirdRepository,
-} from '@nabd/shared'
+} from './logic'
+import type { QadaEvent, WirdRepository } from '../db/contracts'
+import type { AreaStat, DayCompletion, ItemStat, RangeSummary } from './types'
 import { useSQLiteContext } from 'expo-sqlite'
 import { Share } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'

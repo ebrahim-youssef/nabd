@@ -1,8 +1,5 @@
-import {
-  DEFAULT_NOTIFICATION_PREFS,
-  parseNotificationPrefs,
-  type NotificationPrefs,
-} from '@nabd/shared'
+import type { NotificationPrefs } from '../device/logic'
+import { DEFAULT_NOTIFICATION_PREFS, parseNotificationPrefs } from '../device/logic'
 
 import type { ProductDatabase } from '../db/productDatabase'
 

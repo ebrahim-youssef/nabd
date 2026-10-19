@@ -2,14 +2,12 @@ import { ChevronLeft, HeartHandshake, Sparkles } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
 import { Pressable, View } from 'react-native'
 
-import {
-  ADHKAR_COPY,
-  ADHKAR_LIBRARY,
-  INTENTIONS_COPY,
-  INTENTIONS_LIBRARY,
-  shellCopy,
-  toArabicIndic,
-} from '@nabd/shared'
+import { COPY as ADHKAR_COPY } from '../adhkar/copy'
+import { ADHKAR_LIBRARY } from '../content/adhkar'
+import { INTENTIONS_LIBRARY } from '../content/intentions'
+import { INTENTIONS_COPY } from '../intentions/copy'
+import { toArabicIndic } from '../lib/format'
+import { shellCopy } from './copy'
 
 import { PageHeader } from './PageHeader'
 import { ScreenContainer } from './ScreenContainer'

@@ -1,4 +1,6 @@
-import { CALCULATION_METHODS, SETTINGS_COPY, shellCopy } from '@nabd/shared'
+import { SETTINGS_COPY } from '../settings/copy'
+import { shellCopy } from '../shell/copy'
+import { CALCULATION_METHODS } from './logic'
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'

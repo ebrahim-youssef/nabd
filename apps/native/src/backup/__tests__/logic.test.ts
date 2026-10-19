@@ -1,5 +1,5 @@
-import { CURRENT_SCHEMA_VERSION } from '../../db/database'
-import { WIRD_LEVELS } from '@nabd/shared'
+import { CURRENT_SCHEMA_VERSION } from '../../db/schemaVersion'
+import { WIRD_LEVELS } from '../../content/levels'
 import {
   BACKUP_TABLES,
   BACKUP_FORMAT_VERSION,

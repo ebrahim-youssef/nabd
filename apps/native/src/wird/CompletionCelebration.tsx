@@ -1,4 +1,5 @@
-import { summarizeChecklist, WIRD_COPY } from '@nabd/shared'
+import { WIRD_COPY } from './copy'
+import { summarizeChecklist } from './logic'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Modal, Pressable, Share, View } from 'react-native'

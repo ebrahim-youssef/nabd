@@ -1,4 +1,5 @@
-import { WIRD_COPY, type WirdDefinition } from '@nabd/shared'
+import type { WirdDefinition } from '../types'
+import { WIRD_COPY } from '../copy'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 

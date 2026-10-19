@@ -2,14 +2,13 @@
 
 This is the eight-phase workflow for the native product. The owner-approved native-only
 direction is recorded in [ADR-0017](adr/0017-native-only.md). The Expo app in `apps/native` is
-the product and release target. `packages/shared` contains the platform-neutral domain package.
+the product and release target. Its feature folders contain the product and platform-neutral logic.
 
 ## Phase 0, bootstrap and orientation
 
 Read `AGENTS.md`, this workflow, the relevant ADRs, and the source package files. The active
-workspace is bootstrapped around `apps/native` and `packages/shared`, not the root web app.
-Confirm the Expo Router entry under `apps/native/app`, the native feature folders under
-`apps/native/src`, and the shared package before feature work begins.
+workspace is bootstrapped around `apps/native`, not the root web app. Confirm the Expo Router
+entry under `apps/native/app` and the native feature folders under `apps/native/src` before work.
 
 The native baseline must have the following scripts available:
 
@@ -51,8 +50,7 @@ must specify these states before implementation:
 
 ## Phase 3, implementation
 
-Keep platform-neutral pure logic in `packages/shared/src/logic` and native device logic in
-`apps/native/src/device/logic.ts`. Put SQLite reads and writes in repositories. Put Expo
+Keep pure logic in the owning feature's `logic.ts` or `apps/native/src/lib`. Put SQLite reads and writes in repositories. Put Expo
 permissions, notifications, location, alarms, and background work behind device services.
 Keep Android-only Kotlin and config-plugin code in their native boundaries. Do not add a second
 web product, authentication, or sync path.
@@ -68,8 +66,8 @@ Tests ship with the code. The mandatory native behavior checks are:
 3. Backup and restore: export and import the versioned application backup, including the durable
    records and preferences covered by NBD-91.
 
-Shared pure logic uses Vitest. Native logic, repositories, components, and integration seams use
-Jest and React Native Testing Library. Release APK behavior requires the real-device checks that
+Pure logic, repositories, components, and integration seams use Jest and React Native Testing
+Library. Release APK behavior requires the real-device checks that
 unit tests cannot provide.
 
 ## Phase 5, quality gates
@@ -77,9 +75,6 @@ unit tests cannot provide.
 Run the real native and shared gates before any push:
 
 ```bash
-pnpm --filter @nabd/shared lint
-pnpm --filter @nabd/shared typecheck
-pnpm --filter @nabd/shared test
 pnpm --filter apps-native lint
 pnpm --filter apps-native typecheck
 pnpm --filter apps-native test
@@ -99,7 +94,7 @@ Conventional Commit. Do not stage environment files, generated artifacts, or unr
 ## Phase 7, pull request
 
 The pull request records the ticket, ADRs, acceptance criteria, test commands and their results,
-device evidence, and the security review. CI must pass for shared and native checks. Merge with a
+device evidence, and the security review. CI must pass for the native checks. Merge with a
 normal merge commit. Never rebase or squash.
 
 ## Phase 8, production release

@@ -1,4 +1,4 @@
-import { INITIAL_FLOW } from '@nabd/shared'
+import { INITIAL_FLOW } from '../logic'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 
 import { createAdhkarRepository } from '../db'

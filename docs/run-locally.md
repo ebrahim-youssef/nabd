@@ -1,8 +1,7 @@
 # Run locally, nabd
 
-The active local targets are the Expo application in `apps/native` and the shared package in
-`packages/shared`. Use pnpm and an Android emulator or device for native runtime work. Native does
-not use Supabase, sign-in, or a web environment file.
+The active local target is the Expo application in `apps/native`. Use pnpm and an Android emulator
+or device for native runtime work. Native does not use Supabase, sign-in, or a web environment file.
 
 ## Start the native app
 
@@ -13,14 +12,11 @@ pnpm --filter apps-native start
 The command starts Expo Metro. Use a development build or a connected Android target that supports
 the native modules and config plugins. Expo Go is not a release target for this project.
 
-## Shared and native checks
+## Checks
 
-Use the scripts defined by the two package manifests:
+Use the scripts defined by the native package manifest:
 
 ```bash
-pnpm --filter @nabd/shared lint
-pnpm --filter @nabd/shared typecheck
-pnpm --filter @nabd/shared test
 pnpm --filter apps-native lint
 pnpm --filter apps-native typecheck
 pnpm --filter apps-native test

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { act, render, screen } from '@testing-library/react-native'
 
-import { WIRD_LEVELS } from '@nabd/shared'
+import { WIRD_LEVELS } from '../../content/levels'
 
 import type { PersistedOnboarding } from '../../onboarding/db'
 import { useWirdLevel } from '../../wird/useWirdLevel'

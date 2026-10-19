@@ -1,4 +1,5 @@
-import { QADA_COPY, QADA_PRAYERS, daysFromPeriod } from '@nabd/shared'
+import { QADA_COPY } from './copy'
+import { QADA_PRAYERS, daysFromPeriod } from './logic'
 import { Check, Plus } from 'lucide-react-native'
 import { useState } from 'react'
 import { Modal, Pressable, ScrollView, View } from 'react-native'

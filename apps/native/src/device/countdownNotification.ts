@@ -1,7 +1,8 @@
 import { requireOptionalNativeModule } from 'expo'
 import { Platform } from 'react-native'
 
-import type { CalculationMethodId, Coords } from '@nabd/shared'
+import type { CalculationMethodId } from '../prayer-times/logic'
+import type { Coords } from './types'
 
 import { logger } from '../observability/logger'
 import { boundaries } from './countdown'

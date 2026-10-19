@@ -1,11 +1,10 @@
 import * as SQLite from 'expo-sqlite'
+import { CURRENT_SCHEMA_VERSION, SCHEMA_VERSION_PREFERENCES } from './schemaVersion'
 
 export const DATABASE_NAME = 'nabd-native.db'
 export const SCHEMA_VERSION_MIGRATIONS = 1
 export const SCHEMA_VERSION_ONBOARDING = 2
 export const SCHEMA_VERSION_PRODUCT = 3
-export const SCHEMA_VERSION_PREFERENCES = 4
-export const CURRENT_SCHEMA_VERSION = SCHEMA_VERSION_PREFERENCES
 
 type VersionRow = { version: number }
 
