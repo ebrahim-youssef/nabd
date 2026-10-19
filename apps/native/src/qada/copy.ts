@@ -1,5 +1,5 @@
-import { DAYS_PER_MONTH, DAYS_PER_YEAR } from '../logic/qada'
-import { toArabicIndic } from '../logic/format'
+import { DAYS_PER_MONTH, DAYS_PER_YEAR } from './logic'
+import { toArabicIndic } from '../lib/format'
 
 // Arabic copy for the قضاء الفوائت ledger (NBD-39). `remaining` is number agreement rather than a
 // fixed string, so it carries its own test.

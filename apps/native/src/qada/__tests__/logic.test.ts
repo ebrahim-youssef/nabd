@@ -1,12 +1,10 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   DAYS_PER_MONTH,
   DAYS_PER_YEAR,
   daysFromPeriod,
   qadaRemaining,
   type QadaEventLike,
-} from '../qada'
+} from '../logic'
 
 function event(prayerId: string, delta: number): QadaEventLike {
   return { prayerId, delta }

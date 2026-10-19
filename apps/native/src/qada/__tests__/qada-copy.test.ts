@@ -1,6 +1,4 @@
-import { describe, expect, it } from 'vitest'
-
-import { QADA_COPY } from '../qada'
+import { QADA_COPY } from '../copy'
 
 describe('QADA_COPY.remaining', () => {
   it('uses Arabic number agreement for every range', () => {
