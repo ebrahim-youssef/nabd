@@ -11,6 +11,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import java.util.concurrent.TimeUnit
@@ -18,6 +20,7 @@ import java.util.concurrent.TimeUnit
 internal const val COUNTDOWN_CHANNEL_ID = "nabd-countdown"
 internal const val COUNTDOWN_NOTIFICATION_ID = 424242
 internal const val COUNTDOWN_WORK_NAME = "nabd-countdown"
+internal const val COUNTDOWN_BOUNDARY_WORK_NAME = "nabd-countdown-boundary"
 internal const val COUNTDOWN_PREFS_NAME = "nabd.countdown"
 internal const val COUNTDOWN_PAYLOAD_KEY = "payload"
 private const val COUNTDOWN_CHANNEL_NAME = "العدّ التنازلي"
@@ -49,6 +52,7 @@ object CountdownNotificationService {
   @Synchronized
   fun clear(context: Context) {
     WorkManager.getInstance(context).cancelUniqueWork(COUNTDOWN_WORK_NAME)
+    WorkManager.getInstance(context).cancelUniqueWork(COUNTDOWN_BOUNDARY_WORK_NAME)
     NotificationManagerCompat.from(context).cancel(COUNTDOWN_NOTIFICATION_ID)
     context.getSharedPreferences(COUNTDOWN_PREFS_NAME, Context.MODE_PRIVATE)
       .edit()
@@ -116,11 +120,14 @@ object CountdownNotificationService {
       builder
         .setWhen(content.whenMillis)
         .setUsesChronometer(true)
-        .setChronometerCountDown(true)
+        .setChronometerCountDown(content.chronometerCountsDown)
     }
 
     return try {
       NotificationManagerCompat.from(context).notify(COUNTDOWN_NOTIFICATION_ID, builder.build())
+      content.nextChangeAt?.let { nextChangeAt ->
+        enqueueBoundaryRefresh(context, nextChangeAt, now)
+      }
       RESULT_POSTED
     } catch (_: SecurityException) {
       RESULT_PERMISSION_DENIED
@@ -140,6 +147,18 @@ object CountdownNotificationService {
       COUNTDOWN_WORK_NAME,
       // UPDATE replaces the request for new payload data without creating duplicate work.
       ExistingPeriodicWorkPolicy.UPDATE,
+      request,
+    )
+  }
+
+  private fun enqueueBoundaryRefresh(context: Context, nextChangeAt: Long, now: Long) {
+    val delayMs = (nextChangeAt - now).coerceAtLeast(0L)
+    val request = OneTimeWorkRequestBuilder<CountdownWorker>()
+      .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
+      .build()
+    WorkManager.getInstance(context).enqueueUniqueWork(
+      COUNTDOWN_BOUNDARY_WORK_NAME,
+      ExistingWorkPolicy.REPLACE,
       request,
     )
   }
