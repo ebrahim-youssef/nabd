@@ -3,7 +3,7 @@ import * as Notifications from 'expo-notifications'
 import { useSQLiteContext } from 'expo-sqlite'
 import { AppState } from 'react-native'
 
-import { DEFAULT_NOTIFICATION_PREFS } from '@nabd/shared'
+import { DEFAULT_NOTIFICATION_PREFS } from '../logic'
 
 import { createDeviceRepository } from '../db'
 import { devicePlatform } from '../platform'

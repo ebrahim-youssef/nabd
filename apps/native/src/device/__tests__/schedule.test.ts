@@ -1,4 +1,5 @@
-import { DEFAULT_NOTIFICATION_PREFS, toDayId } from '@nabd/shared'
+import { toDayId } from '../../lib/day'
+import { DEFAULT_NOTIFICATION_PREFS } from '../logic'
 
 import { buildPrayerSchedule } from '../schedule'
 
