@@ -8,8 +8,9 @@ import {
   timelineStatus,
 } from '@nabd/shared'
 import type { CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/shared'
+import { useFocusEffect } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useLocationCapability } from '../device/useLocationCapability'
 import { requestPrayerReschedule } from '../device/prayerAlarms'
@@ -39,7 +40,7 @@ export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesO
   const location = useLocationCapability()
   const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
 
-  useEffect(() => {
+  const readMethod = useCallback(() => {
     let active = true
     void preferences
       .read(PREFERENCE_KEYS.calculationMethod)
@@ -54,6 +55,17 @@ export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesO
       active = false
     }
   }, [preferences])
+
+  useEffect(() => readMethod(), [readMethod])
+
+  const hasFocused = useRef(false)
+  useFocusEffect(
+    useCallback(() => {
+      if (hasFocused.current) return readMethod()
+      hasFocused.current = true
+      return undefined
+    }, [readMethod]),
+  )
 
   const instant = now()
   const date = today ? today() : new Date(instant)

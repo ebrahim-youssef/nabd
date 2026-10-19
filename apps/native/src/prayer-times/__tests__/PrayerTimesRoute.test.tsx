@@ -12,6 +12,10 @@ import type { LocationStatus } from '../../device/types'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('expo-router', () => {
+  const actual = jest.requireActual('expo-router')
+  return { ...actual, useFocusEffect: jest.fn() }
+})
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null }))
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: {
