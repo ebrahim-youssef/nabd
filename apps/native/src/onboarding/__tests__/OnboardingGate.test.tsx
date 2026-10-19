@@ -11,6 +11,7 @@ import { useBackup, type BackupPreview } from '../../backup/useBackup'
 import { OnboardingGate } from '../OnboardingGate'
 import { NATIVE_ONBOARDING_COPY } from '../copy'
 import type { OnboardingDatabase } from '../db'
+import { PowerStep } from '../PowerStep'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
@@ -160,6 +161,7 @@ describe('OnboardingGate', () => {
       request: jest.fn(),
     })
     mockedUseLocationCapability.mockReturnValue({
+      permission: 'undetermined',
       status: {
         state: 'ready',
         message: deviceCopy.location.ready,
@@ -471,14 +473,25 @@ describe('OnboardingGate', () => {
 
   it('keeps the power step finishable after requesting an exemption', async () => {
     const request = jest.fn()
-    mockedUseBatteryOptimization.mockReturnValue({ status: 'optimized', request })
+    let batteryStatus: 'optimized' | 'exempt' = 'optimized'
+    mockedUseBatteryOptimization.mockImplementation(() => ({ status: batteryStatus, request }))
     const persisted = createPersistedDatabase()
     const view = await reachPermissions(persisted.database)
 
     await fireEvent.press(screen.getByTestId('onboarding-permissions-continue'))
     await screen.findByTestId('onboarding-power')
+    expect(screen.getByTestId('onboarding-power-enable')).toBeTruthy()
+    expect(screen.queryByTestId('onboarding-power-protected')).toBeNull()
+
     await fireEvent.press(screen.getByTestId('onboarding-power-enable'))
     expect(request).toHaveBeenCalledTimes(1)
+    batteryStatus = 'exempt'
+    await view.rerender(<OnboardingGate now={NOW} />)
+    expect(screen.getByTestId('onboarding-power-protected')).toHaveTextContent(
+      'حماية التنبيهات مفعّلة.',
+    )
+    expect(screen.queryByTestId('onboarding-power-enable')).toBeNull()
+
     await fireEvent.press(screen.getByTestId('onboarding-finish'))
     await screen.findByTestId('home-shell')
     expect(persisted.database.runAsync).toHaveBeenCalledTimes(2)
@@ -495,23 +508,62 @@ describe('OnboardingGate', () => {
     view.unmount()
   })
 
+  it('does not show a location error before the permission request', async () => {
+    mockedUseLocationCapability.mockReturnValue({
+      permission: 'undetermined',
+      status: {
+        state: 'permission-required',
+        message: deviceCopy.location.permissionRequired,
+        action: { type: 'retry-location', label: ONBOARDING_COPY.locationButton },
+      },
+      coordinates: null,
+      isRefreshing: false,
+      refresh: jest.fn(),
+      runAction: jest.fn(),
+    } as never)
+    const view = await reachPermissions(createPersistedDatabase().database)
+
+    expect(screen.getByTestId('onboarding-location')).toBeTruthy()
+    expect(screen.queryByTestId('onboarding-location-message')).toBeNull()
+
+    view.unmount()
+  })
+
+  it('keeps the location denied message while the permission can still be requested', async () => {
+    const runAction = jest.fn()
+    mockedUseLocationCapability.mockReturnValue({
+      permission: 'denied',
+      status: {
+        state: 'permission-required',
+        message: deviceCopy.location.permissionRequired,
+        action: { type: 'retry-location', label: ONBOARDING_COPY.locationButton },
+      },
+      coordinates: null,
+      isRefreshing: false,
+      refresh: jest.fn(),
+      runAction,
+    } as never)
+    const view = await reachPermissions(createPersistedDatabase().database)
+
+    expect(screen.getByText(deviceCopy.location.permissionRequired)).toBeTruthy()
+    await fireEvent.press(screen.getByTestId('onboarding-location'))
+    expect(runAction).toHaveBeenCalledTimes(1)
+
+    view.unmount()
+  })
+
   it.each([
-    ['permission-required', deviceCopy.location.permissionRequired, ONBOARDING_COPY.locationButton],
     ['settings-required', deviceCopy.location.settingsRequired, deviceCopy.actions.openAppSettings],
     ['gps-disabled', deviceCopy.location.gpsDisabled, deviceCopy.actions.openLocationSettings],
   ] as const)('renders the actionable location state %s', async (state, message, actionLabel) => {
     const runAction = jest.fn()
     mockedUseLocationCapability.mockReturnValue({
+      permission: state === 'settings-required' ? 'blocked' : 'granted',
       status: {
         state,
         message,
         action: {
-          type:
-            state === 'permission-required'
-              ? 'retry-location'
-              : state === 'settings-required'
-                ? 'open-app-settings'
-                : 'open-location-settings',
+          type: state === 'settings-required' ? 'open-app-settings' : 'open-location-settings',
           label: actionLabel,
         },
       },
@@ -525,6 +577,78 @@ describe('OnboardingGate', () => {
     expect(screen.getByText(message)).toBeTruthy()
     await fireEvent.press(screen.getByTestId('onboarding-location'))
     expect(runAction).toHaveBeenCalledTimes(1)
+
+    view.unmount()
+  })
+
+  it('keeps a retryable denied notification permission enabled before a request', async () => {
+    const setEnabled = jest.fn()
+    mockedUseNotificationSettings.mockReturnValue({
+      permission: 'denied',
+      prefs: { ...DEFAULT_NOTIFICATION_PREFS, enabled: false },
+      silentMode: false,
+      hasCoordinates: true,
+      notificationStatus: {
+        state: 'permission-required',
+        message: deviceCopy.notifications.permissionRequired,
+        action: {
+          type: 'request-notification-permission',
+          label: deviceCopy.actions.requestNotificationPermission,
+        },
+      },
+      exactAlarmStatus: { state: 'not-required', message: '', action: null },
+      isPending: jest.fn(() => false),
+      setEnabled,
+      setMoment: jest.fn(),
+      setSilentMode: jest.fn(),
+      runAction: jest.fn(),
+    })
+    const view = await reachPermissions(createPersistedDatabase().database)
+
+    expect(screen.getByTestId('onboarding-notifications').props.disabled).toBe(false)
+    expect(screen.queryByTestId('onboarding-notifications-denied')).toBeNull()
+    await act(async () => {
+      await fireEvent(screen.getByTestId('onboarding-notifications'), 'valueChange', true)
+    })
+    expect(setEnabled).toHaveBeenCalledWith(true)
+
+    view.unmount()
+  })
+
+  it('shows the notification denial message after a request is denied', async () => {
+    const setEnabled = jest.fn().mockResolvedValue('denied')
+    mockedUseNotificationSettings.mockReturnValue({
+      permission: 'denied',
+      prefs: { ...DEFAULT_NOTIFICATION_PREFS, enabled: false },
+      silentMode: false,
+      hasCoordinates: true,
+      notificationStatus: {
+        state: 'permission-required',
+        message: deviceCopy.notifications.permissionRequired,
+        action: {
+          type: 'request-notification-permission',
+          label: deviceCopy.actions.requestNotificationPermission,
+        },
+      },
+      exactAlarmStatus: { state: 'not-required', message: '', action: null },
+      isPending: jest.fn(() => false),
+      setEnabled,
+      setMoment: jest.fn(),
+      setSilentMode: jest.fn(),
+      runAction: jest.fn(),
+    })
+    const view = await reachPermissions(createPersistedDatabase().database)
+
+    expect(screen.queryByTestId('onboarding-notifications-denied')).toBeNull()
+    await act(async () => {
+      await fireEvent(screen.getByTestId('onboarding-notifications'), 'valueChange', true)
+    })
+
+    expect(setEnabled).toHaveBeenCalledWith(true)
+    expect(screen.getByTestId('onboarding-notifications-denied')).toHaveTextContent(
+      NATIVE_ONBOARDING_COPY.notificationsDenied,
+    )
+    expect(screen.getByTestId('onboarding-notifications').props.disabled).toBe(false)
 
     view.unmount()
   })
@@ -582,10 +706,11 @@ describe('OnboardingGate', () => {
       exactAlarmStatus: { state: 'not-required' as const, message: '', action: null },
       isPending: jest.fn(() => false),
       setEnabled: jest.fn(async (value: boolean) => {
-        if (!value) return
+        if (!value) return null
         deniedNotifications.permission = 'granted'
         deniedNotifications.prefs.enabled = true
         rerender?.(<OnboardingGate now={NOW} />)
+        return 'granted'
       }),
       setMoment: jest.fn(),
       setSilentMode: jest.fn(),
@@ -597,18 +722,30 @@ describe('OnboardingGate', () => {
     const view = await reachPermissions(persisted.database)
     rerender = view.rerender
 
-    expect(screen.getByText(NATIVE_ONBOARDING_COPY.notificationsDenied)).toBeTruthy()
-    expect(screen.getByTestId('onboarding-notifications').props.disabled).toBe(true)
+    expect(screen.queryByTestId('onboarding-notifications-denied')).toBeNull()
+    expect(screen.getByTestId('onboarding-notifications').props.disabled).toBe(false)
     expect(screen.getByTestId('onboarding-notifications').props.accessibilityState.disabled).toBe(
-      true,
+      false,
     )
-    await fireEvent.press(screen.getByTestId('onboarding-notifications-retry'))
+    await fireEvent(screen.getByTestId('onboarding-notifications'), 'valueChange', true)
     expect(deniedNotifications.setEnabled).toHaveBeenCalledWith(true)
     expect(runAction).not.toHaveBeenCalled()
     expect(deniedNotifications.permission).toBe('granted')
     expect(deniedNotifications.prefs.enabled).toBe(true)
     expect(screen.getByTestId('onboarding-notification-moments')).toBeTruthy()
     expect(screen.getAllByRole('switch')).toHaveLength(6)
+
+    view.unmount()
+  })
+
+  it('shows neither a power action nor a protected message when battery optimization is unsupported', async () => {
+    const view = await render(
+      <PowerStep status="unsupported" onRequest={jest.fn()} onFinish={jest.fn()} />,
+    )
+
+    expect(screen.queryByTestId('onboarding-power-enable')).toBeNull()
+    expect(screen.queryByTestId('onboarding-power-protected')).toBeNull()
+    expect(screen.getByTestId('onboarding-finish')).toBeTruthy()
 
     view.unmount()
   })
