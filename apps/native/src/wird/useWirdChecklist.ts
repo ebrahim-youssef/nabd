@@ -1,5 +1,6 @@
 import { monthOf, toDayId } from '../lib/day'
-import { buildChecklist, versionInForce } from './logic'
+import { versionInForce } from '../lib/wird'
+import { buildChecklist } from './logic'
 import type { ChecklistAreaView, DayId } from './types'
 import { useCallback, useMemo, useRef } from 'react'
 

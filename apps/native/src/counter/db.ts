@@ -1,4 +1,4 @@
-import { latestStateByItem, versionInForce } from '../wird/logic'
+import { latestStateByItem, versionInForce } from '../lib/wird'
 import type { DhikrCompletionRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
 import type { WirdEntry } from '../wird/types'

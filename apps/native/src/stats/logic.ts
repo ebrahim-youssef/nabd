@@ -1,6 +1,6 @@
 import { compareDayId, weekdayOf } from '../lib/day'
 import { toArabicIndic } from '../lib/format'
-import { isScheduledOn, latestStateByItem, versionInForce } from '../wird/logic'
+import { isScheduledOn, latestStateByItem, versionInForce } from '../lib/wird'
 import type { AreaStat, DayCompletion, ItemStat, RangeSummary } from './types'
 import type { DayId, WirdEntry, WirdItem, WirdVersion } from '../wird/types'
 

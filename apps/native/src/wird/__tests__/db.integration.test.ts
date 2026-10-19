@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
 import { WIRD_LEVELS } from '../../content/levels'
-import { versionInForce } from '../logic'
+import { versionInForce } from '../../lib/wird'
 
 import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'

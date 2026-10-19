@@ -1,4 +1,4 @@
-import { latestStateByItem, versionInForce } from '../wird/logic'
+import { latestStateByItem, versionInForce } from '../lib/wird'
 import { CATEGORY_TO_WIRD_ITEM, ONCE_DAILY_CATEGORIES } from './copy'
 import type { AdhkarProgressRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
