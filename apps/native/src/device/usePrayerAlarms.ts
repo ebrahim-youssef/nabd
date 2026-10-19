@@ -17,7 +17,11 @@ import {
 } from '../preferences/db'
 import { createDeviceRepository } from './db'
 import { isExactAlarmSchedulingAllowed } from './logic'
-import { configureForegroundHandler, readNotificationPermission } from './notifications'
+import {
+  configureForegroundHandler,
+  ExactAlarmDeniedError,
+  readNotificationPermission,
+} from './notifications'
 import { devicePlatform } from './platform'
 import { buildPrayerSchedule } from './schedule'
 import { setPrayerAlarmSyncOutcome, subscribePrayerReschedule } from './prayerAlarms'
@@ -125,6 +129,11 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
       setPrayerAlarmSyncOutcome('ok')
     } catch (cause: unknown) {
       lastAppliedSignatureRef.current = null
+      if (cause instanceof ExactAlarmDeniedError) {
+        await devicePlatform.cancelPrayerAlerts()
+        setPrayerAlarmSyncOutcome('degraded')
+        return
+      }
       setPrayerAlarmSyncOutcome('failed')
       logger.error('Native prayer alarm synchronization failed', cause, {
         operation: 'sync',

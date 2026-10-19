@@ -5,17 +5,31 @@ import { AppState } from 'react-native'
 import { DEFAULT_NOTIFICATION_PREFS } from '@nabd/shared'
 
 import { PREFERENCE_KEYS } from '../../preferences/db'
-import { configureForegroundHandler, readNotificationPermission } from '../notifications'
+import {
+  configureForegroundHandler,
+  ExactAlarmDeniedError,
+  readNotificationPermission,
+} from '../notifications'
 import { devicePlatform } from '../platform'
 import { buildPrayerSchedule } from '../schedule'
 import { setPrayerAlarmSyncOutcome, subscribePrayerReschedule } from '../prayerAlarms'
 import { usePrayerAlarms } from '../usePrayerAlarms'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
-jest.mock('../notifications', () => ({
-  configureForegroundHandler: jest.fn(),
-  readNotificationPermission: jest.fn(),
-}))
+jest.mock('../notifications', () => {
+  class ExactAlarmDeniedError extends Error {
+    constructor() {
+      super('exact alarm access is denied')
+      this.name = 'ExactAlarmDeniedError'
+    }
+  }
+
+  return {
+    ExactAlarmDeniedError,
+    configureForegroundHandler: jest.fn(),
+    readNotificationPermission: jest.fn(),
+  }
+})
 jest.mock('../schedule', () => ({ buildPrayerSchedule: jest.fn() }))
 jest.mock('../platform', () => ({
   devicePlatform: {
@@ -246,6 +260,14 @@ describe('usePrayerAlarms', () => {
       await result.current.sync()
     })
     expect(mockedSchedule).not.toHaveBeenCalled()
+  })
+
+  it('degrades when native scheduling reports exact-alarm denial', async () => {
+    mockedSchedule.mockRejectedValue(new ExactAlarmDeniedError())
+    renderAlarms()
+
+    await waitFor(() => expect(mockedCancel).toHaveBeenCalledTimes(1))
+    expect(mockedSetSyncOutcome).toHaveBeenLastCalledWith('degraded')
   })
 
   it('serializes concurrent requests and queues one additional run', async () => {

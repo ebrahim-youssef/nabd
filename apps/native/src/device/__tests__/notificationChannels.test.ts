@@ -8,7 +8,7 @@ jest.mock('expo-notifications', () => ({
 
 import * as Notifications from 'expo-notifications'
 
-import { channelFor, ensureChannels } from '../notificationChannels'
+import { channelFor, ensureChannels, soundFor } from '../notificationChannels'
 
 const mockedNotifications = Notifications as jest.Mocked<typeof Notifications>
 
@@ -57,6 +57,10 @@ describe('notification channels', () => {
       expect(channelFor(kind, true)).toBe(alarm)
     },
   )
+
+  it.each(CHANNEL_CASES)('returns the raw sound name for $kind', ({ kind, sound }) => {
+    expect(soundFor(kind)).toBe(sound.replace(/\.mp3$/, ''))
+  })
 
   it('creates every normal and alarm-usage channel with its immutable sound', async () => {
     await ensureChannels()
