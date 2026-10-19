@@ -1,12 +1,9 @@
-import { WIRD_LEVELS, nextDay, sameDefinition, versionInForce } from '@nabd/shared'
-import type {
-  DayId,
-  Result,
-  WirdDefinition,
-  WirdEntry,
-  WirdRepository,
-  WirdVersion,
-} from '@nabd/shared'
+import { WIRD_LEVELS } from '../content/levels'
+import { nextDay } from '../lib/day'
+import { sameDefinition, versionInForce } from './logic'
+import type { WirdRepository } from '../db/contracts'
+import type { Result } from '../lib/result'
+import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 import { planVersionHealing } from './logic'

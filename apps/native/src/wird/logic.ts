@@ -1,11 +1,142 @@
-import { levelMatching, nextDay, sameDefinition } from '@nabd/shared'
-import type { DayId, WirdDefinition, WirdVersion } from '@nabd/shared'
+import { compareDayId, monthOf, nextDay, weekdayOf } from '../lib/day'
+import type {
+  ChecklistAreaView,
+  ChecklistItemView,
+  DayId,
+  TodaySummary,
+  WirdDefinition,
+  WirdEntry,
+  WirdItem,
+  WirdVersion,
+} from './types'
 
 export type WirdLevelDefinition = { wird: WirdDefinition }
 
 export type VersionHealingPlan = {
   definition: WirdDefinition
   effectiveFrom: DayId
+}
+
+export function versionInForce(versions: WirdVersion[], day: DayId): WirdVersion | null {
+  let best: WirdVersion | null = null
+  for (const version of versions) {
+    if (compareDayId(version.effectiveFrom, day) > 0) continue
+    if (best === null) {
+      best = version
+      continue
+    }
+    const byDay = compareDayId(version.effectiveFrom, best.effectiveFrom)
+    if (byDay > 0 || (byDay === 0 && version.createdAt > best.createdAt)) best = version
+  }
+  return best
+}
+
+export function isScheduledOn(item: WirdItem, day: DayId): boolean {
+  if (item.schedule?.type !== 'weekdays') return true
+  return item.schedule.days.includes(weekdayOf(day))
+}
+
+export function monthlyDoneDays(entries: WirdEntry[], itemId: string, month: string): number {
+  const latestByDay = new Map<string, { at: number; done: boolean }>()
+  for (const entry of entries) {
+    if (entry.itemId !== itemId || monthOf(entry.day) !== month) continue
+    const seen = latestByDay.get(entry.day)
+    if (!seen || entry.at > seen.at) latestByDay.set(entry.day, { at: entry.at, done: entry.done })
+  }
+  let done = 0
+  for (const state of latestByDay.values()) if (state.done) done += 1
+  return done
+}
+
+export function latestStateByItem(entries: WirdEntry[]): Map<string, boolean> {
+  const latestAt = new Map<string, number>()
+  const state = new Map<string, boolean>()
+  for (const entry of entries) {
+    const seen = latestAt.get(entry.itemId)
+    if (seen === undefined || entry.at > seen) {
+      latestAt.set(entry.itemId, entry.at)
+      state.set(entry.itemId, entry.done)
+    }
+  }
+  return state
+}
+
+export function levelMatching<L extends { wird: WirdDefinition }>(
+  definition: WirdDefinition,
+  levels: L[],
+): L | null {
+  const target = definition.items.find((item) => item.kind === 'counter')?.target
+  if (target === undefined) return null
+  return (
+    levels.find((level) =>
+      level.wird.items.some((item) => item.kind === 'counter' && item.target === target),
+    ) ?? null
+  )
+}
+
+export function sameDefinition(a: WirdDefinition, b: WirdDefinition): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
+
+export function buildChecklist(
+  definition: WirdDefinition,
+  entries: WirdEntry[],
+  day: DayId,
+  monthEntries: WirdEntry[] = [],
+): ChecklistAreaView[] {
+  const state = latestStateByItem(entries)
+  const month = monthOf(day)
+  return [...definition.areas]
+    .sort((a, b) => a.order - b.order)
+    .map((area) => ({
+      id: area.id,
+      label: area.label,
+      order: area.order,
+      items: definition.items
+        .filter((item) => item.areaId === area.id && isScheduledOn(item, day))
+        .map((item) => ({
+          id: item.id,
+          label: item.label,
+          kind: item.kind,
+          target: item.target,
+          done: state.get(item.id) ?? false,
+          optional: item.optional,
+          minimum: item.minimum,
+          monthlyProgress:
+            item.schedule?.type === 'monthly-goal'
+              ? {
+                  done: monthlyDoneDays(monthEntries, item.id, month),
+                  target: item.schedule.target,
+                }
+              : undefined,
+          targetToday: item.targetDays ? item.targetDays.includes(weekdayOf(day)) : undefined,
+        })),
+    }))
+}
+
+export function areaProgress(area: ChecklistAreaView): {
+  counted: ChecklistItemView[]
+  doneCount: number
+  complete: boolean
+  progress: number
+} {
+  const required = area.items.filter((item) => !item.optional)
+  const counted = required.length > 0 ? required : area.items
+  const doneCount = counted.filter((item) => item.done).length
+  const complete = counted.length > 0 && doneCount === counted.length
+  const progress = counted.length > 0 ? (doneCount / counted.length) * 100 : 0
+  return { counted, doneCount, complete, progress }
+}
+
+export function summarizeChecklist(areas: ChecklistAreaView[]): TodaySummary {
+  const required = areas.flatMap((area) => area.items.filter((item) => !item.optional))
+  const voluntary = areas.flatMap((area) => area.items.filter((item) => item.optional))
+  return {
+    total: required.length,
+    done: required.filter((item) => item.done).length,
+    remaining: required.filter((item) => !item.done).length,
+    voluntary: { total: voluntary.length, done: voluntary.filter((item) => item.done).length },
+  }
 }
 
 export function planVersionHealing(

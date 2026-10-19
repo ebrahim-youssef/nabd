@@ -71,3 +71,29 @@ export type WirdEntry = {
   done: boolean
   at: number
 }
+
+export type ChecklistItemView = {
+  id: string
+  label: string
+  kind: WirdItemKind
+  target?: number
+  done: boolean
+  optional?: boolean
+  minimum?: string
+  monthlyProgress?: { done: number; target: number }
+  targetToday?: boolean
+}
+
+export type ChecklistAreaView = {
+  id: string
+  label: string
+  order: number
+  items: ChecklistItemView[]
+}
+
+export type TodaySummary = {
+  total: number
+  done: number
+  remaining: number
+  voluntary: { total: number; done: number }
+}
