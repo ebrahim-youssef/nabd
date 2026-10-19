@@ -1,4 +1,6 @@
-import { summarizeChecklist, toArabicIndic, WIRD_COPY } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
+import { WIRD_COPY } from './copy'
+import { summarizeChecklist } from './logic'
 import { Circle, Svg } from 'react-native-svg'
 import { View } from 'react-native'
 import { useMemo } from 'react'

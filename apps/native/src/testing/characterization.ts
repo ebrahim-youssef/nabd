@@ -1,17 +1,19 @@
-import { qadaRemaining } from '../logic/qada'
-import { dayCompletion } from '../logic/stats'
-import { versionInForce } from '../logic/wird'
-import { DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '../logic/notification-prefs'
+import { qadaRemaining } from '../qada/logic'
+import { dayCompletion } from '../stats/logic'
+import { versionInForce } from '../wird/logic'
+import { DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '../device/logic'
 import type {
   DhikrCompletionRepository,
   OnboardingRepository,
   QadaRepository,
   WirdRepository,
-} from '../contracts/repositories'
-import type { Coords } from '../types/location'
-import type { Mode, Theme } from '../types/appearance'
-import type { CalculationMethodId } from '../logic/prayer-calc'
-import type { WirdDefinition, WirdVersion } from '../types/wird'
+} from '../db/contracts'
+import type { Coords } from '../device/types'
+import type { CalculationMethodId } from '../prayer-times/logic'
+import type { WirdDefinition, WirdVersion } from '../wird/types'
+
+type Theme = 'light' | 'dark'
+type Mode = 'classic' | 'modern'
 
 const FIRST_DAY = '2026-08-10'
 const SECOND_DAY = '2026-08-11'

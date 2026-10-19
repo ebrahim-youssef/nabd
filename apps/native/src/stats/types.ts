@@ -1,4 +1,4 @@
-import type { DayId } from './wird'
+import type { DayId } from '../wird/types'
 
 // Completion of one day: how many of that day's wird items were done, out of the total the
 // version in force that day defined.
