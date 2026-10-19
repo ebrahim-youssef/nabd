@@ -1,4 +1,4 @@
-import { DEFAULT_NOTIFICATION_PREFS } from '@nabd/shared'
+import { DEFAULT_NOTIFICATION_PREFS } from '../../device/logic'
 
 import { PREFERENCE_KEYS, parseStoredNotificationPrefs, parseStoredSilentMode } from '../db'
 
