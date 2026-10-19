@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
-import { computeDayTimes, PRAYER_LABELS } from '@nabd/shared'
+import { PRAYER_LABELS } from '../copy'
+import { computeDayTimes } from '../logic'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import PrayerTimesRoute from '../../../app/(tabs)/prayer-times'

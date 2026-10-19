@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   AFTER_WINDOW_MS,
   buildAlarmPayloads,
@@ -7,8 +5,8 @@ import {
   notificationMoments,
   statusLine,
   timelineStatus,
-} from '../prayer-times'
-import type { TimePoint } from '../../types/prayer-times'
+} from '../logic'
+import type { TimePoint } from '../types'
 
 const MINUTE = 60_000
 const HOUR = 60 * MINUTE
