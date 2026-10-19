@@ -1,5 +1,8 @@
-import { WIRD_LEVELS, compareDayId, levelMatching } from '@nabd/shared'
-import type { DayId, LevelId } from '@nabd/shared'
+import { WIRD_LEVELS } from '../content/levels'
+import { compareDayId } from '../lib/day'
+import { levelMatching } from './logic'
+import type { LevelId } from '../content/levels'
+import type { DayId } from './types'
 import { useCallback } from 'react'
 
 import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
