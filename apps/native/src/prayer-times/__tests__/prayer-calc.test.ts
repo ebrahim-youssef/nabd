@@ -1,12 +1,11 @@
 import { Coordinates, Madhab, PrayerTimes } from 'adhan'
-import { describe, expect, it } from 'vitest'
 
 import {
   CALCULATION_METHODS,
   DEFAULT_METHOD_ID,
   computeDayTimes,
   isCalculationMethodId,
-} from '../prayer-calc'
+} from '../logic'
 
 // Cairo, and a fixed instant so the assertions never depend on the day the suite runs.
 const CAIRO = { latitude: 30.0444, longitude: 31.2357 }

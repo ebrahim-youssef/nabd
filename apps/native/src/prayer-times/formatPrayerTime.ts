@@ -1,4 +1,4 @@
-import { toArabicIndic } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
 
 const MIDDAY_HOUR = 12
 const HOURS_IN_CLOCK_CYCLE = 12
