@@ -25,18 +25,13 @@ object PrayerAlarmScheduler {
     cancelAlarms(context, oldAlarms)
     val armed = mutableListOf<PrayerAlarm>()
     try {
-      PrayerAlarmSnapshot.future(alarms, System.currentTimeMillis()).forEach { alarm ->
-        arm(context, alarm)
-        armed += alarm
-      }
+      armFuture(context, alarms) { alarm -> armed += alarm }
       storeSnapshot(context, alarms)
       return RESULT_SCHEDULED
     } catch (cause: Throwable) {
       cancelAlarms(context, armed)
       try {
-        PrayerAlarmSnapshot.future(oldAlarms, System.currentTimeMillis()).forEach { alarm ->
-          arm(context, alarm)
-        }
+        armFuture(context, oldAlarms)
       } catch (_: Throwable) {
         // Preserve the scheduling failure that caused the rollback.
       }
@@ -57,8 +52,18 @@ object PrayerAlarmScheduler {
   @Synchronized
   fun rearm(context: Context) {
     if (!exactAlarmsAllowed(context)) return
-    PrayerAlarmSnapshot.future(storedSnapshot(context), System.currentTimeMillis())
-      .forEach { alarm -> arm(context, alarm) }
+    armFuture(context, storedSnapshot(context))
+  }
+
+  private fun armFuture(
+    context: Context,
+    alarms: List<PrayerAlarm>,
+    onArmed: (PrayerAlarm) -> Unit = {},
+  ) {
+    PrayerAlarmSnapshot.future(alarms, System.currentTimeMillis()).forEach { alarm ->
+      arm(context, alarm)
+      onArmed(alarm)
+    }
   }
 
   private fun exactAlarmsAllowed(context: Context): Boolean {

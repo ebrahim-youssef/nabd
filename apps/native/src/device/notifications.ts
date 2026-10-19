@@ -10,6 +10,8 @@ import type { NotificationPermission } from './types'
 
 const PRAYER_NOTIFICATION_PREFIX = 'nabd-prayer-'
 const NATIVE_MODULE_NAME = 'NabdDevice'
+// Must match SNAPSHOT_VERSION in PrayerAlarmSnapshot.kt.
+const NATIVE_SNAPSHOT_VERSION = 1
 
 type ScheduledIdentifier = Pick<NotificationRequest, 'identifier'>
 
@@ -123,7 +125,7 @@ function nativeReplaceResult(result: unknown): void {
 
 function alarmSnapshot(alarms: AlarmPayload[], silentMode: boolean, now: number): string {
   return JSON.stringify({
-    version: 1,
+    version: NATIVE_SNAPSHOT_VERSION,
     alarms: alarms
       .filter((alarm) => alarm.at > now)
       .map((alarm) => ({

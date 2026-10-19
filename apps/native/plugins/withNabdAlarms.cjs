@@ -52,12 +52,7 @@ function applyManifest(androidManifest) {
   const systemReceiver = receivers.find(
     (receiver) => receiver.$?.['android:name'] === SYSTEM_TIME_RECEIVER,
   )
-  const target = systemReceiver ?? {
-    $: {
-      'android:name': SYSTEM_TIME_RECEIVER,
-      'android:exported': 'true',
-    },
-  }
+  const target = systemReceiver ?? { $: { 'android:name': SYSTEM_TIME_RECEIVER } }
   target.$['android:exported'] = 'true'
   target['intent-filter'] = target['intent-filter'] ?? []
   const filter = target['intent-filter'][0] ?? { action: [] }
