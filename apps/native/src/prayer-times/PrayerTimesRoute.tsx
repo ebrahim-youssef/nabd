@@ -9,7 +9,6 @@ import {
   shellCopy,
   statusLine,
   timelineStatus,
-  toArabicIndic,
 } from '@nabd/shared'
 import type { CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/shared'
 import { useSQLiteContext } from 'expo-sqlite'
@@ -23,17 +22,13 @@ import { logger } from '../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import { useLocationCapability } from '../device/useLocationCapability'
 import { requestPrayerReschedule } from '../device/prayerAlarms'
+import { formatPrayerTime } from './formatPrayerTime'
 
 const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 
 type PrayerTimesRouteProps = {
   now?: () => number
   today?: () => Date
-}
-
-function formatPrayerTime(at: number): string {
-  const date = new Date(at)
-  return `${toArabicIndic(date.getHours())}:${toArabicIndic(date.getMinutes()).padStart(2, '٠')}`
 }
 
 function prayerPoints(times: DayPrayerTimes): TimePoint[] {
