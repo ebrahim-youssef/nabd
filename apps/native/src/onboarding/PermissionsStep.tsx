@@ -1,4 +1,4 @@
-import { ONBOARDING_COPY } from '@nabd/shared'
+import { COPY as ONBOARDING_COPY } from './copy'
 import { useState } from 'react'
 import { Switch, View } from 'react-native'
 
