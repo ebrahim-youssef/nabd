@@ -88,8 +88,11 @@ object PrayerAlarmScheduler {
   }
 
   private fun cancelAlarms(context: Context, alarms: List<PrayerAlarm>) {
+    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
     alarms.forEach { alarm ->
-      pendingIntent(context, alarm).cancel()
+      val pendingIntent = pendingIntent(context, alarm)
+      alarmManager.cancel(pendingIntent)
+      pendingIntent.cancel()
     }
   }
 
