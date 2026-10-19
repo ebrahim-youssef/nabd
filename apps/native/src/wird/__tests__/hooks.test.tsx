@@ -1,4 +1,5 @@
-import { WIRD_LEVELS, type DayId, type WirdDefinition } from '@nabd/shared'
+import type { DayId, WirdDefinition } from '../types'
+import { WIRD_LEVELS } from '../../content/levels'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 import { Pressable, Text, View } from 'react-native'

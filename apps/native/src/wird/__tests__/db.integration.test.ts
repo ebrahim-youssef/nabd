@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
-import { versionInForce, WIRD_LEVELS } from '@nabd/shared'
+import { WIRD_LEVELS } from '../../content/levels'
+import { versionInForce } from '../logic'
 
 import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
