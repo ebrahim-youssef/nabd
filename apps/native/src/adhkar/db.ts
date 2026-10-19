@@ -1,10 +1,9 @@
-import {
-  CATEGORY_TO_WIRD_ITEM,
-  latestStateByItem,
-  ONCE_DAILY_CATEGORIES,
-  versionInForce,
-} from '@nabd/shared'
-import type { AdhkarProgressRepository, DayId, FlowState, Result, WirdEntry } from '@nabd/shared'
+import { latestStateByItem, versionInForce } from '../wird/logic'
+import { CATEGORY_TO_WIRD_ITEM, ONCE_DAILY_CATEGORIES } from './copy'
+import type { AdhkarProgressRepository } from '../db/contracts'
+import type { Result } from '../lib/result'
+import type { DayId, WirdEntry } from '../wird/types'
+import type { FlowState } from './logic'
 import type { ProductDatabase } from '../db/productDatabase'
 import { SQLITE_ID } from '../db/productDatabase'
 type Row = {
