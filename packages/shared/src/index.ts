@@ -95,7 +95,6 @@ export {
   summarizeChecklist,
 } from './logic/checklist'
 export { isScheduledOn, latestStateByItem, monthlyDoneDays, versionInForce } from './logic/wird'
-export { SITE_URL } from './constants/site'
 export { themeTokens, webThemeValues } from './tokens/tokens'
 export type { ThemeTokens } from './tokens/tokens'
 export type { DailyItemState, FlowState } from './logic/adhkar'
