@@ -1,4 +1,5 @@
-import { DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '@nabd/shared'
+import type { NotificationPrefs } from './logic'
+import { DEFAULT_NOTIFICATION_PREFS } from './logic'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AppState } from 'react-native'

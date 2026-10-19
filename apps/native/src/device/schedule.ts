@@ -1,18 +1,15 @@
+import type { AlarmPayload, CalculationMethodId } from '../prayer-times/logic'
+import type { NotificationPrefs } from './logic'
+import type { Coords } from './types'
 import {
   ADHKAR_REMINDER_MINUTES,
   BEFORE_ADHAN_MINUTES,
-  buildAlarmPayloads,
-  computeDayTimes,
   IQAMAH_OFFSET_MINUTES,
   MOMENT_LABELS,
   NATIVE_SCHEDULE_DAYS,
   NOTIFICATION_COPY,
-  notificationMoments,
-  type AlarmPayload,
-  type CalculationMethodId,
-  type Coords,
-  type NotificationPrefs,
-} from '@nabd/shared'
+} from '../prayer-times/copy'
+import { buildAlarmPayloads, computeDayTimes, notificationMoments } from '../prayer-times/logic'
 
 function addDays(date: Date, days: number): Date {
   const next = new Date(date)

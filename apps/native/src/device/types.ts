@@ -74,3 +74,7 @@ export type ExactAlarmStatus =
       message: string
       action: NotificationAction
     }
+
+export type Coords = { latitude: number; longitude: number }
+export type LocationFailure = 'services-disabled' | 'denied' | 'unavailable'
+export type LocationRequest = { ok: true; coords: Coords } | { ok: false; reason: LocationFailure }
