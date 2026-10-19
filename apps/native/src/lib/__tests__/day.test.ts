@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest'
-
 import { compareDayId, daysInRange, isDayId, lastNDays, monthOf, toDayId, weekdayOf } from '../day'
 
 describe('weekdayOf', () => {

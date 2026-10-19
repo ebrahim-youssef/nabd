@@ -1,4 +1,4 @@
-import type { DayId } from '../types/wird'
+import type { DayId } from '../wird/types'
 
 // Pure day helpers. A DayId is the local calendar day 'YYYY-MM-DD'. The current day comes from
 // the impure clock (lib/impure/clock) — these functions only transform values passed in, so
