@@ -1,6 +1,4 @@
-import { describe, expect, it } from 'vitest'
-
-import { NAV_ORDER, shellCopy } from '../../index'
+import { NAV_ORDER, shellCopy } from '../copy'
 
 describe('shared shell copy', () => {
   it('exports five distinct Arabic nav labels in the fixed navigation order', () => {
