@@ -99,6 +99,16 @@ class CountdownFormatterTest {
   }
 
   @Test
+  fun schedulesTheNextChangeAtAnEarlierBoundaryInsideTheAfterWindow() {
+    val payload = payload(
+      boundary("الفجر", now - 5 * MINUTE_MS),
+      boundary("الشروق", now + 10 * MINUTE_MS, sunrise = true),
+    )
+
+    assertEquals(now + 10 * MINUTE_MS, CountdownFormatter.format(payload, now, API_24)?.nextChangeAt)
+  }
+
+  @Test
   fun returnsNullForMalformedJson() {
     assertNull(CountdownFormatter.format("{not-json", now, API_23))
   }

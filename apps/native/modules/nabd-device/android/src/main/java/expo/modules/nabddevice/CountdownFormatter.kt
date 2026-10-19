@@ -54,7 +54,10 @@ object CountdownFormatter {
           usesChronometer = apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR,
           chronometerCountsDown = false,
           whenMillis = if (apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR) point.at else null,
-          nextChangeAt = point.at + AFTER_WINDOW_MS,
+          nextChangeAt = minOf(
+            point.at + AFTER_WINDOW_MS,
+            sorted.firstOrNull { it.at > now }?.at ?: Long.MAX_VALUE,
+          ),
         )
       }
     }
