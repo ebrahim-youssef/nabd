@@ -17,6 +17,7 @@ import { requestPrayerReschedule } from '../device/prayerAlarms'
 import { logger } from '../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 
+const STATUS_REFRESH_MS = 60_000
 const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 
 export type TodayPrayerTimesOptions = {
@@ -39,6 +40,13 @@ export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesO
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
   const location = useLocationCapability()
   const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
+  const [, setClockTick] = useState(0)
+
+  // The status line counts minutes, so re-render once a minute while mounted.
+  useEffect(() => {
+    const timer = setInterval(() => setClockTick((tick) => tick + 1), STATUS_REFRESH_MS)
+    return () => clearInterval(timer)
+  }, [])
 
   const readMethod = useCallback(() => {
     let active = true

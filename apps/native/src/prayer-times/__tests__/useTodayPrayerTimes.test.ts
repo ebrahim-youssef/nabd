@@ -89,4 +89,21 @@ describe('useTodayPrayerTimes', () => {
     expect(readPreference).toHaveBeenCalledTimes(2)
     expect(readPreference).toHaveBeenLastCalledWith(PREFERENCE_KEYS.calculationMethod)
   })
+
+  it('re-renders once a minute so the status line advances', async () => {
+    jest.useFakeTimers()
+    let instant = 0
+    const now = jest.fn(() => instant)
+    try {
+      await renderHook(() => useTodayPrayerTimes({ now }))
+      const renders = now.mock.calls.length
+      instant += 60_000
+      await act(async () => {
+        jest.advanceTimersByTime(60_000)
+      })
+      expect(now.mock.calls.length).toBeGreaterThan(renders)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
 })
