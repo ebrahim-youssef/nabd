@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
-import { WIRD_LEVELS } from '@nabd/shared'
+import { WIRD_LEVELS } from '../../content/levels'
 
 import { createBackupRepository } from '../db'
 import { serializeBackup, type BackupRows } from '../logic'

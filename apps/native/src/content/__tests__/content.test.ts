@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
-
-import { ADHKAR_LIBRARY, INTENTIONS_LIBRARY, NAV_ORDER, shellCopy, WIRD_LEVELS } from '../../index'
+import { ADHKAR_LIBRARY } from '../adhkar'
+import { INTENTIONS_LIBRARY } from '../intentions'
+import { WIRD_LEVELS } from '../levels'
+import { NAV_ORDER, shellCopy } from '../../shell/copy'
 
 describe('canonical Arabic content', () => {
   it('has stable unique level and adhkar identifiers', () => {
