@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from './copy'
 
 import { NATIVE_SHELL_COPY } from './constants'
 import { Text } from './Text'

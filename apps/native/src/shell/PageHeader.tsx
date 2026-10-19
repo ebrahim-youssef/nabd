@@ -2,7 +2,7 @@ import { ArrowRight } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
 import { Pressable, View } from 'react-native'
 
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from './copy'
 
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { Text } from './Text'
