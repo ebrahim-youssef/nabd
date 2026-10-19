@@ -1,8 +1,7 @@
 # Stack, nabd
 
 > Native-only stack for the Expo application in `apps/native` and the platform-neutral package
-> in `packages/shared`. The root Next.js application is a read-only legacy reference until
-> NBD-108 deletes it.
+> in `packages/shared`. The legacy web application was deleted in NBD-108.
 
 ## Runtime
 

@@ -41,6 +41,3 @@ eas build --profile production --platform android
 Before a release, verify SQLite persistence across close and reopen, the device state matrix for
 the capability under change, and NBD-91 backup and restore behavior. Release APK verification is
 the production smoke test described in `docs/workflow.md` and ADR-0016.
-
-The root Next.js app can still be run for reference until NBD-108 deletes it. It is not an active
-product target and is intentionally absent from the commands above.
