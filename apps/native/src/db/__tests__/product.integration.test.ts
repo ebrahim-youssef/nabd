@@ -9,7 +9,7 @@ import {
 } from '../../testing/characterization'
 import { qadaRemaining } from '../../qada/logic'
 import { dayCompletion } from '../../stats/logic'
-import { versionInForce } from '../../wird/logic'
+import { versionInForce } from '../../lib/wird'
 
 import { createDhikrCompletionRepository } from '../../counter/db'
 import { createAdhkarRepository } from '../../adhkar/db'

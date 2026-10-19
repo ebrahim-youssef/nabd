@@ -1,6 +1,6 @@
 import { daysInRange, lastNDays, toDayId } from '../lib/day'
 import { qadaRemaining } from '../qada/logic'
-import { versionInForce } from '../wird/logic'
+import { versionInForce } from '../lib/wird'
 import {
   bestStreak,
   currentStreak,

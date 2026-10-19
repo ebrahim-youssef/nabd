@@ -1,6 +1,6 @@
 import { qadaRemaining } from '../qada/logic'
 import { dayCompletion } from '../stats/logic'
-import { versionInForce } from '../wird/logic'
+import { versionInForce } from '../lib/wird'
 import { DEFAULT_NOTIFICATION_PREFS, type NotificationPrefs } from '../device/logic'
 import type {
   DhikrCompletionRepository,
