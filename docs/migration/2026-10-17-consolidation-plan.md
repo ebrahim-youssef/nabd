@@ -118,6 +118,8 @@ NBD-108 was completed on 2026-10-19; the `legacy-reference` tag points at `abdad
 
 ## Phase 7: Fold `packages/shared` into the native app (NBD-111)
 
+Done on 2026-10-19.
+
 Each module goes to the feature that owns it, so the feature-folder rule in `AGENTS.md`
 (`logic.ts` pure, `db.ts` for SQLite) becomes literally true. Paths below are inside
 `apps/native/src`; phase 8 then lifts them to `src/` at the root.
