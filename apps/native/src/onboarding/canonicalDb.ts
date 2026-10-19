@@ -1,4 +1,6 @@
-import type { OnboardingRepository, Result, WirdDefinition, WirdVersion } from '@nabd/shared'
+import type { OnboardingRepository } from '../db/contracts'
+import type { Result } from '../lib/result'
+import type { WirdDefinition, WirdVersion } from '../wird/types'
 
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 

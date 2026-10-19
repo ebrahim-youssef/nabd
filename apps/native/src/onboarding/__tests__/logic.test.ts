@@ -1,10 +1,8 @@
-import { describe, expect, it } from 'vitest'
-
 import { WIRD_LEVELS } from '../../content/levels'
 
-import { QUESTIONS } from '../../copy/onboarding'
-import { isComplete, levelById, maxScore, recommendLevel, totalScore } from '../onboarding'
-import type { Answers } from '../../types/onboarding'
+import { QUESTIONS } from '../copy'
+import { isComplete, levelById, maxScore, recommendLevel, totalScore } from '../logic'
+import type { Answers } from '../types'
 
 // Answer helpers: pick the option with the given score for every question.
 function answersScoring(score: number): Answers {
