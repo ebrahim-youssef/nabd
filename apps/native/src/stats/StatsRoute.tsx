@@ -1,12 +1,9 @@
-import {
-  bestStreak,
-  currentStreak,
-  QADA_COPY,
-  QADA_PRAYERS,
-  shellCopy,
-  STATS_COPY,
-  toArabicIndic,
-} from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
+import { QADA_COPY } from '../qada/copy'
+import { QADA_PRAYERS } from '../qada/logic'
+import { shellCopy } from '../shell/copy'
+import { STATS_COPY } from './copy'
+import { bestStreak, currentStreak } from './logic'
 import { useRouter } from 'expo-router'
 import { Pressable, View } from 'react-native'
 

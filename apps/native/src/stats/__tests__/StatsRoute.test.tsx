@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
-import type { QadaEvent, WirdEntry, WirdVersion } from '@nabd/shared'
+import type { QadaEvent } from '../../db/contracts'
+import type { WirdEntry, WirdVersion } from '../../wird/types'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import StatsRoute from '../../../app/(tabs)/stats'
