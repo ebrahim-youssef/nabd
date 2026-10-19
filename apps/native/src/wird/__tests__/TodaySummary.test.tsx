@@ -1,4 +1,5 @@
-import { toArabicIndic, WIRD_COPY } from '@nabd/shared'
+import { toArabicIndic } from '../../lib/format'
+import { WIRD_COPY } from '../copy'
 import { render, screen } from '@testing-library/react-native'
 
 import { TodaySummary } from '../TodaySummary'

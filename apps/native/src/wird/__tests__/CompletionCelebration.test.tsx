@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
-import { WIRD_COPY } from '@nabd/shared'
+import { WIRD_COPY } from '../copy'
 import { Share } from 'react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 

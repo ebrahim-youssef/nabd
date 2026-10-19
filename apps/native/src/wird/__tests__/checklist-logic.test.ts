@@ -1,7 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import { WIRD_LEVELS } from '../../content/levels'
-import type { WirdDefinition, WirdEntry, WirdVersion } from '../../types/wird'
+import type { WirdDefinition, WirdEntry, WirdVersion } from '../types'
 
 import {
   areaProgress,
@@ -11,7 +9,7 @@ import {
   sameDefinition,
   summarizeChecklist,
   versionInForce,
-} from '../checklist'
+} from '../logic'
 
 // 2026-07-14 is a Tuesday (weekday 2).
 const DAY = '2026-07-14'
