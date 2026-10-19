@@ -9,9 +9,12 @@ import { CompletionCelebration } from '../wird/CompletionCelebration'
 import { TodaySummary } from '../wird/TodaySummary'
 import { WirdChecklist } from '../wird/WirdChecklist'
 import { WirdDayProvider } from '../wird/WirdDayProvider'
+import { useWirdLevel } from '../wird/useWirdLevel'
 
 export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
-  const level = levelById(WIRD_LEVELS, persisted.selectedLevelId)
+  const { currentLevelId, isLoading } = useWirdLevel()
+  const selectedLevelId = isLoading ? persisted.selectedLevelId : currentLevelId
+  const level = levelById(WIRD_LEVELS, selectedLevelId)
   const [currentDay, setCurrentDay] = useState(() => toDayId(new Date()))
 
   useEffect(() => {
