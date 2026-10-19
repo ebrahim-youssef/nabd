@@ -242,6 +242,37 @@ describe('native notification adapter', () => {
     expect(native.cancelPrayerAlarms).toHaveBeenCalledTimes(1)
   })
 
+  it('cancels native alarms before rejecting when Expo migration fails', async () => {
+    const native = { cancelPrayerAlarms: jest.fn() }
+    mockedNativeModule.mockReturnValue(native as never)
+    mockedNotifications.getAllScheduledNotificationsAsync.mockRejectedValue(new Error('old API'))
+
+    await expect(cancelPrayerAlarms()).rejects.toThrow(
+      'could not list scheduled prayer notifications',
+    )
+
+    expect(native.cancelPrayerAlarms).toHaveBeenCalledTimes(1)
+    expect(native.cancelPrayerAlarms.mock.invocationCallOrder[0]).toBeLessThan(
+      mockedNotifications.getAllScheduledNotificationsAsync.mock.invocationCallOrder[0],
+    )
+  })
+
+  it('runs Expo migration before rejecting a native cancel failure', async () => {
+    const nativeError = new Error('native cancel failed')
+    const native = {
+      cancelPrayerAlarms: jest.fn(() => {
+        throw nativeError
+      }),
+    }
+    mockedNativeModule.mockReturnValue(native as never)
+
+    await expect(cancelPrayerAlarms()).rejects.toBe(nativeError)
+
+    expect(native.cancelPrayerAlarms).toHaveBeenCalledTimes(1)
+    expect(mockedNotifications.getAllScheduledNotificationsAsync).toHaveBeenCalledTimes(1)
+    expect(mockedNotifications.getPresentedNotificationsAsync).toHaveBeenCalledTimes(1)
+  })
+
   it('configures the foreground handler once', async () => {
     configureForegroundHandler()
     configureForegroundHandler()

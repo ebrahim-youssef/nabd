@@ -152,10 +152,32 @@ export async function replacePrayerAlarms(
 }
 
 export async function cancelPrayerAlarms(): Promise<void> {
-  await migrateExpoPrayerNotifications()
   const native = nativeModule()
-  if (!native) throw new Error('The native prayer alarm module is unavailable')
-  native.cancelPrayerAlarms()
+  let firstError: unknown
+  let hasError = false
+
+  if (!native) {
+    firstError = new Error('The native prayer alarm module is unavailable')
+    hasError = true
+  } else {
+    try {
+      await native.cancelPrayerAlarms()
+    } catch (cause: unknown) {
+      firstError = cause
+      hasError = true
+    }
+  }
+
+  try {
+    await migrateExpoPrayerNotifications()
+  } catch (cause: unknown) {
+    if (!hasError) {
+      firstError = cause
+      hasError = true
+    }
+  }
+
+  if (hasError) throw firstError
 }
 
 export function configureForegroundHandler(): void {
