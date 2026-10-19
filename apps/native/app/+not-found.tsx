@@ -1,4 +1,4 @@
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from '../src/shell/copy'
 import { useRouter } from 'expo-router'
 import { Pressable } from 'react-native'
 

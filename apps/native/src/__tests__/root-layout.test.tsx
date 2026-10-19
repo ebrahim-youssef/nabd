@@ -8,7 +8,7 @@ import {
 } from 'expo-router/testing-library'
 import { ExpoRoot } from 'expo-router/build/ExpoRoot'
 
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from '../shell/copy'
 
 import { NATIVE_SHELL_COPY } from '../shell/constants'
 
@@ -129,15 +129,21 @@ describe('native root layout', () => {
   it.each([
     ['dark', 'light'],
     ['light', 'dark'],
-  ] as const)('maps the %s NativeWind scheme to %s status bar icons', async (colorScheme, style) => {
-    mockNativeWindState.colorScheme = colorScheme
+  ] as const)(
+    'maps the %s NativeWind scheme to %s status bar icons',
+    async (colorScheme, style) => {
+      mockNativeWindState.colorScheme = colorScheme
 
-    renderRouter('./app')
+      renderRouter('./app')
 
-    await waitFor(() => {
-      expect(mockStatusBar).toHaveBeenLastCalledWith(expect.objectContaining({ style }), undefined)
-    })
-  })
+      await waitFor(() => {
+        expect(mockStatusBar).toHaveBeenLastCalledWith(
+          expect.objectContaining({ style }),
+          undefined,
+        )
+      })
+    },
+  )
 
   it('keeps the root navigator visible while tabs wait for SQLite, then renders home', async () => {
     const router = renderRouter('./app')
