@@ -29,6 +29,7 @@ import { useBackup } from '../backup/useBackup'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import { readStoredTheme } from '../preferences/theme'
 import { ONBOARDING_COPY } from './constants'
+import { setOnboardingComplete } from './completion'
 import { createOnboardingRepository, type PersistedOnboarding } from './db'
 import { OnboardingButton } from './OnboardingButton'
 import { PermissionsStep } from './PermissionsStep'
@@ -94,11 +95,15 @@ export function OnboardingGate({ now }: { now: () => Date }) {
 
   useEffect(() => {
     if (gate.status !== 'loading') return
+    setOnboardingComplete(false)
     let active = true
     void createOnboardingRepository(database)
       .load()
       .then((persisted) => {
-        if (active) setGate({ status: 'ready', persisted })
+        if (active) {
+          setOnboardingComplete(Boolean(persisted))
+          setGate({ status: 'ready', persisted })
+        }
       })
       .catch((cause: unknown) => {
         logger.error('Native onboarding load failed', cause)
@@ -250,6 +255,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
         effectiveFrom,
         versionId: `${LEVEL_VERSION_PREFIX}${selectedLevelId}`,
       })
+      setOnboardingComplete(true)
       setGate({ status: 'ready', persisted })
     } catch (cause: unknown) {
       logger.error('Native onboarding completion failed', cause)
@@ -287,7 +293,11 @@ export function OnboardingGate({ now }: { now: () => Date }) {
       <OnboardingDeviceSetup>
         {({ battery }) => (
           <ScreenContainer testID="onboarding-power-screen">
-            <PowerStep onRequest={battery.request} onFinish={() => void complete()} />
+            <PowerStep
+              status={battery.status}
+              onRequest={battery.request}
+              onFinish={() => void complete()}
+            />
           </ScreenContainer>
         )}
       </OnboardingDeviceSetup>

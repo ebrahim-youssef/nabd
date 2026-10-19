@@ -29,13 +29,16 @@ type NavItem = {
 const NAV_BOTTOM_OFFSET = 12
 export const BOTTOM_NAV_CLEARANCE = 80
 
-export function BottomNav() {
+export function BottomNav({ isVisible = true }: { isVisible?: boolean }) {
   const { BarChart3, Clock, Home, LibraryBig, Settings } =
     require('lucide-react-native') as NativeIcons
   const pathname = usePathname()
   const router = useRouter()
   const theme = useThemeTokens()
   const { bottom } = useSafeAreaInsets()
+
+  if (!isVisible) return null
+
   // Keep this order aligned with NAV_ORDER.
   const navItems: readonly NavItem[] = [
     {
