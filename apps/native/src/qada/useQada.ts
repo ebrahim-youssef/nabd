@@ -1,5 +1,5 @@
-import { qadaRemaining } from '@nabd/shared'
-import type { QadaPrayerId } from '@nabd/shared'
+import { qadaRemaining } from './logic'
+import type { QadaPrayerId } from './logic'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useMemo } from 'react'
 
