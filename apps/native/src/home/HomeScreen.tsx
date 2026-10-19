@@ -11,17 +11,26 @@ import { WirdChecklist } from '../wird/WirdChecklist'
 import { WirdDayProvider } from '../wird/WirdDayProvider'
 import { useWirdLevel } from '../wird/useWirdLevel'
 
+const DAY_CHECK_INTERVAL_MS = 60_000
+
 export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
-  const { currentLevelId, isLoading } = useWirdLevel()
-  const selectedLevelId = isLoading ? persisted.selectedLevelId : currentLevelId
+  const { currentLevelId, canChangeLevel: hasLiveVersion } = useWirdLevel()
+  // A failed or pending read has no version, so keep the onboarding level until one arrives.
+  const selectedLevelId = hasLiveVersion ? currentLevelId : persisted.selectedLevelId
   const level = levelById(WIRD_LEVELS, selectedLevelId)
   const [currentDay, setCurrentDay] = useState(() => toDayId(new Date()))
 
   useEffect(() => {
+    const syncDay = () => setCurrentDay(toDayId(new Date()))
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') setCurrentDay(toDayId(new Date()))
+      if (state === 'active') syncDay()
     })
-    return () => subscription.remove()
+    // Home can stay open across midnight; the checklist must move to the new day with the times.
+    const timer = setInterval(syncDay, DAY_CHECK_INTERVAL_MS)
+    return () => {
+      subscription.remove()
+      clearInterval(timer)
+    }
   }, [])
 
   if (!level) return null
