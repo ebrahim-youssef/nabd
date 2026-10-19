@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
-import type { ChecklistAreaView, Result, WirdEntry } from '@nabd/shared'
+import type { Result } from '../../lib/result'
+import type { ChecklistAreaView, WirdEntry } from '../../wird/types'
 
 import { DailyAdhkarList } from '../DailyAdhkarList'
 
