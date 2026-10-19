@@ -22,6 +22,7 @@ class CountdownFormatterTest {
     assertTrue(content?.usesChronometer ?: false)
     assertFalse(content?.chronometerCountsDown ?: true)
     assertEquals(now - 29 * MINUTE_MS - 59_000L, content?.whenMillis)
+    assertEquals(now + MINUTE_MS, content?.nextChangeAt)
   }
 
   @Test
@@ -37,6 +38,7 @@ class CountdownFormatterTest {
     assertTrue(content?.usesChronometer ?: false)
     assertTrue(content?.chronometerCountsDown ?: false)
     assertEquals(now + 10 * MINUTE_MS, content?.whenMillis)
+    assertEquals(now + 10 * MINUTE_MS, content?.nextChangeAt)
   }
 
   @Test

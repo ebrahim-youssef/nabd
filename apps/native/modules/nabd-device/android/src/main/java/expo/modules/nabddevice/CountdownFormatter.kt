@@ -21,6 +21,7 @@ data class CountdownNotificationContent(
   val usesChronometer: Boolean,
   val chronometerCountsDown: Boolean,
   val whenMillis: Long?,
+  val nextChangeAt: Long?,
 )
 
 private data class CountdownBoundary(
@@ -53,6 +54,7 @@ object CountdownFormatter {
           usesChronometer = apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR,
           chronometerCountsDown = false,
           whenMillis = if (apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR) point.at else null,
+          nextChangeAt = point.at + AFTER_WINDOW_MS,
         )
       }
     }
@@ -66,6 +68,7 @@ object CountdownFormatter {
       usesChronometer = apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR,
       chronometerCountsDown = true,
       whenMillis = if (apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR) point.at else null,
+      nextChangeAt = point.at,
     )
   }
 
