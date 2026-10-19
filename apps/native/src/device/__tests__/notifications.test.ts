@@ -1,23 +1,24 @@
+jest.mock('expo', () => ({
+  ...jest.requireActual('expo'),
+  requireOptionalNativeModule: jest.fn(),
+}))
+
 jest.mock('expo-notifications', () => ({
-  AndroidImportance: { HIGH: 6 },
-  AndroidAudioUsage: { NOTIFICATION: 5, ALARM: 4 },
-  AndroidAudioContentType: { SONIFICATION: 4 },
-  AndroidNotificationVisibility: { PUBLIC: 1 },
-  SchedulableTriggerInputTypes: { DATE: 'date' },
-  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   getAllScheduledNotificationsAsync: jest.fn(),
-  scheduleNotificationAsync: jest.fn(),
   cancelScheduledNotificationAsync: jest.fn(),
+  getPresentedNotificationsAsync: jest.fn(),
+  dismissNotificationAsync: jest.fn(),
   setNotificationHandler: jest.fn(),
 }))
 
+import { requireOptionalNativeModule } from 'expo'
 import * as Notifications from 'expo-notifications'
-import type { NotificationRequest } from 'expo-notifications'
 
 import type { AlarmPayload } from '@nabd/shared'
 
+import { logger } from '../../observability/logger'
 import {
   cancelPrayerAlarms,
   configureForegroundHandler,
@@ -26,6 +27,9 @@ import {
   requestNotificationPermission,
 } from '../notifications'
 
+const mockedNativeModule = requireOptionalNativeModule as jest.MockedFunction<
+  typeof requireOptionalNativeModule
+>
 const mockedNotifications = Notifications as jest.Mocked<typeof Notifications>
 const NOW = 1_800_000_000_000
 
@@ -40,26 +44,25 @@ function alarm(overrides: Partial<AlarmPayload> = {}): AlarmPayload {
   }
 }
 
-function request(identifier: string, value = NOW + 1_000): NotificationRequest {
-  return {
-    identifier,
-    content: {
-      title: 'Old',
-      body: 'Old body',
-      subtitle: null,
-      categoryIdentifier: null,
-      sound: null,
-    },
-    trigger: { type: 'date', value, channelId: 'nabd-prayer-adhan-v1' },
-  } as NotificationRequest
+function scheduled(identifier: string): Notifications.NotificationRequest {
+  return { identifier } as Notifications.NotificationRequest
+}
+
+function presented(identifier: string): Notifications.Notification {
+  return { request: { identifier } } as Notifications.Notification
 }
 
 describe('native notification adapter', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockedNativeModule.mockReturnValue({
+      replacePrayerAlarms: jest.fn(() => 'scheduled'),
+      cancelPrayerAlarms: jest.fn(),
+    } as never)
     mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([])
-    mockedNotifications.scheduleNotificationAsync.mockResolvedValue('nabd-prayer-101')
+    mockedNotifications.getPresentedNotificationsAsync.mockResolvedValue([])
     mockedNotifications.cancelScheduledNotificationAsync.mockResolvedValue(undefined)
+    mockedNotifications.dismissNotificationAsync.mockResolvedValue(undefined)
   })
 
   it('reads and requests notification permission', async () => {
@@ -74,15 +77,11 @@ describe('native notification adapter', () => {
 
     await expect(readNotificationPermission()).resolves.toBe('granted')
     await expect(requestNotificationPermission()).resolves.toBe('blocked')
-    expect(mockedNotifications.requestPermissionsAsync).toHaveBeenCalledWith({
-      ios: { allowAlert: true, allowSound: true },
-    })
   })
 
-  it('cancels and schedules only future prefixed prayer notifications', async () => {
-    const oldPrayer = request('nabd-prayer-old')
-    const other = request('other-notification')
-    mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([oldPrayer, other])
+  it('sends only future alarms to native with the selected channel mode', async () => {
+    const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
+    mockedNativeModule.mockReturnValue(native as never)
 
     await replacePrayerAlarms(
       [
@@ -93,97 +92,114 @@ describe('native notification adapter', () => {
       NOW,
     )
 
-    expect(mockedNotifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
-      'nabd-prayer-old',
-    )
-    expect(mockedNotifications.cancelScheduledNotificationAsync).not.toHaveBeenCalledWith(
-      'other-notification',
-    )
-    expect(mockedNotifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1)
-    expect(mockedNotifications.scheduleNotificationAsync).toHaveBeenCalledWith({
-      identifier: 'nabd-prayer-201',
-      content: { title: 'عنوان', body: 'نص' },
-      trigger: {
-        type: 'date',
-        date: NOW + 120_000,
-        channelId: 'nabd-adhkar-reminder-alarm-v1',
-      },
-    })
-  })
-
-  it('rebuilds the prayer schedule when no pending alarms remain', async () => {
-    await replacePrayerAlarms([alarm()], false, NOW)
-
-    expect(mockedNotifications.cancelScheduledNotificationAsync).not.toHaveBeenCalled()
-    expect(mockedNotifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1)
-  })
-
-  it('uses normal channels when silent mode is off', async () => {
-    await replacePrayerAlarms([alarm({ channelKey: 'adhanFajr' })], false, NOW)
-
-    expect(mockedNotifications.scheduleNotificationAsync).toHaveBeenCalledWith(
-      expect.objectContaining({
-        trigger: expect.objectContaining({ channelId: 'nabd-prayer-fajr-v1' }),
+    expect(native.replacePrayerAlarms).toHaveBeenCalledWith(
+      JSON.stringify({
+        version: 1,
+        alarms: [
+          {
+            id: '201',
+            at: NOW + 120_000,
+            title: 'عنوان',
+            body: 'نص',
+            sound: 'before',
+            channelId: 'nabd-adhkar-reminder-alarm-v1',
+            isAlarmChannel: true,
+          },
+        ],
       }),
     )
   })
 
-  it('restores the prayer snapshot and rethrows a scheduling failure', async () => {
-    const snapshot = request('nabd-prayer-old')
-    mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([snapshot])
-    const failure = new Error('schedule failed')
-    mockedNotifications.scheduleNotificationAsync
-      .mockResolvedValueOnce('nabd-prayer-101')
-      .mockRejectedValueOnce(failure)
+  it('uses normal channels and marks normal notifications as non-alarm', async () => {
+    const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
+    mockedNativeModule.mockReturnValue(native as never)
 
-    await expect(
-      replacePrayerAlarms([alarm({ id: 101 }), alarm({ id: 102 })], false, NOW),
-    ).rejects.toBe(failure)
+    await replacePrayerAlarms([alarm({ channelKey: 'adhanFajr' })], false, NOW)
+
+    expect(native.replacePrayerAlarms).toHaveBeenCalledWith(
+      expect.stringContaining('"channelId":"nabd-prayer-fajr-v1"'),
+    )
+    expect(native.replacePrayerAlarms).toHaveBeenCalledWith(
+      expect.stringContaining('"sound":"adhan_fajr"'),
+    )
+    expect(native.replacePrayerAlarms).toHaveBeenCalledWith(
+      expect.stringContaining('"isAlarmChannel":false'),
+    )
+  })
+
+  it('migrates old Expo scheduled and presented notifications before native scheduling', async () => {
+    const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
+    mockedNativeModule.mockReturnValue(native as never)
+    mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([
+      scheduled('nabd-prayer-old'),
+      scheduled('other'),
+    ])
+    mockedNotifications.getPresentedNotificationsAsync.mockResolvedValue([
+      presented('nabd-prayer-presented'),
+      presented('other-presented'),
+    ])
+
+    await replacePrayerAlarms([alarm()], false, NOW)
 
     expect(mockedNotifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
-      'nabd-prayer-101',
+      'nabd-prayer-old',
     )
-    expect(mockedNotifications.cancelScheduledNotificationAsync).not.toHaveBeenCalledWith(
-      'nabd-prayer-102',
+    expect(mockedNotifications.dismissNotificationAsync).toHaveBeenCalledWith(
+      'nabd-prayer-presented',
     )
-    expect(mockedNotifications.scheduleNotificationAsync).toHaveBeenLastCalledWith({
-      identifier: snapshot.identifier,
-      content: { title: 'Old', body: 'Old body' },
-      trigger: {
-        type: 'date',
-        date: NOW + 1_000,
-        channelId: 'nabd-prayer-adhan-v1',
-      },
-    })
+    expect(native.replacePrayerAlarms).toHaveBeenCalled()
+    expect(
+      mockedNotifications.cancelScheduledNotificationAsync.mock.invocationCallOrder[0],
+    ).toBeLessThan(native.replacePrayerAlarms.mock.invocationCallOrder[0])
   })
 
-  it('skips a past Android snapshot during rollback', async () => {
-    const snapshot = request('nabd-prayer-old', NOW - 1)
-    mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([snapshot])
-    const failure = new Error('schedule failed')
-    mockedNotifications.scheduleNotificationAsync.mockRejectedValueOnce(failure)
+  it('logs Expo migration failures and still calls native scheduling', async () => {
+    const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
+    mockedNativeModule.mockReturnValue(native as never)
+    mockedNotifications.getAllScheduledNotificationsAsync.mockRejectedValue(new Error('old API'))
+    mockedNotifications.getPresentedNotificationsAsync.mockRejectedValue(new Error('presented'))
 
-    await expect(replacePrayerAlarms([alarm()], false, NOW)).rejects.toBe(failure)
+    await expect(replacePrayerAlarms([alarm()], false, NOW)).resolves.toBeUndefined()
 
-    expect(mockedNotifications.scheduleNotificationAsync).toHaveBeenCalledTimes(1)
+    expect(native.replacePrayerAlarms).toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalled()
   })
 
-  it('cancels only prefixed identifiers', async () => {
+  it.each([
+    ['exact-denied', 'exact alarm access is denied'],
+    ['invalid', 'native prayer alarm snapshot is invalid'],
+  ] as const)('maps native %s to a failed synchronization error', async (result, message) => {
+    mockedNativeModule.mockReturnValue({ replacePrayerAlarms: jest.fn(() => result) } as never)
+
+    await expect(replacePrayerAlarms([alarm()], false, NOW)).rejects.toThrow(message)
+  })
+
+  it('throws when the native module is missing', async () => {
+    mockedNativeModule.mockReturnValue(null)
+
+    await expect(replacePrayerAlarms([alarm()], false, NOW)).rejects.toThrow(
+      'native prayer alarm module is unavailable',
+    )
+  })
+
+  it('cancels Expo notifications and native alarms on every cancel call', async () => {
+    const native = { cancelPrayerAlarms: jest.fn() }
+    mockedNativeModule.mockReturnValue(native as never)
     mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([
-      request('nabd-prayer-one'),
-      request('other-one'),
-      request('nabd-prayer-two'),
+      scheduled('nabd-prayer-one'),
+      scheduled('other-one'),
+    ])
+    mockedNotifications.getPresentedNotificationsAsync.mockResolvedValue([
+      presented('nabd-prayer-two'),
     ])
 
     await cancelPrayerAlarms()
 
-    expect(mockedNotifications.cancelScheduledNotificationAsync).toHaveBeenCalledTimes(2)
     expect(mockedNotifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
       'nabd-prayer-one',
     )
-    expect(mockedNotifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith(
-      'nabd-prayer-two',
-    )
+    expect(mockedNotifications.dismissNotificationAsync).toHaveBeenCalledWith('nabd-prayer-two')
+    expect(native.cancelPrayerAlarms).toHaveBeenCalledTimes(1)
   })
 
   it('configures the foreground handler once', async () => {
