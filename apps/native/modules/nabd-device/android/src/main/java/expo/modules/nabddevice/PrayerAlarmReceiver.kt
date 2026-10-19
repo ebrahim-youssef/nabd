@@ -16,10 +16,12 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
   override fun onReceive(context: Context, intent: Intent?) {
     if (intent?.action != PRAYER_ALARM_ACTION) return
     val alarmId = intent.getStringExtra(ALARM_ID_EXTRA) ?: return
+    if (!intent.hasExtra(ALARM_AT_EXTRA)) return
+    val alarmAt = intent.getLongExtra(ALARM_AT_EXTRA, Long.MIN_VALUE)
     val snapshot = context.getSharedPreferences(PRAYER_ALARM_PREFS_NAME, Context.MODE_PRIVATE)
       .getString(PRAYER_ALARM_SNAPSHOT_KEY, null)
       ?.let(PrayerAlarmSnapshot::parse)
-    val alarm = snapshot?.firstOrNull { it.id == alarmId } ?: return
+    val alarm = snapshot?.let { PrayerAlarmSnapshot.findMatching(it, alarmId, alarmAt) } ?: return
 
     cancelActivePrayerNotifications(context)
     val launchIntent = context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
@@ -81,6 +83,7 @@ class PrayerAlarmReceiver : BroadcastReceiver() {
 
   companion object {
     const val ALARM_ID_EXTRA = "alarmId"
+    const val ALARM_AT_EXTRA = "alarmAt"
     private const val NOTIFICATION_TAG = "nabd-prayer"
     private const val LOG_TAG = "NabdDevice"
   }

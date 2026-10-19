@@ -20,6 +20,7 @@ import type { AlarmPayload } from '@nabd/shared'
 
 import { logger } from '../../observability/logger'
 import {
+  ExactAlarmDeniedError,
   cancelPrayerAlarms,
   configureForegroundHandler,
   readNotificationPermission,
@@ -153,10 +154,39 @@ describe('native notification adapter', () => {
     ).toBeLessThan(native.replacePrayerAlarms.mock.invocationCallOrder[0])
   })
 
-  it('logs Expo migration failures and still calls native scheduling', async () => {
+  it('fails before native scheduling when Expo scheduled requests cannot be listed', async () => {
     const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
     mockedNativeModule.mockReturnValue(native as never)
     mockedNotifications.getAllScheduledNotificationsAsync.mockRejectedValue(new Error('old API'))
+
+    await expect(replacePrayerAlarms([alarm()], false, NOW)).rejects.toThrow(
+      'could not list scheduled prayer notifications',
+    )
+
+    expect(native.replacePrayerAlarms).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalled()
+  })
+
+  it('fails before native scheduling when a legacy scheduled request cannot be cancelled', async () => {
+    const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
+    mockedNativeModule.mockReturnValue(native as never)
+    mockedNotifications.getAllScheduledNotificationsAsync.mockResolvedValue([
+      scheduled('nabd-prayer-old'),
+    ])
+    mockedNotifications.cancelScheduledNotificationAsync.mockRejectedValue(
+      new Error('cancel failed'),
+    )
+
+    await expect(replacePrayerAlarms([alarm()], false, NOW)).rejects.toThrow(
+      'could not cancel scheduled prayer notification nabd-prayer-old',
+    )
+
+    expect(native.replacePrayerAlarms).not.toHaveBeenCalled()
+  })
+
+  it('keeps presented-notification migration best-effort', async () => {
+    const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
+    mockedNativeModule.mockReturnValue(native as never)
     mockedNotifications.getPresentedNotificationsAsync.mockRejectedValue(new Error('presented'))
 
     await expect(replacePrayerAlarms([alarm()], false, NOW)).resolves.toBeUndefined()
@@ -172,6 +202,16 @@ describe('native notification adapter', () => {
     mockedNativeModule.mockReturnValue({ replacePrayerAlarms: jest.fn(() => result) } as never)
 
     await expect(replacePrayerAlarms([alarm()], false, NOW)).rejects.toThrow(message)
+  })
+
+  it('maps exact-alarm denial to a typed error', async () => {
+    mockedNativeModule.mockReturnValue({
+      replacePrayerAlarms: jest.fn(() => 'exact-denied'),
+    } as never)
+
+    await expect(replacePrayerAlarms([alarm()], false, NOW)).rejects.toBeInstanceOf(
+      ExactAlarmDeniedError,
+    )
   })
 
   it('throws when the native module is missing', async () => {

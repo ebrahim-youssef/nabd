@@ -72,4 +72,7 @@ object PrayerAlarmSnapshot {
   fun future(alarms: List<PrayerAlarm>, now: Long): List<PrayerAlarm> = alarms
     .filter { it.at > now }
     .sortedBy { it.at }
+
+  fun findMatching(alarms: List<PrayerAlarm>, id: String, at: Long): PrayerAlarm? = alarms
+    .firstOrNull { it.id == id && it.at == at }
 }

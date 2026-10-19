@@ -38,4 +38,11 @@ class PrayerAlarmSnapshotTest {
 
     assertEquals(listOf(alarms[0], alarms[1]), PrayerAlarmSnapshot.future(unsorted, 1_000L))
   }
+
+  @Test
+  fun findsOnlyTheAlarmWithTheExpectedIdAndTime() {
+    assertEquals(alarms[0], PrayerAlarmSnapshot.findMatching(alarms, "fajr", 2_000L))
+    assertNull(PrayerAlarmSnapshot.findMatching(alarms, "fajr", 3_000L))
+    assertNull(PrayerAlarmSnapshot.findMatching(alarms, "missing", 2_000L))
+  }
 }

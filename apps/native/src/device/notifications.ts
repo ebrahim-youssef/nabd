@@ -18,6 +18,13 @@ type NativePrayerAlarmModule = {
   cancelPrayerAlarms: () => unknown
 }
 
+export class ExactAlarmDeniedError extends Error {
+  constructor() {
+    super('Prayer alarms could not be scheduled because exact alarm access is denied')
+    this.name = 'ExactAlarmDeniedError'
+  }
+}
+
 let foregroundHandlerConfigured = false
 
 export async function readNotificationPermission(): Promise<NotificationPermission> {
@@ -40,25 +47,33 @@ function isPrayerNotification(request: ScheduledIdentifier): boolean {
 }
 
 async function migrateScheduledNotifications(): Promise<void> {
+  let requests: NotificationRequest[]
   try {
-    const requests = await Notifications.getAllScheduledNotificationsAsync()
-    for (const request of requests) {
-      if (!isPrayerNotification(request)) continue
-      try {
-        await Notifications.cancelScheduledNotificationAsync(request.identifier)
-      } catch (cause: unknown) {
-        logger.warn('Expo prayer notification migration could not cancel a scheduled request', {
-          operation: 'migrate-scheduled-prayer-notifications',
-          identifier: request.identifier,
-          error: cause,
-        })
-      }
-    }
+    requests = await Notifications.getAllScheduledNotificationsAsync()
   } catch (cause: unknown) {
     logger.warn('Expo prayer notification migration could not list scheduled requests', {
       operation: 'migrate-scheduled-prayer-notifications',
       error: cause,
     })
+    throw new Error(
+      'Expo prayer notification migration could not list scheduled prayer notifications',
+    )
+  }
+
+  for (const request of requests) {
+    if (!isPrayerNotification(request)) continue
+    try {
+      await Notifications.cancelScheduledNotificationAsync(request.identifier)
+    } catch (cause: unknown) {
+      logger.warn('Expo prayer notification migration could not cancel a scheduled request', {
+        operation: 'migrate-scheduled-prayer-notifications',
+        identifier: request.identifier,
+        error: cause,
+      })
+      throw new Error(
+        `Expo prayer notification migration could not cancel scheduled prayer notification ${request.identifier}`,
+      )
+    }
   }
 }
 
@@ -96,7 +111,7 @@ function nativeModule(): NativePrayerAlarmModule | null {
 function nativeReplaceResult(result: unknown): void {
   if (result === 'scheduled') return
   if (result === 'exact-denied') {
-    throw new Error('Prayer alarms could not be scheduled because exact alarm access is denied')
+    throw new ExactAlarmDeniedError()
   }
   if (result === 'invalid') {
     throw new Error(

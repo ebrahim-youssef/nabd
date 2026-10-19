@@ -47,10 +47,11 @@ object PrayerAlarmScheduler {
   @Synchronized
   fun cancelAll(context: Context) {
     cancelAlarms(context, storedSnapshot(context))
-    context.getSharedPreferences(PRAYER_ALARM_PREFS_NAME, Context.MODE_PRIVATE)
+    val cleared = context.getSharedPreferences(PRAYER_ALARM_PREFS_NAME, Context.MODE_PRIVATE)
       .edit()
       .clear()
       .commit()
+    check(cleared) { "Could not clear the prayer alarm snapshot" }
   }
 
   @Synchronized
@@ -74,10 +75,11 @@ object PrayerAlarmScheduler {
   }
 
   private fun storeSnapshot(context: Context, alarms: List<PrayerAlarm>) {
-    context.getSharedPreferences(PRAYER_ALARM_PREFS_NAME, Context.MODE_PRIVATE)
+    val committed = context.getSharedPreferences(PRAYER_ALARM_PREFS_NAME, Context.MODE_PRIVATE)
       .edit()
       .putString(PRAYER_ALARM_SNAPSHOT_KEY, PrayerAlarmSnapshot.serialize(alarms))
       .commit()
+    check(committed) { "Could not persist the prayer alarm snapshot" }
   }
 
   private fun cancelAlarms(context: Context, alarms: List<PrayerAlarm>) {
@@ -101,6 +103,7 @@ object PrayerAlarmScheduler {
       action = PRAYER_ALARM_ACTION
       data = Uri.parse(PRAYER_ALARM_URI_PREFIX + alarm.id)
       putExtra(PrayerAlarmReceiver.ALARM_ID_EXTRA, alarm.id)
+      putExtra(PrayerAlarmReceiver.ALARM_AT_EXTRA, alarm.at)
     }
     return PendingIntent.getBroadcast(
       context,
