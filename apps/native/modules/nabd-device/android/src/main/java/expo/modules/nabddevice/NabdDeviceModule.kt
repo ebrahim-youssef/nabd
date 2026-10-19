@@ -46,6 +46,14 @@ class NabdDeviceModule : Module() {
       CountdownNotificationService.status(context)
     }
 
+    Function("replacePrayerAlarms") { snapshotJson: String ->
+      PrayerAlarmScheduler.replace(context, snapshotJson)
+    }
+
+    Function("cancelPrayerAlarms") {
+      PrayerAlarmScheduler.cancelAll(context)
+    }
+
     Function("isIgnoringBatteryOptimizations") {
       val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
       powerManager.isIgnoringBatteryOptimizations(context.packageName)
