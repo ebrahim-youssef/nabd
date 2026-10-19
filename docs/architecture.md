@@ -15,12 +15,12 @@ location, alarms, and other platform behavior. `packages/shared` owns platform-n
 - `src/logic`: pure calculations and state transitions.
 - `src/contracts`: repository contracts.
 - `src/testing`: shared fixtures and test helpers.
-- `src/constants`: current constants, including `SITE_URL`, which remains until NBD-108.
-- `src/tokens`: legacy web theme values; native theme-token ownership and removal remain pending
-  until NBD-111.
+- `src/constants`: current platform-neutral constants.
+- `src/tokens`: legacy theme values retained temporarily; native theme-token ownership and removal
+  remain pending until NBD-111.
 
-The Vite SPA was deleted in NBD-107. The root Next.js application is a read-only reference until
-NBD-108 deletes it. It is not an active product target, and no native code imports from it.
+The legacy web application was deleted in NBD-107 and NBD-108. It is not an active product target,
+and no native code imports from it.
 
 ## The boundary rule
 
@@ -57,14 +57,14 @@ apps/native/
   theme/                       palette.ts and tailwind-theme.cjs
 
 packages/shared/
-  src/constants/               current constants; SITE_URL remains until NBD-108
+  src/constants/               current platform-neutral constants
   src/content/                 Arabic product content
   src/copy/                    reusable copy for the native product
   src/logic/                   platform-neutral pure logic
   src/contracts/               platform-neutral repository contracts
   src/testing/                 shared fixtures
   src/types/                   domain types
-  src/tokens/                  legacy web theme values; native ownership and removal remain pending until NBD-111
+  src/tokens/                  legacy theme values; native ownership and removal remain pending until NBD-111
 ```
 
 Expo Router route files may render feature components, but they do not contain SQLite queries or

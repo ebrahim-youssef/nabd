@@ -114,6 +114,8 @@ and the owner's device matrix.
    tooling only if content regeneration is still wanted; otherwise it stays in the tag.
 4. Retiring the live Supabase project is a manual owner step outside the repository.
 
+NBD-108 was completed on 2026-10-19; the `legacy-reference` tag points at `abdad09`.
+
 ## Phase 7: Fold `packages/shared` into the native app (NBD-111)
 
 Each module goes to the feature that owns it, so the feature-folder rule in `AGENTS.md`
