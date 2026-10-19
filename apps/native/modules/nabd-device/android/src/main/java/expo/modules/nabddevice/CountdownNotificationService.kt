@@ -116,7 +116,7 @@ object CountdownNotificationService {
       builder
         .setWhen(content.whenMillis)
         .setUsesChronometer(true)
-        .setChronometerCountDown(true)
+        .setChronometerCountDown(content.chronometerCountsDown)
     }
 
     return try {
