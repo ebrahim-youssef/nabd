@@ -1,33 +1,27 @@
 package expo.modules.nabddevice
 
 import android.icu.text.SimpleDateFormat
-import android.icu.util.IslamicCalendar
-import android.os.Build
+import android.icu.util.Calendar
+import android.icu.util.ULocale
 import org.json.JSONObject
 import java.util.Date
-import java.util.Locale
 
 private const val AFTER_WINDOW_MS = 30 * 60 * 1000L
-private const val MINUTE_MS = 60 * 1000L
 private const val API_LEVEL_WITH_ISLAMIC_CALENDAR = 24
-private const val SINCE_ONE_MINUTE = "منذ دقيقة"
-private const val SINCE_PREFIX = "منذ "
-private const val MINUTE_SUFFIX = " دقيقة"
+private const val HIJRI_LOCALE = "ar@calendar=islamic-umalqura"
 private const val ADHAN_PREFIX = "أذّن "
 private const val SUNRISE_LABEL = "الشروق"
 private const val REMAINING_PREFIX = "باقي "
 private const val ON_PREFIX = "على "
-private const val HOUR_ONE = "ساعة"
-private const val HOUR_TWO = "ساعتين"
-private const val HOUR_SUFFIX = " ساعات"
-private const val HOURS_AND_MINUTES_SEPARATOR = " و"
 private val ARABIC_DIGITS = charArrayOf('٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩')
 
 data class CountdownNotificationContent(
   val title: String?,
   val text: String,
   val usesChronometer: Boolean,
+  val chronometerCountsDown: Boolean,
   val whenMillis: Long?,
+  val nextChangeAt: Long?,
 )
 
 private data class CountdownBoundary(
@@ -49,30 +43,35 @@ object CountdownFormatter {
 
     for (point in sorted.asReversed()) {
       if (point.at <= now && now - point.at < AFTER_WINDOW_MS) {
-        val minutes = ((now - point.at) / MINUTE_MS).toInt()
-        val since = if (minutes <= 1) SINCE_ONE_MINUTE else "$SINCE_PREFIX${arabic(minutes)}$MINUTE_SUFFIX"
         val text = if (point.sunrise) {
-          "$SUNRISE_LABEL $since"
+          SUNRISE_LABEL
         } else {
-          "$ADHAN_PREFIX${point.label} $since"
+          "$ADHAN_PREFIX${point.label}"
         }
         return CountdownNotificationContent(
           title = buildTitle(payload.city, now, apiLevel),
           text = text,
-          usesChronometer = false,
-          whenMillis = null,
+          usesChronometer = apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR,
+          chronometerCountsDown = false,
+          whenMillis = if (apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR) point.at else null,
+          nextChangeAt = minOf(
+            point.at + AFTER_WINDOW_MS,
+            sorted.firstOrNull { it.at > now }?.at ?: Long.MAX_VALUE,
+          ),
         )
       }
     }
 
     val point = sorted.firstOrNull { it.at > now } ?: return null
     val target = if (point.sunrise) SUNRISE_LABEL else point.label
-    val text = "$REMAINING_PREFIX${duration(point.at - now)} $ON_PREFIX$target"
+    val text = "$REMAINING_PREFIX$ON_PREFIX$target"
     return CountdownNotificationContent(
       title = buildTitle(payload.city, now, apiLevel),
       text = text,
       usesChronometer = apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR,
+      chronometerCountsDown = true,
       whenMillis = if (apiLevel >= API_LEVEL_WITH_ISLAMIC_CALENDAR) point.at else null,
+      nextChangeAt = point.at,
     )
   }
 
@@ -128,30 +127,13 @@ object CountdownFormatter {
 
   @Suppress("NewApi")
   private fun formatHijriDate(now: Long): String {
-    val calendar = IslamicCalendar(Locale("ar"))
+    val locale = ULocale(HIJRI_LOCALE)
+    val calendar = Calendar.getInstance(locale)
     calendar.timeInMillis = now
-    val formatter = SimpleDateFormat("d MMMM yyyy", Locale("ar"))
+    val formatter = SimpleDateFormat("d MMMM y", locale)
     formatter.calendar = calendar
     return normalizeDigits(formatter.format(Date(now)))
   }
-
-  private fun duration(milliseconds: Long): String {
-    val totalMinutes = maxOf(1L, (milliseconds + MINUTE_MS - 1) / MINUTE_MS)
-    val hours = totalMinutes / 60
-    val minutes = totalMinutes % 60
-    if (hours == 0L) return "${arabic(minutes.toInt())}$MINUTE_SUFFIX"
-
-    val hourPart = when (hours) {
-      1L -> HOUR_ONE
-      2L -> HOUR_TWO
-      else -> "${arabic(hours.toInt())}$HOUR_SUFFIX"
-    }
-    return if (minutes == 0L) hourPart else "$hourPart$HOURS_AND_MINUTES_SEPARATOR${arabic(minutes.toInt())}$MINUTE_SUFFIX"
-  }
-
-  private fun arabic(number: Int): String = number.toString().map { digit ->
-    if (digit in '0'..'9') ARABIC_DIGITS[digit - '0'] else digit
-  }.joinToString("")
 
   private fun normalizeDigits(value: String): String = value.map { digit ->
     if (digit in '0'..'9') ARABIC_DIGITS[digit - '0'] else digit

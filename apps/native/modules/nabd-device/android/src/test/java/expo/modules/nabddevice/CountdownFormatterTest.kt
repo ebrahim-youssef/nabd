@@ -10,20 +10,23 @@ class CountdownFormatterTest {
   private val now = 1_000_000L
 
   @Test
-  fun keepsSinceTextAtTwentyNineMinutesAndFiftyNineSeconds() {
+  fun usesLiveCountUpChronometerInsideTheAfterWindow() {
     val payload = payload(
       boundary("الفجر", now - 29 * MINUTE_MS - 59_000L),
       boundary("الظهر", now + 10 * MINUTE_MS),
     )
 
-    val content = CountdownFormatter.format(payload, now, API_23)
+    val content = CountdownFormatter.format(payload, now, API_24)
 
-    assertEquals("أذّن الفجر منذ ٢٩ دقيقة", content?.text)
-    assertFalse(content?.usesChronometer ?: true)
+    assertEquals("أذّن الفجر", content?.text)
+    assertTrue(content?.usesChronometer ?: false)
+    assertFalse(content?.chronometerCountsDown ?: true)
+    assertEquals(now - 29 * MINUTE_MS - 59_000L, content?.whenMillis)
+    assertEquals(now + 1_000L, content?.nextChangeAt)
   }
 
   @Test
-  fun switchesToUntilTextAtExactlyThirtyMinutes() {
+  fun usesLiveCountDownChronometerBeforeTheNextBoundary() {
     val payload = payload(
       boundary("الفجر", now - 30 * MINUTE_MS),
       boundary("الظهر", now + 10 * MINUTE_MS),
@@ -31,16 +34,23 @@ class CountdownFormatterTest {
 
     val content = CountdownFormatter.format(payload, now, API_24)
 
-    assertEquals("باقي ١٠ دقيقة على الظهر", content?.text)
+    assertEquals("باقي على الظهر", content?.text)
     assertTrue(content?.usesChronometer ?: false)
+    assertTrue(content?.chronometerCountsDown ?: false)
     assertEquals(now + 10 * MINUTE_MS, content?.whenMillis)
+    assertEquals(now + 10 * MINUTE_MS, content?.nextChangeAt)
   }
 
   @Test
-  fun usesDistinctSunriseCopy() {
+  fun usesDistinctSunriseCopyInsideTheAfterWindow() {
     val payload = payload(boundary("الشروق", now - 2 * MINUTE_MS, sunrise = true))
 
-    assertEquals("الشروق منذ ٢ دقيقة", CountdownFormatter.format(payload, now, API_23)?.text)
+    val content = CountdownFormatter.format(payload, now, API_24)
+
+    assertEquals("الشروق", content?.text)
+    assertTrue(content?.usesChronometer ?: false)
+    assertFalse(content?.chronometerCountsDown ?: true)
+    assertEquals(now - 2 * MINUTE_MS, content?.whenMillis)
   }
 
   @Test
@@ -58,17 +68,44 @@ class CountdownFormatterTest {
   }
 
   @Test
-  fun returnsNullOnceTheLastBoundaryLeavesTheSinceWindow() {
+  fun returnsNullOnceTheLastBoundaryLeavesTheAfterWindow() {
     val payload = payload(boundary("العشاء", now - 30 * MINUTE_MS))
 
-    assertNull(CountdownFormatter.format(payload, now, API_23))
+    assertNull(CountdownFormatter.format(payload, now, API_24))
   }
 
   @Test
-  fun keepsSinceTextForTheLastBoundaryOfThePayload() {
+  fun doesNotUseChronometerBelowApi24() {
     val payload = payload(boundary("العشاء", now - 10 * MINUTE_MS))
 
-    assertEquals("أذّن العشاء منذ ١٠ دقيقة", CountdownFormatter.format(payload, now, API_23)?.text)
+    val content = CountdownFormatter.format(payload, now, API_23)
+
+    assertEquals("أذّن العشاء", content?.text)
+    assertFalse(content?.usesChronometer ?: true)
+    assertFalse(content?.chronometerCountsDown ?: true)
+    assertNull(content?.whenMillis)
+  }
+
+  @Test
+  fun omitsChronometerBeforeTheNextBoundaryBelowApi24() {
+    val payload = payload(boundary("الظهر", now + 10 * MINUTE_MS))
+
+    val content = CountdownFormatter.format(payload, now, API_23)
+
+    assertEquals("باقي على الظهر", content?.text)
+    assertFalse(content?.usesChronometer ?: true)
+    assertTrue(content?.chronometerCountsDown ?: false)
+    assertNull(content?.whenMillis)
+  }
+
+  @Test
+  fun schedulesTheNextChangeAtAnEarlierBoundaryInsideTheAfterWindow() {
+    val payload = payload(
+      boundary("الفجر", now - 5 * MINUTE_MS),
+      boundary("الشروق", now + 10 * MINUTE_MS, sunrise = true),
+    )
+
+    assertEquals(now + 10 * MINUTE_MS, CountdownFormatter.format(payload, now, API_24)?.nextChangeAt)
   }
 
   @Test
