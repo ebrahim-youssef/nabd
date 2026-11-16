@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "check:no-sentry": "node scripts/check-no-sentry.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "test:native-module": "expo prebuild --platform android --no-install && node scripts/run-gradle.cjs :nabd-device:testReleaseUnitTest"
   },
   "dependencies": {
     "@nabd/shared": "workspace:*",

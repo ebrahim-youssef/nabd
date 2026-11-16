@@ -1,4 +1,58 @@
 # Malware gate (2026-09 incident). Delegates to the shared hook so the rule lives
 # in one place: ~/.config/git/hooks/pre-push -> ~/.local/bin/git-malware-scan
-[ -x "$HOME/.config/git/hooks/pre-push" ] && exec "$HOME/.config/git/hooks/pre-push" "$@"
+stdin_file=$(mktemp) || exit 1
+trap 'rm -f "$stdin_file"' 0
+cat > "$stdin_file" || exit 1
+
+global_hook="$HOME/.config/git/hooks/pre-push"
+if [ -x "$global_hook" ]; then
+  if "$global_hook" "$@" < "$stdin_file"; then
+    :
+  else
+    hook_status=$?
+    exit "$hook_status"
+  fi
+fi
+
+modules_changed=false
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$local_sha" ] || continue
+  case "$local_sha" in
+    *[!0]*) ;;
+    *) continue ;;
+  esac
+
+  case "$remote_sha" in
+    *[!0]*) base_sha=$remote_sha ;;
+    *)
+      if ! base_sha=$(git merge-base origin/dev "$local_sha"); then
+        printf '%s\n' 'Push blocked: could not find a merge base with origin/dev.' >&2
+        exit 1
+      fi
+      ;;
+  esac
+
+  if git diff --quiet "$base_sha" "$local_sha" -- apps/native/modules/; then
+    :
+  else
+    diff_status=$?
+    if [ "$diff_status" -eq 1 ]; then
+      modules_changed=true
+      break
+    fi
+    printf '%s\n' 'Push blocked: could not inspect changes under apps/native/modules/.' >&2
+    exit 1
+  fi
+done < "$stdin_file"
+
+if [ "$modules_changed" = true ]; then
+  if pnpm --filter apps-native test:native-module; then
+    exit 0
+  fi
+  printf '%s\n' 'Push blocked because the Kotlin module tests failed or Gradle could not start.' \
+    'Gradle cannot run inside sandboxed agent shells, so the push must come from a normal terminal.' >&2
+  exit 1
+fi
+
+printf '%s\n' 'Kotlin module tests skipped (no module changes).'
 exit 0
