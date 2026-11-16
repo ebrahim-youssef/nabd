@@ -4,6 +4,7 @@ import { join } from 'node:path'
 type ReleaseSigningPlugin = {
   _internals: {
     applyReleaseSigning: (buildGradle: string) => string
+    findClosingBraceIndex: (source: string, openIndex: number) => number
   }
 }
 
@@ -14,15 +15,9 @@ function innerBlock(source: string, header: string): string {
   const start = source.indexOf(header)
   if (start === -1) throw new Error(`missing ${header}`)
   const open = source.indexOf('{', start)
-  let depth = 0
-  for (let index = open; index < source.length; index += 1) {
-    if (source[index] === '{') depth += 1
-    if (source[index] === '}') {
-      depth -= 1
-      if (depth === 0) return source.slice(open + 1, index)
-    }
-  }
-  throw new Error(`unbalanced ${header}`)
+  const close = plugin._internals.findClosingBraceIndex(source, open)
+  if (close === -1) throw new Error(`unbalanced ${header}`)
+  return source.slice(open + 1, close)
 }
 
 describe('withNabdReleaseSigning', () => {
@@ -53,6 +48,13 @@ describe('withNabdReleaseSigning', () => {
     }
     expect(releaseSigning).not.toMatch(/(storePassword|keyPassword)\s+['"][^'"]+['"](?:\s|$)/)
     expect(releaseSigning).not.toMatch(/storeFile file\(['"]/)
+  })
+
+  it('resolves relative keystore paths next to the signing properties file', () => {
+    const releaseSigning = innerBlock(innerBlock(output, 'signingConfigs {'), 'release {')
+
+    expect(releaseSigning).toContain('new File(nabdStoreFile)')
+    expect(releaseSigning).toContain('nabdStoreFilePath.isAbsolute() ? nabdStoreFilePath : new File(nabdSigningFile.parentFile, nabdStoreFile)')
   })
 
   it('checks all four signing keys only for app release task graphs', () => {
