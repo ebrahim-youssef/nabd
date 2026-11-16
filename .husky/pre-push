@@ -28,8 +28,9 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       ;;
   esac
 
-  git diff --quiet "$base_sha" "$local_sha" -- $native_check_paths
-  diff_status=$?
+  # Husky runs hooks with sh -e, so the expected exit 1 must not abort the script.
+  diff_status=0
+  git diff --quiet "$base_sha" "$local_sha" -- $native_check_paths || diff_status=$?
   if [ "$diff_status" -eq 1 ]; then
     native_changes=true
     break
