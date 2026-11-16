@@ -129,7 +129,7 @@ The native parity gate covers:
    are checked on a release APK where the capability requires a device.
 4. Backup export and import preserve versions, entries, qada, settings, and coordinates covered by
    NBD-91, including restore onto a non-empty device.
-5. The locally built release APK passes the production smoke flow in ADR-0018.
+5. The locally built release APK passes the production smoke flow in Phase 8 of `docs/workflow.md`.
 
 Until NBD-91 backup and restore and the release verification gates pass, local SQLite persistence
 must not be described as protection against device loss or replacement.

@@ -21,15 +21,18 @@ file or any required key is missing. There is no debug-signing fallback. The fou
 properties are `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`.
 
 The Android version code is committed in app config and is bumped by hand alongside the version
-name. The CI APK workflow and EAS configuration are removed. Kotlin module tests run locally before
-pushes that change the module, through the pre-push hook. Gradle runs from a normal terminal, not an
-agent sandbox.
+name. The CI APK release workflow and EAS configuration are removed. A compile-only CI job runs
+debug compilation and Kotlin module tests on native pull requests; it creates no artefact and is
+not a required check because its paths filter does not report on every pull request. The pre-push
+hook runs Kotlin module tests when changes touch `apps/native/modules/`, `apps/native/plugins/`, or
+`apps/native/app.json`. Gradle runs from a normal terminal, not an agent sandbox.
 
 This supersedes ADR-0016's "Branch to artefact" section and its EAS parts of "Build profiles".
 ADR-0016's exact-alarm section stays in force.
 
 ## Consequences
 
-There is no CI release artefact, so a release build requires the owner's machine. Kotlin module
-tests no longer run in CI; a push that skips the pre-push hook skips those tests. Play publishing is
+There is no CI release artefact, so a release build requires the owner's machine. The wider
+pre-push trigger covers changes to the Kotlin module, config plugins, and app config. Kotlin module
+tests run in the compile-only CI job and locally when the pre-push hook applies. Play publishing is
 tracked by NBD-92.

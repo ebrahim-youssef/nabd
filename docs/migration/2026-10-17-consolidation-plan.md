@@ -158,7 +158,10 @@ does not have to rewrite them.
 2. Merge the remaining root tooling (Vite+, commitlint, `prepare`) into the app's `package.json`,
    delete `pnpm-workspace.yaml`, and regenerate the lockfile from a clean install.
 3. Fix every path that assumed the workspace: Metro `watchFolders` and resolver, the Jest and Babel
-   configs, `tsconfig.json`, the Gradle project paths, and CI working directories.
+   configs, `tsconfig.json`, the Gradle project paths, CI working directories, and the pre-push
+   hook paths for native modules, plugins, and `app.json`.
+   Update `native-compile.yml` paths from `apps/native/**` to the root app paths and its Gradle
+   working directory from `apps/native/android` to `android`.
 4. Verify an Expo export and local `build:apk` from a normal terminal before merging.
 5. Update every doc path from `apps/native/` to the root.
 

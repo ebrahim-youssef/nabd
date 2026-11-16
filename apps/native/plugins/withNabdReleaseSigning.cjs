@@ -13,7 +13,8 @@ const RELEASE_SIGNING_CONFIG = `        ${MARKER}
                 nabdSigningFile.withInputStream { nabdSigning.load(it) }
                 def nabdStoreFile = nabdSigning.getProperty("storeFile")
                 if (nabdStoreFile) {
-                    storeFile file(nabdStoreFile)
+                    def nabdStoreFilePath = new File(nabdStoreFile)
+                    storeFile(nabdStoreFilePath.isAbsolute() ? nabdStoreFilePath : new File(nabdSigningFile.parentFile, nabdStoreFile))
                 }
                 storePassword nabdSigning.getProperty("storePassword")
                 keyAlias nabdSigning.getProperty("keyAlias")
@@ -133,4 +134,4 @@ function withNabdReleaseSigning(config) {
 }
 
 module.exports = withNabdReleaseSigning
-module.exports._internals = { applyReleaseSigning }
+module.exports._internals = { applyReleaseSigning, findClosingBraceIndex }
