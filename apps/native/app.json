@@ -51,6 +51,7 @@
         }
       ],
       "./plugins/withNabdAlarms",
+      "./plugins/withNabdReleaseSigning",
       [
         "expo-audio",
         {
@@ -63,6 +64,7 @@
     ],
     "android": {
       "package": "com.nabd.app",
+      "versionCode": 10,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#eaf2f0"
@@ -73,9 +75,6 @@
       "forcesRTL": true,
       "router": {
         "origin": false
-      },
-      "eas": {
-        "projectId": "3f56668a-2bd1-4158-b730-243df7f75a18"
       }
     }
   }
