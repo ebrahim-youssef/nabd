@@ -5,9 +5,11 @@ trap 'rm -f "$stdin_file"' 0
 cat > "$stdin_file" || exit 1
 
 global_hook="$HOME/.config/git/hooks/pre-push"
-if [ -x "$global_hook" ]; then
-  "$global_hook" "$@" < "$stdin_file" || exit $?
+if [ ! -x "$global_hook" ]; then
+  printf '%s\n' "Push blocked: the malware gate $global_hook is missing or not executable." >&2
+  exit 1
 fi
+"$global_hook" "$@" < "$stdin_file" || exit $?
 
 native_check_paths='apps/native/modules/ apps/native/plugins/ apps/native/app.json'
 native_changes=false
