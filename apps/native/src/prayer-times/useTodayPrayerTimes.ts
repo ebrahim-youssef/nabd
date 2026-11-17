@@ -11,11 +11,14 @@ import type { CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/share
 import { useFocusEffect } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppState } from 'react-native'
 
 import { useLocationCapability } from '../device/useLocationCapability'
+import { subscribeTimeChange } from '../device/exactAlarm'
 import { requestPrayerReschedule } from '../device/prayerAlarms'
 import { logger } from '../observability/logger'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
+import { currentTimeZone, dateForCalendarDayInTimeZone } from './logic'
 
 const STATUS_REFRESH_MS = 60_000
 const PRAYER_ORDER = ['fajr', 'sunrise', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
@@ -29,12 +32,6 @@ function prayerPoints(times: DayPrayerTimes): TimePoint[] {
   return PRAYER_ORDER.map((id) => ({ id, label: PRAYER_LABELS[id], at: times[id] }))
 }
 
-function nextDay(date: Date): Date {
-  const next = new Date(date)
-  next.setDate(next.getDate() + 1)
-  return next
-}
-
 export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesOptions = {}) {
   const database = useSQLiteContext()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
@@ -46,6 +43,19 @@ export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesO
   useEffect(() => {
     const timer = setInterval(() => setClockTick((tick) => tick + 1), STATUS_REFRESH_MS)
     return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    const refreshClock = () => setClockTick((tick) => tick + 1)
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshClock()
+    })
+    const unsubscribeTimeChange = subscribeTimeChange(refreshClock)
+
+    return () => {
+      appStateSubscription.remove()
+      unsubscribeTimeChange()
+    }
   }, [])
 
   const readMethod = useCallback(() => {
@@ -76,10 +86,15 @@ export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesO
   )
 
   const instant = now()
-  const date = today ? today() : new Date(instant)
+  const timeZone = currentTimeZone()
+  const date = today ? today() : dateForCalendarDayInTimeZone(instant, timeZone)
   const times = location.coordinates ? computeDayTimes(location.coordinates, date, methodId) : null
   const tomorrowTimes = location.coordinates
-    ? computeDayTimes(location.coordinates, nextDay(date), methodId)
+    ? computeDayTimes(
+        location.coordinates,
+        dateForCalendarDayInTimeZone(instant, timeZone, 1),
+        methodId,
+      )
     : null
   const points = times
     ? [

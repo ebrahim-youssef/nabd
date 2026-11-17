@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import { useLocationCapability } from '../../device/useLocationCapability'
+import { subscribeTimeChange } from '../../device/exactAlarm'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 import { useTodayPrayerTimes } from '../useTodayPrayerTimes'
 
@@ -16,11 +17,15 @@ jest.mock('../../preferences/db', () => ({
   createPreferencesRepository: jest.fn(),
 }))
 jest.mock('../../device/prayerAlarms', () => ({ requestPrayerReschedule: jest.fn() }))
+jest.mock('../../device/exactAlarm', () => ({ subscribeTimeChange: jest.fn(() => jest.fn()) }))
 
 const mockedUseFocusEffect = useFocusEffect as jest.MockedFunction<typeof useFocusEffect>
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedUseLocationCapability = useLocationCapability as jest.MockedFunction<
   typeof useLocationCapability
+>
+const mockedSubscribeToClockChanges = subscribeTimeChange as jest.MockedFunction<
+  typeof subscribeTimeChange
 >
 const mockedCreatePreferencesRepository = createPreferencesRepository as jest.MockedFunction<
   typeof createPreferencesRepository
@@ -30,6 +35,7 @@ const readPreference = jest.fn()
 let focusCallback: (() => undefined | (() => void)) | undefined
 let resolveInitialRead: ((value: string | null) => void) | undefined
 let resolveFocusRead: ((value: string | null) => void) | undefined
+let clockChangeListener: (() => void) | undefined
 
 describe('useTodayPrayerTimes', () => {
   beforeEach(() => {
@@ -37,6 +43,11 @@ describe('useTodayPrayerTimes', () => {
     focusCallback = undefined
     resolveInitialRead = undefined
     resolveFocusRead = undefined
+    clockChangeListener = undefined
+    mockedSubscribeToClockChanges.mockImplementation((listener) => {
+      clockChangeListener = listener
+      return jest.fn()
+    })
     mockedUseFocusEffect.mockImplementation((callback) => {
       focusCallback = callback as typeof focusCallback
     })
@@ -105,5 +116,18 @@ describe('useTodayPrayerTimes', () => {
     } finally {
       jest.useRealTimers()
     }
+  })
+
+  it('re-renders immediately when the device reports a clock or timezone change', async () => {
+    const now = jest.fn(() => Date.parse('2026-11-17T21:30:00Z'))
+    const { result } = await renderHook(() => useTodayPrayerTimes({ now }))
+    const rendersBeforeChange = now.mock.calls.length
+
+    await act(async () => {
+      clockChangeListener?.()
+    })
+
+    expect(now.mock.calls.length).toBeGreaterThan(rendersBeforeChange)
+    expect(result.current.times).not.toBeNull()
   })
 })

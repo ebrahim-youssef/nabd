@@ -127,6 +127,27 @@ describe('useSoundPreview', () => {
     expect(players[0].release).toHaveBeenCalledTimes(1)
   })
 
+  it('returns to idle when playback never starts', async () => {
+    jest.useFakeTimers()
+    const { result } = await renderHook(() => useSoundPreview())
+    try {
+      await act(async () => {
+        result.current.play('iqama')
+        await Promise.resolve()
+      })
+      expect(result.current.currentId).toBe('iqama')
+
+      await act(async () => {
+        jest.advanceTimersByTime(2_000)
+      })
+
+      expect(result.current.currentId).toBeNull()
+      expect(players[0].release).toHaveBeenCalledTimes(1)
+    } finally {
+      jest.useRealTimers()
+    }
+  })
+
   it('configures foreground playback that follows the phone silent setting', async () => {
     await renderHook(() => useSoundPreview())
 
