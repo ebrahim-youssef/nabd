@@ -2,7 +2,7 @@
   "expo": {
     "name": "نبض",
     "slug": "nabd",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "nabd",
@@ -51,6 +51,7 @@
         }
       ],
       "./plugins/withNabdAlarms",
+      "./plugins/withNabdBackup",
       "./plugins/withNabdReleaseSigning",
       [
         "expo-audio",
@@ -64,11 +65,13 @@
     ],
     "android": {
       "package": "com.nabd.app",
-      "versionCode": 10,
+      "versionCode": 11,
+      "allowBackup": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#eaf2f0"
-      }
+      },
+      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"]
     },
     "extra": {
       "supportsRTL": true,
