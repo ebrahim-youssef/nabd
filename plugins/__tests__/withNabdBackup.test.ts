@@ -29,15 +29,13 @@ describe('withNabdBackup', () => {
     })
   })
 
-  it('includes the SQLite files directory and excludes other state from Android 11 and lower', () => {
+  it('includes only the SQLite files directory on Android 11 and lower', () => {
     const xml = plugin._internals.makeFullBackupContent()
 
     expect(xml).toContain('<include domain="file" path="SQLite/" />')
     expect(xml).not.toContain('<include domain="database"')
-    expect(xml).not.toContain('<exclude domain="file"')
-    expect(xml).toContain('<exclude domain="sharedpref" path="." />')
-    expect(xml).toContain('<exclude domain="device_sharedpref" path="." />')
-    expect(xml).toContain('<exclude domain="device_database" path="." />')
+    // Release lint (FullBackupContent) fails the build on any exclude outside an included path.
+    expect(xml).not.toContain('<exclude')
   })
 
   it('applies the SQLite files inclusion to both Android 12+ transfer types', () => {
@@ -47,8 +45,6 @@ describe('withNabdBackup', () => {
     expect(xml).toContain('<device-transfer>')
     expect(xml.match(/<include domain="file" path="SQLite\/" \/>/g)).toHaveLength(2)
     expect(xml).not.toContain('<include domain="database"')
-    expect(xml).not.toContain('<exclude domain="file"')
-    expect(xml.match(/<exclude domain="sharedpref" path="\." \/>/g)).toHaveLength(2)
-    expect(xml).toContain('<exclude domain="device_database" path="." />')
+    expect(xml).not.toContain('<exclude')
   })
 })

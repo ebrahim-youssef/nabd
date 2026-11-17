@@ -4,26 +4,16 @@ const { AndroidConfig, withAndroidManifest, withDangerousMod } = require('expo/c
 
 const FULL_BACKUP_CONTENT = 'nabd_backup_rules'
 const DATA_EXTRACTION_RULES = 'nabd_data_extraction_rules'
-const BACKUP_EXCLUDES = [
-  ['sharedpref', '.'],
-  ['device_sharedpref', '.'],
-  ['device_file', '.'],
-  ['device_database', '.'],
-  ['device_root', '.'],
-]
+// Once an include exists Android backs up nothing else, so no excludes are needed; release lint
+// (FullBackupContent) also rejects excludes outside an included path.
+const SQLITE_INCLUDE = '<include domain="file" path="SQLite/" />'
 
 function makeFullBackupContent() {
-  const exclusions = BACKUP_EXCLUDES.map(
-    ([domain, filePath]) => `  <exclude domain="${domain}" path="${filePath}" />`,
-  ).join('\n')
-  return `<?xml version="1.0" encoding="utf-8"?>\n<full-backup-content>\n  <include domain="file" path="SQLite/" />\n${exclusions}\n</full-backup-content>\n`
+  return `<?xml version="1.0" encoding="utf-8"?>\n<full-backup-content>\n  ${SQLITE_INCLUDE}\n</full-backup-content>\n`
 }
 
 function makeDataExtractionRules() {
-  const exclusions = BACKUP_EXCLUDES.map(
-    ([domain, filePath]) => `    <exclude domain="${domain}" path="${filePath}" />`,
-  ).join('\n')
-  return `<?xml version="1.0" encoding="utf-8"?>\n<data-extraction-rules>\n  <cloud-backup>\n    <include domain="file" path="SQLite/" />\n${exclusions}\n  </cloud-backup>\n  <device-transfer>\n    <include domain="file" path="SQLite/" />\n${exclusions}\n  </device-transfer>\n</data-extraction-rules>\n`
+  return `<?xml version="1.0" encoding="utf-8"?>\n<data-extraction-rules>\n  <cloud-backup>\n    ${SQLITE_INCLUDE}\n  </cloud-backup>\n  <device-transfer>\n    ${SQLITE_INCLUDE}\n  </device-transfer>\n</data-extraction-rules>\n`
 }
 
 function applyManifest(androidManifest) {

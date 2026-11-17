@@ -140,8 +140,8 @@ that is not the owner's.
 Section F option 2 is implemented for the native app. Expo SQLite stores `nabd-native.db` under
 `context.filesDir/SQLite` by default (`node_modules/expo-sqlite/android/src/main/java/expo/modules/sqlite/SQLiteModule.kt:35-36`). Android Auto Backup and device transfer include only `file/SQLite/`, so the database and its
 WAL/SHM companions travel together. App preferences are rows in that database and travel with it.
-SharedPreferences and device-protected data are explicitly excluded; other domains are omitted by
-the include-only rule. Cache files are excluded by Android. The Android alarm snapshot and
+SharedPreferences, device-protected data and every other domain are omitted by the include-only
+rule; the rules carry no excludes because release lint rejects excludes outside an included path. Cache files are excluded by Android. The Android alarm snapshot and
 countdown notification payload stay in SharedPreferences and are not transferred. At launch, the
 app recalculates prayer alarms and countdown state from the restored database preferences and
 location; it does not restore a previous device's scheduled alarm snapshot.

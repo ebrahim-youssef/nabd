@@ -59,8 +59,9 @@ Expo SQLite stores `nabd-native.db` in `context.filesDir/SQLite` by default
 `src/db/database.ts:126` opens the database without overriding that directory. Android Auto Backup
 and device transfer include only the app `file` domain's `SQLite/` directory. This includes the
 database and its WAL/SHM companions. User preferences are rows in this database, so they are
-included too. SharedPreferences and device-protected data are explicitly excluded. Because an
-include rule is present, all other paths and domains are omitted. Android also always excludes
+included too. Because an include rule is present, all other paths and domains, including
+SharedPreferences and device-protected data, are omitted. The rules carry no excludes: release lint
+fails on an exclude outside an included path. Android also always excludes
 cache directories. Backup export files are written to the cache directory and are excluded.
 
 Alarm snapshots (`nabd.prayer-alarms`) and countdown notification state (`nabd.countdown`) are
