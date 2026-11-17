@@ -76,6 +76,7 @@ unit tests cannot provide.
 Run the native gates before any push:
 
 ```bash
+pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test

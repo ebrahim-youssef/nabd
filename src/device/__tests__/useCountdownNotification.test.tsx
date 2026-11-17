@@ -39,7 +39,8 @@ const mockGetFirstAsync = jest.fn()
 const NOW = 1_800_000_000_000
 const now = () => NOW
 let appStateListener:
-  ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void) | undefined
+  | ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void)
+  | undefined
 let appStateRemove: jest.Mock
 let rescheduleListener: (() => void) | undefined
 let unsubscribeReschedule: jest.Mock

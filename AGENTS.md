@@ -64,7 +64,7 @@ code around.
 - **Pure logic and feature folders.** Pure logic goes in `src/<feature>/logic.ts`
   and cross-feature helpers go in `src/lib`. Logic has no I/O or clock globals; time
   and data are passed in. Native feature folders are flat, with `db.ts`, components, and hooks
-  side by side where present, and tests under `__tests__/`. The native ESLint config enforces
+  side by side where present, and tests under `__tests__/`. The Vite+ Oxlint config enforces
   React Hooks rules, `no-console`, pure-logic restrictions, and restricted direct imports of
   React Native `Text` and `TextInput`.
 - **SQLite is the offline source of truth.** Feature repositories in `db.ts` own SQLite access.

@@ -44,3 +44,7 @@ duplicating DB data into the store).
 - No global data store to keep in sync — Dexie + `useLiveQuery` is the single source of truth.
 - Revisit if features start needing to reach deep into each other (would signal a missing
   shared module or a real need for stronger boundaries).
+
+## Tooling update, 2026-11-17 (NBD-110)
+
+The boundary rule described above is now enforced by Oxlint through Vite+ (`vite.config.ts`).

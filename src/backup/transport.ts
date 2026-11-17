@@ -11,10 +11,14 @@ const BACKUP_FILE_PREFIX = 'nabd-backup-'
 const BACKUP_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}/
 
 export type BackupTransportError =
-  'oversized_file' | 'read_failed' | 'write_failed' | 'share_failed'
+  | 'oversized_file'
+  | 'read_failed'
+  | 'write_failed'
+  | 'share_failed'
 
 export type BackupTransportResult<T> =
-  { ok: true; value: T } | { ok: false; error: BackupTransportError }
+  | { ok: true; value: T }
+  | { ok: false; error: BackupTransportError }
 
 function logTransportFailure(message: string, cause: unknown, context?: Record<string, unknown>) {
   logger.error(message, cause, context)

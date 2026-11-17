@@ -16,7 +16,7 @@ jobs:
       matrix:
         include:
           - name: native lint
-            run: pnpm check:no-sentry && pnpm lint
+            run: pnpm check:no-sentry && pnpm format:check && pnpm lint
           - name: native typecheck
             run: pnpm typecheck
           - name: native test

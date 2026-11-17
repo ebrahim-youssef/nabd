@@ -12,7 +12,8 @@ describe('connectivity provider', () => {
 
   it('uses NetInfo fetch and subscription state for native connectivity', async () => {
     let subscriber:
-      ((state: { isConnected: boolean; isInternetReachable: boolean }) => void) | undefined
+      | ((state: { isConnected: boolean; isInternetReachable: boolean }) => void)
+      | undefined
     const fetch = jest.fn().mockResolvedValue({ isConnected: true, isInternetReachable: true })
     const netInfo = {
       fetch,

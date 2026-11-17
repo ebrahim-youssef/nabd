@@ -36,7 +36,10 @@ export type LocationStatus = {
 export type ExactAlarmAccess = 'not-required' | 'granted' | 'denied' | 'unknown'
 export type BatteryOptimizationStatus = 'exempt' | 'optimized' | 'unsupported'
 export type BatteryOptimizationRequestResult =
-  'exemptionDialog' | 'settingsList' | 'none' | 'unsupported'
+  | 'exemptionDialog'
+  | 'settingsList'
+  | 'none'
+  | 'unsupported'
 
 export type NotificationActionType =
   | 'request-notification-permission'

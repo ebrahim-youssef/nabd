@@ -30,7 +30,8 @@ const mockedRequestPrayerReschedule = requestPrayerReschedule as jest.MockedFunc
 >
 const setEnabled = jest.fn(async () => undefined)
 let appStateListener:
-  ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void) | undefined
+  | ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void)
+  | undefined
 
 describe('CountdownToggle', () => {
   beforeEach(() => {
