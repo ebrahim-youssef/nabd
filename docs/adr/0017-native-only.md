@@ -43,7 +43,8 @@ requirements recorded by ADR-0015.
 
 The root application remains available only as a reference for comparison and porting until parity
 is complete. The SPA is cancelled and removed. Deleting the root application and the SPA becomes
-part of completing the native migration.
+part of completing the native migration. NBD-108 deleted the root application on 2026-11-17; it
+stays readable from the `legacy-reference` tag.
 
 Future iOS work may reuse the shared domain and content layers, but it requires its own platform
 plan, state matrix, and release decision.
