@@ -54,14 +54,18 @@ describe('withNabdReleaseSigning', () => {
     const releaseSigning = innerBlock(innerBlock(output, 'signingConfigs {'), 'release {')
 
     expect(releaseSigning).toContain('new File(nabdStoreFile)')
-    expect(releaseSigning).toContain('nabdStoreFilePath.isAbsolute() ? nabdStoreFilePath : new File(nabdSigningFile.parentFile, nabdStoreFile)')
+    expect(releaseSigning).toContain(
+      'nabdStoreFilePath.isAbsolute() ? nabdStoreFilePath : new File(nabdSigningFile.parentFile, nabdStoreFile)',
+    )
   })
 
   it('checks all four signing keys only for app release task graphs', () => {
     const check = output.slice(output.indexOf('// nabd:release-signing-check'))
 
     expect(check).toContain('gradle.taskGraph.whenReady')
-    expect(check).toMatch(/nabdGraph\.allTasks\.find \{ it\.project\.path == ":app" && it\.name\.contains\("Release"\) \}/)
+    expect(check).toMatch(
+      /nabdGraph\.allTasks\.find \{ it\.project\.path == ":app" && it\.name\.contains\("Release"\) \}/,
+    )
     expect(check).toContain('new File(')
     for (const key of ['storeFile', 'storePassword', 'keyAlias', 'keyPassword']) {
       expect(check).toContain(`"${key}"`)
@@ -71,7 +75,9 @@ describe('withNabdReleaseSigning', () => {
   it('does not require signing for release tasks outside the app module', () => {
     const check = output.slice(output.indexOf('// nabd:release-signing-check'))
 
-    expect(check).toMatch(/allTasks\.find \{ it\.project\.path == ":app" && it\.name\.contains\("Release"\) \}/)
+    expect(check).toMatch(
+      /allTasks\.find \{ it\.project\.path == ":app" && it\.name\.contains\("Release"\) \}/,
+    )
   })
 
   it('is unchanged when release signing is applied twice', () => {
@@ -79,18 +85,23 @@ describe('withNabdReleaseSigning', () => {
   })
 
   it('names the signingConfigs anchor when it is missing', () => {
-    expect(() => plugin._internals.applyReleaseSigning(template.replace('signingConfigs {', 'signing {')))
-      .toThrow(/signingConfigs/)
+    expect(() =>
+      plugin._internals.applyReleaseSigning(template.replace('signingConfigs {', 'signing {')),
+    ).toThrow(/signingConfigs/)
   })
 
   it('names the buildTypes anchor when it is missing', () => {
-    expect(() => plugin._internals.applyReleaseSigning(template.replace('buildTypes {', 'types {')))
-      .toThrow(/buildTypes/)
+    expect(() =>
+      plugin._internals.applyReleaseSigning(template.replace('buildTypes {', 'types {')),
+    ).toThrow(/buildTypes/)
   })
 
   it('names the release build type anchor when it is missing', () => {
-    expect(() => plugin._internals.applyReleaseSigning(template.replace('        release {', '        publish {')))
-      .toThrow(/release/)
+    expect(() =>
+      plugin._internals.applyReleaseSigning(
+        template.replace('        release {', '        publish {'),
+      ),
+    ).toThrow(/release/)
   })
 
   it('names the release debug signing line anchor when it is missing', () => {
@@ -99,6 +110,8 @@ describe('withNabdReleaseSigning', () => {
       '$1signingConfig signingConfigs.unset',
     )
 
-    expect(() => plugin._internals.applyReleaseSigning(withoutReleaseDebugSigning)).toThrow(/signingConfig signingConfigs\.debug/)
+    expect(() => plugin._internals.applyReleaseSigning(withoutReleaseDebugSigning)).toThrow(
+      /signingConfig signingConfigs\.debug/,
+    )
   })
 })
