@@ -11,4 +11,12 @@ describe('formatPrayerTime', () => {
   ])('formats %s as a 12-hour Arabic time', (_label, value, expected) => {
     expect(formatPrayerTime(new Date(value).getTime())).toBe(expected)
   })
+
+  it('formats the instant in the supplied timezone after a device zone change', () => {
+    expect(formatPrayerTime(Date.parse('2026-11-17T21:30:00Z'), 'Asia/Dubai')).toBe('١:٣٠ ص')
+  })
+
+  it('formats five minutes past midnight with the original Arabic output shape', () => {
+    expect(formatPrayerTime(Date.parse('2026-11-17T20:05:00Z'), 'Asia/Dubai')).toBe('١٢:٠٥ ص')
+  })
 })

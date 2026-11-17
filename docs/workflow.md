@@ -99,7 +99,8 @@ normal merge commit. Never rebase or squash.
 
 ## Phase 8, production release
 
-Build the release APK through the approved EAS path in ADR-0016. The production smoke test is:
+Build the release APK locally through `pnpm --filter apps-native build:apk` as recorded in
+ADR-0018. Gradle must run from a normal terminal. The production smoke test is:
 
 1. Install the release APK on the target Android device.
 2. Complete native onboarding and select a level.

@@ -2,7 +2,9 @@
 
 - **Status:** accepted
 - **Status note:** Its web and Cloudflare sequencing is superseded by
-  [ADR-0017](./0017-native-only.md); native release and exact-alarm rules remain where compatible.
+  [ADR-0017](./0017-native-only.md). The "Branch to artefact" section and the EAS parts of
+  "Build profiles" are superseded by [ADR-0018](./0018-local-gradle-release-builds.md); the
+  exact-alarm section remains in force.
 - **Date:** 2026-08-28
 
 ## Context

@@ -13,6 +13,7 @@ const mockedUseLocationCapability = useLocationCapability as jest.MockedFunction
 >
 
 const runAction = jest.fn(async () => undefined)
+const refresh = jest.fn(async () => undefined)
 
 function locationView(
   state: LocationCapabilityView['status']['state'],
@@ -24,7 +25,7 @@ function locationView(
     status: { state, message, action },
     coordinates: null,
     isRefreshing: false,
-    refresh: jest.fn(async () => undefined),
+    refresh,
     runAction,
   }
 }
@@ -70,5 +71,27 @@ describe('LocationSection', () => {
     await fireEvent.press(screen.getByTestId('settings-location-action'))
 
     expect(runAction).toHaveBeenCalledWith('retry-location')
+  })
+
+  it('offers a forced location refresh in the ready state', async () => {
+    mockedUseLocationCapability.mockReturnValue(locationView('ready', 'تم تحديد الموقع.', null))
+
+    await render(<LocationSection />)
+    await fireEvent.press(screen.getByTestId('settings-location-refresh'))
+
+    expect(refresh).toHaveBeenCalledWith({ force: true })
+  })
+
+  it('disables the location refresh action while refreshing', async () => {
+    mockedUseLocationCapability.mockReturnValue({
+      ...locationView('ready', 'تم تحديد الموقع.', null),
+      isRefreshing: true,
+    })
+
+    await render(<LocationSection />)
+
+    expect(screen.getByTestId('settings-location-refresh').props.accessibilityState).toEqual({
+      disabled: true,
+    })
   })
 })

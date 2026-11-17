@@ -3,6 +3,7 @@ export const deviceCopy = {
     openAppSettings: 'فتح إعدادات التطبيق',
     openLocationSettings: 'فتح إعدادات الموقع',
     retryLocation: 'إعادة محاولة تحديد الموقع',
+    refreshLocation: 'تحديث الموقع',
     requestNotificationPermission: 'السماح بالإشعارات',
     enableNotifications: 'تفعيل الإشعارات',
     openExactAlarmSettings: 'فتح إعدادات المنبّهات الدقيقة',

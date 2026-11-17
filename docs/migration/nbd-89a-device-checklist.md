@@ -1,11 +1,10 @@
 # NBD-89a owner device checklist
 
-Install the release APK from the latest `dev` run of `native-release-apk` (Actions, the run for the
-merge you are testing, artefact `nabd-apk-<run>-<sha>`). Uninstall any older nabd build first unless a
-row says otherwise. Mark each row pass or fail and note the Android version and phone model once at
-the top.
+Install the release APK built locally with `pnpm --filter apps-native build:apk`. Uninstall any
+older nabd build first unless a row says otherwise. Mark each row pass or fail and note the Android
+version and phone model once at the top.
 
-Phone model: ______ Android version: ______ APK run: ______
+Phone model: ______ Android version: ______ APK: ______
 
 ## 1. Fresh install and onboarding
 

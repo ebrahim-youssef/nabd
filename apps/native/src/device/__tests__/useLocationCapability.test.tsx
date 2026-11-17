@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
+import { computeDayTimes } from '../../prayer-times/logic'
 import * as Location from 'expo-location'
 import { useSQLiteContext } from 'expo-sqlite'
 import { AppState } from 'react-native'
@@ -115,6 +116,17 @@ function renderLocation(
       now,
     }),
   )
+}
+
+function renderLocationWithPrayerTimes() {
+  return renderHook(() => {
+    const location = useLocationCapability({ now })
+    const times = location.coordinates
+      ? computeDayTimes(location.coordinates, new Date(NOW), 'egyptian')
+      : null
+
+    return { ...location, times }
+  })
 }
 
 describe('useLocationCapability', () => {
@@ -249,6 +261,76 @@ describe('useLocationCapability', () => {
       await Promise.all([first, second])
     })
     await waitFor(() => expect(result.current.status.state).toBe('ready'))
+  })
+
+  it('updates coordinates and prayer times in other mounted consumers after a location refresh', async () => {
+    repository = createRepository(
+      { latitude: 30.0444, longitude: 31.2357, recordedAt: NOW - 1_000 },
+      true,
+    )
+    mockedCreateDeviceRepository.mockReturnValue(repository as never)
+    mockedLocation.getCurrentPositionAsync.mockResolvedValue({
+      coords: { latitude: 25.2048, longitude: 55.2708 },
+    } as never)
+    const first = renderLocationWithPrayerTimes()
+    const second = renderLocationWithPrayerTimes()
+
+    await waitFor(() => expect(first.result.current.isRefreshing).toBe(false))
+    await waitFor(() => expect(second.result.current.isRefreshing).toBe(false))
+    const previousTimes = second.result.current.times
+
+    await act(async () => {
+      await first.result.current.refresh({ force: true })
+    })
+
+    await waitFor(() =>
+      expect(second.result.current.coordinates).toEqual({ latitude: 25.2048, longitude: 55.2708 }),
+    )
+    expect(first.result.current.coordinates).toEqual({ latitude: 25.2048, longitude: 55.2708 })
+    expect(second.result.current.times).not.toEqual(previousTimes)
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
+  })
+
+  it('shares a forced GPS request across mounted hook instances', async () => {
+    repository = createRepository(
+      { latitude: 30.0444, longitude: 31.2357, recordedAt: NOW - 1_000 },
+      true,
+    )
+    mockedCreateDeviceRepository.mockReturnValue(repository as never)
+    let resolvePosition: ((position: unknown) => void) | undefined
+    mockedLocation.getCurrentPositionAsync.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePosition = resolve
+      }) as never,
+    )
+    const first = renderLocation()
+    const second = renderLocation()
+
+    await waitFor(() => expect(first.result.current.isRefreshing).toBe(false))
+    await waitFor(() => expect(second.result.current.isRefreshing).toBe(false))
+    mockedLocation.getCurrentPositionAsync.mockClear()
+    mockedLocation.getCurrentPositionAsync.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePosition = resolve
+      }) as never,
+    )
+
+    let firstRefresh!: Promise<void>
+    let secondRefresh!: Promise<void>
+    act(() => {
+      firstRefresh = first.result.current.refresh({ force: true })
+      secondRefresh = second.result.current.refresh({ force: true })
+    })
+
+    expect(firstRefresh).toBe(secondRefresh)
+    await waitFor(() => expect(mockedLocation.getCurrentPositionAsync).toHaveBeenCalledTimes(1))
+
+    await act(async () => {
+      resolvePosition?.({ coords: { latitude: 25.2048, longitude: 55.2708 } })
+      await firstRefresh
+    })
+
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
   })
 
   it('runs a forced fix after an unforced refresh completes', async () => {
