@@ -48,11 +48,65 @@ const INITIAL_SNAPSHOT: LocationCapabilitySnapshot = {
 type LocationCapabilityViewState = {
   snapshot: LocationCapabilitySnapshot
   coordinates: { latitude: number; longitude: number } | null
+  isRefreshing: boolean
 }
+
+type LocationViewListener = (
+  view: LocationCapabilityViewState,
+  cached: CachedLocation | null,
+) => void
+
+type RefreshOperation = (force: boolean) => Promise<void>
+
+const locationViewListeners = new Set<LocationViewListener>()
+let sharedRefreshPromise: Promise<void> | null = null
+let sharedRefreshIsForced = false
+let forcedRefreshQueued = false
 
 const INITIAL_VIEW: LocationCapabilityViewState = {
   snapshot: INITIAL_SNAPSHOT,
   coordinates: null,
+  isRefreshing: true,
+}
+
+function subscribeLocationView(listener: LocationViewListener): () => void {
+  locationViewListeners.add(listener)
+  return () => locationViewListeners.delete(listener)
+}
+
+function publishLocationView(view: LocationCapabilityViewState, cached: CachedLocation | null) {
+  for (const listener of locationViewListeners) listener(view, cached)
+}
+
+function refreshAcrossInstances(force: boolean, performRefresh: RefreshOperation): Promise<void> {
+  if (sharedRefreshPromise) {
+    if (force && !sharedRefreshIsForced) forcedRefreshQueued = true
+    return sharedRefreshPromise
+  }
+
+  let operation: Promise<void>
+  const drain = async (): Promise<void> => {
+    let nextForce = force
+    try {
+      while (true) {
+        sharedRefreshIsForced = nextForce
+        forcedRefreshQueued = false
+        await performRefresh(nextForce)
+        if (!forcedRefreshQueued) return
+        nextForce = true
+      }
+    } finally {
+      if (sharedRefreshPromise === operation) {
+        sharedRefreshPromise = null
+        sharedRefreshIsForced = false
+        forcedRefreshQueued = false
+      }
+    }
+  }
+
+  operation = drain()
+  sharedRefreshPromise = operation
+  return operation
 }
 
 function makeSnapshot(
@@ -99,14 +153,10 @@ export function useLocationCapability(
   const now = options.now ?? Date.now
 
   const [view, setView] = useState<LocationCapabilityViewState>(INITIAL_VIEW)
-  const [isRefreshing, setIsRefreshing] = useState(true)
   const mountedRef = useRef(false)
   const viewRef = useRef<LocationCapabilityViewState>(INITIAL_VIEW)
   const cachedLocationRef = useRef<CachedLocation | null>(null)
   const connectivityRef = useRef(connectivity)
-  const refreshPromiseRef = useRef<Promise<void> | null>(null)
-  const activeForcedRef = useRef(false)
-  const forceQueuedRef = useRef(false)
   const actionPromiseRef = useRef<Promise<void> | null>(null)
 
   const commit = useCallback(
@@ -114,7 +164,18 @@ export function useLocationCapability(
       const next: LocationCapabilityViewState = {
         snapshot,
         coordinates: coordinatesFrom(cached),
+        isRefreshing: viewRef.current.isRefreshing,
       }
+      cachedLocationRef.current = cached
+      viewRef.current = next
+      if (mountedRef.current) setView(next)
+      publishLocationView(next, cached)
+    },
+    [],
+  )
+
+  const receiveLocationView = useCallback(
+    (next: LocationCapabilityViewState, cached: CachedLocation | null) => {
       cachedLocationRef.current = cached
       viewRef.current = next
       if (mountedRef.current) setView(next)
@@ -123,7 +184,10 @@ export function useLocationCapability(
   )
 
   const setRefreshing = useCallback((value: boolean) => {
-    if (mountedRef.current) setIsRefreshing(value)
+    const next = { ...viewRef.current, isRefreshing: value }
+    viewRef.current = next
+    if (mountedRef.current) setView(next)
+    publishLocationView(next, cachedLocationRef.current)
   }, [])
 
   const performRefresh = useCallback(
@@ -178,42 +242,11 @@ export function useLocationCapability(
     [commit, now, refreshAndSet, repository, setRefreshing],
   )
 
-  const startRefresh = useCallback(
-    (initialForce: boolean): Promise<void> => {
-      let operation: Promise<void>
-      const drain = async (): Promise<void> => {
-        let force = initialForce
-        try {
-          while (true) {
-            activeForcedRef.current = force
-            forceQueuedRef.current = false
-            await performRefresh(force)
-            if (!forceQueuedRef.current) return
-            force = true
-          }
-        } finally {
-          if (refreshPromiseRef.current === operation) {
-            refreshPromiseRef.current = null
-            activeForcedRef.current = false
-            forceQueuedRef.current = false
-          }
-        }
-      }
-      operation = drain()
-      refreshPromiseRef.current = operation
-      return operation
-    },
-    [performRefresh],
-  )
-
   const refresh = useCallback(
     ({ force = false }: LocationRefreshOptions = {}): Promise<void> => {
-      const activeRefresh = refreshPromiseRef.current
-      if (!activeRefresh) return startRefresh(force)
-      if (force && !activeForcedRef.current) forceQueuedRef.current = true
-      return activeRefresh
+      return refreshAcrossInstances(force, performRefresh)
     },
-    [startRefresh],
+    [performRefresh],
   )
 
   const runAction = useCallback(
@@ -279,6 +312,8 @@ export function useLocationCapability(
     }
   }, [])
 
+  useEffect(() => subscribeLocationView(receiveLocationView), [receiveLocationView])
+
   useEffect(() => {
     void refresh({ force: false })
   }, [refresh])
@@ -296,7 +331,7 @@ export function useLocationCapability(
     permission: view.snapshot.permission,
     status,
     coordinates: view.coordinates,
-    isRefreshing,
+    isRefreshing: view.isRefreshing,
     refresh,
     runAction,
   }
