@@ -1,143 +1,126 @@
-# The Dev Loop — idea → production (nabd)
+# The Dev Loop, nabd
 
-The master workflow. The building AI follows it for EVERY feature — no shortcuts, no
-reordering.
+This is the eight-phase workflow for the native product. The owner-approved native-only
+direction is recorded in [ADR-0017](adr/0017-native-only.md). The Expo app in the repository root is
+the product and release target. Its feature folders contain the product and platform-neutral logic.
 
----
+## Phase 0, bootstrap and orientation
 
-## Session startup (top of every session, before touching code)
+Read `AGENTS.md`, this workflow, the relevant ADRs, and the root package files. Confirm the Expo
+Router entry under `app` and the native feature folders under `src` before work.
 
-1. Read `AGENTS.md` (entry point of the repo).
-2. Ask which ticket/feature this session is for.
-3. Read the ADR(s) relevant to the layers this ticket touches.
-4. `git status` + `git log --oneline -10` — understand branch state.
-5. State which phase the work is entering (fresh / continuing / finishing).
+The native baseline must have the following scripts available:
 
----
-
-## Phase 0 — Bootstrap (one-time only)
-
-Run the stack module's bootstrap sequence (`docs/stack.md` §1). Create the feature-folder
-skeleton and the import-boundary lint rules (`docs/architecture.md`); verify the boundary
-rule by committing one deliberate bad import (e.g. `logic.ts` importing `db.ts`) and watching
-lint fail. Skeleton must be fully green (`pnpm lint && pnpm typecheck && pnpm test &&
-pnpm build` all exit 0) before any feature work.
-
-## Phase 1 — Spec intake & clarification
-
-Trigger: user asks for a feature, in any form. Before coding, answer ALL of:
-
-1. What exactly does it do? Acceptance criteria — one verifiable sentence each.
-2. Which ticket? (NBD-XXX in `docs/backlog.md` → its GitHub issue number — existing, or flag
-   that one must be created)
-3. Which features/modules will be touched?
-4. Does anything conflict with a locked ADR? (If yes → conversation, not code.)
-5. Any open design question? → write a new ADR first. Never code around an undecided
-   question. (For nabd, the wird versioning model — ADR-0006 — must be settled before stats
-   or checklist persistence.)
-
-Output: a short feature brief (what / ticket / criteria / features). STOP and get user
-confirmation of the brief before Phase 2.
-
-## Phase 2 — Branch & task planning
-
-1. Branch `<user>/<issue-number>-<slug>` (e.g. `ibrahim/42-checkoff-row`) cut from `dev`.
-2. Task list in dependency order — inner pieces first:
-   **content/types → `logic.ts` (pure) → `db.ts` (repository) → hooks → components → route.**
-3. For each piece touched, add its test task from the test matrix (`docs/stack.md` §7).
-4. All user-facing copy is Arabic (no i18n layer) — keep it out of scattered JSX literals;
-   put reused strings in the feature's constants.
-
-## Phase 3 — Implementation (piece by piece)
-
-Never start a piece before the one it depends on type-checks clean. Per-piece rules live in
-`docs/architecture.md` and `CONVENTIONS.md` — re-read the section as you enter each piece.
-Cross-cutting rules: strict types, central Logger (no `console.*`), no magic values, no dead
-code, reuse-before-create, fetch current library docs before first use. Keep `logic.ts` pure;
-keep all I/O in `db.ts`.
-
-## Phase 4 — Testing (colocated)
-
-Tests ship in the same PR — write them now, not later. Follow the test matrix. Mandatory e2e
-paths for this project:
-
-1. Offline persistence — check off wird → go offline → reload → still checked, zero network
-   requests.
-2. Sync to stats — reconnect → syncs to Supabase → appears in statistics.
-3. Counter to wird — dhikr counter completion → linked wird item auto-marked.
-
-## Phase 5 — Quality gates (local, before any push)
-
-**5a — Automated.** All must exit 0 — no informational-only tier:
-
-```bash
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
+```text
+lint, typecheck, test, build, check:no-sentry
 ```
 
-**5b — Live browser verification.** Tests passing is not "it works". Start the dev server,
-open the app in a real browser (or drive it with browser tooling if available), and walk
-through EVERY acceptance criterion from the Phase 1 brief by actually clicking. Also check:
-skeleton loading states show, errors surface gracefully, no console errors, and RTL renders
-correctly (Arabic, right-to-left, logical properties). Fix anything broken before pushing.
+## Phase 1, specification
 
-**5c — Manual checks.** Did this branch touch a feature's `logic.ts`/`db.ts`? Then a test
-file must be in the diff — if missing, write it now. Did this PR change how the code is really
-structured, named, or styled? Then update `CONVENTIONS.md` / `docs/architecture.md` /
-`DESIGN_SYSTEM.md` in the same PR — docs that lie are worse than no docs. Never `--no-verify`;
-fix root causes.
+Write one verifiable acceptance sentence for each behavior, identify the ticket, and list the
+native feature modules involved. Domain logic lives in the owning feature folders under
+`src`. Check the relevant ADRs before choosing a persistence or device
+behavior. Product parity includes every current Next.js capability except Google sign-in and
+Supabase cross-device sync, which were dropped by ADR-0014 and remain dropped under ADR-0017.
 
-## Phase 6 — Version bump, commit & push
+## Phase 2, branch and task plan
 
-1. Bump version per the table in `CONVENTIONS.md` (feat=MINOR, fix/perf/refactor=PATCH,
-   docs/test/chore=none; pre-1.0: breaking bumps MINOR). Same commit as the feature.
-2. Stage specific files (never `git add -A`; never `.env` or artifacts).
-3. Conventional commit: `type(scope): imperative description` + body with the why + issue ref.
-4. Push; confirm the preview URL is live.
+Plan in dependency order: feature content and types, pure logic, SQLite repositories, hooks,
+components, and Expo Router routes. Add tests with each implementation slice. Use named constants,
+the central logger, semantic theme tokens, and RTL-first layout rules.
 
-## Phase 7 — Pull request (feature → dev)
+### Native and device-feature state matrix
 
-1. PR description: What / Why (issue + ADR) / Acceptance criteria as checkboxes / Features
-   touched / Test coverage / How to verify manually.
-2. Wait for ALL CI checks green: `lint`, `typecheck`, `test`, `e2e`, `build`,
-   `colocated-test-check`.
-3. Self-review the full diff once, hunting bugs only (not style).
-4. Squash-merge; PR title = the commit → must be Conventional-Commits valid.
-5. Merge auto-deploys `dev` to staging.
+Any feature involving location, notifications, alarms, permissions, filesystem, or background work
+must specify these states before implementation:
 
-## Phase 8 — Production deploy (dev → master)
+1. Permission: not asked, granted, denied, and denied forever with a settings deep link.
+2. Device toggle: GPS, notifications, DND, or other OS switch separate from app permission.
+3. Connectivity: online, offline, and unavailable provider behavior.
+4. Accuracy and mode flags: foreground or background mode, timeout, maximum age, and accuracy.
+5. OEM behavior: Xiaomi or HyperOS, Samsung One UI, OnePlus, Huawei, and battery restrictions.
+6. Android API levels: exact alarms, notification runtime permission, foreground-service rules,
+   and edge-to-edge changes.
+7. Lifecycle: foreground, background, killed, force-stopped, and after reboot.
+8. Failure path: every failure gives the user an actionable next step.
+9. iOS portability: keep the shared contract platform-neutral and isolate Android-only code in
+   `src/device`, `modules/nabd-device`, and `plugins`.
+10. Real-device evidence: CI is not enough for native runtime behavior; record the owner device
+    result before merge.
 
-1. Smoke-test the STAGING URL in a real browser against the acceptance criteria.
-2. Release PR `dev` → `master` with a changelog since last release. All CI checks again.
-3. Squash-merge → auto-deploy to production.
-4. Open the PRODUCTION URL, run the project success check: *I can log in, answer the
-   questionnaire, check off a wird item, go offline and reload and it is still checked, then
-   reconnect and see it synced and reflected in the statistics.*
-5. Mark the ticket done in `docs/backlog.md` (same commit as any release notes). New ideas
-   discovered during the work → add as new backlog rows, never as silent scope creep.
-6. Not done until step 4 passes.
+## Phase 3, implementation
 
----
+Keep pure logic in the owning feature's `logic.ts` or `src/lib`. Put SQLite reads and writes in
+repositories. Put Expo permissions, notifications, location, alarms, and background work behind
+device services.
+Keep Android-only Kotlin and config-plugin code in their native boundaries. Do not add a second
+web product, authentication, or sync path.
 
-## Hard stops (block progression — fix root cause, never work around)
+## Phase 4, tests
 
-- Open design question with no ADR → write the ADR first
-- Any CI check red → fix before merge
-- Feature `logic.ts`/`db.ts` change without a test in the diff → write the test first
-- I/O, clock, or browser API inside a `logic.ts` → refactor first (data/time are parameters)
-- `logic.ts` importing `db.ts` → restructure so the hook mediates
-- Data mirrored into a Zustand store instead of read from Dexie → read from Dexie
-- Physical directional CSS class where logical is required → replace first
-- `console.*` in committed code → replace with Logger first
-- `git add -A` → stage specific files instead
+Tests ship with the code. The mandatory native behavior checks are:
 
-## End-of-feature verification checklist
+1. SQLite restart persistence: write state, close the database or terminate the process, reopen,
+   and verify the state and append-only history.
+2. Device state matrix: cover permission, device-toggle, connectivity, API-level, OEM, lifecycle,
+   and actionable-failure states for the capability being changed.
+3. Backup and restore: export and import the versioned application backup, including the durable
+   records and preferences covered by NBD-91.
 
-- [ ] All quality-gate commands exit 0 locally
-- [ ] Acceptance criteria verified by hand in a live local browser (Phase 5b)
-- [ ] Docs updated if reality changed (conventions / architecture / design system)
-- [ ] All CI checks green
-- [ ] Works on staging URL (acceptance criteria met)
-- [ ] Works on production URL (success check passes)
-- [ ] Nothing previously working is broken (e2e suite green)
-- [ ] Squashed with a valid Conventional Commits title
-- [ ] Branches updated, feature branch deleted
+Pure logic, repositories, components, and integration seams use Jest and React Native Testing
+Library. Release APK behavior requires the real-device checks that
+unit tests cannot provide.
+
+## Phase 5, quality gates
+
+Run the native gates before any push:
+
+```bash
+pnpm format:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm check:no-sentry
+pnpm build
+```
+
+Review the changed source for unsafe SQL construction, path traversal, unsafe deserialization,
+secrets, injection, auth mistakes, and accidental network or telemetry behavior. Check RTL,
+loading, empty, denied, offline, and error states on a real device where applicable.
+
+## Phase 6, version and commit
+
+Bump versions for releases according to `CONVENTIONS.md`, stage only the intended files, and use a
+Conventional Commit. Do not stage environment files, generated artifacts, or unrelated changes.
+
+## Phase 7, pull request
+
+The pull request records the ticket, ADRs, acceptance criteria, test commands and their results,
+device evidence, and the security review. CI must pass for the native checks. Merge with a
+normal merge commit. Never rebase or squash.
+
+## Phase 8, production release
+
+Build the release APK locally through `pnpm build:apk` as recorded in
+ADR-0018. Gradle must run from a normal terminal. The production smoke test is:
+
+1. Install the release APK on the target Android device.
+2. Complete native onboarding and select a level.
+3. Close and reopen the app, then confirm the wird state persists in SQLite.
+4. Exercise the relevant location, notification, alarm, and lifecycle behavior from the device
+   state matrix.
+5. Export and restore the backup, then confirm the durable records and preferences remain present.
+6. Confirm no sign-in, remote sync, or Sentry behavior is required for the product flow.
+
+The native release is not complete until the APK flow and the NBD-91 backup and restore check pass.
+
+## Hard stops
+
+- An unresolved product or platform question has no ADR.
+- A device capability has no state matrix.
+- SQLite or device I/O appears in pure logic.
+- A feature repository change has no colocated test.
+- A native test, typecheck, lint, no-Sentry check, build, or device gate fails.
+- A release lacks the required version bump.
+- A pull request lacks the focused security review.
+- A merge uses rebase or squash instead of a normal merge commit.

@@ -1,0 +1,59 @@
+# Malware gate (2026-09 incident). Delegates to the shared hook so the rule lives
+# in one place: ~/.config/git/hooks/pre-push -> ~/.local/bin/git-malware-scan
+stdin_file=$(mktemp) || exit 1
+trap 'rm -f "$stdin_file"' 0
+cat > "$stdin_file" || exit 1
+
+global_hook="$HOME/.config/git/hooks/pre-push"
+if [ ! -x "$global_hook" ]; then
+  printf '%s\n' "Push blocked: the malware gate $global_hook is missing or not executable." >&2
+  exit 1
+fi
+"$global_hook" "$@" < "$stdin_file" || exit $?
+
+native_check_paths='modules/ plugins/ app.json'
+native_changes=false
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$local_sha" ] || continue
+  case "$local_sha" in
+    *[!0]*) ;;
+    *) continue ;;
+  esac
+
+  case "$remote_sha" in
+    *[!0]*) base_sha=$remote_sha ;;
+    *)
+      if ! base_sha=$(git merge-base origin/dev "$local_sha"); then
+        printf '%s\n' 'Push blocked: could not find a merge base with origin/dev.' >&2
+        exit 1
+      fi
+      ;;
+  esac
+
+  # Husky runs hooks with sh -e, so the expected exit 1 must not abort the script.
+  diff_status=0
+  git diff --quiet "$base_sha" "$local_sha" -- $native_check_paths || diff_status=$?
+  if [ "$diff_status" -eq 1 ]; then
+    native_changes=true
+    break
+  elif [ "$diff_status" -ne 0 ]; then
+    printf '%s\n' 'Push blocked: could not inspect native module, plugin or app config changes.' >&2
+    exit 1
+  fi
+done < "$stdin_file"
+
+if [ "$native_changes" = true ]; then
+  if ! command -v pnpm >/dev/null 2>&1; then
+    printf '%s\n' "Push blocked: pnpm was not found on PATH for Git's shell." >&2
+    exit 1
+  fi
+  if pnpm test:native-module; then
+    exit 0
+  fi
+  printf '%s\n' 'Push blocked because the Kotlin module tests failed or Gradle could not start.' \
+    'Gradle cannot run inside sandboxed agent shells, so the push must come from a normal terminal.' >&2
+  exit 1
+fi
+
+printf '%s\n' 'Kotlin module tests skipped (no native module, plugin or app config changes).'
+exit 0

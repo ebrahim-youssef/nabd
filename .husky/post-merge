@@ -1,0 +1,4 @@
+# Malware gate (2026-09 incident). Delegates to the shared hook so the rule lives
+# in one place: ~/.config/git/hooks/post-merge -> ~/.local/bin/git-malware-scan
+[ -x "$HOME/.config/git/hooks/post-merge" ] && exec "$HOME/.config/git/hooks/post-merge" "$@"
+exit 0

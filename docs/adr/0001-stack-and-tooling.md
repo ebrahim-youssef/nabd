@@ -1,6 +1,8 @@
 # ADR-0001 — Stack & tooling
 
-- **Status:** accepted
+- **Status:** accepted; superseded by ADR-0014 for the go-forward client architecture
+- **Status note:** The legacy stack is also superseded by [ADR-0017](./0017-native-only.md) for
+  the final product; this ADR remains the historical record.
 - **Date:** 2026-07-13
 
 ## Context
@@ -26,9 +28,16 @@ is the Vite-native default); Netlify/Cloudflare/self-host (Vercel is zero-config
 ## Consequences
 
 - The building AI uses `docs/stack.md` §1 as the exact bootstrap sequence; `pnpm lint &&
-  pnpm typecheck && pnpm test && pnpm build` is the green bar.
+pnpm typecheck && pnpm test && pnpm build` is the green bar. NBD-108 removed these root scripts;
+  the current gates are the shared and native package gates in `docs/workflow.md`.
 - Supabase owns identity; a logged-in user's wird syncs across devices. Auth choice is settled
   (no separate auth library).
 - Serwist means service-worker updates are deliberate (opt-in), never silent mid-session.
 - Sentry/Vercel Analytics add env vars (`.env.example`) and a setup ticket (NBD-11).
 - Revisit if the sync model outgrows what route handlers + Supabase comfortably serve.
+
+## Tooling update, 2026-11-17
+
+The Expo app now uses Vite+ with Oxfmt for formatting, Oxlint for linting, and `vp staged` for
+staged checks. ESLint and Prettier have been removed. This updates the hygiene tools above; the
+historical product and stack decisions in this ADR remain unchanged.

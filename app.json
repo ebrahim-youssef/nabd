@@ -1,0 +1,84 @@
+{
+  "expo": {
+    "name": "نبض",
+    "slug": "nabd",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nabd",
+    "userInterfaceStyle": "automatic",
+    "platforms": ["android"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "يسمح لتطبيق نبض بالوصول إلى موقعك الحالي أثناء استخدام التطبيق."
+        }
+      ],
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Amiri_400Regular.ttf",
+            "./assets/fonts/ArefRuqaa_400Regular.ttf",
+            "./assets/fonts/Tajawal_400Regular.ttf",
+            "./assets/fonts/Tajawal_500Medium.ttf"
+          ]
+        }
+      ],
+      "expo-localization",
+      "expo-sqlite",
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./assets/sounds/adhan_fajr.mp3",
+            "./assets/sounds/adhan.mp3",
+            "./assets/sounds/before.mp3",
+            "./assets/sounds/iqama.mp3"
+          ],
+          "defaultChannel": "nabd-prayer-adhan-v1"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "backgroundColor": "#eaf2f0",
+          "imageWidth": 100,
+          "resizeMode": "contain"
+        }
+      ],
+      "./plugins/withNabdAlarms",
+      "./plugins/withNabdBackup",
+      "./plugins/withNabdReleaseSigning",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": false
+        }
+      ],
+      "expo-sharing"
+    ],
+    "android": {
+      "package": "com.nabd.app",
+      "versionCode": 11,
+      "allowBackup": true,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#eaf2f0"
+      },
+      "blockedPermissions": ["android.permission.SYSTEM_ALERT_WINDOW"]
+    },
+    "extra": {
+      "supportsRTL": true,
+      "forcesRTL": true,
+      "router": {
+        "origin": false
+      }
+    }
+  }
+}

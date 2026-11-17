@@ -1,6 +1,8 @@
 # ADR-0002 — Architecture & module boundaries
 
 - **Status:** accepted
+- **Status note:** Its client storage and UI boundary details are superseded by
+  [ADR-0017](./0017-native-only.md); the pure-logic and repository boundary remains.
 - **Date:** 2026-07-13
 
 ## Context
@@ -34,7 +36,7 @@ duplicating DB data into the store).
 ## Consequences
 
 - The malleable-wird statistics are pure and directly testable with zero mocks (table-driven
-  + property-based).
+  - property-based).
 - An ESLint boundary rule enforces the import table in `docs/architecture.md`; Phase 0 commits
   a deliberate bad import to prove the rule fires.
 - Rendering is Mostly Client (Dexie is browser-only); server components are limited to static
@@ -42,3 +44,7 @@ duplicating DB data into the store).
 - No global data store to keep in sync — Dexie + `useLiveQuery` is the single source of truth.
 - Revisit if features start needing to reach deep into each other (would signal a missing
   shared module or a real need for stronger boundaries).
+
+## Tooling update, 2026-11-17 (NBD-110)
+
+The boundary rule described above is now enforced by Oxlint through Vite+ (`vite.config.ts`).

@@ -1,0 +1,64 @@
+# Compile gate for native code and Kotlin tests. Debug is used because release builds need the
+# owner's upload key. This is not a required check because a paths-filtered workflow never reports
+# on pull requests that miss the filter.
+name: native-compile
+
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'assets/**'
+      - 'modules/**'
+      - 'plugins/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'theme/**'
+      - '*.json'
+      - '*.cjs'
+      - '*.mjs'
+      - '*.ts'
+      - '*.css'
+      - '.github/workflows/native-compile.yml'
+  push:
+    branches:
+      - dev
+    paths:
+      - 'app/**'
+      - 'assets/**'
+      - 'modules/**'
+      - 'plugins/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'theme/**'
+      - '*.json'
+      - '*.cjs'
+      - '*.mjs'
+      - '*.ts'
+      - '*.css'
+      - '.github/workflows/native-compile.yml'
+  workflow_dispatch:
+
+jobs:
+  native-compile:
+    name: native compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec expo prebuild --platform android --no-install
+      - name: Compile debug APK and run Kotlin tests
+        working-directory: android
+        run: ./gradlew :nabd-device:testReleaseUnitTest assembleDebug
