@@ -22,7 +22,7 @@
     "adhan": "^4.4.4",
     "expo": "~57.0.24",
     "expo-audio": "~57.0.5",
-    "expo-constants": "~57.0.19",
+    "expo-constants": "~58.0.16",
     "expo-document-picker": "~57.0.3",
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
