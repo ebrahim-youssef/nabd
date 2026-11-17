@@ -2,7 +2,7 @@ import { defineConfig } from 'vite-plus'
 
 export default defineConfig({
   staged: {
-    'apps/native/**/*.{ts,tsx}': ['pnpm --dir apps/native exec eslint --fix', 'prettier --write'],
+    '**/*.{ts,tsx}': ['pnpm exec eslint --fix', 'prettier --write'],
     'vite.config.ts': ['prettier --write'],
     '*.{js,mjs,cjs,json,css,md}': ['prettier --write'],
   },
