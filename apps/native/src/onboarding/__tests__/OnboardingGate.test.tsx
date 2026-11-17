@@ -1,4 +1,6 @@
-import { DEFAULT_NOTIFICATION_PREFS, ONBOARDING_COPY, QUESTIONS, WIRD_LEVELS } from '@nabd/shared'
+import { WIRD_LEVELS } from '../../content/levels'
+import { DEFAULT_NOTIFICATION_PREFS } from '../../device/logic'
+import { COPY as ONBOARDING_COPY, QUESTIONS } from '../copy'
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 

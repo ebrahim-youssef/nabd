@@ -1,4 +1,4 @@
-import { ONBOARDING_COPY } from '@nabd/shared'
+import { COPY as ONBOARDING_COPY } from './copy'
 import { View } from 'react-native'
 
 import type { BatteryOptimizationStatus } from '../device/types'

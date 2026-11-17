@@ -1,5 +1,7 @@
-import { buildChecklist, monthOf, toDayId, versionInForce } from '@nabd/shared'
-import type { ChecklistAreaView, DayId } from '@nabd/shared'
+import { monthOf, toDayId } from '../lib/day'
+import { versionInForce } from '../lib/wird'
+import { buildChecklist } from './logic'
+import type { ChecklistAreaView, DayId } from './types'
 import { useCallback, useMemo, useRef } from 'react'
 
 import { logger } from '../observability/logger'

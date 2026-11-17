@@ -1,4 +1,4 @@
-import { toArabicIndic } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
 
 import { clockTimePartsInTimeZone, currentTimeZone } from './logic'
 

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
-import { ADHKAR_COPY, ADHKAR_LIBRARY } from '@nabd/shared'
+import { ADHKAR_LIBRARY } from '../../content/adhkar'
+import { COPY as ADHKAR_COPY } from '../copy'
 
 import { AdhkarRoute } from '../AdhkarRoute'
 

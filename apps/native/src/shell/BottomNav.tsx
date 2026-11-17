@@ -3,7 +3,7 @@ import { usePathname, useRouter } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from './copy'
 
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { isNavMatch } from './navMatch'

@@ -1,6 +1,6 @@
 # CONVENTIONS.md, nabd
 
-Code conventions for `apps/native` and `packages/shared`.
+Code conventions for the Expo application in `apps/native`.
 
 ## Exports and style
 
@@ -25,20 +25,20 @@ Use full words. Booleans read as yes or no. Put units in names such as `timeoutM
 
 ## Logic, repositories, and device code
 
-- Platform-neutral pure logic lives in `packages/shared/src/logic`; its purity boundary is
-  enforced by `packages/shared/eslint.config.mjs`. The only native pure-logic module is
-  `apps/native/src/device/logic.ts`.
+- Pure logic lives in the owning feature's `logic.ts`, with cross-feature helpers in
+  `apps/native/src/lib`. The native ESLint config enforces the no-platform, no-I/O, no-DOM,
+  no-`Date.now()`, and no-`Math.random()` restrictions.
 - Native feature folders are flat, with `db.ts`, component files, and hook files side by side
   where present, and tests in `__tests__/`.
-- `apps/native/eslint.config.mjs` enforces React Hooks rules, `no-console`, and restricted direct
-  imports of React Native `Text` and `TextInput`; it does not enforce a logic-to-database boundary.
+- `apps/native/eslint.config.mjs` enforces React Hooks rules, `no-console`, pure-logic rules, and
+  restricted direct imports of React Native `Text` and `TextInput`.
 - SQLite access belongs in feature repositories or the database layer, never in a component.
 - Expo APIs, permissions, notifications, alarms, location, filesystem, and background work belong
   in `apps/native/src/device` or a platform adapter.
 - Android-only Kotlin stays in `apps/native/modules/nabd-device`; build-time native setup stays in
   `apps/native/plugins`.
-- `packages/shared` owns domain types, Arabic content, copy, pure logic, contracts, and fixtures.
-  It must not import Expo, React Native, SQLite, device APIs, network clients, or filesystem APIs.
+- Feature folders own their domain types, Arabic content, copy, pure logic, contracts, and tests.
+  Pure modules must not import Expo, React Native, SQLite, device APIs, network clients, or filesystem APIs.
 
 ## Logging and errors
 
@@ -68,7 +68,7 @@ Tests ship with the code and are colocated:
 
 | Layer | Runner | Required focus |
 | --- | --- | --- |
-| Shared pure logic | Vitest | table-driven behavior with no mocks for pure calculations |
+| Pure logic | Jest | table-driven behavior with no mocks for pure calculations |
 | Native logic and repositories | Jest | SQLite schemas, empty state, duplicates, concurrency, and restart persistence |
 | Native components | React Native Testing Library | interaction and accessibility state |
 | Device capabilities | Jest seams plus real-device checks | permission, toggle, connectivity, API level, OEM, lifecycle, and failure actions |

@@ -1,13 +1,13 @@
+import { PRAYER_LABELS, COPY as PRAYER_TIMES_COPY } from './copy'
 import {
   computeDayTimes,
   DEFAULT_METHOD_ID,
   isCalculationMethodId,
-  PRAYER_LABELS,
-  PRAYER_TIMES_COPY,
   statusLine,
   timelineStatus,
-} from '@nabd/shared'
-import type { CalculationMethodId, DayPrayerTimes, TimePoint } from '@nabd/shared'
+} from './logic'
+import type { CalculationMethodId, DayPrayerTimes } from './logic'
+import type { TimePoint } from './types'
 import { useFocusEffect } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'

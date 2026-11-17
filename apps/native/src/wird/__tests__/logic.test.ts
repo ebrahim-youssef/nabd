@@ -1,4 +1,5 @@
-import { WIRD_LEVELS, type WirdDefinition, type WirdVersion } from '@nabd/shared'
+import type { WirdDefinition, WirdVersion } from '../types'
+import { WIRD_LEVELS } from '../../content/levels'
 
 import { planVersionHealing } from '../logic'
 

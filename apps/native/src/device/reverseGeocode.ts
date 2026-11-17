@@ -1,4 +1,4 @@
-import type { Coords } from '@nabd/shared'
+import type { Coords } from './types'
 
 import { logger } from '../observability/logger'
 import { PREFERENCE_KEYS } from '../preferences/db'

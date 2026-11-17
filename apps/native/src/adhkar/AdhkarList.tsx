@@ -1,6 +1,7 @@
 import { Check, RotateCcw } from 'lucide-react-native'
-import { ADHKAR_COPY, toArabicIndic } from '@nabd/shared'
-import type { AdhkarCategory } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
+import { COPY as ADHKAR_COPY } from './copy'
+import type { AdhkarCategory } from '../content/adhkar'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 

@@ -1,4 +1,4 @@
-import { QADA_COPY } from '@nabd/shared'
+import { QADA_COPY } from './copy'
 import { View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'

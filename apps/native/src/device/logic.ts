@@ -230,3 +230,34 @@ export function evaluateExactAlarm(exactAlarm: ExactAlarmSnapshot): ExactAlarmSt
 export function isExactAlarmSchedulingAllowed(exactAlarm: ExactAlarmSnapshot): boolean {
   return exactAlarm.apiLevel < 31 || exactAlarm.access === 'granted'
 }
+
+export type NotificationPrefs = {
+  enabled: boolean
+  beforeAdhan: boolean
+  atAdhan: boolean
+  atIqamah: boolean
+  morningAdhkar: boolean
+  eveningAdhkar: boolean
+}
+
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  enabled: false,
+  beforeAdhan: true,
+  atAdhan: true,
+  atIqamah: true,
+  morningAdhkar: true,
+  eveningAdhkar: true,
+}
+
+const PREF_KEYS = Object.keys(DEFAULT_NOTIFICATION_PREFS) as (keyof NotificationPrefs)[]
+
+export function parseNotificationPrefs(value: unknown): NotificationPrefs {
+  if (typeof value !== 'object' || value === null) return DEFAULT_NOTIFICATION_PREFS
+  const record = value as Record<string, unknown>
+  return Object.fromEntries(
+    PREF_KEYS.map((key) => [
+      key,
+      typeof record[key] === 'boolean' ? record[key] : DEFAULT_NOTIFICATION_PREFS[key],
+    ]),
+  ) as NotificationPrefs
+}

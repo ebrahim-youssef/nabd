@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 
-import type { DayId } from '@nabd/shared'
+import type { DayId } from './types'
 
 import { logger } from '../observability/logger'
 import { useWirdRepository } from './useWirdRepository'

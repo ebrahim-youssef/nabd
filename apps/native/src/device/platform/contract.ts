@@ -1,4 +1,5 @@
-import type { AlarmPayload, CalculationMethodId, Coords } from '@nabd/shared'
+import type { AlarmPayload, CalculationMethodId } from '../../prayer-times/logic'
+import type { Coords } from '../types'
 
 import type { CountdownNotificationResult } from '../countdownNotification'
 import type {

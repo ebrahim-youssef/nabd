@@ -1,4 +1,4 @@
-import { ONBOARDING_COPY } from '@nabd/shared'
+import { COPY as ONBOARDING_COPY } from '../onboarding/copy'
 import { Pressable, View } from 'react-native'
 
 import { useBatteryOptimization } from '../device/useBatteryOptimization'

@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
-import { computeDayTimes } from '@nabd/shared'
+import { computeDayTimes } from '../../prayer-times/logic'
 import * as Location from 'expo-location'
 import { useSQLiteContext } from 'expo-sqlite'
 import { AppState } from 'react-native'

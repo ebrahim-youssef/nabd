@@ -1,5 +1,7 @@
-import { QADA_PRAYERS } from '@nabd/shared'
-import type { QadaEvent, QadaPrayerId, QadaRepository, Result } from '@nabd/shared'
+import { QADA_PRAYERS } from './logic'
+import type { QadaEvent, QadaRepository } from '../db/contracts'
+import type { Result } from '../lib/result'
+import type { QadaPrayerId } from './logic'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 
 type Row = { id: string; prayer_id: QadaPrayerId; delta: number; at: number }

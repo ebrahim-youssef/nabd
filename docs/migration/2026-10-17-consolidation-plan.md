@@ -130,6 +130,8 @@ decision); any legacy behavior they need stays readable from the tag.
 
 ## Phase 8: Fold `packages/shared` into the native app (NBD-111)
 
+Done on 2026-10-19.
+
 Each module goes to the feature that owns it, so the feature-folder rule in `AGENTS.md`
 (`logic.ts` pure, `db.ts` for SQLite) becomes literally true. Paths below are inside
 `apps/native/src`; phase 9 then lifts them to `src/` at the root.

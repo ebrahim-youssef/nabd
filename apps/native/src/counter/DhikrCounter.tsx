@@ -1,5 +1,5 @@
-import { toArabicIndic } from '@nabd/shared'
-import type { DayId } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
+import type { DayId } from '../wird/types'
 import { Pressable, View } from 'react-native'
 
 import { Text } from '../shell/Text'

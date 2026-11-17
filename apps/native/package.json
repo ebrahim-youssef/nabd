@@ -15,7 +15,7 @@
     "test:native-module": "expo prebuild --platform android --no-install && node scripts/run-gradle.cjs :nabd-device:testReleaseUnitTest"
   },
   "dependencies": {
-    "@nabd/shared": "workspace:*",
+    "adhan": "^4.4.4",
     "@react-native-community/netinfo": "12.0.1",
     "expo": "~57.0.24",
     "expo-audio": "~57.0.5",

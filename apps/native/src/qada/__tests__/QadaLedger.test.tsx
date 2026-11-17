@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
-import { QADA_COPY, QADA_PRAYERS, daysFromPeriod } from '@nabd/shared'
+import { QADA_COPY } from '../copy'
+import { QADA_PRAYERS, daysFromPeriod } from '../logic'
 
 import { QadaLedger } from '../QadaLedger'
 import { useQada } from '../useQada'

@@ -1,5 +1,5 @@
-import { ALARM_CHANNELS } from '@nabd/shared'
-import type { AlarmPayload } from '@nabd/shared'
+import { ALARM_CHANNELS } from '../prayer-times/copy'
+import type { AlarmPayload } from '../prayer-times/logic'
 import * as Notifications from 'expo-notifications'
 import type { NotificationChannelInput } from 'expo-notifications'
 

@@ -1,4 +1,4 @@
-import { SETTINGS_COPY } from '@nabd/shared'
+import { SETTINGS_COPY } from './copy'
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { useLocationCapability } from '../device/useLocationCapability'

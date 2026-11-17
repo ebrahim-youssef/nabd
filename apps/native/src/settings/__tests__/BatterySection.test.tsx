@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
-import { ONBOARDING_COPY } from '@nabd/shared'
+import { COPY as ONBOARDING_COPY } from '../../onboarding/copy'
 
 import { useBatteryOptimization } from '../../device/useBatteryOptimization'
 import { BatterySection } from '../BatterySection'

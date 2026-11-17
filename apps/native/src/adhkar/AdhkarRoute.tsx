@@ -1,5 +1,6 @@
-import { ADHKAR_COPY, ADHKAR_LIBRARY, DAILY_CATEGORY_ID, LIST_CATEGORIES } from '@nabd/shared'
-import type { AdhkarCategory } from '@nabd/shared'
+import { ADHKAR_LIBRARY } from '../content/adhkar'
+import { COPY as ADHKAR_COPY, DAILY_CATEGORY_ID, LIST_CATEGORIES } from './copy'
+import type { AdhkarCategory } from '../content/adhkar'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 

@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react-native'
 
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from '../copy'
 
 import { BottomNav } from '../BottomNav'
 

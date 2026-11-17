@@ -16,7 +16,7 @@ jest.mock('expo-notifications', () => ({
 import { requireOptionalNativeModule } from 'expo'
 import * as Notifications from 'expo-notifications'
 
-import type { AlarmPayload } from '@nabd/shared'
+import type { AlarmPayload } from '../../prayer-times/logic'
 
 import { logger } from '../../observability/logger'
 import {

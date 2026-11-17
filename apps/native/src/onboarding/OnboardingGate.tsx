@@ -1,14 +1,9 @@
-import {
-  ONBOARDING_COPY as SHARED_COPY,
-  QUESTIONS,
-  WIRD_LEVELS,
-  isComplete,
-  levelById,
-  recommendLevel,
-  toDayId,
-  type Answers,
-  type LevelId,
-} from '@nabd/shared'
+import type { LevelId } from '../content/levels'
+import type { Answers } from './types'
+import { WIRD_LEVELS } from '../content/levels'
+import { toDayId } from '../lib/day'
+import { COPY as SHARED_COPY, QUESTIONS } from './copy'
+import { isComplete, levelById, recommendLevel } from './logic'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useColorScheme } from 'nativewind'
 import type { ReactNode } from 'react'

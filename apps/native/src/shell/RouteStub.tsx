@@ -1,4 +1,4 @@
-import { shellCopy } from '@nabd/shared'
+import { shellCopy } from './copy'
 import { Text } from './Text'
 
 import { PageHeader } from './PageHeader'

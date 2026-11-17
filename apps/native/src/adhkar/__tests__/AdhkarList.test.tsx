@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
-import type { AdhkarCategory } from '@nabd/shared'
+import type { AdhkarCategory } from '../../content/adhkar'
 
-import { ADHKAR_COPY } from '@nabd/shared'
+import { COPY as ADHKAR_COPY } from '../copy'
 
 import { AdhkarList } from '../AdhkarList'
 

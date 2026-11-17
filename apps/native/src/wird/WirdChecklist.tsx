@@ -1,5 +1,8 @@
-import { areaProgress, toArabicIndic, WIRD_COPY } from '@nabd/shared'
-import type { ChecklistAreaView, ChecklistItemView, DayPrayerTimes } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
+import { WIRD_COPY } from './copy'
+import { areaProgress } from './logic'
+import type { DayPrayerTimes } from '../prayer-times/logic'
+import type { ChecklistAreaView, ChecklistItemView } from './types'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 

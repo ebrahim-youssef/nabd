@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 import { AppState } from 'react-native'
 
-import { DEFAULT_NOTIFICATION_PREFS } from '@nabd/shared'
+import { DEFAULT_NOTIFICATION_PREFS } from '../logic'
 
 import { PREFERENCE_KEYS } from '../../preferences/db'
 import {

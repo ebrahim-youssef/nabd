@@ -1,4 +1,5 @@
-import { WIRD_LEVELS, type WirdDefinition } from '@nabd/shared'
+import type { WirdDefinition } from '../../wird/types'
+import { WIRD_LEVELS } from '../../content/levels'
 
 import { createOnboardingRepository, type OnboardingDatabase } from '../db'
 

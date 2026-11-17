@@ -6,8 +6,10 @@ import { DatabaseSync } from 'node:sqlite'
 import {
   assertRepositoryCharacterization,
   seedRepositoryCharacterization,
-} from '@nabd/shared/testing'
-import { dayCompletion, qadaRemaining, versionInForce } from '@nabd/shared'
+} from '../../testing/characterization'
+import { qadaRemaining } from '../../qada/logic'
+import { dayCompletion } from '../../stats/logic'
+import { versionInForce } from '../../lib/wird'
 
 import { createDhikrCompletionRepository } from '../../counter/db'
 import { createAdhkarRepository } from '../../adhkar/db'

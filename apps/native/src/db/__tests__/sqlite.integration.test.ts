@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
-import { WIRD_LEVELS } from '@nabd/shared'
+import { WIRD_LEVELS } from '../../content/levels'
 
 import { createOnboardingRepository, type OnboardingDatabase } from '../../onboarding/db'
 import { migrateDatabase, type MigrationDatabase } from '../database'

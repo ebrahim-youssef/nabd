@@ -1,4 +1,4 @@
-import type { DayId } from '@nabd/shared'
+import type { DayId } from './types'
 import { createContext, useContext, useMemo } from 'react'
 import type { ReactNode } from 'react'
 

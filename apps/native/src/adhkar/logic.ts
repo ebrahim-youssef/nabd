@@ -1,4 +1,27 @@
-import type { Dhikr, FlowState } from '@nabd/shared'
+import type { Dhikr } from '../content/adhkar'
+
+export type FlowState = {
+  index: number
+  count: number
+  finished: boolean
+}
+
+export const INITIAL_FLOW: FlowState = { index: 0, count: 0, finished: false }
+
+export function tap(state: FlowState, items: Dhikr[]): FlowState {
+  if (state.finished || items.length === 0) return state
+  const active = items[state.index]
+  const count = state.count + 1
+  if (count < active.repeat) return { ...state, count }
+  const nextIndex = state.index + 1
+  if (nextIndex >= items.length) return { index: state.index, count: active.repeat, finished: true }
+  return { index: nextIndex, count: 0, finished: false }
+}
+
+export function upcoming(state: FlowState, items: Dhikr[], visible: number): Dhikr[] {
+  if (state.finished) return []
+  return items.slice(state.index + 1, state.index + 1 + visible)
+}
 
 export function normalizeFlowState(state: FlowState, items: Dhikr[]): FlowState | undefined {
   if (

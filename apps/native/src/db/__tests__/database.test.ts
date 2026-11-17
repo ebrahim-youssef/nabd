@@ -1,4 +1,5 @@
-import { CURRENT_SCHEMA_VERSION, migrateDatabase, type MigrationDatabase } from '../database'
+import { CURRENT_SCHEMA_VERSION } from '../schemaVersion'
+import { migrateDatabase, type MigrationDatabase } from '../database'
 
 function createMigrationDatabase(initialVersion?: number) {
   let version = initialVersion

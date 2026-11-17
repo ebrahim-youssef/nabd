@@ -1,5 +1,9 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
-import type { AdhkarProgressRepository, Dhikr, FlowState, Result, WirdEntry } from '@nabd/shared'
+import type { Dhikr } from '../../content/adhkar'
+import type { AdhkarProgressRepository } from '../../db/contracts'
+import type { Result } from '../../lib/result'
+import type { WirdEntry } from '../../wird/types'
+import type { FlowState } from '../logic'
 
 import { useAdhkarFlow } from '../useAdhkarFlow'
 

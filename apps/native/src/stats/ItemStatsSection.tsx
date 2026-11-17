@@ -1,8 +1,9 @@
-import { STATS_COPY, toArabicIndic } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
+import { STATS_COPY } from './copy'
 import { ChevronDown } from 'lucide-react-native'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
-import type { ItemStat } from '@nabd/shared'
+import type { ItemStat } from './types'
 
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { Text } from '../shell/Text'

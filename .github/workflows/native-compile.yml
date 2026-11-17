@@ -7,14 +7,12 @@ on:
   pull_request:
     paths:
       - 'apps/native/**'
-      - 'packages/shared/**'
       - '.github/workflows/native-compile.yml'
   push:
     branches:
       - dev
     paths:
       - 'apps/native/**'
-      - 'packages/shared/**'
       - '.github/workflows/native-compile.yml'
   workflow_dispatch:
 

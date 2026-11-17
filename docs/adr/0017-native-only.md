@@ -85,3 +85,12 @@ all product code in it and no `apps/`, `packages/` or `native/` folder.
 
 The order and the per-phase steps are in
 [`docs/migration/2026-10-17-consolidation-plan.md`](../migration/2026-10-17-consolidation-plan.md).
+
+## Amendment 2026-11-17, NBD-111
+
+`packages/shared` has been folded into `apps/native`. Domain logic lives in the owning feature
+folders under `apps/native/src`. The native app is the sole application, and the required gates
+are `pnpm --filter apps-native lint`, `pnpm --filter apps-native typecheck`,
+`pnpm --filter apps-native test`, `pnpm --filter apps-native check:no-sentry`, and
+`pnpm --filter apps-native build`. References above to keeping shared gates green describe the
+migration at the time and are superseded by this amendment.

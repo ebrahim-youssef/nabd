@@ -1,6 +1,8 @@
 import { ChevronDown, ChevronUp, RotateCcw } from 'lucide-react-native'
-import { ADHKAR_COPY, STRIP_VISIBLE_COUNT, toArabicIndic, upcoming } from '@nabd/shared'
-import type { AdhkarCategory } from '@nabd/shared'
+import { toArabicIndic } from '../lib/format'
+import { COPY as ADHKAR_COPY, STRIP_VISIBLE_COUNT } from './copy'
+import { upcoming } from './logic'
+import type { AdhkarCategory } from '../content/adhkar'
 import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 
