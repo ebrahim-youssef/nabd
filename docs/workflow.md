@@ -1,14 +1,13 @@
 # The Dev Loop, nabd
 
 This is the eight-phase workflow for the native product. The owner-approved native-only
-direction is recorded in [ADR-0017](adr/0017-native-only.md). The Expo app in `apps/native` is
+direction is recorded in [ADR-0017](adr/0017-native-only.md). The Expo app in the repository root is
 the product and release target. Its feature folders contain the product and platform-neutral logic.
 
 ## Phase 0, bootstrap and orientation
 
-Read `AGENTS.md`, this workflow, the relevant ADRs, and the source package files. The active
-workspace is bootstrapped around `apps/native`, not the root web app. Confirm the Expo Router
-entry under `apps/native/app` and the native feature folders under `apps/native/src` before work.
+Read `AGENTS.md`, this workflow, the relevant ADRs, and the root package files. Confirm the Expo
+Router entry under `app` and the native feature folders under `src` before work.
 
 The native baseline must have the following scripts available:
 
@@ -20,7 +19,7 @@ lint, typecheck, test, build, check:no-sentry
 
 Write one verifiable acceptance sentence for each behavior, identify the ticket, and list the
 native feature modules involved. Domain logic lives in the owning feature folders under
-`apps/native/src`. Check the relevant ADRs before choosing a persistence or device
+`src`. Check the relevant ADRs before choosing a persistence or device
 behavior. Product parity includes every current Next.js capability except Google sign-in and
 Supabase cross-device sync, which were dropped by ADR-0014 and remain dropped under ADR-0017.
 
@@ -45,14 +44,15 @@ must specify these states before implementation:
 7. Lifecycle: foreground, background, killed, force-stopped, and after reboot.
 8. Failure path: every failure gives the user an actionable next step.
 9. iOS portability: keep the shared contract platform-neutral and isolate Android-only code in
-   `apps/native/src/device`, `apps/native/modules/nabd-device`, and `apps/native/plugins`.
+   `src/device`, `modules/nabd-device`, and `plugins`.
 10. Real-device evidence: CI is not enough for native runtime behavior; record the owner device
     result before merge.
 
 ## Phase 3, implementation
 
-Keep pure logic in the owning feature's `logic.ts` or `apps/native/src/lib`. Put SQLite reads and writes in repositories. Put Expo
-permissions, notifications, location, alarms, and background work behind device services.
+Keep pure logic in the owning feature's `logic.ts` or `src/lib`. Put SQLite reads and writes in
+repositories. Put Expo permissions, notifications, location, alarms, and background work behind
+device services.
 Keep Android-only Kotlin and config-plugin code in their native boundaries. Do not add a second
 web product, authentication, or sync path.
 
@@ -76,11 +76,11 @@ unit tests cannot provide.
 Run the native gates before any push:
 
 ```bash
-pnpm --filter apps-native lint
-pnpm --filter apps-native typecheck
-pnpm --filter apps-native test
-pnpm --filter apps-native check:no-sentry
-pnpm --filter apps-native build
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm check:no-sentry
+pnpm build
 ```
 
 Review the changed source for unsafe SQL construction, path traversal, unsafe deserialization,
@@ -100,7 +100,7 @@ normal merge commit. Never rebase or squash.
 
 ## Phase 8, production release
 
-Build the release APK locally through `pnpm --filter apps-native build:apk` as recorded in
+Build the release APK locally through `pnpm build:apk` as recorded in
 ADR-0018. Gradle must run from a normal terminal. The production smoke test is:
 
 1. Install the release APK on the target Android device.

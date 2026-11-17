@@ -3,11 +3,18 @@ node_modules/
 .pnpm-store/
 
 # Production / misc
-dist/
+/dist/
+
+# Expo generated output
+/android/
+/ios/
+/modules/nabd-device/android/build/
+.expo/
 
 # Env — never commit real values
 .env
 .env.*
+.env*.local
 
 # Test & coverage artifacts
 coverage/

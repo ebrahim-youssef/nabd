@@ -94,3 +94,7 @@ are `pnpm --filter apps-native lint`, `pnpm --filter apps-native typecheck`,
 `pnpm --filter apps-native test`, `pnpm --filter apps-native check:no-sentry`, and
 `pnpm --filter apps-native build`. References above to keeping shared gates green describe the
 migration at the time and are superseded by this amendment.
+
+## Amendment 2026-11-17, NBD-112
+
+The Expo application has been lifted to the repository root and the pnpm workspace has been removed. The repository root is the sole application target, with root-level scripts and paths for Expo, native modules, plugins, and release builds. The required gates are now `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm check:no-sentry`, and `pnpm build`, run from the root; the `--filter apps-native` commands above no longer work.

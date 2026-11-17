@@ -4,12 +4,11 @@ Instructions for any AI coding agent working in this repo. Read this first, ever
 
 ## Product direction
 
-[`docs/adr/0017-native-only.md`](./docs/adr/0017-native-only.md) makes the Expo app in
-`apps/native` the sole product and release target. Android is first, with platform-neutral
-boundaries for a future iOS target. The legacy SPA and root application were deleted in NBD-108.
+[`docs/adr/0017-native-only.md`](./docs/adr/0017-native-only.md) records the Expo app as the sole
+product and release target. NBD-112 lifted it to the repository root. Android is first, with platform-neutral
+boundaries for a future iOS target. The SPA was deleted in NBD-107 and the legacy root application in NBD-108.
 All product code, domain logic, Arabic content, copy, contracts, and tests now live in the
-feature folders under `apps/native`. The end state is the repository root as the Expo app:
-`apps/native` will be lifted to the root in NBD-112 and the pnpm workspace will go. The order is in
+feature folders under the repository root, and NBD-112 removed the pnpm workspace. The migration order is in
 [`docs/migration/2026-10-17-consolidation-plan.md`](./docs/migration/2026-10-17-consolidation-plan.md).
 There is no backend or sign-in in the native product.
 
@@ -62,8 +61,8 @@ code around.
 
 - **Follow the loop.** Every change runs through the 8 phases in `docs/workflow.md`. No
   reordering, no skipping spec intake.
-- **Pure logic and feature folders.** Pure logic goes in `apps/native/src/<feature>/logic.ts`
-  and cross-feature helpers go in `apps/native/src/lib`. Logic has no I/O or clock globals; time
+- **Pure logic and feature folders.** Pure logic goes in `src/<feature>/logic.ts`
+  and cross-feature helpers go in `src/lib`. Logic has no I/O or clock globals; time
   and data are passed in. Native feature folders are flat, with `db.ts`, components, and hooks
   side by side where present, and tests under `__tests__/`. The native ESLint config enforces
   React Hooks rules, `no-console`, pure-logic restrictions, and restricted direct imports of

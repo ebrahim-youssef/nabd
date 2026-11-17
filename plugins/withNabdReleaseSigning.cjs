@@ -65,11 +65,14 @@ function planInsertBeforeBlockEnd(source, header, insertion, anchorName) {
   const openIndex = source.indexOf('{', headerIndex)
   const closeIndex = findClosingBraceIndex(source, openIndex)
   if (closeIndex === -1) {
-    throw new Error(`Missing anchor in app/build.gradle: unbalanced "${header}" block; cannot add ${anchorName}.`)
+    throw new Error(
+      `Missing anchor in app/build.gradle: unbalanced "${header}" block; cannot add ${anchorName}.`,
+    )
   }
 
   let lineStart = closeIndex
-  while (lineStart > 0 && (source[lineStart - 1] === ' ' || source[lineStart - 1] === '\t')) lineStart -= 1
+  while (lineStart > 0 && (source[lineStart - 1] === ' ' || source[lineStart - 1] === '\t'))
+    lineStart -= 1
   return { start: lineStart, end: lineStart, text: insertion }
 }
 
@@ -85,35 +88,49 @@ function applyReleaseSigning(buildGradle) {
 
   const buildTypesIndex = buildGradle.indexOf('buildTypes {')
   if (buildTypesIndex === -1) {
-    throw new Error('Missing anchor in app/build.gradle: "buildTypes {" block; cannot sign the release build type.')
+    throw new Error(
+      'Missing anchor in app/build.gradle: "buildTypes {" block; cannot sign the release build type.',
+    )
   }
   const buildTypesOpen = buildGradle.indexOf('{', buildTypesIndex)
   const buildTypesClose = findClosingBraceIndex(buildGradle, buildTypesOpen)
   if (buildTypesClose === -1) {
-    throw new Error('Missing anchor in app/build.gradle: unbalanced "buildTypes {" block; cannot sign the release build type.')
+    throw new Error(
+      'Missing anchor in app/build.gradle: unbalanced "buildTypes {" block; cannot sign the release build type.',
+    )
   }
 
   const buildTypes = buildGradle.slice(buildTypesOpen, buildTypesClose)
   const releaseOffset = buildTypes.indexOf('release {')
   if (releaseOffset === -1) {
-    throw new Error('Missing anchor in app/build.gradle: "release {" build type; cannot sign the release build type.')
+    throw new Error(
+      'Missing anchor in app/build.gradle: "release {" build type; cannot sign the release build type.',
+    )
   }
   const releaseOpen = buildTypes.indexOf('{', releaseOffset)
   const releaseClose = findClosingBraceIndex(buildTypes, releaseOpen)
   if (releaseClose === -1) {
-    throw new Error('Missing anchor in app/build.gradle: unbalanced "release {" build type; cannot sign the release build type.')
+    throw new Error(
+      'Missing anchor in app/build.gradle: unbalanced "release {" build type; cannot sign the release build type.',
+    )
   }
 
   const debugSigning = 'signingConfig signingConfigs.debug'
   const debugSigningOffset = buildGradle.indexOf(debugSigning, buildTypesOpen + releaseOpen)
   if (debugSigningOffset === -1 || debugSigningOffset > buildTypesOpen + releaseClose) {
-    throw new Error(`Missing anchor in app/build.gradle: "${debugSigning}" inside the release build type; cannot point release at the release signing config.`)
+    throw new Error(
+      `Missing anchor in app/build.gradle: "${debugSigning}" inside the release build type; cannot point release at the release signing config.`,
+    )
   }
 
   const edits = [
     { start: buildGradle.length, end: buildGradle.length, text: RELEASE_SIGNING_CHECK },
     signingConfigsEdit,
-    { start: debugSigningOffset, end: debugSigningOffset + debugSigning.length, text: 'signingConfig signingConfigs.release' },
+    {
+      start: debugSigningOffset,
+      end: debugSigningOffset + debugSigning.length,
+      text: 'signingConfig signingConfigs.release',
+    },
   ].sort((first, second) => second.start - first.start)
 
   let output = buildGradle

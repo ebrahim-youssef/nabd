@@ -11,7 +11,7 @@ The interface is entirely in Arabic, right to left.
 
 ## Current state
 
-The product is one Expo React Native app in `apps/native`, with Android as the first platform.
+The product is one Expo React Native app in the repository root, with Android as the first platform.
 The feature boundaries keep a future iOS target possible. Full parity with the current product is
 still in progress.
 
@@ -54,8 +54,8 @@ product currently has no backend, sign-in, or cross-device sync.
 
 ## Where it runs
 
-- **Current app:** the Expo React Native app in `apps/native`, with Android as the first release.
-- **Current code boundary:** feature folders under `apps/native/src` own their code and tests.
+- **Current app:** the Expo React Native app in the repository root, with Android as the first release.
+- **Current code boundary:** feature folders under `src` own their code and tests.
 
 ## Tech
 

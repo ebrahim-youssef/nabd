@@ -11,7 +11,7 @@ if [ ! -x "$global_hook" ]; then
 fi
 "$global_hook" "$@" < "$stdin_file" || exit $?
 
-native_check_paths='apps/native/modules/ apps/native/plugins/ apps/native/app.json'
+native_check_paths='modules/ plugins/ app.json'
 native_changes=false
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ -n "$local_sha" ] || continue
@@ -47,7 +47,7 @@ if [ "$native_changes" = true ]; then
     printf '%s\n' "Push blocked: pnpm was not found on PATH for Git's shell." >&2
     exit 1
   fi
-  if pnpm --filter apps-native test:native-module; then
+  if pnpm test:native-module; then
     exit 0
   fi
   printf '%s\n' 'Push blocked because the Kotlin module tests failed or Gradle could not start.' \

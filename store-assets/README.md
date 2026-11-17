@@ -4,7 +4,7 @@ Ready-to-upload Google Play graphic assets. Listing copy, form answers, and the
 AI image prompts live in [`docs/play-store-listing.md`](../docs/play-store-listing.md).
 
 ```
-icon-512.png                       512×512 app icon (brand mark) — copy of apps/native/assets/icon.png
+icon-512.png                       512×512 app icon (brand mark), copied from assets/icon.png
 feature-graphic/
   feature-graphic-1024x500.png     1024×500 starter feature graphic (motif on teal) — replace with a design/AI pass
 screenshots/
@@ -18,7 +18,7 @@ screenshots/
 ## Regenerating
 
 - **Launcher icon + splash** (inside the APK): the source icons now come from
-  `apps/native/assets/` and are included through the Expo app configuration.
+  `assets/` and are included through the Expo app configuration.
 - **Store screenshots**: captured from the running app at a phone viewport, cropped to
   the content column, and framed on a brand-teal gradient at 1080×1920. Re-shoot from the
   app when the UI changes; there is no committed script (it depends on live capture paths).

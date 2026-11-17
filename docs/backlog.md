@@ -224,8 +224,9 @@ The web track is cancelled by ADR-0017.
 
 ## R12 - Native only (2026-10-16)
 
-ADR-0017 makes `apps/native` the sole product and release target, with Android first and
-platform-neutral boundaries for a future iOS target. The SPA was deleted in NBD-107 and the root Next.js app in NBD-108 (tag `legacy-reference`).
+ADR-0017 made the native Expo app the sole product and release target, with Android first and
+platform-neutral boundaries for a future iOS target. NBD-112 later lifted it to the repository root.
+The SPA was deleted in NBD-107 and the root Next.js app in NBD-108 (tag `legacy-reference`).
 
 | ID | Status | Issue | Ticket | Acceptance criterion |
 | --- | --- | --- | --- | --- |
@@ -244,14 +245,14 @@ platform-neutral boundaries for a future iOS target. The SPA was deleted in NBD-
 | NBD-109 | ❌ merged into NBD-112 | - | Workspace cleanup, minimal root `package.json`, lockfile, lint-staged routing, `.gitignore`, and documentation | Delivered by NBD-112 |
 | NBD-110 | 🔶 partial (110a done) | - | Vite+ toolchain: (a) `vp staged` hooks, (b) Oxfmt, (c) Oxlint, (d) remove ESLint and Prettier, CI through `vp` | A commit from a non-interactive shell runs the staged checks and finishes, and CI formats and lints through `vp` with ESLint and Prettier removed |
 | NBD-111 | ✅ done | - | Fold `packages/shared` into the native app after NBD-108, each module into the feature that owns it | No `@nabd/shared` import remains, `packages/` is deleted, and every former shared test runs under Jest |
-| NBD-112 | ⬜ todo | - | Lift `apps/native` to the repository root and remove the pnpm workspace (absorbs NBD-109) | The repository root is the Expo app with no `apps/` or `packages/` folder, the Expo export and local `build:apk` pass from the root, and the pre-push hook plus native-compile workflow use root app paths and the `android` working directory |
+| NBD-112 | ✅ done | - | Lift `apps/native` to the repository root and remove the pnpm workspace (absorbs NBD-109) | The repository root is the Expo app with no `apps/` or `packages/` folder, the Expo export and local `build:apk` pass from the root, and the pre-push hook plus native-compile workflow use root app paths and the `android` working directory |
 | NBD-113 | ✅ done | [#265](https://github.com/ebrahim-youssef/nabd/issues/265) | Local Gradle release builds with upload-key signing, replacing EAS and the CI APK | `build:apk` produces an APK signed with the key from the owner's signing file, release builds fail without it, EAS and the CI APK workflow are gone |
 | NBD-114 | ⬜ todo | - | Maestro flows for the emulator checks | The scripted NBD-89a emulator rows run as Maestro flows |
 
-Amended 2026-10-17: the order is NBD-110a, NBD-106, NBD-107, the parity tickets (NBD-98 to
+Amended 2026-10-17: the planned order was NBD-110a, NBD-106, NBD-107, the parity tickets (NBD-98 to
 NBD-105, NBD-91), NBD-113, NBD-89a re-run, NBD-108, NBD-111, NBD-112, NBD-110b to
-NBD-110d, then NBD-92. New code
-goes into `apps/native`, not `packages/shared`. See
+NBD-110d, then NBD-92. NBD-112 has since lifted the Expo app to the repository root. New code goes
+there, not into `packages/shared`. See
 [`docs/migration/2026-10-17-consolidation-plan.md`](./migration/2026-10-17-consolidation-plan.md).
 
 Still open from R11: NBD-86, NBD-87b, NBD-89a, NBD-91, NBD-92, NBD-66, and NBD-67.
