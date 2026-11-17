@@ -72,9 +72,11 @@ Restoring does not copy an old alarm snapshot onto a new device.
 To check a restore on a test device, enable Android backup and select a transport, install a release
 build, populate the app, and run `adb shell bmgr backupnow com.nabd.app`. Check the result with
 `adb logcat` and confirm the backup transport recorded the package. Install the same package and
-signing identity on a clean test device, then run `adb shell bmgr list transports` and
+signing identity on a clean test device without launching it, run
+`adb shell am force-stop com.nabd.app`, then run `adb shell bmgr list transports` and
 `adb shell bmgr restore <TOKEN> com.nabd.app` using the token shown by `adb shell bmgr list sets`.
-Launch the app and confirm SQLite history and preferences are present and prayer alarms are freshly
+The app has no handler that reopens an open SQLite connection after an in-place restore, so never
+restore while it runs. Launch the app and confirm SQLite history and preferences are present and prayer alarms are freshly
 scheduled. `bmgr` exercises the device's configured backup transport; it does not verify every
 Google account or OEM restore path. See [Android's bmgr reference](https://developer.android.com/tools/bmgr)
 for the available commands and [Auto Backup documentation](https://developer.android.com/identity/data/autobackup)
