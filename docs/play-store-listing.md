@@ -4,7 +4,7 @@ Everything needed to publish نبض on Google Play once the developer account ex
 Copy lives here; the ready-made image assets live in [`store-assets/`](../store-assets/).
 Owner-only steps (account, keystore, privacy-policy hosting, upload) are called out.
 
-Related: [`release-android.md`](./release-android.md) (build + signing), backlog NBD-59.
+Related: [`ADR-0016`](./adr/0016-native-release-path.md) (build + signing), backlog NBD-59.
 
 ---
 
@@ -80,8 +80,7 @@ Fallback if the dash is not wanted: `نبض: رفيق الوِرد اليومي`
 | Promo / lifestyle images | optional, for listing polish | ⬜ generate from §4 prompts                                                         |
 
 The launcher icon inside the APK is now the brand mark too (adaptive icon,
-deep-teal backdrop) — see NBD icon fix; regenerate with
-`node scripts/android-icons.mjs`.
+deep-teal backdrop). Its source icons come from `apps/native/assets/`.
 
 Screenshot captions (optional overlay text, if a designer adds them — natural Arabic):
 

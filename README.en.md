@@ -20,9 +20,8 @@ current product is still in progress.
 - **Still open:** daily adhkar and settings parity, detailed statistics, permission and notification
   states, backup and restore, and final Android device verification.
 
-The root Next.js app remains a reference for comparison until parity is complete, then it is
-deleted. `apps/spa` was deleted in NBD-107 and is no longer a product target. Google sign-in
-and Supabase cross-device sync remain out of the product under ADR-0014.
+The legacy web application was deleted in NBD-107 and NBD-108. Google sign-in and Supabase
+cross-device sync remain out of the product under ADR-0014.
 
 ## What it does
 
@@ -56,8 +55,8 @@ product currently has no backend, sign-in, or cross-device sync.
 ## Where it runs
 
 - **Current app:** the Expo React Native app in `apps/native`, with Android as the first release.
-- **Temporary reference:** the root Next.js app remains for comparison until parity is complete,
-  then it is deleted; `apps/spa` was deleted in NBD-107.
+- **Current code boundary:** `packages/shared` remains a temporary shared package until NBD-111
+  and NBD-112.
 
 ## Tech
 

@@ -2,7 +2,7 @@
 
 This document records the native parity contract against the current root Next.js application.
 The Expo app in `apps/native` is the only product and release target. The Vite SPA is cancelled.
-The root application remains a read-only reference until NBD-108 deletes it. The native-only
+NBD-108 deleted the root application; read it from the `legacy-reference` tag. The native-only
 direction is recorded in [ADR-0017](../adr/0017-native-only.md).
 
 Full parity includes every current Next.js feature except Google sign-in and Supabase

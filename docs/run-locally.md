@@ -53,6 +53,3 @@ Before a release, verify SQLite persistence across close and reopen, the device 
 the capability under change, and NBD-91 backup and restore behavior. Release APK verification is
 the production smoke test described in Phase 8 of `docs/workflow.md`. ADR-0018 records the build
 path.
-
-The root Next.js app can still be run for reference until NBD-108 deletes it. It is not an active
-product target and is intentionally absent from the commands above.

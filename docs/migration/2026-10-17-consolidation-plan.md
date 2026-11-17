@@ -124,6 +124,10 @@ Build the APK locally and pass every parity-ledger row and the owner's device ma
    tooling only if content regeneration is still wanted; otherwise it stays in the tag.
 4. Retiring the live Supabase project is a manual owner step outside the repository.
 
+NBD-108 was written on 2026-10-19 and merged on 2026-11-17; the `legacy-reference` tag points at
+`abdad09`. The owner phone rows of NBD-89a were parked as non-blocking on 2026-11-17 (owner
+decision); any legacy behavior they need stays readable from the tag.
+
 ## Phase 8: Fold `packages/shared` into the native app (NBD-111)
 
 Each module goes to the feature that owns it, so the feature-folder rule in `AGENTS.md`

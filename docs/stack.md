@@ -1,21 +1,20 @@
 # Stack, nabd
 
 > Native-only stack for the Expo application in `apps/native` and the platform-neutral package
-> in `packages/shared`. The root Next.js application is a read-only legacy reference until
-> NBD-108 deletes it.
+> in `packages/shared`. The legacy web application was deleted in NBD-108.
 
 ## Runtime
 
-| Area          | Choice                                                                  | Evidence                                                      |
-| ------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------- |
-| Application   | Expo SDK `~57.0.24` and React Native `0.86.3`                           | `apps/native/package.json`                                    |
-| Routing       | Expo Router `~57.0.22`                                                  | `apps/native/package.json`, `apps/native/app`                 |
-| Persistence   | `expo-sqlite ~57.0.3`, database schema version 4                        | `apps/native/package.json`, `apps/native/src/db/database.ts`  |
-| Styling       | NativeWind `^4.2.6` with Tailwind `^3.4.19`                             | `apps/native/package.json`, `apps/native/tailwind.config.cjs` |
-| Notifications | `expo-notifications ~57.0.21`                                           | `apps/native/package.json`                                    |
-| Location      | `expo-location ~57.0.20`                                                | `apps/native/package.json`                                    |
-| Shared domain | `@nabd/shared`, including `adhan ^4.4.4`                                | `packages/shared/package.json`                                |
-| Release       | Local Expo prebuild and Gradle `build:apk` / `build:aab`                | `apps/native/package.json`, ADR-0018                          |
+| Area          | Choice                                                   | Evidence                                                      |
+| ------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| Application   | Expo SDK `~57.0.24` and React Native `0.86.3`            | `apps/native/package.json`                                    |
+| Routing       | Expo Router `~57.0.22`                                   | `apps/native/package.json`, `apps/native/app`                 |
+| Persistence   | `expo-sqlite ~57.0.3`, database schema version 4         | `apps/native/package.json`, `apps/native/src/db/database.ts`  |
+| Styling       | NativeWind `^4.2.6` with Tailwind `^3.4.19`              | `apps/native/package.json`, `apps/native/tailwind.config.cjs` |
+| Notifications | `expo-notifications ~57.0.21`                            | `apps/native/package.json`                                    |
+| Location      | `expo-location ~57.0.20`                                 | `apps/native/package.json`                                    |
+| Shared domain | `@nabd/shared`, including `adhan ^4.4.4`                 | `packages/shared/package.json`                                |
+| Release       | Local Expo prebuild and Gradle `build:apk` / `build:aab` | `apps/native/package.json`, ADR-0018                          |
 
 Android is the current target. Platform-neutral contracts stay in shared code, while Android
 permissions, channels, exact-alarm status, and manifest changes stay behind the native device

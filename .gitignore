@@ -2,26 +2,15 @@
 node_modules/
 .pnpm-store/
 
-# Next.js
-.next/
-out/
-build/
-next-env.d.ts
-
 # Production / misc
 dist/
 
-# Env — never commit real values (see .env.example)
+# Env — never commit real values
 .env
 .env.*
-!.env.example
 
 # Test & coverage artifacts
 coverage/
-playwright-report/
-test-results/
-blob-report/
-.playwright/
 
 # Editor / OS
 .DS_Store
@@ -30,18 +19,8 @@ blob-report/
 .vscode/*
 !.vscode/extensions.json
 
-# Vercel
-.vercel
-
-# Sentry
-.sentryclirc
-
 # TypeScript
 *.tsbuildinfo
 
 # Design system import material (raw handoff; source of truth is the Claude Design project, NBD-3)
 design-import/
-
-# Generated Serwist service worker bundle (build artifact)
-/public/sw.js
-/public/sw.js.map
