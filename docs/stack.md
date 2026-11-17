@@ -15,7 +15,7 @@
 | Notifications | `expo-notifications ~57.0.21`                                           | `apps/native/package.json`                                    |
 | Location      | `expo-location ~57.0.20`                                                | `apps/native/package.json`                                    |
 | Shared domain | `@nabd/shared`, including `adhan ^4.4.4`                                | `packages/shared/package.json`                                |
-| Release       | EAS CLI `>=24.7.0`, profiles `development`, `preview`, and `production` | `apps/native/eas.json`                                        |
+| Release       | Local Expo prebuild and Gradle `build:apk` / `build:aab`                | `apps/native/package.json`, ADR-0018                          |
 
 Android is the current target. Platform-neutral contracts stay in shared code, while Android
 permissions, channels, exact-alarm status, and manifest changes stay behind the native device
