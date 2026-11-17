@@ -68,6 +68,7 @@ Native unit and component tests use Jest, `jest-expo ~57.0.5`, and React Native 
 The native checks are:
 
 ```bash
+pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test
