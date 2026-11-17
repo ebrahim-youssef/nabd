@@ -1,11 +1,11 @@
 # CONVENTIONS.md, nabd
 
-Code conventions for the Expo application in `apps/native`.
+Code conventions for the Expo application in the repository root.
 
 ## Exports and style
 
 - Use named exports in shared and feature modules.
-- Expo Router route files under `apps/native/app` use the default export required by the router.
+- Expo Router route files under `app` use the default export required by the router.
 - Keep functions small and focused. Do not add a class when a function or module is enough.
 - Comments explain a non-obvious constraint or reason. They do not narrate the next line.
 
@@ -26,23 +26,23 @@ Use full words. Booleans read as yes or no. Put units in names such as `timeoutM
 ## Logic, repositories, and device code
 
 - Pure logic lives in the owning feature's `logic.ts`, with cross-feature helpers in
-  `apps/native/src/lib`. The native ESLint config enforces the no-platform, no-I/O, no-DOM,
+  `src/lib`. The native ESLint config enforces the no-platform, no-I/O, no-DOM,
   no-`Date.now()`, and no-`Math.random()` restrictions.
 - Native feature folders are flat, with `db.ts`, component files, and hook files side by side
   where present, and tests in `__tests__/`.
-- `apps/native/eslint.config.mjs` enforces React Hooks rules, `no-console`, pure-logic rules, and
+- `eslint.config.mjs` enforces React Hooks rules, `no-console`, pure-logic rules, and
   restricted direct imports of React Native `Text` and `TextInput`.
 - SQLite access belongs in feature repositories or the database layer, never in a component.
 - Expo APIs, permissions, notifications, alarms, location, filesystem, and background work belong
-  in `apps/native/src/device` or a platform adapter.
-- Android-only Kotlin stays in `apps/native/modules/nabd-device`; build-time native setup stays in
-  `apps/native/plugins`.
+  in `src/device` or a platform adapter.
+- Android-only Kotlin stays in `modules/nabd-device`; build-time native setup stays in
+  `plugins`.
 - Feature folders own their domain types, Arabic content, copy, pure logic, contracts, and tests.
   Pure modules must not import Expo, React Native, SQLite, device APIs, network clients, or filesystem APIs.
 
 ## Logging and errors
 
-Use the central logger in `apps/native/src/observability/logger.ts`. Do not commit direct
+Use the central logger in `src/observability/logger.ts`. Do not commit direct
 `console.*` calls. Developer logs include the failed condition and non-secret context. User-facing
 errors explain the next action without exposing internal or account state.
 
@@ -52,8 +52,8 @@ diagnostic cause at the I/O boundary instead of leaking a raw exception into the
 ## Constants and tokens
 
 No magic numbers or strings. Extract repeated or meaningful values into named constants. Visual
-values come from the native theme tokens in `apps/native/theme/palette.ts` and
-`apps/native/theme/tailwind-theme.cjs`. Components do not add raw colors, sizes, radii, or
+values come from the native theme tokens in `theme/palette.ts` and
+`theme/tailwind-theme.cjs`. Components do not add raw colors, sizes, radii, or
 shadows.
 
 ## RTL and accessibility

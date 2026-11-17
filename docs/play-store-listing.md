@@ -80,7 +80,7 @@ Fallback if the dash is not wanted: `نبض: رفيق الوِرد اليومي`
 | Promo / lifestyle images | optional, for listing polish | ⬜ generate from §4 prompts                                                         |
 
 The launcher icon inside the APK is now the brand mark too (adaptive icon,
-deep-teal backdrop). Its source icons come from `apps/native/assets/`.
+deep-teal backdrop). Its source icons come from `assets/`.
 
 Screenshot captions (optional overlay text, if a designer adds them — natural Arabic):
 

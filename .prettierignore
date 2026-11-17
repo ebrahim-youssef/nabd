@@ -1,6 +1,10 @@
 node_modules/
 pnpm-lock.yaml
 coverage/
+/android/
+/ios/
+.expo/
+dist/
 
 # Legacy documentation keeps its existing line endings and house formatting.
 CONVENTIONS.md

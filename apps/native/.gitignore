@@ -1,5 +1,0 @@
-/android/
-.expo/
-dist/
-coverage/
-.env*.local

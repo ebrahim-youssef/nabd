@@ -13,24 +13,6 @@ overrides:
 importers:
 
   .:
-    devDependencies:
-      '@commitlint/cli':
-        specifier: ^21.2.1
-        version: 21.2.1(@types/node@22.20.1)(conventional-commits-parser@7.1.0)(typescript@6.0.3)
-      '@commitlint/config-conventional':
-        specifier: ^21.2.0
-        version: 21.2.0
-      husky:
-        specifier: ^9.1.7
-        version: 9.1.7
-      prettier:
-        specifier: ^3.9.5
-        version: 3.9.5
-      vite-plus:
-        specifier: 1.0.0
-        version: 1.0.0(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(@vitest/ui@5.0.1(vitest@5.0.1))(esbuild@0.28.1)(jiti@2.7.0)(jsdom@29.1.1)(terser@5.49.0)(typescript@6.0.3)(yaml@2.9.0)
-
-  apps/native:
     dependencies:
       '@react-native-community/netinfo':
         specifier: 12.0.1
@@ -117,6 +99,22 @@ importers:
         specifier: ^3.4.19
         version: 3.4.19(yaml@2.9.0)
     devDependencies:
+      '@commitlint/cli':
+        specifier: ^21.2.1
+        version: 21.2.1(@types/node@22.20.1)(conventional-commits-parser@7.1.0)(typescript@6.0.3)
+      '@commitlint/config-conventional':
+        specifier: ^21.2.0
+        version: 21.2.0
+      husky:
+        specifier: ^9.1.7
+        version: 9.1.7
+      prettier:
+        specifier: ^3.9.5
+        version: 3.9.5
+      vite-plus:
+        specifier: 1.0.0
+        version: 1.0.0(@opentelemetry/api@1.9.1)(@types/node@22.20.1)(@vitest/ui@5.0.1(vitest@5.0.1))(esbuild@0.28.1)(jiti@2.7.0)(jsdom@29.1.1)(terser@5.49.0)(typescript@6.0.3)(yaml@2.9.0)
+
       '@babel/core':
         specifier: ^7.29.7
         version: 7.29.7
@@ -156,6 +154,7 @@ importers:
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
+
 
 packages:
 

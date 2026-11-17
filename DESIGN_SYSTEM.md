@@ -1,8 +1,8 @@
 # DESIGN_SYSTEM.md, nabd (نبض)
 
 The source of truth for the native visual system. Components use semantic tokens only. The native
-theme is defined by the hand-written files `apps/native/theme/palette.ts` and
-`apps/native/theme/tailwind-theme.cjs`.
+theme is defined by the hand-written files `theme/palette.ts` and
+`theme/tailwind-theme.cjs`.
 
 ## Product character
 
@@ -36,7 +36,7 @@ may use the faint token only when it is not the sole carrier of meaning.
 
 ## Typography
 
-Fonts are bundled and registered through Expo in `apps/native/app.json`:
+Fonts are bundled and registered through Expo in `app.json`:
 
 | Role      | Font       | Use                            |
 | --------- | ---------- | ------------------------------ |

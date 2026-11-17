@@ -16,13 +16,13 @@ jobs:
       matrix:
         include:
           - name: native lint
-            run: pnpm --filter apps-native check:no-sentry && pnpm --filter apps-native lint
+            run: pnpm check:no-sentry && pnpm lint
           - name: native typecheck
-            run: pnpm --filter apps-native typecheck
+            run: pnpm typecheck
           - name: native test
-            run: pnpm --filter apps-native test
+            run: pnpm test
           - name: native build
-            run: pnpm --filter apps-native build
+            run: pnpm build
     name: ${{ matrix.name }}
     steps:
       - uses: actions/checkout@v4

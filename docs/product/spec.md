@@ -5,7 +5,7 @@ routine, track it, hold themselves accountable, and reflect on what they committ
 
 ## Product boundary
 
-- Product: the Expo React Native app in `apps/native`.
+- Product: the Expo React Native app in the repository root.
 - Delivery: Android first, with platform-neutral boundaries for later iOS work.
 - Storage: device-local SQLite in `nabd-native.db`, schema version 4.
 - Network: not required for the core product flow.

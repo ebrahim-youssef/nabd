@@ -6,13 +6,35 @@ name: native-compile
 on:
   pull_request:
     paths:
-      - 'apps/native/**'
+      - 'app/**'
+      - 'assets/**'
+      - 'modules/**'
+      - 'plugins/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'theme/**'
+      - '*.json'
+      - '*.cjs'
+      - '*.mjs'
+      - '*.ts'
+      - '*.css'
       - '.github/workflows/native-compile.yml'
   push:
     branches:
       - dev
     paths:
-      - 'apps/native/**'
+      - 'app/**'
+      - 'assets/**'
+      - 'modules/**'
+      - 'plugins/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'theme/**'
+      - '*.json'
+      - '*.cjs'
+      - '*.mjs'
+      - '*.ts'
+      - '*.css'
       - '.github/workflows/native-compile.yml'
   workflow_dispatch:
 
@@ -36,7 +58,7 @@ jobs:
         with:
           packages: platform-tools
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter apps-native exec expo prebuild --platform android --no-install
+      - run: pnpm exec expo prebuild --platform android --no-install
       - name: Compile debug APK and run Kotlin tests
-        working-directory: apps/native/android
+        working-directory: android
         run: ./gradlew :nabd-device:testReleaseUnitTest assembleDebug
