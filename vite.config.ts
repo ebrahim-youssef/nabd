@@ -151,7 +151,10 @@ export default defineConfig({
     ],
   },
   staged: {
-    '**/*.{ts,tsx}': ['pnpm exec vp lint --fix', 'pnpm exec vp fmt --write'],
-    '**/*.{js,mjs,cjs,json,css,md}': ['pnpm exec vp fmt --write'],
+    '**/*.{ts,tsx}': [
+      'pnpm exec vp lint --fix',
+      'pnpm exec vp fmt --write --no-error-on-unmatched-pattern',
+    ],
+    '**/*.{js,mjs,cjs,json,css,md}': ['pnpm exec vp fmt --write --no-error-on-unmatched-pattern'],
   },
 })

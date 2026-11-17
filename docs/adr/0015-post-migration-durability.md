@@ -134,3 +134,20 @@ append-only contract means the safe resolution is union by event identity rather
 
 Revisit this if a backend is reintroduced for any other reason, or if any build reaches a device
 that is not the owner's.
+
+## NBD-92 implementation note (2026-11-17)
+
+Section F option 2 is implemented for the native app. Expo SQLite stores `nabd-native.db` under
+`context.filesDir/SQLite` by default (`node_modules/expo-sqlite/android/src/main/java/expo/modules/sqlite/SQLiteModule.kt:35-36`). Android Auto Backup and device transfer include only `file/SQLite/`, so the database and its
+WAL/SHM companions travel together. App preferences are rows in that database and travel with it.
+SharedPreferences, device-protected data and every other domain are omitted by the include-only
+rule; the rules carry no excludes because release lint rejects excludes outside an included path. Cache files are excluded by Android. The Android alarm snapshot and
+countdown notification payload stay in SharedPreferences and are not transferred. At launch, the
+app recalculates prayer alarms and countdown state from the restored database preferences and
+location; it does not restore a previous device's scheduled alarm snapshot.
+
+The inclusion and exclusion rules are in `plugins/withNabdBackup.cjs`, and the local restore
+procedure is in `docs/run-locally.md`. The plugin test and generated manifest/XML verify the
+configuration. A restore on a physical device remains an owner release check. No screen, release
+note, or store listing may claim that history is kept safe beyond the coverage actually provided
+by export/import and Android backup.

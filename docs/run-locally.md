@@ -51,3 +51,34 @@ Before a release, verify SQLite persistence across close and reopen, the device 
 the capability under change, and NBD-91 backup and restore behavior. Release APK verification is
 the production smoke test described in Phase 8 of `docs/workflow.md`. ADR-0018 records the build
 path.
+
+### Android application backup
+
+Expo SQLite stores `nabd-native.db` in `context.filesDir/SQLite` by default
+(`node_modules/expo-sqlite/android/src/main/java/expo/modules/sqlite/SQLiteModule.kt:35-36`);
+`src/db/database.ts:126` opens the database without overriding that directory. Android Auto Backup
+and device transfer include only the app `file` domain's `SQLite/` directory. This includes the
+database and its WAL/SHM companions. User preferences are rows in this database, so they are
+included too. Because an include rule is present, all other paths and domains, including
+SharedPreferences and device-protected data, are omitted. The rules carry no excludes: release lint
+fails on an exclude outside an included path. Android also always excludes
+cache directories. Backup export files are written to the cache directory and are excluded.
+
+Alarm snapshots (`nabd.prayer-alarms`) and countdown notification state (`nabd.countdown`) are
+device scheduling state, so they are excluded. On launch, the app's prayer alarm bootstrap reads
+the restored notification preferences and location from SQLite, recalculates the current schedule,
+and replaces the native alarms. The countdown bootstrap similarly rebuilds its state from SQLite.
+Restoring does not copy an old alarm snapshot onto a new device.
+
+To check a restore on a test device, enable Android backup and select a transport, install a release
+build, populate the app, and run `adb shell bmgr backupnow com.nabd.app`. Check the result with
+`adb logcat` and confirm the backup transport recorded the package. Install the same package and
+signing identity on a clean test device without launching it, run
+`adb shell am force-stop com.nabd.app`, then run `adb shell bmgr list transports` and
+`adb shell bmgr restore <TOKEN> com.nabd.app` using the token shown by `adb shell bmgr list sets`.
+The app has no handler that reopens an open SQLite connection after an in-place restore, so never
+restore while it runs. Launch the app and confirm SQLite history and preferences are present and prayer alarms are freshly
+scheduled. `bmgr` exercises the device's configured backup transport; it does not verify every
+Google account or OEM restore path. See [Android's bmgr reference](https://developer.android.com/tools/bmgr)
+for the available commands and [Auto Backup documentation](https://developer.android.com/identity/data/autobackup)
+for rule behavior.
