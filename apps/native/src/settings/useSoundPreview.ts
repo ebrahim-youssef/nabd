@@ -6,11 +6,13 @@ import { logger } from '../observability/logger'
 import { SOUND_PREVIEWS, type SoundPreviewId } from './soundPreviews'
 
 const START_TIME_SECONDS = 0
+const PLAYBACK_START_TIMEOUT_MS = 2_000
 
 type ActivePreview = {
   id: SoundPreviewId
   player: AudioPlayer
   subscription: { remove: () => void }
+  startTimeout: ReturnType<typeof setTimeout> | null
 }
 
 export function useSoundPreview() {
@@ -18,6 +20,7 @@ export function useSoundPreview() {
   const [currentId, setCurrentId] = useState<SoundPreviewId | null>(null)
 
   const releasePreview = useCallback((activePreview: ActivePreview) => {
+    if (activePreview.startTimeout) clearTimeout(activePreview.startTimeout)
     activePreview.subscription.remove()
     try {
       activePreview.player.pause()
@@ -52,10 +55,14 @@ export function useSoundPreview() {
 
       try {
         const player = createAudioPlayer(preview.asset)
-        const activePreview = { id, player } as ActivePreview
+        const activePreview = { id, player, startTimeout: null } as ActivePreview
         activePreview.subscription = player.addListener('playbackStatusUpdate', (status) => {
           if (status.error) {
             resetAfterError(activePreview, new Error(status.error))
+          }
+          if (status.playing && activePreview.startTimeout) {
+            clearTimeout(activePreview.startTimeout)
+            activePreview.startTimeout = null
           }
           if (status.didJustFinish && activePreviewRef.current === activePreview) {
             activePreviewRef.current = null
@@ -69,7 +76,14 @@ export function useSoundPreview() {
         void player
           .seekTo(START_TIME_SECONDS)
           .then(() => {
-            if (activePreviewRef.current === activePreview) player.play()
+            if (activePreviewRef.current !== activePreview) return
+            activePreview.startTimeout = setTimeout(() => {
+              if (activePreviewRef.current !== activePreview) return
+              activePreviewRef.current = null
+              releasePreview(activePreview)
+              setCurrentId(null)
+            }, PLAYBACK_START_TIMEOUT_MS)
+            player.play()
           })
           .catch((cause: unknown) => resetAfterError(activePreview, cause))
       } catch (cause: unknown) {
