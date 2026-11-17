@@ -7,7 +7,9 @@ import type { LocationPermission } from './types'
 export const LOCATION_FIX_TIMEOUT_MS = 15_000
 
 export type LocationFixResult =
-  { kind: 'ok'; latitude: number; longitude: number } | { kind: 'timeout' } | { kind: 'error' }
+  | { kind: 'ok'; latitude: number; longitude: number }
+  | { kind: 'timeout' }
+  | { kind: 'error' }
 
 export async function readPermission(): Promise<LocationPermission> {
   return mapDevicePermission(await Location.getForegroundPermissionsAsync())

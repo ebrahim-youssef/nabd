@@ -79,7 +79,8 @@ const NOW = 1_800_000_000_000
 const DAY_MS = 24 * 60 * 60 * 1_000
 const now = () => NOW
 let appStateListener:
-  ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void) | undefined
+  | ((state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension') => void)
+  | undefined
 let rescheduleListener: (() => void) | undefined
 let timeChangeListener: (() => void) | undefined
 

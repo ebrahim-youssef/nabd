@@ -39,7 +39,8 @@ const INSERT_APP_PREFERENCE =
 export type RestoreFailure = { reason: 'conflict'; table: BackupTable } | { reason: 'write_failed' }
 
 export type BackupRestoreResult =
-  { ok: true; value: RestoreCounts } | { ok: false; error: RestoreFailure }
+  | { ok: true; value: RestoreCounts }
+  | { ok: false; error: RestoreFailure }
 
 class RestoreConflictError extends Error {
   readonly table: BackupTable

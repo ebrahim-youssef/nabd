@@ -13,7 +13,12 @@ const CLEAR_OPERATION = 'clear-countdown-notification'
 const STATUS_OPERATION = 'get-countdown-notification-status'
 
 export type CountdownNotificationResult =
-  'posted' | 'permission-denied' | 'channel-blocked' | 'invalid' | 'unsupported' | 'error'
+  | 'posted'
+  | 'permission-denied'
+  | 'channel-blocked'
+  | 'invalid'
+  | 'unsupported'
+  | 'error'
 
 type NativeCountdownModule = {
   setCountdown: (payloadJson: string) => unknown

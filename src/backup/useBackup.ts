@@ -29,7 +29,8 @@ export type BackupStatus =
   | { kind: 'restore_failed'; error: RestoreFailure | 'unknown' }
 
 export type BackupPreviewResult =
-  { ok: true; value: BackupPreview } | { ok: false; error: BackupImportError }
+  | { ok: true; value: BackupPreview }
+  | { ok: false; error: BackupImportError }
 
 function importFailure(error: BackupImportError): BackupPreviewResult {
   return { ok: false, error }
