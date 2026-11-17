@@ -78,6 +78,7 @@ export default defineConfig({
     tabWidth: 2,
     // Preserve the established ignore list, including legacy docs formatting.
     ignorePatterns: [
+      // Local agent settings are untracked and ignored only by the global gitignore, which fmt does not read.
       '.claude/**',
       'node_modules/',
       'pnpm-lock.yaml',
