@@ -46,4 +46,14 @@ describe('SoundPreviewSection', () => {
     expect(stop).toHaveBeenCalledTimes(1)
     expect(play).not.toHaveBeenCalled()
   })
+
+  it('tells users to raise the volume or turn off silent mode to hear previews', async () => {
+    await render(<SoundPreviewSection />)
+
+    expect(
+      screen.getByText(
+        'تتبع المعاينة مستوى صوت الوسائط ووضع الصامت في الهاتف؛ ارفع الصوت أو أوقف الوضع الصامت لسماعها.',
+      ),
+    ).toBeTruthy()
+  })
 })

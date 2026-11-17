@@ -2,10 +2,11 @@ import { SETTINGS_COPY } from '@nabd/shared'
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { useLocationCapability } from '../device/useLocationCapability'
+import { deviceCopy } from '../device/copy'
 import { Text } from '../shell/Text'
 
 export function LocationSection() {
-  const { status, isRefreshing, runAction } = useLocationCapability()
+  const { status, isRefreshing, refresh, runAction } = useLocationCapability()
 
   return (
     <View className="gap-3" testID="settings-location">
@@ -27,17 +28,19 @@ export function LocationSection() {
         >
           {status.message}
         </Text>
-        {status.action ? (
+        {status.action || status.state === 'ready' ? (
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ disabled: isRefreshing }}
             className={`rounded-button border border-primary bg-primary/10 px-4 py-3 ${isRefreshing ? 'opacity-50' : ''}`}
             disabled={isRefreshing}
-            onPress={() => void runAction(status.action?.type)}
-            testID="settings-location-action"
+            onPress={() =>
+              status.action ? void runAction(status.action.type) : void refresh({ force: true })
+            }
+            testID={status.action ? 'settings-location-action' : 'settings-location-refresh'}
           >
             <Text className="text-body text-center font-body-medium text-primary">
-              {status.action.label}
+              {status.action?.label ?? deviceCopy.actions.refreshLocation}
             </Text>
           </Pressable>
         ) : null}
