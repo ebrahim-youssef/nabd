@@ -19,13 +19,14 @@ lint, typecheck, test, build, check:no-sentry
 ## Phase 1, specification
 
 Write one verifiable acceptance sentence for each behavior, identify the ticket, and list the
-native and shared modules involved. Check the relevant ADRs before choosing a persistence or device
+native feature modules involved. Domain logic lives in the owning feature folders under
+`apps/native/src`. Check the relevant ADRs before choosing a persistence or device
 behavior. Product parity includes every current Next.js capability except Google sign-in and
 Supabase cross-device sync, which were dropped by ADR-0014 and remain dropped under ADR-0017.
 
 ## Phase 2, branch and task plan
 
-Plan in dependency order: shared content and types, pure logic, SQLite repositories, hooks,
+Plan in dependency order: feature content and types, pure logic, SQLite repositories, hooks,
 components, and Expo Router routes. Add tests with each implementation slice. Use named constants,
 the central logger, semantic theme tokens, and RTL-first layout rules.
 
@@ -72,7 +73,7 @@ unit tests cannot provide.
 
 ## Phase 5, quality gates
 
-Run the real native and shared gates before any push:
+Run the native gates before any push:
 
 ```bash
 pnpm --filter apps-native lint
