@@ -27,7 +27,9 @@ device boundary.
 ```text
 start          expo start
 build          expo export --platform android
-lint           eslint .
+lint           vp lint
+format         vp fmt
+format:check   vp fmt --check
 typecheck      tsc --noEmit
 test           jest --runInBand
 check:no-sentry  node scripts/check-no-sentry.mjs
@@ -36,7 +38,7 @@ check:no-sentry  node scripts/check-no-sentry.mjs
 ## Feature structure
 
 Pure domain logic lives in feature `logic.ts` files and `src/lib`, and is lint-enforced
-by the native ESLint configuration. Native feature folders are flat, with SQLite repositories,
+by the Vite+ Oxlint configuration. Native feature folders are flat, with SQLite repositories,
 component files, and hook files side by side where present, and tests in `__tests__/`. The
 repository is the only feature boundary that performs SQL. Device services in
 `src/device` own Expo permissions and scheduling. `modules/nabd-device`

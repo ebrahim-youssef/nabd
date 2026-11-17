@@ -17,6 +17,8 @@ the native modules and config plugins. Expo Go is not a release target for this 
 Use the scripts defined by the native package manifest:
 
 ```bash
+pnpm format
+pnpm format:check
 pnpm lint
 pnpm typecheck
 pnpm test

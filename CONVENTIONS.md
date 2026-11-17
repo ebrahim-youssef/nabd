@@ -26,11 +26,11 @@ Use full words. Booleans read as yes or no. Put units in names such as `timeoutM
 ## Logic, repositories, and device code
 
 - Pure logic lives in the owning feature's `logic.ts`, with cross-feature helpers in
-  `src/lib`. The native ESLint config enforces the no-platform, no-I/O, no-DOM,
+  `src/lib`. The Vite+ Oxlint config enforces the no-platform, no-I/O, no-DOM,
   no-`Date.now()`, and no-`Math.random()` restrictions.
 - Native feature folders are flat, with `db.ts`, component files, and hook files side by side
   where present, and tests in `__tests__/`.
-- `eslint.config.mjs` enforces React Hooks rules, `no-console`, pure-logic rules, and
+- `vite.config.ts` enforces React Hooks rules, `no-console`, pure-logic rules, and
   restricted direct imports of React Native `Text` and `TextInput`.
 - SQLite access belongs in feature repositories or the database layer, never in a component.
 - Expo APIs, permissions, notifications, alarms, location, filesystem, and background work belong

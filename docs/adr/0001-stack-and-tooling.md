@@ -35,3 +35,9 @@ pnpm typecheck && pnpm test && pnpm build` is the green bar. NBD-108 removed the
 - Serwist means service-worker updates are deliberate (opt-in), never silent mid-session.
 - Sentry/Vercel Analytics add env vars (`.env.example`) and a setup ticket (NBD-11).
 - Revisit if the sync model outgrows what route handlers + Supabase comfortably serve.
+
+## Tooling update, 2026-11-17
+
+The Expo app now uses Vite+ with Oxfmt for formatting, Oxlint for linting, and `vp staged` for
+staged checks. ESLint and Prettier have been removed. This updates the hygiene tools above; the
+historical product and stack decisions in this ADR remain unchanged.

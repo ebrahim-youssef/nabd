@@ -64,7 +64,7 @@ keeps navigation concerns local to the root `app` directory.
 | `src/device` | Expo APIs, the Android module, logger, shared contracts | feature UI and route code |
 | `app` | route layouts and feature entry components | direct SQL and platform implementation |
 
-The native ESLint configuration enforces the pure-logic restrictions. The important data direction
+The Vite+ Oxlint configuration enforces the pure-logic restrictions. The important data direction
 is `hook or use case -> repository -> SQLite`; logic files remain pure and never reach back into a
 repository.
 
