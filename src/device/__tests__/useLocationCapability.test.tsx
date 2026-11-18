@@ -309,6 +309,53 @@ describe('useLocationCapability', () => {
     await waitFor(() => expect(result.current.status.state).toBe('ready'))
   })
 
+  it('queues one cache reread when an unforced refresh arrives during an in-flight read', async () => {
+    const initialCache: TestCacheState = {
+      latitude: 30,
+      longitude: 31,
+      recordedAt: NOW - 1_000,
+      fresh: true,
+    }
+    let latestCache: TestCacheState = initialCache
+    let resolveInitialRead: ((cache: TestCacheState | null) => void) | undefined
+    repository.readLocationCacheState
+      .mockImplementationOnce(
+        () =>
+          new Promise<TestCacheState | null>((resolve) => {
+            resolveInitialRead = resolve
+          }),
+      )
+      .mockImplementation(async () => latestCache)
+    const { result } = renderLocation()
+
+    await waitFor(() => expect(repository.readLocationCacheState).toHaveBeenCalledTimes(1))
+    let firstRefresh!: Promise<void>
+    let secondRefresh!: Promise<void>
+    let thirdRefresh!: Promise<void>
+    act(() => {
+      firstRefresh = result.current.refresh({ force: false })
+      secondRefresh = result.current.refresh({ force: false })
+      thirdRefresh = result.current.refresh({ force: false })
+    })
+    expect(firstRefresh).toBe(secondRefresh)
+    expect(secondRefresh).toBe(thirdRefresh)
+
+    await act(async () => {
+      latestCache = {
+        latitude: 25,
+        longitude: 55,
+        recordedAt: NOW,
+        fresh: true,
+      }
+      resolveInitialRead?.(initialCache)
+      await firstRefresh
+    })
+
+    expect(repository.readLocationCacheState).toHaveBeenCalledTimes(2)
+    expect(result.current.coordinates).toEqual({ latitude: 25, longitude: 55 })
+    expect(mockedLocation.getCurrentPositionAsync).not.toHaveBeenCalled()
+  })
+
   it('updates coordinates and prayer times in other mounted consumers after a location refresh', async () => {
     repository = createRepository(
       { latitude: 30.0444, longitude: 31.2357, recordedAt: NOW - 1_000 },

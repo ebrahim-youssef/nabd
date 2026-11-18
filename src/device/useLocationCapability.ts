@@ -64,6 +64,7 @@ const locationViewListeners = new Set<LocationViewListener>()
 let sharedRefreshPromise: Promise<void> | null = null
 let sharedRefreshIsForced = false
 let forcedRefreshQueued = false
+let hasUnforcedRefreshQueued = false
 
 const INITIAL_VIEW: LocationCapabilityViewState = {
   snapshot: INITIAL_SNAPSHOT,
@@ -84,6 +85,7 @@ function publishLocationView(view: LocationCapabilityViewState, cached: CachedLo
 function refreshAcrossInstances(force: boolean, performRefresh: RefreshOperation): Promise<void> {
   if (sharedRefreshPromise) {
     if (force && !sharedRefreshIsForced) forcedRefreshQueued = true
+    if (!force) hasUnforcedRefreshQueued = true
     return sharedRefreshPromise
   }
 
@@ -94,15 +96,24 @@ function refreshAcrossInstances(force: boolean, performRefresh: RefreshOperation
       while (true) {
         sharedRefreshIsForced = nextForce
         forcedRefreshQueued = false
+        hasUnforcedRefreshQueued = false
         await performRefresh(nextForce)
-        if (!forcedRefreshQueued) return
-        nextForce = true
+        if (forcedRefreshQueued) {
+          nextForce = true
+          continue
+        }
+        if (hasUnforcedRefreshQueued) {
+          nextForce = false
+          continue
+        }
+        return
       }
     } finally {
       if (sharedRefreshPromise === operation) {
         sharedRefreshPromise = null
         sharedRefreshIsForced = false
         forcedRefreshQueued = false
+        hasUnforcedRefreshQueued = false
       }
     }
   }
