@@ -6,6 +6,7 @@ import { WIRD_LEVELS } from '../../content/levels'
 import type { PersistedOnboarding } from '../../onboarding/db'
 import { useWirdLevel } from '../../wird/useWirdLevel'
 import { HomeScreen } from '../HomeScreen'
+import { useWirdToday } from '../../day-plan/WirdTodayProvider'
 
 jest.mock('../../onboarding/OnboardingGate', () => ({
   ScreenContainer: ({ children, testID }: { children: ReactNode; testID: string }) => {
@@ -28,10 +29,15 @@ jest.mock('../../wird/WirdDayProvider', () => ({
   },
 }))
 jest.mock('../../wird/useWirdLevel', () => ({ useWirdLevel: jest.fn() }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: jest.fn() }))
 
 const mockedUseWirdLevel = useWirdLevel as jest.MockedFunction<typeof useWirdLevel>
+const mockedUseWirdToday = useWirdToday as jest.MockedFunction<typeof useWirdToday>
 
 describe('HomeScreen', () => {
+  beforeEach(() => {
+    mockedUseWirdToday.mockReturnValue('2026-10-19')
+  })
   it('renders the selected level title and home shell', async () => {
     const persisted: PersistedOnboarding = {
       answers: {},
@@ -113,12 +119,16 @@ describe('HomeScreen', () => {
         isLoading: false,
       })
 
-      await render(<HomeScreen persisted={persistedAt(WIRD_LEVELS[0].id)} />)
+      mockedUseWirdToday.mockReturnValue('2026-10-19')
+      const { rerender } = await render(<HomeScreen persisted={persistedAt(WIRD_LEVELS[0].id)} />)
       expect(screen.getByTestId('provider-day')).toHaveTextContent('2026-10-19')
 
       await act(async () => {
         jest.advanceTimersByTime(60_000)
       })
+
+      mockedUseWirdToday.mockReturnValue('2026-10-20')
+      await rerender(<HomeScreen persisted={persistedAt(WIRD_LEVELS[0].id)} />)
 
       expect(screen.getByTestId('provider-day')).toHaveTextContent('2026-10-20')
     } finally {

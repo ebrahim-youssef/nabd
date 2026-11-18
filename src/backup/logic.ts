@@ -8,7 +8,7 @@ import { parseAnswers } from '../onboarding/logic'
 import { parseDefinition } from '../wird/logic'
 import type { BackupEnvelope, BackupRows, BackupTable, RestorePlan } from './types'
 
-export const BACKUP_FORMAT_VERSION = 1
+export const BACKUP_FORMAT_VERSION = 2
 export const BACKUP_MAX_BYTES = 64 * 1024 * 1024 // Guards memory against a hostile file; decades of daily use stay well under it.
 
 const ONBOARDING_STATE_ID = 1
@@ -25,6 +25,7 @@ export const BACKUP_TABLES = [
   'qada_events',
   'adhkar_flow_progress',
   'app_preferences',
+  'wird_actions',
 ] as const satisfies readonly BackupTable[]
 
 export function conflictTableFrom(error: string): BackupTable | undefined {
@@ -39,6 +40,7 @@ const PRIMARY_KEYS: Record<BackupTable, string> = {
   qada_events: 'id',
   adhkar_flow_progress: 'category_id',
   app_preferences: 'key',
+  wird_actions: 'action_id',
 }
 
 const COLUMNS: Record<BackupTable, readonly string[]> = {
@@ -55,6 +57,7 @@ const COLUMNS: Record<BackupTable, readonly string[]> = {
   qada_events: ['id', 'prayer_id', 'delta', 'at'],
   adhkar_flow_progress: ['category_id', 'day', 'index', 'count', 'finished'],
   app_preferences: ['key', 'value', 'updated_at'],
+  wird_actions: ['action_id', 'item_id', 'day', 'version_id', 'done', 'outcome', 'at'],
 }
 
 type RecordValue = Record<string, unknown>
@@ -148,6 +151,17 @@ function isValidRow(table: BackupTable, row: RecordValue): boolean {
       isSqliteFlag(row.finished)
     )
   }
+  if (table === 'wird_actions') {
+    return (
+      isNonEmptyString(row.action_id) &&
+      isNonEmptyString(row.item_id) &&
+      isDayId(row.day as string) &&
+      isNonEmptyString(row.version_id) &&
+      isSqliteFlag(row.done) &&
+      ['applied', 'unchanged', 'stale'].includes(String(row.outcome)) &&
+      isInteger(row.at)
+    )
+  }
   return isNonEmptyString(row.key) && isNonEmptyString(row.value) && isInteger(row.updated_at)
 }
 
@@ -221,10 +235,14 @@ export function parseBackup(text: string): Result<BackupEnvelope> {
   if (!hasExactKeys(parsed, ['formatVersion', 'schemaVersion', 'exportedAt', 'data'])) {
     return { ok: false, error: 'invalid_envelope_shape' }
   }
-  if (parsed.formatVersion !== BACKUP_FORMAT_VERSION) {
+  if (parsed.formatVersion !== 1 && parsed.formatVersion !== BACKUP_FORMAT_VERSION) {
     return { ok: false, error: 'unknown_format_version' }
   }
-  if (parsed.schemaVersion !== CURRENT_SCHEMA_VERSION) {
+  const isLegacyFormat = parsed.formatVersion === 1
+  if (
+    parsed.schemaVersion !== CURRENT_SCHEMA_VERSION &&
+    !(isLegacyFormat && parsed.schemaVersion === CURRENT_SCHEMA_VERSION - 1)
+  ) {
     return {
       ok: false,
       error:
@@ -237,17 +255,21 @@ export function parseBackup(text: string): Result<BackupEnvelope> {
   if (!isRecord(parsed.data)) return { ok: false, error: 'invalid_data' }
   if (hasForbiddenKey(parsed.data)) return { ok: false, error: 'prototype_pollution_key' }
 
+  const expectedTables = isLegacyFormat
+    ? BACKUP_TABLES.filter((table) => table !== 'wird_actions')
+    : BACKUP_TABLES
   const unknownTable = Object.keys(parsed.data).some(
-    (key) => !BACKUP_TABLES.includes(key as BackupTable),
+    (key) => !(expectedTables as readonly string[]).includes(key),
   )
   if (unknownTable) return { ok: false, error: 'unknown_table' }
 
-  const validated = validateRows(parsed.data)
+  const normalizedData = isLegacyFormat ? { ...parsed.data, wird_actions: [] } : parsed.data
+  const validated = validateRows(normalizedData)
   if (!validated.ok) return validated
   return {
     ok: true,
     value: {
-      formatVersion: BACKUP_FORMAT_VERSION,
+      formatVersion: parsed.formatVersion,
       schemaVersion: CURRENT_SCHEMA_VERSION,
       exportedAt: parsed.exportedAt,
       data: validated.value,
@@ -300,12 +322,18 @@ function emptyRows(): BackupRows {
     qada_events: [],
     adhkar_flow_progress: [],
     app_preferences: [],
+    wird_actions: [],
   }
 }
 
 export function planRestore(backup: BackupEnvelope, deviceRows: BackupRows): Result<RestorePlan> {
   const inserts = emptyRows()
-  const appendOnlyTables: readonly BackupTable[] = ['wird_versions', 'wird_entries', 'qada_events']
+  const appendOnlyTables: readonly BackupTable[] = [
+    'wird_versions',
+    'wird_entries',
+    'wird_actions',
+    'qada_events',
+  ]
   for (const table of appendOnlyTables) {
     const planned = appendOnlyInserts(
       table,

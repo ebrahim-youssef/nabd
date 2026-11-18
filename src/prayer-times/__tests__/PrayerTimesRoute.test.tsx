@@ -67,6 +67,7 @@ function makeLocationView(overrides: Partial<LocationCapabilityView> = {}): Loca
     permission: 'granted',
     status: readyStatus,
     coordinates: { latitude: 30.0444, longitude: 31.2357 },
+    hasReadCache: true,
     isRefreshing: false,
     refresh: jest.fn(async () => undefined),
     runAction: jest.fn(async () => undefined),

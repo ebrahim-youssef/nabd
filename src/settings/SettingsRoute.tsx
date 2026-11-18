@@ -1,6 +1,5 @@
 import type { CalculationMethodId } from '../prayer-times/logic'
 import { WIRD_LEVELS } from '../content/levels'
-import { toDayId } from '../lib/day'
 import { CALCULATION_METHODS, DEFAULT_METHOD_ID } from '../prayer-times/logic'
 import { shellCopy } from '../shell/copy'
 import { SETTINGS_COPY } from './copy'
@@ -32,9 +31,11 @@ import {
 import { NATIVE_SETTINGS_COPY } from './constants'
 import { BatterySection } from './BatterySection'
 import { CountdownToggle } from './CountdownToggle'
+import { useRefreshWirdDay, useWirdToday } from '../day-plan/WirdTodayProvider'
 import { LocationSection } from './LocationSection'
 import { SoundPreviewSection } from './SoundPreviewSection'
 import { useWirdLevel } from '../wird/useWirdLevel'
+import type { DayId } from '../wird/types'
 import { BackupSection } from '../backup/BackupSection'
 
 type SettingsState = {
@@ -110,11 +111,13 @@ function ActionButton({
 }
 
 export function SettingsRoute() {
+  const today = useWirdToday()
   const [refreshKey, setRefreshKey] = useState(0)
 
   return (
     <SettingsContent
       key={refreshKey}
+      today={today}
       onRestored={() => {
         requestPrayerReschedule()
         setRefreshKey((current) => current + 1)
@@ -123,13 +126,14 @@ export function SettingsRoute() {
   )
 }
 
-function SettingsContent({ onRestored }: { onRestored: () => void }) {
+function SettingsContent({ onRestored, today }: { onRestored: () => void; today: DayId }) {
   const database = useSQLiteContext()
   const router = useRouter()
   const { setColorScheme } = useColorScheme()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
   const { currentLevelId, canChangeLevel, changeLevel, isLoading: isLevelLoading } = useWirdLevel()
   const notificationSettings = useNotificationSettings()
+  const refreshWirdDay = useRefreshWirdDay()
   const prayerAlarmSyncOutcome = useSyncExternalStore(
     subscribePrayerAlarmSyncOutcome,
     getPrayerAlarmSyncOutcome,
@@ -180,6 +184,7 @@ function SettingsContent({ onRestored }: { onRestored: () => void }) {
     setState((previous) => ({ ...previous, methodId }))
     try {
       await writePreference(PREFERENCE_KEYS.calculationMethod, methodId, updatedAt)
+      refreshWirdDay()
       requestPrayerReschedule()
     } catch (cause: unknown) {
       logger.error('Native prayer calculation method write failed', cause, {
@@ -447,7 +452,7 @@ function SettingsContent({ onRestored }: { onRestored: () => void }) {
                 description={level.description}
                 selected={!isLevelLoading && canChangeLevel && currentLevelId === level.id}
                 disabled={isLevelLoading || !canChangeLevel}
-                onPress={() => void changeLevel(level.id, toDayId(new Date()), Date.now())}
+                onPress={() => void changeLevel(level.id, today, Date.now())}
                 testID={`level-${level.id}`}
               />
             ))}

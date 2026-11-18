@@ -1,44 +1,18 @@
 import { WIRD_LEVELS } from '../content/levels'
 import { nextDay } from '../lib/day'
 import { versionInForce } from '../lib/wird'
+import { asEntry, asVersion, setItemStateInTransaction } from '../db/wirdState'
+import type { EntryRow, VersionRow } from '../db/wirdState'
 import { sameDefinition } from './logic'
-import type { WirdRepository } from '../db/contracts'
+import type { SetItemStateInput, SetItemStateOutcome, WirdRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
 import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 import { planVersionHealing } from './logic'
 
-type VersionRow = {
-  id: string
-  effective_from: string
-  definition_json: string
-  created_at: number
-}
-type EntryRow = {
-  id: string
-  day: string
-  version_id: string
-  item_id: string
-  done: number
-  at: number
-}
 // Keep a healed version just above the version it heals so later explicit choices still win.
 const HEALED_VERSION_CREATED_AT_OFFSET = 1
-const asVersion = (row: VersionRow): WirdVersion => ({
-  id: row.id,
-  effectiveFrom: row.effective_from,
-  definition: JSON.parse(row.definition_json) as WirdDefinition,
-  createdAt: row.created_at,
-})
-const asEntry = (row: EntryRow): WirdEntry => ({
-  id: row.id,
-  day: row.day,
-  versionId: row.version_id,
-  itemId: row.item_id,
-  done: row.done === 1,
-  at: row.at,
-})
 
 export type HealVersionInput = {
   today: DayId
@@ -80,27 +54,19 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
       return { ok: false, error: 'add_version_failed' }
     }
   }
-  async function appendEntry(
-    day: DayId,
-    versionId: string,
-    itemId: string,
-    done: boolean,
-    at: number,
-  ): Promise<Result<WirdEntry>> {
+  async function setItemState(
+    input: SetItemStateInput,
+  ): Promise<Result<{ outcome: SetItemStateOutcome; entry: WirdEntry | null }>> {
     try {
-      const row = await database.getFirstAsync<EntryRow>(
-        `INSERT INTO wird_entries (id, day, version_id, item_id, done, at) VALUES (${SQLITE_ID}, ?, ?, ?, ?, ?) RETURNING id, day, version_id, item_id, done, at`,
-        day,
-        versionId,
-        itemId,
-        done ? 1 : 0,
-        at,
-      )
-      if (!row) throw new Error('missing entry')
-      return { ok: true, value: asEntry(row) }
+      let value: { outcome: SetItemStateOutcome; entry: WirdEntry | null } | undefined
+      await database.withExclusiveTransactionAsync(async (transaction) => {
+        value = await setItemStateInTransaction(transaction, input)
+      })
+      if (!value) throw new Error('wird state transaction returned no outcome')
+      return { ok: true, value }
     } catch (cause: unknown) {
-      logger.error('Native wird entry insert failed', cause)
-      return { ok: false, error: 'append_entry_failed' }
+      logger.error('Native wird state write failed', cause)
+      return { ok: false, error: 'set_item_state_failed' }
     }
   }
   async function healVersionFromLevels({ today }: HealVersionInput) {
@@ -128,7 +94,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
   return {
     listVersions,
     addVersion,
-    appendEntry,
+    setItemState,
     healVersionFromLevels,
     async getDayEntries(day) {
       return (

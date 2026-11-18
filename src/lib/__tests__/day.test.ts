@@ -38,6 +38,16 @@ describe('isDayId', () => {
     expect(isDayId('2026-7-14')).toBe(false)
     expect(isDayId('not-a-day')).toBe(false)
   })
+
+  it('rejects dates outside the calendar, including non-leap February 29', () => {
+    expect(isDayId('2026-00-10')).toBe(false)
+    expect(isDayId('2026-13-10')).toBe(false)
+    expect(isDayId('2026-04-31')).toBe(false)
+    expect(isDayId('2026-02-29')).toBe(false)
+    expect(isDayId('2024-02-29')).toBe(true)
+    expect(isDayId('2000-02-29')).toBe(true)
+    expect(isDayId('1900-02-29')).toBe(false)
+  })
 })
 
 describe('compareDayId', () => {

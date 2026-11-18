@@ -72,7 +72,8 @@ function valueOrThrow<T>(
 function assertEqual<T>(actual: T, expected: T, message: string): void {
   if (actual !== expected) {
     throw new Error(
-      `characterization assertion failed: ${message}; expected ${String(expected)}, got ${String(actual)}`,
+      `characterization assertion failed: ${message}; expected ${String(expected)}, ` +
+        `got ${String(actual)}`,
     )
   }
 }
@@ -95,23 +96,23 @@ export async function seedRepositoryCharacterization(
   )
 
   valueOrThrow(
-    await repositories.wird.appendEntry(
-      FIRST_DAY,
-      firstVersion.id,
-      'first-item',
-      true,
-      FIRST_CHECKED_AT,
-    ),
+    await repositories.wird.setItemState({
+      day: FIRST_DAY,
+      versionId: firstVersion.id,
+      itemId: 'first-item',
+      done: true,
+      at: FIRST_CHECKED_AT,
+    }),
     'checking the first version item',
   )
   valueOrThrow(
-    await repositories.wird.appendEntry(
-      FIRST_DAY,
-      firstVersion.id,
-      'first-item',
-      false,
-      FIRST_UNCHECKED_AT,
-    ),
+    await repositories.wird.setItemState({
+      day: FIRST_DAY,
+      versionId: firstVersion.id,
+      itemId: 'first-item',
+      done: false,
+      at: FIRST_UNCHECKED_AT,
+    }),
     'unchecking the first version item',
   )
   valueOrThrow(
@@ -124,23 +125,23 @@ export async function seedRepositoryCharacterization(
     'checking the second version item',
   )
   valueOrThrow(
-    await repositories.wird.appendEntry(
-      SECOND_DAY,
-      secondVersion.id,
-      'second-item',
-      false,
-      SECOND_UNCHECKED_AT,
-    ),
+    await repositories.wird.setItemState({
+      day: SECOND_DAY,
+      versionId: secondVersion.id,
+      itemId: 'second-item',
+      done: false,
+      at: SECOND_UNCHECKED_AT,
+    }),
     'unchecking the second version item',
   )
   valueOrThrow(
-    await repositories.wird.appendEntry(
-      SECOND_DAY,
-      secondVersion.id,
-      'second-item',
-      true,
-      SECOND_RECHECKED_AT,
-    ),
+    await repositories.wird.setItemState({
+      day: SECOND_DAY,
+      versionId: secondVersion.id,
+      itemId: 'second-item',
+      done: true,
+      at: SECOND_RECHECKED_AT,
+    }),
     'rechecking the second version item',
   )
   valueOrThrow(await repositories.qada.addQadaDebt(3, QADA_DEBT_AT), 'adding qada debt')

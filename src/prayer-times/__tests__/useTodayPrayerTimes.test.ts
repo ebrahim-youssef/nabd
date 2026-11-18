@@ -56,6 +56,7 @@ describe('useTodayPrayerTimes', () => {
       permission: 'granted',
       status: { state: 'ready', message: '', action: null },
       coordinates: { latitude: 30.0444, longitude: 31.2357 },
+      hasReadCache: true,
       isRefreshing: false,
       refresh: jest.fn(async () => undefined),
       runAction: jest.fn(async () => undefined),

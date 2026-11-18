@@ -7,10 +7,16 @@ import {
   waitFor,
 } from 'expo-router/testing-library'
 import { ExpoRoot } from 'expo-router/build/ExpoRoot'
+import type { ReactNode } from 'react'
 
 import { shellCopy } from '../shell/copy'
 
 import { NATIVE_SHELL_COPY } from '../shell/constants'
+
+jest.mock('../day-plan/WirdTodayProvider', () => ({
+  WirdTodayProvider: ({ children }: { children: ReactNode }) => children,
+  useWirdToday: () => '2026-09-14',
+}))
 
 const mockSQLiteState = {
   shouldFail: false,

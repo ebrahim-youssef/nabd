@@ -7,7 +7,7 @@ routine, track it, hold themselves accountable, and reflect on what they committ
 
 - Product: the Expo React Native app in the repository root.
 - Delivery: Android first, with platform-neutral boundaries for later iOS work.
-- Storage: device-local SQLite in `nabd-native.db`, schema version 4.
+- Storage: device-local SQLite in `nabd-native.db`, schema version 5.
 - Network: not required for the core product flow.
 - Identity: no sign-in or account.
 - Sync: no Supabase or cross-device sync. Google sign-in and Supabase sync were dropped by

@@ -46,6 +46,7 @@ const rows: BackupRows = {
     { category_id: 'morning', day: '2026-10-18', index: 2, count: 3, finished: 0 },
   ],
   app_preferences: [{ key: 'nabd:theme', value: 'light', updated_at: 1_700_000_000_000 }],
+  wird_actions: [],
 }
 
 const emptyRows: BackupRows = {
@@ -55,6 +56,7 @@ const emptyRows: BackupRows = {
   qada_events: [],
   adhkar_flow_progress: [],
   app_preferences: [],
+  wird_actions: [],
 }
 
 function validBackup(): BackupEnvelope {
@@ -81,6 +83,7 @@ describe('backup logic', () => {
       'qada_events',
       'adhkar_flow_progress',
       'app_preferences',
+      'wird_actions',
     ])
     expect(conflictTableFrom('restore_conflict:wird_versions:version-1')).toBe('wird_versions')
     expect(conflictTableFrom('invalid_error')).toBeUndefined()
@@ -129,6 +132,33 @@ describe('backup logic', () => {
     })
 
     expect(parseBackup(text)).toEqual({ ok: false, error: 'invalid_row:wird_entries' })
+  })
+
+  it.each([
+    ['onboarding_state', 'effective_from'],
+    ['wird_versions', 'effective_from'],
+    ['wird_entries', 'day'],
+    ['adhkar_flow_progress', 'day'],
+    ['wird_actions', 'day'],
+  ])('rejects an impossible calendar day in %s', (table, column) => {
+    const text = serializedBackup((value) => {
+      const data = value.data as Record<string, unknown>
+      const tableRows = data[table] as Record<string, unknown>[]
+      if (table === 'wird_actions') {
+        tableRows.push({
+          action_id: 'action-1',
+          item_id: 'item-1',
+          day: '2026-10-18',
+          version_id: 'version-1',
+          done: 1,
+          outcome: 'applied',
+          at: 1_700_000_000_000,
+        })
+      }
+      tableRows[0][column] = '2026-02-30'
+    })
+
+    expect(parseBackup(text)).toEqual({ ok: false, error: `invalid_row:${table}` })
   })
 
   it.each([
@@ -272,6 +302,7 @@ describe('backup logic', () => {
           qada_events: 1,
           adhkar_flow_progress: 1,
           app_preferences: 1,
+          wird_actions: 0,
         },
       },
     })
@@ -298,6 +329,7 @@ describe('backup logic', () => {
           qada_events: 0,
           adhkar_flow_progress: 0,
           app_preferences: 0,
+          wird_actions: 0,
         },
       },
     })

@@ -33,6 +33,7 @@ export type LocationCapabilityView = {
   permission: LocationPermission
   status: LocationStatus
   coordinates: { latitude: number; longitude: number } | null
+  hasReadCache: boolean
   isRefreshing: boolean
   refresh: (options?: LocationRefreshOptions) => Promise<void>
   runAction: (action?: LocationActionType) => Promise<void>
@@ -48,6 +49,7 @@ const INITIAL_SNAPSHOT: LocationCapabilitySnapshot = {
 type LocationCapabilityViewState = {
   snapshot: LocationCapabilitySnapshot
   coordinates: { latitude: number; longitude: number } | null
+  hasReadCache: boolean
   isRefreshing: boolean
 }
 
@@ -66,6 +68,7 @@ let forcedRefreshQueued = false
 const INITIAL_VIEW: LocationCapabilityViewState = {
   snapshot: INITIAL_SNAPSHOT,
   coordinates: null,
+  hasReadCache: false,
   isRefreshing: true,
 }
 
@@ -160,10 +163,15 @@ export function useLocationCapability(
   const actionPromiseRef = useRef<Promise<void> | null>(null)
 
   const commit = useCallback(
-    (snapshot: LocationCapabilitySnapshot, cached: CachedLocation | null) => {
+    (
+      snapshot: LocationCapabilitySnapshot,
+      cached: CachedLocation | null,
+      hasReadCache = viewRef.current.hasReadCache,
+    ) => {
       const next: LocationCapabilityViewState = {
         snapshot,
         coordinates: coordinatesFrom(cached),
+        hasReadCache,
         isRefreshing: viewRef.current.isRefreshing,
       }
       cachedLocationRef.current = cached
@@ -199,9 +207,14 @@ export function useLocationCapability(
         const observedAt = now()
         const cacheState = await repository.readLocationCacheState(observedAt)
         let cacheFresh = cacheState?.fresh ?? false
+        cached = cacheState
+        commit(
+          makeSnapshot(permission, 'unknown', cacheState, cacheFresh, connectivityRef.current),
+          cacheState,
+          true,
+        )
         const currentConnectivity = await refreshAndSet()
         connectivityRef.current = currentConnectivity
-        cached = cacheState
         commit(makeSnapshot(permission, 'unknown', cached, cacheFresh, currentConnectivity), cached)
         if (permission !== 'granted') return
 
@@ -234,6 +247,7 @@ export function useLocationCapability(
         commit(
           { ...currentSnapshot(viewRef.current.snapshot, connectivityRef.current), fix: 'error' },
           cachedLocationRef.current,
+          true,
         )
       } finally {
         setRefreshing(false)
@@ -331,6 +345,7 @@ export function useLocationCapability(
     permission: view.snapshot.permission,
     status,
     coordinates: view.coordinates,
+    hasReadCache: view.hasReadCache,
     isRefreshing: view.isRefreshing,
     refresh,
     runAction,

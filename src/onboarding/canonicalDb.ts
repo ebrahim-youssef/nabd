@@ -3,8 +3,8 @@ import type { Result } from '../lib/result'
 import type { WirdDefinition, WirdVersion } from '../wird/types'
 
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
-
-type Row = { id: string; effective_from: string; definition_json: string; created_at: number }
+import { asVersion } from '../db/wirdState'
+import type { VersionRow } from '../db/wirdState'
 
 export function createCanonicalOnboardingRepository(
   database: ProductDatabase,
@@ -35,19 +35,14 @@ export function createCanonicalOnboardingRepository(
             )?.count ?? 0) > 0
           )
             return
-          const row = await transaction.getFirstAsync<Row>(
+          const row = await transaction.getFirstAsync<VersionRow>(
             `INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (${SQLITE_ID}, ?, ?, ?) RETURNING id, effective_from, definition_json, created_at`,
             effectiveFrom,
             JSON.stringify(definition),
             createdAt,
           )
           if (!row) throw new Error('missing version')
-          value = {
-            id: row.id,
-            effectiveFrom: row.effective_from,
-            definition: JSON.parse(row.definition_json) as WirdDefinition,
-            createdAt: row.created_at,
-          }
+          value = asVersion(row)
         })
         return { ok: true, value }
       } catch {

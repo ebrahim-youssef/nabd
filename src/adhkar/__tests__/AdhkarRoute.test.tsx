@@ -36,6 +36,7 @@ jest.mock('../useAdhkarFlow', () => ({
     markedInWird: false,
   }),
 }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-09-20' }))
 
 describe('AdhkarRoute', () => {
   it('shows the adhkar library and morning flow', async () => {

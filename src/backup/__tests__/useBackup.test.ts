@@ -28,11 +28,13 @@ const emptyRows: BackupRows = {
   qada_events: [],
   adhkar_flow_progress: [],
   app_preferences: [],
+  wird_actions: [],
 }
 
 const backupRows: BackupRows = {
   ...emptyRows,
   app_preferences: [{ key: 'nabd:theme', value: 'dark', updated_at: 1_760_000_000_000 }],
+  wird_actions: [],
 }
 
 const backupText = serializeBackup(backupRows, '2026-10-18T10:00:00.000Z')
@@ -57,6 +59,7 @@ describe('useBackup', () => {
           qada_events: 0,
           adhkar_flow_progress: 0,
           app_preferences: 1,
+          wird_actions: 0,
         },
       }),
     }
@@ -109,6 +112,7 @@ describe('useBackup', () => {
           qada_events: 0,
           adhkar_flow_progress: 0,
           app_preferences: 1,
+          wird_actions: 0,
         },
       },
     })
@@ -184,6 +188,7 @@ describe('useBackup', () => {
         qada_events: 0,
         adhkar_flow_progress: 0,
         app_preferences: 1,
+        wird_actions: 0,
       },
     })
   })

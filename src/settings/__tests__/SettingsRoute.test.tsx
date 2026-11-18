@@ -14,8 +14,13 @@ import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/
 import { useWirdRepository } from '../../wird/useWirdRepository'
 
 const mockSetColorScheme = jest.fn()
+const mockRefreshWirdDay = jest.fn()
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({
+  useWirdToday: () => '2026-09-20',
+  useRefreshWirdDay: () => mockRefreshWirdDay,
+}))
 jest.mock('nativewind', () => ({ useColorScheme: () => ({ setColorScheme: mockSetColorScheme }) }))
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: jest.fn() }),
@@ -104,10 +109,11 @@ const backupCounts = {
   qada_events: 0,
   adhkar_flow_progress: 0,
   app_preferences: 1,
+  wird_actions: 0,
 }
 const backupPreview = {
   backup: {
-    formatVersion: 1 as const,
+    formatVersion: 2 as const,
     schemaVersion: 1,
     exportedAt: '2026-10-18T10:00:00.000Z',
     data: {
@@ -117,6 +123,7 @@ const backupPreview = {
       qada_events: [],
       adhkar_flow_progress: [],
       app_preferences: [],
+      wird_actions: [],
     },
   },
   counts: backupCounts,
@@ -190,7 +197,7 @@ describe('SettingsRoute', () => {
       getEntriesInRange: jest.fn(),
       getAllEntries: jest.fn(),
       addVersion: jest.fn(),
-      appendEntry: jest.fn(),
+      setItemState: jest.fn(),
       healVersionFromLevels: jest.fn(),
       setWirdLevel,
     })
@@ -269,6 +276,21 @@ describe('SettingsRoute', () => {
       ),
     )
     expect(requestPrayerReschedule).not.toHaveBeenCalled()
+  })
+
+  it('refreshes the wird-day preference after a successful method save', async () => {
+    const steps: string[] = []
+    writePreference.mockImplementation(async () => {
+      steps.push('saved')
+    })
+    mockRefreshWirdDay.mockImplementation(() => steps.push('refreshed'))
+    render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('method-egyptian')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('method-egyptian'))
+
+    await waitFor(() => expect(steps).toEqual(['saved', 'refreshed']))
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
   })
 
   it('remounts settings state after a successful backup restore', async () => {

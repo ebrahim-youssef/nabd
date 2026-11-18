@@ -19,9 +19,9 @@ export function useToggleItem(versionId: string | null, onRefresh?: () => void) 
     setHasError(false)
     try {
       const result = versionId
-        ? await repository.appendEntry(day, versionId, itemId, nextDone, Date.now())
+        ? await repository.setItemState({ day, versionId, itemId, done: nextDone, at: Date.now() })
         : { ok: false as const, error: 'version_not_found' }
-      if (!result.ok) setHasError(true)
+      if (!result.ok || result.value.outcome === 'stale') setHasError(true)
       else onRefresh?.()
     } catch (cause: unknown) {
       logger.error('Native wird item toggle failed', cause)

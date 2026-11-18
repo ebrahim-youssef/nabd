@@ -174,6 +174,7 @@ describe('native onboarding repository', () => {
   it.each([
     [{ ...input, selectedLevelId: 'not-a-level' }, 'Invalid'],
     [{ ...input, effectiveFrom: '2026-8-10' }, 'Invalid'],
+    [{ ...input, effectiveFrom: '2026-02-30' }, 'Invalid'],
     [{ ...input, completedAt: Number.NaN }, 'Invalid'],
     [{ ...input, versionId: '' }, 'Invalid'],
   ])('rejects invalid completion input', async (invalid, message) => {
