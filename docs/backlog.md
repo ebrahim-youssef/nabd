@@ -248,6 +248,7 @@ The SPA was deleted in NBD-107 and the root Next.js app in NBD-108 (tag `legacy-
 | NBD-112 | ✅ done | - | Lift `apps/native` to the repository root and remove the pnpm workspace (absorbs NBD-109) | The repository root is the Expo app with no `apps/` or `packages/` folder, the Expo export and local `build:apk` pass from the root, and the pre-push hook plus native-compile workflow use root app paths and the `android` working directory |
 | NBD-113 | ✅ done | [#265](https://github.com/ebrahim-youssef/nabd/issues/265) | Local Gradle release builds with upload-key signing, replacing EAS and the CI APK | `build:apk` produces an APK signed with the key from the owner's signing file, release builds fail without it, EAS and the CI APK workflow are gone |
 | NBD-114 | ⬜ todo | - | Maestro flows for the emulator checks | The scripted NBD-89a emulator rows run as Maestro flows |
+| NBD-115 | ⬜ todo | [#284](https://github.com/ebrahim-youssef/nabd/issues/284) | Redesign 1.1.0: wird day from Fajr to Fajr, Home and Today rebuilt, adhan "I prayed" action, home-screen widget, new design system with the Thmanyah fonts | Home shows the current block and the next event for the wird day that starts at Fajr, a tick from the notification or the widget lands once on the right day, and no trace of the old design system remains |
 
 Amended 2026-10-17: the planned order was NBD-110a, NBD-106, NBD-107, the parity tickets (NBD-98 to
 NBD-105, NBD-91), NBD-113, NBD-89a re-run, NBD-108, NBD-111, NBD-112, NBD-110b to
