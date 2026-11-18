@@ -1,7 +1,6 @@
 import type { LevelId } from '../content/levels'
 import type { Answers } from './types'
 import { WIRD_LEVELS } from '../content/levels'
-import { toDayId } from '../lib/day'
 import { COPY as SHARED_COPY, QUESTIONS } from './copy'
 import { isComplete, levelById, recommendLevel } from './logic'
 import { useSQLiteContext } from 'expo-sqlite'
@@ -29,6 +28,7 @@ import { createOnboardingRepository, type PersistedOnboarding } from './db'
 import { OnboardingButton } from './OnboardingButton'
 import { PermissionsStep } from './PermissionsStep'
 import { PowerStep } from './PowerStep'
+import { useWirdToday } from '../day-plan/WirdTodayProvider'
 
 type Screen = 'welcome' | 'questions' | 'level' | 'permissions' | 'power'
 type GateState =
@@ -68,6 +68,7 @@ function LoadingState() {
 }
 
 export function OnboardingGate({ now }: { now: () => Date }) {
+  const today = useWirdToday()
   const database = useSQLiteContext()
   const [gate, setGate] = useState<GateState>({ status: 'loading' })
   const [screen, setScreen] = useState<Screen>('welcome')
@@ -241,7 +242,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
     completionInFlight.current = true
     setSubmitting(true)
     const date = now()
-    const effectiveFrom = toDayId(date)
+    const effectiveFrom = today
     try {
       const persisted = await createOnboardingRepository(database).complete({
         answers,

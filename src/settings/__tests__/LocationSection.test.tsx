@@ -24,6 +24,7 @@ function locationView(
     permission: 'undetermined',
     status: { state, message, action },
     coordinates: null,
+    hasReadCache: true,
     isRefreshing: false,
     refresh,
     runAction,

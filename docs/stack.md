@@ -9,7 +9,7 @@
 | ------------------ | -------------------------------------------------------- | ------------------------------------------- |
 | Application        | Expo SDK `~57.0.24` and React Native `0.86.3`            | `package.json`                              |
 | Routing            | Expo Router `~57.0.22`                                   | `package.json`, `app`                       |
-| Persistence        | `expo-sqlite ~57.0.3`, database schema version 4         | `package.json`, `src/db/database.ts`        |
+| Persistence        | `expo-sqlite ~57.0.3`, database schema version 5         | `package.json`, `src/db/database.ts`        |
 | Styling            | NativeWind `^4.2.6` with Tailwind `^3.4.19`              | `package.json`, `tailwind.config.cjs`       |
 | Notifications      | `expo-notifications ~57.0.21`                            | `package.json`                              |
 | Location           | `expo-location ~57.0.20`                                 | `package.json`                              |

@@ -9,6 +9,7 @@ import { createDeviceRepository } from '../db'
 import { devicePlatform } from '../platform'
 import { useLocationCapability } from '../useLocationCapability'
 import { requestPrayerReschedule } from '../prayerAlarms'
+import { logger } from '../../observability/logger'
 
 jest.mock('@react-native-community/netinfo', () => ({
   __esModule: true,
@@ -186,6 +187,50 @@ describe('useLocationCapability', () => {
     expect(result.current.coordinates).toEqual({ latitude: 30, longitude: 31 })
   })
 
+  it('reports cache readiness while the GPS fix is still pending', async () => {
+    let resolveCache: ((cache: TestCacheState | null) => void) | undefined
+    repository.readLocationCacheState.mockReturnValue(
+      new Promise((resolve) => {
+        resolveCache = resolve
+      }),
+    )
+    let resolvePosition: ((position: unknown) => void) | undefined
+    mockedLocation.getCurrentPositionAsync.mockReturnValue(
+      new Promise((resolve) => {
+        resolvePosition = resolve
+      }) as never,
+    )
+    const { result } = renderLocation()
+
+    expect(result.current.hasReadCache).toBe(false)
+    await waitFor(() => expect(repository.readLocationCacheState).toHaveBeenCalledTimes(1))
+    await act(async () => resolveCache?.(null))
+    await waitFor(() => expect(result.current.hasReadCache).toBe(true))
+    await waitFor(() => expect(mockedLocation.getCurrentPositionAsync).toHaveBeenCalledTimes(1))
+    expect(result.current.isRefreshing).toBe(true)
+
+    await act(async () => resolvePosition?.({ coords: { latitude: 30.04, longitude: 31.24 } }))
+    await waitFor(() => expect(result.current.isRefreshing).toBe(false))
+  })
+
+  it.each(['permission', 'cache'] as const)(
+    'marks the cache read complete when the %s read rejects',
+    async (failedRead) => {
+      jest.spyOn(logger, 'error').mockImplementation(() => undefined)
+      if (failedRead === 'permission') {
+        mockedLocation.getForegroundPermissionsAsync.mockRejectedValueOnce(
+          new Error('permission read failed'),
+        )
+      } else {
+        repository.readLocationCacheState.mockRejectedValueOnce(new Error('cache read failed'))
+      }
+      const { result } = renderLocation()
+
+      await waitFor(() => expect(result.current.hasReadCache).toBe(true))
+      await waitFor(() => expect(result.current.isRefreshing).toBe(false))
+    },
+  )
+
   it.each([
     [
       'stale',
@@ -262,6 +307,53 @@ describe('useLocationCapability', () => {
       await Promise.all([first, second])
     })
     await waitFor(() => expect(result.current.status.state).toBe('ready'))
+  })
+
+  it('queues one cache reread when an unforced refresh arrives during an in-flight read', async () => {
+    const initialCache: TestCacheState = {
+      latitude: 30,
+      longitude: 31,
+      recordedAt: NOW - 1_000,
+      fresh: true,
+    }
+    let latestCache: TestCacheState = initialCache
+    let resolveInitialRead: ((cache: TestCacheState | null) => void) | undefined
+    repository.readLocationCacheState
+      .mockImplementationOnce(
+        () =>
+          new Promise<TestCacheState | null>((resolve) => {
+            resolveInitialRead = resolve
+          }),
+      )
+      .mockImplementation(async () => latestCache)
+    const { result } = renderLocation()
+
+    await waitFor(() => expect(repository.readLocationCacheState).toHaveBeenCalledTimes(1))
+    let firstRefresh!: Promise<void>
+    let secondRefresh!: Promise<void>
+    let thirdRefresh!: Promise<void>
+    act(() => {
+      firstRefresh = result.current.refresh({ force: false })
+      secondRefresh = result.current.refresh({ force: false })
+      thirdRefresh = result.current.refresh({ force: false })
+    })
+    expect(firstRefresh).toBe(secondRefresh)
+    expect(secondRefresh).toBe(thirdRefresh)
+
+    await act(async () => {
+      latestCache = {
+        latitude: 25,
+        longitude: 55,
+        recordedAt: NOW,
+        fresh: true,
+      }
+      resolveInitialRead?.(initialCache)
+      await firstRefresh
+    })
+
+    expect(repository.readLocationCacheState).toHaveBeenCalledTimes(2)
+    expect(result.current.coordinates).toEqual({ latitude: 25, longitude: 55 })
+    expect(mockedLocation.getCurrentPositionAsync).not.toHaveBeenCalled()
   })
 
   it('updates coordinates and prayer times in other mounted consumers after a location refresh', async () => {

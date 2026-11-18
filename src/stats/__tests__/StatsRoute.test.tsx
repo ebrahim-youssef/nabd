@@ -9,6 +9,7 @@ import { createQadaRepository } from '../../qada/db'
 import { useWirdRepository } from '../../wird/useWirdRepository'
 import type { NativeWirdRepository } from '../../wird/db'
 import { ItemStatsSection } from '../ItemStatsSection'
+import { useWirdToday } from '../../day-plan/WirdTodayProvider'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('expo-router', () => ({
@@ -18,12 +19,14 @@ jest.mock('expo-router', () => ({
 jest.mock('lucide-react-native', () => ({ ArrowRight: () => null, ChevronDown: () => null }))
 jest.mock('../../wird/useWirdRepository', () => ({ useWirdRepository: jest.fn() }))
 jest.mock('../../qada/db', () => ({ createQadaRepository: jest.fn() }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: jest.fn() }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedUseWirdRepository = useWirdRepository as jest.MockedFunction<typeof useWirdRepository>
 const mockedCreateQadaRepository = createQadaRepository as jest.MockedFunction<
   typeof createQadaRepository
 >
+const mockedUseWirdToday = jest.mocked(useWirdToday)
 
 const definition = (includeSecond: boolean) => ({
   areas: [{ id: 'area', label: 'الأساس', order: 0 }],
@@ -55,7 +58,7 @@ function repository(): NativeWirdRepository {
     getEntriesInRange: jest.fn(async () => entries),
     getAllEntries: jest.fn(async () => entries),
     addVersion: jest.fn(),
-    appendEntry: jest.fn(),
+    setItemState: jest.fn(),
     healVersionFromLevels: jest.fn(),
     setWirdLevel: jest.fn(),
   }
@@ -66,6 +69,7 @@ describe('StatsRoute', () => {
     jest.clearAllMocks()
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-09-15T12:00:00.000Z'))
+    mockedUseWirdToday.mockReturnValue('2026-09-15')
     mockedUseSQLiteContext.mockReturnValue({} as ReturnType<typeof useSQLiteContext>)
     mockedUseWirdRepository.mockReturnValue(repository())
     mockedCreateQadaRepository.mockReturnValue({

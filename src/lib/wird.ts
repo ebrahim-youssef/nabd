@@ -25,7 +25,7 @@ export function latestStateByItem(entries: WirdEntry[]): Map<string, boolean> {
   const state = new Map<string, boolean>()
   for (const entry of entries) {
     const seen = latestAt.get(entry.itemId)
-    if (seen === undefined || entry.at > seen) {
+    if (seen === undefined || entry.at >= seen) {
       latestAt.set(entry.itemId, entry.at)
       state.set(entry.itemId, entry.done)
     }

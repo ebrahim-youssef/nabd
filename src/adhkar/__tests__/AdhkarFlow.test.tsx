@@ -16,6 +16,7 @@ const mockFlow = {
 jest.mock('../useAdhkarFlow', () => ({
   useAdhkarFlow: () => mockFlow,
 }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-09-20' }))
 
 jest.mock('lucide-react-native', () => ({
   ChevronDown: () => null,

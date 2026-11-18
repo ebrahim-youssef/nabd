@@ -16,11 +16,12 @@ const counts = {
   qada_events: 0,
   adhkar_flow_progress: 0,
   app_preferences: 2,
+  wird_actions: 0,
 }
 
 const preview = {
   backup: {
-    formatVersion: 1 as const,
+    formatVersion: 2 as const,
     schemaVersion: 1,
     exportedAt: '2026-10-18T10:00:00.000Z',
     data: {
@@ -30,6 +31,7 @@ const preview = {
       qada_events: [],
       adhkar_flow_progress: [],
       app_preferences: [],
+      wird_actions: [],
     },
   },
   counts,
@@ -37,7 +39,7 @@ const preview = {
 
 const emptyPreview = {
   ...preview,
-  counts: { ...counts, app_preferences: 0 },
+  counts: { ...counts, app_preferences: 0, wird_actions: 0 },
 }
 
 function state(overrides: Partial<ReturnType<typeof useBackup>> = {}) {

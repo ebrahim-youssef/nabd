@@ -4,6 +4,10 @@ import type { ChecklistAreaView, WirdEntry } from '../../wird/types'
 
 import { DailyAdhkarList } from '../DailyAdhkarList'
 
+let mockToday = '2026-09-20'
+
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => mockToday }))
+
 const mockChecklist = {
   isLoading: false,
   areas: [] as ChecklistAreaView[],
@@ -39,6 +43,7 @@ describe('DailyAdhkarList', () => {
   beforeEach(() => {
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
+    mockToday = '2026-09-20'
     mockChecklist.isLoading = false
     mockChecklist.areas = []
     mockChecklist.refresh.mockReset()
@@ -206,23 +211,28 @@ describe('DailyAdhkarList', () => {
     expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
   })
 
-  it('clears the day before ignoring a tap after midnight without writing the old day', async () => {
+  it('keeps the previous wird day after midnight and resets when it advances at Fajr', async () => {
     withDailyItems([
       {
         id: 'istighfar',
         label: 'الاستغفار',
         kind: 'counter',
-        target: 1,
+        target: 3,
         done: false,
       },
     ])
-    await render(<DailyAdhkarList />)
-    jest.setSystemTime(new Date('2026-09-21T12:00:00.000Z'))
-
+    const view = await render(<DailyAdhkarList />)
     await fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/١')
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/٣')
+    jest.setSystemTime(new Date('2026-09-20T22:00:00.000Z'))
+    view.rerender(<DailyAdhkarList />)
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/٣')
     expect(mockRepository.completeLinkedWirdItem).not.toHaveBeenCalled()
+
+    jest.setSystemTime(new Date('2026-09-21T02:00:00.000Z'))
+    mockToday = '2026-09-21'
+    view.rerender(<DailyAdhkarList />)
+    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/٣')
   })
 
   it('ignores a stale failure after reset and recount so the newer completion stays done', async () => {
@@ -296,12 +306,14 @@ describe('DailyAdhkarList', () => {
   })
 
   it('resets in-memory counts and refreshes the checklist after a new day gains focus', async () => {
-    await render(<DailyAdhkarList />)
+    const view = await render(<DailyAdhkarList />)
     const card = screen.getByTestId('adhkar-daily-card-istighfar')
     await fireEvent.press(card)
     expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١٠')
 
     jest.setSystemTime(new Date('2026-09-21T12:00:00.000Z'))
+    mockToday = '2026-09-21'
+    view.rerender(<DailyAdhkarList />)
     const focus = mockUseFocusEffect.mock.calls[0]?.[0] as () => undefined
     await act(async () => focus())
 

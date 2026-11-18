@@ -45,6 +45,17 @@ const rows: BackupRows = {
     { category_id: 'morning', day: '2026-10-18', index: 2, count: 3, finished: 0 },
   ],
   app_preferences: [{ key: 'nabd:theme', value: 'dark', updated_at: 1_760_000_000_000 }],
+  wird_actions: [
+    {
+      action_id: 'action-1',
+      item_id: 'item-1',
+      day: '2026-10-18',
+      version_id: 'version-1',
+      done: 1,
+      outcome: 'applied',
+      at: 1_760_000_000_000,
+    },
+  ],
 }
 
 function adapter(database: DatabaseSync, failInsert?: () => boolean): BackupDatabase {
@@ -85,7 +96,9 @@ function fresh() {
 async function seed(database: BackupDatabase, value: BackupRows): Promise<void> {
   for (const row of value.wird_versions) {
     await database.runAsync(
-      'INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (?, ?, ?, ?)',
+      `INSERT INTO wird_versions
+         (id, effective_from, definition_json, created_at)
+       VALUES (?, ?, ?, ?)`,
       row.id,
       row.effective_from,
       row.definition_json,
@@ -105,7 +118,9 @@ async function seed(database: BackupDatabase, value: BackupRows): Promise<void> 
   }
   for (const row of value.onboarding_state) {
     await database.runAsync(
-      'INSERT INTO onboarding_state (id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id) VALUES (?, ?, ?, ?, ?, ?)',
+      `INSERT INTO onboarding_state
+         (id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       row.id,
       row.answers_json,
       row.selected_level_id,
@@ -125,7 +140,9 @@ async function seed(database: BackupDatabase, value: BackupRows): Promise<void> 
   }
   for (const row of value.adhkar_flow_progress) {
     await database.runAsync(
-      'INSERT INTO adhkar_flow_progress (category_id, day, "index", count, finished) VALUES (?, ?, ?, ?, ?)',
+      `INSERT INTO adhkar_flow_progress
+         (category_id, day, "index", count, finished)
+       VALUES (?, ?, ?, ?, ?)`,
       row.category_id,
       row.day,
       row.index,
@@ -139,6 +156,20 @@ async function seed(database: BackupDatabase, value: BackupRows): Promise<void> 
       row.key,
       row.value,
       row.updated_at,
+    )
+  }
+  for (const row of value.wird_actions) {
+    await database.runAsync(
+      `INSERT INTO wird_actions
+         (action_id, item_id, day, version_id, done, outcome, at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      row.action_id,
+      row.item_id,
+      row.day,
+      row.version_id,
+      row.done,
+      row.outcome,
+      row.at,
     )
   }
 }
@@ -179,6 +210,7 @@ describe('backup SQLite repository', () => {
           qada_events: 1,
           adhkar_flow_progress: 1,
           app_preferences: 1,
+          wird_actions: 1,
         },
       })
       await expect(createBackupRepository(target.database).readSnapshot()).resolves.toEqual(
@@ -236,6 +268,7 @@ describe('backup SQLite repository', () => {
           qada_events: 1,
           adhkar_flow_progress: 0,
           app_preferences: 0,
+          wird_actions: 0,
         },
       })
       await expect(createBackupRepository(target.database).readSnapshot()).resolves.toEqual({
@@ -264,6 +297,7 @@ describe('backup SQLite repository', () => {
           qada_events: 0,
           adhkar_flow_progress: 0,
           app_preferences: 0,
+          wird_actions: 0,
         },
       })
     } finally {
@@ -311,11 +345,36 @@ describe('backup SQLite repository', () => {
         'qada_events',
         'adhkar_flow_progress',
         'app_preferences',
+        'wird_actions',
       ]) {
         expect(target.connection.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get()).toEqual({
           count: 0,
         })
       }
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts and restores a format-1 backup without an action table', async () => {
+    const target = await migratedDatabase()
+    try {
+      const legacy = JSON.parse(
+        serializeBackup({ ...rows, wird_actions: [] }, '2026-10-18T10:00:00.000Z'),
+      ) as { formatVersion: number; schemaVersion: number; data: Record<string, unknown> }
+      legacy.formatVersion = 1
+      legacy.schemaVersion = 4
+      delete legacy.data.wird_actions
+      const parsed = parseBackup(JSON.stringify(legacy))
+      expect(parsed).toMatchObject({ ok: true, value: { data: { wird_actions: [] } } })
+      if (!parsed.ok) throw new Error(parsed.error)
+      await expect(
+        createBackupRepository(target.database).restore(parsed.value),
+      ).resolves.toMatchObject({
+        ok: true,
+        value: { wird_actions: 0, wird_entries: 1 },
+      })
     } finally {
       target.connection.close()
       rmSync(target.directory, { recursive: true, force: true })

@@ -12,6 +12,7 @@ import { CountdownNotificationBootstrap } from '../src/device/useCountdownNotifi
 import { PrayerAlarmsBootstrap } from '../src/device/usePrayerAlarms'
 import { logger } from '../src/observability/logger'
 import { DatabaseError, DatabaseLoading } from '../src/shell/DatabaseStatus'
+import { WirdTodayProvider } from '../src/day-plan/WirdTodayProvider'
 
 I18nManager.allowRTL(true)
 I18nManager.forceRTL(true)
@@ -64,9 +65,11 @@ function RootLayout() {
         onError={handleOpenError}
         onInit={initializeDatabase}
       >
-        <PrayerAlarmsBootstrap />
-        <CountdownNotificationBootstrap />
-        <Stack screenOptions={{ headerShown: false }} />
+        <WirdTodayProvider>
+          <PrayerAlarmsBootstrap />
+          <CountdownNotificationBootstrap />
+          <Stack screenOptions={{ headerShown: false }} />
+        </WirdTodayProvider>
       </SQLiteProvider>
     </>
   )

@@ -1,4 +1,4 @@
-import { daysInRange, lastNDays, toDayId } from '../lib/day'
+import { daysInRange, lastNDays } from '../lib/day'
 import { qadaRemaining } from '../qada/logic'
 import { versionInForce } from '../lib/wird'
 import {
@@ -13,13 +13,14 @@ import type { QadaEvent, WirdRepository } from '../db/contracts'
 import type { AreaStat, DayCompletion, ItemStat, RangeSummary } from './types'
 import { useSQLiteContext } from 'expo-sqlite'
 import { Share } from 'react-native'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 
 import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
 import { logger } from '../observability/logger'
 import { createQadaRepository } from '../qada/db'
 import { useWirdRepository } from '../wird/useWirdRepository'
 import { earliestDay } from './logic'
+import { useWirdToday } from '../day-plan/WirdTodayProvider'
 
 export const STATS_WINDOW_DAYS = 30
 export const CHART_WINDOW_DAYS = 7
@@ -56,7 +57,7 @@ export function useStats(): {
   const database = useSQLiteContext()
   const wird = useWirdRepository()
   const qada = useMemo(() => createQadaRepository(database), [database])
-  const [today] = useState(() => toDayId(new Date()))
+  const today = useWirdToday()
   const days = useMemo(() => lastNDays(today, STATS_WINDOW_DAYS), [today])
   const chartDays = useMemo(() => lastNDays(today, CHART_WINDOW_DAYS), [today])
   const read = useCallback(async (): Promise<StatsProjection> => {

@@ -10,6 +10,7 @@ export const BACKUP_TABLE_LABELS: Record<BackupTable, string> = {
   qada_events: 'أحداث القضاء',
   adhkar_flow_progress: 'تقدّم الأذكار',
   app_preferences: 'التفضيلات',
+  wird_actions: 'سجل الإجراءات',
 }
 
 export const BACKUP_COPY = {

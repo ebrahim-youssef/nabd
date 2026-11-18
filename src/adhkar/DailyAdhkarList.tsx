@@ -1,5 +1,4 @@
 import { DAILY_ADHKAR_CATEGORY } from '../content/daily-adhkar'
-import { toDayId } from '../lib/day'
 import { toArabicIndic } from '../lib/format'
 import { COPY as ADHKAR_COPY } from './copy'
 import type { Dhikr } from '../content/adhkar'
@@ -15,20 +14,26 @@ import { useWirdChecklist } from '../wird/useWirdChecklist'
 import { createDhikrCompletionRepository } from '../counter/db'
 import { ADHKAR_NATIVE_COPY } from './copy'
 import { computeDailyItemState } from './logic'
+import { useWirdToday } from '../day-plan/WirdTodayProvider'
 
 type PendingAction = Promise<void>
 
 export function DailyAdhkarList() {
   const database = useSQLiteContext()
   const repository = useMemo(() => createDhikrCompletionRepository(database), [database])
-  const [day, setDay] = useState<DayId>(() => toDayId(new Date()))
-  const [counts, setCounts] = useState<Record<string, number>>({})
-  const [failedItems, setFailedItems] = useState<Record<string, boolean>>({})
+  const today = useWirdToday()
+  const [progress, setProgress] = useState<{
+    day: DayId
+    counts: Record<string, number>
+    failedItems: Record<string, boolean>
+  }>({ day: today, counts: {}, failedItems: {} })
+  const counts = progress.day === today ? progress.counts : {}
+  const failedItems = progress.day === today ? progress.failedItems : {}
   const countsRef = useRef<Record<string, number>>({})
-  const dayRef = useRef(day)
+  const dayRef = useRef(today)
   const attemptGenerations = useRef(new Map<string, number>())
   const pendingActions = useRef(new Map<string, PendingAction>())
-  const { areas, isLoading, refresh } = useWirdChecklist(day)
+  const { areas, isLoading, refresh } = useWirdChecklist(today)
   const checklistItems = useMemo(
     () => new Map(areas.flatMap((area) => area.items).map((item) => [item.id, item])),
     [areas],
@@ -37,45 +42,43 @@ export function DailyAdhkarList() {
   const switchDay = useCallback((nextDay: DayId) => {
     dayRef.current = nextDay
     countsRef.current = {}
-    setCounts({})
-    setFailedItems({})
+    setProgress({ day: nextDay, counts: {}, failedItems: {} })
     attemptGenerations.current.forEach((generation, itemId) => {
       attemptGenerations.current.set(itemId, generation + 1)
     })
-    setDay(nextDay)
   }, [])
 
   useFocusEffect(
     useCallback(() => {
-      const focusedDay = toDayId(new Date())
-      if (focusedDay !== day) {
+      const focusedDay = today
+      if (focusedDay !== dayRef.current) {
         switchDay(focusedDay)
       }
       refresh()
       return undefined
-    }, [day, refresh, switchDay]),
+    }, [refresh, switchDay, today]),
   )
 
-  const reset = useCallback((itemId: string) => {
-    const generation = attemptGenerations.current.get(itemId) ?? 0
-    attemptGenerations.current.set(itemId, generation + 1)
-    const next = { ...countsRef.current, [itemId]: 0 }
-    countsRef.current = next
-    setCounts(next)
-    setFailedItems((current) => {
-      if (!current[itemId]) return current
-      const nextFailures = { ...current }
-      delete nextFailures[itemId]
-      return nextFailures
-    })
-  }, [])
+  const reset = useCallback(
+    (itemId: string) => {
+      const generation = attemptGenerations.current.get(itemId) ?? 0
+      attemptGenerations.current.set(itemId, generation + 1)
+      const next = { ...countsRef.current, [itemId]: 0 }
+      countsRef.current = next
+      setProgress((current) => {
+        const nextFailures = { ...(current.day === today ? current.failedItems : {}) }
+        delete nextFailures[itemId]
+        return { day: today, counts: next, failedItems: nextFailures }
+      })
+    },
+    [today],
+  )
 
   const tap = useCallback(
     (item: Dhikr, checklistItem: ChecklistItemView | undefined) => {
       if (isLoading) return undefined
-      const tappedDay = toDayId(new Date())
-      if (tappedDay !== day) {
-        switchDay(tappedDay)
+      if (dayRef.current !== today) {
+        switchDay(today)
         return undefined
       }
       const current = computeDailyItemState(
@@ -89,7 +92,11 @@ export function DailyAdhkarList() {
       const count = Math.min(current.count + 1, current.target)
       const next = { ...countsRef.current, [item.id]: count }
       countsRef.current = next
-      setCounts(next)
+      setProgress((current) => ({
+        day: today,
+        counts: next,
+        failedItems: current.day === today ? current.failedItems : {},
+      }))
       if (count < current.target || !checklistItem) return undefined
 
       const rollbackCount = current.target - 1
@@ -98,26 +105,33 @@ export function DailyAdhkarList() {
       const markFailed = () => {
         if (
           (attemptGenerations.current.get(item.id) ?? 0) !== attemptGeneration ||
-          dayRef.current !== day
+          dayRef.current !== today
         )
           return
         const rolledBack = { ...countsRef.current, [item.id]: rollbackCount }
         countsRef.current = rolledBack
-        setCounts(rolledBack)
-        setFailedItems((currentFailures) => ({ ...currentFailures, [item.id]: true }))
+        setProgress((current) => ({
+          day: today,
+          counts: rolledBack,
+          failedItems: {
+            ...(current.day === today ? current.failedItems : {}),
+            [item.id]: true,
+          },
+        }))
       }
       const clearFailure = () => {
-        setFailedItems((currentFailures) => {
-          if (!currentFailures[item.id]) return currentFailures
+        setProgress((current) => {
+          const currentFailures = current.day === today ? current.failedItems : {}
+          if (!currentFailures[item.id]) return current
           const nextFailures = { ...currentFailures }
           delete nextFailures[item.id]
-          return nextFailures
+          return { day: today, counts: countsRef.current, failedItems: nextFailures }
         })
       }
 
       const previous = pendingActions.current.get(item.id) ?? Promise.resolve()
       const action = previous.then(async () => {
-        const result = await repository.completeLinkedWirdItem(day, item.id, Date.now())
+        const result = await repository.completeLinkedWirdItem(today, item.id, Date.now())
         if (result.ok) {
           clearFailure()
           refresh()
@@ -126,13 +140,16 @@ export function DailyAdhkarList() {
         markFailed()
         logger.error('Native daily adhkar completion was not saved', null, {
           itemId: item.id,
-          day,
+          day: today,
         })
       })
       const tracked = action
         .catch((cause: unknown) => {
           markFailed()
-          logger.error('Native daily adhkar tap failed', cause, { itemId: item.id, day })
+          logger.error('Native daily adhkar tap failed', cause, {
+            itemId: item.id,
+            day: today,
+          })
         })
         .finally(() => {
           if (pendingActions.current.get(item.id) === tracked)
@@ -141,7 +158,7 @@ export function DailyAdhkarList() {
       pendingActions.current.set(item.id, tracked)
       return tracked
     },
-    [day, isLoading, refresh, repository, switchDay],
+    [isLoading, refresh, repository, switchDay, today],
   )
 
   return (

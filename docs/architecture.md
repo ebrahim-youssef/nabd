@@ -71,7 +71,7 @@ repository.
 ## Persistence
 
 SQLite is the native source of truth. The database is `nabd-native.db`, opened and migrated by
-`src/db/database.ts`, currently at schema version 4. Feature repositories use
+`src/db/database.ts`, currently at schema version 5. Feature repositories use
 parameterized queries and preserve append-only history where the domain requires it. Persistent
 preferences use the `app_preferences` table. No Supabase client, remote sync, or authentication
 belongs in this architecture.

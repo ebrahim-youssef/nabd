@@ -9,11 +9,13 @@ import { Pressable, ScrollView, View } from 'react-native'
 import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
 import { Text } from '../shell/Text'
 import { useAdhkarFlow } from './useAdhkarFlow'
+import { useWirdToday } from '../day-plan/WirdTodayProvider'
 
 const PERCENTAGE_MAX = 100
 
 export function AdhkarFlow({ category }: { category: AdhkarCategory }) {
-  const { state, tap, restart, markedInWird } = useAdhkarFlow(category.id, category.items)
+  const day = useWirdToday()
+  const { state, tap, restart, markedInWird } = useAdhkarFlow(category.id, category.items, day)
   const theme = useThemeTokens()
 
   if (state.finished) {

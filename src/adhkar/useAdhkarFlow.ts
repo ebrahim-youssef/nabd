@@ -1,7 +1,6 @@
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { toDayId } from '../lib/day'
 import { INITIAL_FLOW, tap as tapFlow } from './logic'
 import type { Dhikr } from '../content/adhkar'
 import type { DayId } from '../wird/types'
@@ -13,7 +12,7 @@ import { normalizeFlowState } from './logic'
 export function useAdhkarFlow(
   categoryId: string,
   items: Dhikr[],
-  day: DayId = toDayId(new Date()),
+  day: DayId,
   now: () => number = Date.now,
 ) {
   const database = useSQLiteContext()

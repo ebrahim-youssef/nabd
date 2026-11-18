@@ -8,11 +8,14 @@ import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { logger } from '../../observability/logger'
 import { useToggleItem } from '../useToggleItem'
 import { useWirdChecklist } from '../useWirdChecklist'
+import { useWirdToday } from '../../day-plan/WirdTodayProvider'
 
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: jest.fn() }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
+const mockedUseWirdToday = jest.mocked(useWirdToday)
 const DAY = '2026-09-14'
 const VERSION_ID = 'version-1'
 const CREATED_AT = 100
@@ -135,6 +138,10 @@ function Harness({ day = DAY }: { day?: DayId }) {
 }
 
 describe('native wird hooks', () => {
+  beforeEach(() => {
+    mockedUseWirdToday.mockReturnValue(DAY)
+  })
+
   afterEach(() => {
     jest.restoreAllMocks()
   })
@@ -155,9 +162,7 @@ describe('native wird hooks', () => {
 
   it("heals tomorrow's version when viewing a past day", async () => {
     const tomorrow = '2026-09-16'
-    jest.spyOn(Date.prototype, 'getFullYear').mockReturnValue(2026)
-    jest.spyOn(Date.prototype, 'getMonth').mockReturnValue(8)
-    jest.spyOn(Date.prototype, 'getDate').mockReturnValue(15)
+    mockedUseWirdToday.mockReturnValue('2026-09-15')
     const { database, getHealedDays } = createDatabase({
       versionDefinition: CHANGED_DEFINITION,
     })

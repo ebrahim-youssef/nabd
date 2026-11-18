@@ -16,6 +16,7 @@ import type { OnboardingDatabase } from '../db'
 import { PowerStep } from '../PowerStep'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-08-10' }))
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 jest.mock('../../device/useBatteryOptimization', () => ({
   useBatteryOptimization: jest.fn(),
@@ -107,11 +108,12 @@ const RESTORE_COUNTS = {
   qada_events: 0,
   adhkar_flow_progress: 0,
   app_preferences: 0,
+  wird_actions: 0,
 }
 
 const RESTORE_PREVIEW = {
   backup: {
-    formatVersion: 1 as const,
+    formatVersion: 2 as const,
     schemaVersion: 1,
     exportedAt: '2026-10-18T10:00:00.000Z',
     data: {
@@ -121,6 +123,7 @@ const RESTORE_PREVIEW = {
       qada_events: [],
       adhkar_flow_progress: [],
       app_preferences: [],
+      wird_actions: [],
     },
   },
   counts: RESTORE_COUNTS,
@@ -170,6 +173,7 @@ describe('OnboardingGate', () => {
         action: null,
       },
       coordinates: { latitude: 30, longitude: 31 },
+      hasReadCache: true,
       isRefreshing: false,
       refresh: jest.fn(),
       runAction: jest.fn(),
