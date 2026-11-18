@@ -50,6 +50,16 @@ export function nextDay(day: DayId): DayId {
   return `${y}-${m}-${d}`
 }
 
+// The calendar day before `day`. Steps in UTC from the date parts, so it is DST-safe.
+export function previousDay(day: DayId): DayId {
+  const [year, month, dayOfMonth] = day.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, dayOfMonth) - MS_PER_DAY)
+  const y = date.getUTCFullYear()
+  const m = `${date.getUTCMonth() + 1}`.padStart(2, '0')
+  const d = `${date.getUTCDate()}`.padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
 // The `n` calendar days ending at `today`, oldest first (e.g. lastNDays('2026-07-14', 7) →
 // 2026-07-08 … 2026-07-14). Steps in UTC so it is DST-safe: it only counts calendar days, never
 // wall-clock hours.
