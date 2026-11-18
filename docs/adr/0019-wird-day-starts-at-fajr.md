@@ -18,8 +18,8 @@ wird day. The day is named by the calendar date on which its Fajr falls.
 
 - Fajr is computed with device local time and the saved location, the same calculation prayer
   times already use. There is no separate travel or timezone model in this release.
-- The last computed prayer times are cached per saved location. When a fresh calculation fails,
-  the cache is used.
+- The saved location is the last location fix the app already keeps in preferences, so prayer
+  times can always be computed from it, also offline. No separate prayer-times cache is kept.
 - When Fajr or Isha cannot be computed (high latitude) the day plan falls back to the no-times
   layout. When there is no saved location at all, the boundary is local midnight and Home shows the
   no-location state.

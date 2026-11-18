@@ -1,4 +1,14 @@
-import { compareDayId, daysInRange, isDayId, lastNDays, monthOf, toDayId, weekdayOf } from '../day'
+import {
+  compareDayId,
+  daysInRange,
+  isDayId,
+  lastNDays,
+  monthOf,
+  nextDay,
+  previousDay,
+  toDayId,
+  weekdayOf,
+} from '../day'
 
 describe('weekdayOf', () => {
   it('maps known dates to 0=Sunday … 6=Saturday', () => {
@@ -69,5 +79,13 @@ describe('daysInRange', () => {
   it('returns a single day when from === to, and [] for a reversed range', () => {
     expect(daysInRange('2026-07-14', '2026-07-14')).toEqual(['2026-07-14'])
     expect(daysInRange('2026-07-15', '2026-07-14')).toEqual([])
+  })
+})
+
+describe('calendar day stepping', () => {
+  it('steps backward and forward across month, year, and leap-day boundaries', () => {
+    expect(previousDay('2024-03-01')).toBe('2024-02-29')
+    expect(nextDay(previousDay('2027-01-01'))).toBe('2027-01-01')
+    expect(previousDay('2027-01-01')).toBe('2026-12-31')
   })
 })
