@@ -82,7 +82,8 @@ export function createAdhkarRepository(database: ProductDatabase): AdhkarReposit
       if (!itemId) return false
       try {
         const rows = await database.getAllAsync<EntryRow>(
-          'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day = ? AND item_id = ?',
+          'SELECT id, day, version_id, item_id, done, at FROM wird_entries ' +
+            'WHERE day = ? AND item_id = ? ORDER BY at, rowid',
           day,
           itemId,
         )

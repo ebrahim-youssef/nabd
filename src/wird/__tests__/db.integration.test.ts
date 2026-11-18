@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite'
 
 import { WIRD_LEVELS } from '../../content/levels'
 import { versionInForce } from '../../lib/wird'
+import { buildChecklist } from '../logic'
 
 import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
@@ -527,6 +528,45 @@ describe('native wird set-state writes', () => {
         }),
       ).resolves.toMatchObject({ ok: true, value: { outcome: 'unchanged', entry: null } })
       expect(entryRows(connection)).toHaveLength(1)
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('uses the last inserted tie in writes and checklist projection', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      const definition = WIRD_LEVELS[0].wird
+      const item = definition.items[0]
+      insertVersion(connection, VERSION_ID, TODAY, definition, CREATED_AT)
+      const repository = createWirdRepository(database)
+      const setItemState = (done: boolean) =>
+        repository.setItemState({
+          day: TODAY,
+          versionId: VERSION_ID,
+          itemId: item.id,
+          done,
+          at: CREATED_AT,
+        })
+
+      await expect(setItemState(true)).resolves.toMatchObject({
+        ok: true,
+        value: { outcome: 'applied' },
+      })
+      await expect(setItemState(false)).resolves.toMatchObject({
+        ok: true,
+        value: { outcome: 'applied' },
+      })
+      const nextOutcome = await setItemState(false)
+      const dayEntries = await repository.getDayEntries(TODAY)
+      const checklistItem = buildChecklist(definition, dayEntries, TODAY)
+        .flatMap((area) => area.items)
+        .find(({ id }) => id === item.id)
+
+      expect(nextOutcome).toMatchObject({ ok: true, value: { outcome: 'unchanged' } })
+      expect(checklistItem?.done).toBe(false)
     } finally {
       connection.close()
       rmSync(directory, { recursive: true, force: true })

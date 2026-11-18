@@ -19,7 +19,8 @@ const SELECT_ONBOARDING_STATE =
   'SELECT id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id FROM onboarding_state'
 const SELECT_WIRD_VERSIONS =
   'SELECT id, effective_from, definition_json, created_at FROM wird_versions'
-const SELECT_WIRD_ENTRIES = 'SELECT id, day, version_id, item_id, done, at FROM wird_entries'
+const SELECT_WIRD_ENTRIES =
+  'SELECT id, day, version_id, item_id, done, at FROM wird_entries ORDER BY at, rowid'
 const SELECT_QADA_EVENTS = 'SELECT id, prayer_id, delta, at FROM qada_events'
 const SELECT_ADHKAR_FLOW_PROGRESS =
   'SELECT category_id, day, "index", count, finished FROM adhkar_flow_progress'

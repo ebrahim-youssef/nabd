@@ -260,6 +260,16 @@ describe('itemStat (per-item history, NBD-47)', () => {
     })
   })
 
+  it('lets the last same-time entry determine the item day history', () => {
+    const fajr = item('fajr')
+    const versions = [ver('v1', '2026-07-01', [fajr])]
+    const rows = [entry('2026-07-01', 'fajr', true, 1), entry('2026-07-01', 'fajr', false, 1)]
+
+    expect(itemStat(versions, rows, fajr, ['2026-07-01'], '2026-07-01')).toMatchObject({
+      doneDays: 0,
+    })
+  })
+
   it('bridges an absence: dropping then re-adding an item never breaks its streak nor fabricates misses', () => {
     const asr = item('asr')
     const versions = [

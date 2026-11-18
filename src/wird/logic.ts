@@ -22,7 +22,7 @@ export function monthlyDoneDays(entries: WirdEntry[], itemId: string, month: str
   for (const entry of entries) {
     if (entry.itemId !== itemId || monthOf(entry.day) !== month) continue
     const seen = latestByDay.get(entry.day)
-    if (!seen || entry.at > seen.at) latestByDay.set(entry.day, { at: entry.at, done: entry.done })
+    if (!seen || entry.at >= seen.at) latestByDay.set(entry.day, { at: entry.at, done: entry.done })
   }
   let done = 0
   for (const state of latestByDay.values()) if (state.done) done += 1

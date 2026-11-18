@@ -137,7 +137,7 @@ function itemDoneByDay(entries: WirdEntry[], itemId: string): Map<DayId, boolean
   for (const entry of entries) {
     if (entry.itemId !== itemId) continue
     const seen = latestAt.get(entry.day)
-    if (seen === undefined || entry.at > seen) {
+    if (seen === undefined || entry.at >= seen) {
       latestAt.set(entry.day, entry.at)
       done.set(entry.day, entry.done)
     }

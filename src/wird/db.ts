@@ -99,7 +99,8 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
     async getDayEntries(day) {
       return (
         await database.getAllAsync<EntryRow>(
-          'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day = ?',
+          'SELECT id, day, version_id, item_id, done, at FROM wird_entries ' +
+            'WHERE day = ? ORDER BY at, rowid',
           day,
         )
       ).map(asEntry)
@@ -107,7 +108,8 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
     async getMonthEntries(month) {
       return (
         await database.getAllAsync<EntryRow>(
-          'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day LIKE ?',
+          'SELECT id, day, version_id, item_id, done, at FROM wird_entries ' +
+            'WHERE day LIKE ? ORDER BY at, rowid',
           `${month}-%`,
         )
       ).map(asEntry)
@@ -115,7 +117,8 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
     async getEntriesInRange(fromDay, toDay) {
       return (
         await database.getAllAsync<EntryRow>(
-          'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day BETWEEN ? AND ?',
+          'SELECT id, day, version_id, item_id, done, at FROM wird_entries ' +
+            'WHERE day BETWEEN ? AND ? ORDER BY at, rowid',
           fromDay,
           toDay,
         )
@@ -124,7 +127,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
     async getAllEntries() {
       return (
         await database.getAllAsync<EntryRow>(
-          'SELECT id, day, version_id, item_id, done, at FROM wird_entries',
+          'SELECT id, day, version_id, item_id, done, at FROM wird_entries ORDER BY at, rowid',
         )
       ).map(asEntry)
     },
