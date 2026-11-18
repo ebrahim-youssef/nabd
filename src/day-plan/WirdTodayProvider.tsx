@@ -33,6 +33,7 @@ export function WirdTodayProvider({ children }: { children: ReactNode }) {
   const database = useSQLiteContext()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
   const location = useLocationCapability()
+  const refreshLocation = location.refresh
   const [now, setNow] = useState(Date.now)
   const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
   const [hasLoadedMethod, setHasLoadedMethod] = useState(false)
@@ -64,7 +65,8 @@ export function WirdTodayProvider({ children }: { children: ReactNode }) {
   const refreshWirdDay = useCallback(() => {
     setNow(Date.now())
     refreshMethod()
-  }, [refreshMethod])
+    void refreshLocation({ force: false })
+  }, [refreshLocation, refreshMethod])
 
   useEffect(() => {
     const refreshNow = () => setNow(Date.now())

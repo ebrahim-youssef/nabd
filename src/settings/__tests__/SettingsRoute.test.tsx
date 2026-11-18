@@ -10,6 +10,7 @@ import { useNotificationSettings } from '../../device/useNotificationSettings'
 import { requestPrayerReschedule, setPrayerAlarmSyncOutcome } from '../../device/prayerAlarms'
 import { logger } from '../../observability/logger'
 import { useBackup, type BackupPreview } from '../../backup/useBackup'
+import type { BackupRestoreResult } from '../../backup/db'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
 import { useWirdRepository } from '../../wird/useWirdRepository'
 
@@ -128,11 +129,16 @@ const backupPreview = {
   },
   counts: backupCounts,
 } satisfies BackupPreview
-const confirmRestore = jest.fn(async () => ({ ok: true as const, value: backupCounts }))
+const confirmRestore = jest.fn<Promise<BackupRestoreResult | null>, []>(async () => ({
+  ok: true,
+  value: backupCounts,
+}))
 
 describe('SettingsRoute', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    mockRefreshWirdDay.mockReset()
+    confirmRestore.mockReset().mockResolvedValue({ ok: true, value: backupCounts })
     setPrayerAlarmSyncOutcome('ok')
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
@@ -304,7 +310,22 @@ describe('SettingsRoute', () => {
     await waitFor(() => expect(mockedUseNotificationSettings.mock.calls.length).toBeGreaterThan(1))
     await waitFor(() => expect(screen.getByTestId('settings-screen')).toBeTruthy())
     expect(confirmRestore).toHaveBeenCalledTimes(1)
+    expect(mockRefreshWirdDay).toHaveBeenCalledTimes(1)
     expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not refresh the provider after a failed backup restore', async () => {
+    confirmRestore.mockResolvedValueOnce({ ok: false, error: { reason: 'write_failed' } })
+    render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('backup-preview')).toBeTruthy())
+    await act(async () => {
+      await fireEvent.press(screen.getByTestId('backup-confirm'))
+    })
+
+    expect(confirmRestore).toHaveBeenCalledTimes(1)
+    expect(mockRefreshWirdDay).not.toHaveBeenCalled()
+    expect(requestPrayerReschedule).not.toHaveBeenCalled()
   })
 
   it('renders the notification controls in the settings section', async () => {

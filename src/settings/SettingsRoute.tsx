@@ -112,6 +112,7 @@ function ActionButton({
 
 export function SettingsRoute() {
   const today = useWirdToday()
+  const refreshWirdDay = useRefreshWirdDay()
   const [refreshKey, setRefreshKey] = useState(0)
 
   return (
@@ -119,6 +120,7 @@ export function SettingsRoute() {
       key={refreshKey}
       today={today}
       onRestored={() => {
+        refreshWirdDay()
         requestPrayerReschedule()
         setRefreshKey((current) => current + 1)
       }}

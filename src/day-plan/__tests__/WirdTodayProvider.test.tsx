@@ -17,6 +17,9 @@ import { resolveWirdDay } from '../logic'
 import { WirdTodayProvider, useRefreshWirdDay, useWirdToday } from '../WirdTodayProvider'
 
 const mockReadPreference = jest.fn<Promise<string | null>, [string]>(async () => null)
+const mockRefreshLocation = jest.fn<Promise<void>, [options?: { force?: boolean }]>(
+  async () => undefined,
+)
 let mockTimeChangeListener: (() => void) | undefined
 const MINUTE_MS = 60_000
 const READINESS_TIMEOUT_MS = 3_000
@@ -27,6 +30,7 @@ jest.mock('../../device/useLocationCapability', () => ({
   useLocationCapability: jest.fn(() => ({
     coordinates: { latitude: 30.04, longitude: 31.24 },
     hasReadCache: true,
+    refresh: mockRefreshLocation,
   })),
 }))
 jest.mock('../../device/exactAlarm', () => ({
@@ -58,7 +62,9 @@ describe('useWirdToday', () => {
     mockedUseLocationCapability.mockReturnValue({
       coordinates: { latitude: 30.04, longitude: 31.24 },
       hasReadCache: true,
-    } as ReturnType<typeof useLocationCapability>)
+      refresh: mockRefreshLocation,
+    } as unknown as ReturnType<typeof useLocationCapability>)
+    mockRefreshLocation.mockClear()
   })
 
   afterEach(() => {
@@ -71,7 +77,8 @@ describe('useWirdToday', () => {
     mockedUseLocationCapability.mockReturnValue({
       coordinates: null,
       hasReadCache: false,
-    } as ReturnType<typeof useLocationCapability>)
+      refresh: mockRefreshLocation,
+    } as unknown as ReturnType<typeof useLocationCapability>)
     let resolvePreference: (value: string | null) => void = () => undefined
     mockReadPreference.mockReturnValueOnce(
       new Promise((resolve) => {
@@ -96,7 +103,8 @@ describe('useWirdToday', () => {
     mockedUseLocationCapability.mockReturnValue({
       coordinates: { latitude: 30.04, longitude: 31.24 },
       hasReadCache: true,
-    } as ReturnType<typeof useLocationCapability>)
+      refresh: mockRefreshLocation,
+    } as unknown as ReturnType<typeof useLocationCapability>)
     await act(async () => {
       view.rerender(
         <WirdTodayProvider>
@@ -160,7 +168,8 @@ describe('useWirdToday', () => {
     mockedUseLocationCapability.mockReturnValue({
       coordinates: null,
       hasReadCache: true,
-    } as ReturnType<typeof useLocationCapability>)
+      refresh: mockRefreshLocation,
+    } as unknown as ReturnType<typeof useLocationCapability>)
     const now = new Date(2026, 5, 10, 23, 0).getTime()
     jest.setSystemTime(now)
     const { result } = renderHook(() => useWirdToday(), { wrapper })
@@ -181,7 +190,8 @@ describe('useWirdToday', () => {
     mockedUseLocationCapability.mockReturnValue({
       coordinates: null,
       hasReadCache: true,
-    } as ReturnType<typeof useLocationCapability>)
+      refresh: mockRefreshLocation,
+    } as unknown as ReturnType<typeof useLocationCapability>)
     const instant = new Date(2026, 5, 10, 1)
     jest.setSystemTime(instant)
     const { result } = renderHook(() => useWirdToday(), { wrapper })
@@ -202,7 +212,8 @@ describe('useWirdToday', () => {
     mockedUseLocationCapability.mockReturnValue({
       coordinates: null,
       hasReadCache: false,
-    } as ReturnType<typeof useLocationCapability>)
+      refresh: mockRefreshLocation,
+    } as unknown as ReturnType<typeof useLocationCapability>)
     render(
       <WirdTodayProvider>
         <WirdDayChild />
@@ -262,13 +273,14 @@ describe('useWirdToday', () => {
     expect(mockReadPreference).toHaveBeenCalledTimes(1)
   })
 
-  it('rereads the method preference when the provider refresh is requested', async () => {
+  it('rereads method and location settings when the provider refresh is requested', async () => {
     const { result } = renderHook(() => useRefreshWirdDay(), { wrapper })
     await waitFor(() => expect(result.current).toBeInstanceOf(Function))
     expect(mockReadPreference).toHaveBeenCalledTimes(1)
 
     await act(async () => result.current())
     await waitFor(() => expect(mockReadPreference).toHaveBeenCalledTimes(2))
+    expect(mockRefreshLocation).toHaveBeenCalledWith({ force: false })
   })
 
   it('rereads the method preference on app resume and time changes', async () => {
