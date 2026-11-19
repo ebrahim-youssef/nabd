@@ -11,6 +11,7 @@ type ChecklistRowProps = {
   onToggle: () => void
   testID?: string
   first?: boolean
+  muteDone?: boolean
 }
 
 export function ChecklistRow({
@@ -21,6 +22,7 @@ export function ChecklistRow({
   onToggle,
   testID,
   first = false,
+  muteDone = true,
 }: ChecklistRowProps) {
   const stateLabel = `${label}${optional ? '، تطوّع' : ''}، ${done ? 'تم' : 'لم يُسجَّل'}`
   return (
@@ -34,7 +36,11 @@ export function ChecklistRow({
     >
       <View className="flex-1 flex-row items-center">
         <View className="flex-1">
-          <Text className={`font-sans-medium text-row-label ${done ? 'text-mute' : 'text-ink'}`}>
+          <Text
+            className={`font-sans-medium text-row-label ${
+              done && muteDone ? 'text-mute' : 'text-ink'
+            }`}
+          >
             {label}
           </Text>
           {sub ? <Text className="font-sans text-caption text-mute">{sub}</Text> : null}
