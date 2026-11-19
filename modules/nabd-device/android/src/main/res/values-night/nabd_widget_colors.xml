@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <color name="nabd_widget_bg">#0D2527</color>
+  <color name="nabd_widget_ink">#F2E5C6</color>
+  <color name="nabd_widget_mute">#8DA19C</color>
+  <color name="nabd_widget_gold">#D9B25E</color>
+  <color name="nabd_widget_line">#24F2E5C6</color>
+  <color name="nabd_widget_tick">#0D2527</color>
+</resources>

@@ -10,6 +10,20 @@ const PERMISSIONS = [
 const PRAYER_ALARM_RECEIVER = 'expo.modules.nabddevice.PrayerAlarmReceiver'
 const PRAYER_ACTION_RECEIVER = 'expo.modules.nabddevice.PrayerActionReceiver'
 const SYSTEM_TIME_RECEIVER = 'expo.modules.nabddevice.SystemTimeReceiver'
+const WIDGET_BOUNDARY_RECEIVER = 'expo.modules.nabddevice.WidgetBoundaryReceiver'
+const WIDGET_PROVIDER_UPDATE = 'android.appwidget.action.APPWIDGET_UPDATE'
+const WIDGET_PROVIDERS = [
+  {
+    name: 'expo.modules.nabddevice.NabdLargeWidgetProvider',
+    label: '@string/nabd_widget_large_label',
+    resource: '@xml/nabd_widget_large_info',
+  },
+  {
+    name: 'expo.modules.nabddevice.NabdSmallWidgetProvider',
+    label: '@string/nabd_widget_small_label',
+    resource: '@xml/nabd_widget_small_info',
+  },
+]
 const SYSTEM_TIME_ACTIONS = [
   'android.intent.action.BOOT_COMPLETED',
   'android.intent.action.TIME_SET',
@@ -80,6 +94,44 @@ function applyManifest(androidManifest) {
   if (!target['intent-filter'].includes(filter)) target['intent-filter'].push(filter)
   if (!systemReceiver) receivers.push(target)
   application.receiver = receivers
+
+  const boundaryReceiver = receivers.find(
+    (receiver) => receiver.$?.['android:name'] === WIDGET_BOUNDARY_RECEIVER,
+  )
+  const boundaryTarget = boundaryReceiver ?? { $: { 'android:name': WIDGET_BOUNDARY_RECEIVER } }
+  boundaryTarget.$['android:exported'] = 'false'
+  if (!boundaryReceiver) receivers.push(boundaryTarget)
+
+  for (const widget of WIDGET_PROVIDERS) {
+    const existing = receivers.find((receiver) => receiver.$?.['android:name'] === widget.name)
+    const receiver = existing ?? { $: { 'android:name': widget.name } }
+    receiver.$['android:exported'] = 'true'
+    receiver.$['android:label'] = widget.label
+    receiver['intent-filter'] = receiver['intent-filter'] ?? []
+    const widgetFilter = receiver['intent-filter'].find((entry) =>
+      entry.action?.some((action) => action.$?.['android:name'] === WIDGET_PROVIDER_UPDATE),
+    ) ?? { action: [] }
+    widgetFilter.action = widgetFilter.action ?? []
+    if (
+      !widgetFilter.action.some((action) => action.$?.['android:name'] === WIDGET_PROVIDER_UPDATE)
+    ) {
+      widgetFilter.action.push({ $: { 'android:name': WIDGET_PROVIDER_UPDATE } })
+    }
+    if (!receiver['intent-filter'].includes(widgetFilter)) {
+      receiver['intent-filter'].push(widgetFilter)
+    }
+    receiver['meta-data'] = receiver['meta-data'] ?? []
+    const metadata = receiver['meta-data'].find(
+      (entry) => entry.$?.['android:name'] === 'android.appwidget.provider',
+    ) ?? { $: { 'android:name': 'android.appwidget.provider' } }
+    metadata.$['android:resource'] = widget.resource
+    if (!receiver['meta-data'].includes(metadata)) receiver['meta-data'].push(metadata)
+    if (!existing) receivers.push(receiver)
+  }
+  const widgetProviderNames = new Set(WIDGET_PROVIDERS.map(({ name }) => name))
+  application.provider = (application.provider ?? []).filter(
+    (provider) => !widgetProviderNames.has(provider.$?.['android:name']),
+  )
   return androidManifest
 }
 

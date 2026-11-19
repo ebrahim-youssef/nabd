@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app is Arabic only, so the widget is right-to-left whatever the launcher locale. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/nabd_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/nabd_widget_bg"
+    android:layoutDirection="rtl"
+    android:paddingStart="@dimen/nabd_widget_padding_horizontal"
+    android:paddingTop="@dimen/nabd_widget_padding_vertical"
+    android:paddingEnd="@dimen/nabd_widget_padding_horizontal"
+    android:paddingBottom="@dimen/nabd_widget_padding_vertical">
+
+  <LinearLayout
+      android:id="@+id/nabd_widget_content"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:gravity="center_vertical"
+      android:orientation="vertical">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+      <ImageView
+          android:id="@+id/nabd_widget_small_check"
+          android:layout_width="@dimen/nabd_widget_star"
+          android:layout_height="@dimen/nabd_widget_star"
+          android:importantForAccessibility="no"
+          android:src="@drawable/nabd_widget_star_off" />
+      <TextView
+          android:id="@+id/nabd_widget_small_title"
+          android:layout_width="0dp"
+          android:layout_height="wrap_content"
+          android:layout_marginStart="8dp"
+          android:layout_weight="1"
+          android:ellipsize="end"
+          android:maxLines="1"
+          android:text="الظهر"
+          android:textAlignment="viewStart"
+          android:textColor="@color/nabd_widget_ink"
+          android:textSize="16sp"
+          android:textStyle="bold" />
+    </LinearLayout>
+    <TextView
+        android:id="@+id/nabd_widget_small_next"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="العصر ٣:٢٠ م"
+        android:textAlignment="viewStart"
+        android:textColor="@color/nabd_widget_mute"
+        android:textSize="12sp" />
+  </LinearLayout>
+  <TextView
+      android:id="@+id/nabd_widget_message"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:gravity="center"
+      android:text="@string/nabd_widget_open_app"
+      android:textColor="@color/nabd_widget_ink"
+      android:textSize="15sp"
+      android:visibility="gone" />
+</FrameLayout>
