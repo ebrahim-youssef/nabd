@@ -19,7 +19,7 @@ export function AdhkarRoute({ initialCategoryId }: { initialCategoryId?: string 
   return (
     <ScreenContainer testID="adhkar-screen">
       <View className="gap-6">
-        <PageHeader backHref="/libraries" title={ADHKAR_COPY.libraryTitle} />
+        <PageHeader backHref="/more" title={ADHKAR_COPY.libraryTitle} />
         <View accessibilityRole="tablist" className="flex-row gap-2" testID="adhkar-tabs">
           {ADHKAR_LIBRARY.map((entry) => (
             <Pressable

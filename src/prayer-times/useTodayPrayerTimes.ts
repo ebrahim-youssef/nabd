@@ -104,6 +104,8 @@ export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesO
           : []),
       ]
     : []
+  const currentPoint = [...points].reverse().find((point) => point.at <= instant)
+  const nextPrayer = points.find((point) => point.id !== 'sunrise' && point.at > instant)
   const timeline = timelineStatus(points, instant)
   const prayerStatus = statusLine(timeline)
 
@@ -125,7 +127,11 @@ export function useTodayPrayerTimes({ now = Date.now, today }: TodayPrayerTimesO
   return {
     ...location,
     changeMethod,
+    currentPoint,
+    date,
+    instant,
     methodId,
+    nextPrayer,
     points,
     prayerStatus,
     times,

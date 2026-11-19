@@ -20,6 +20,16 @@ export const IQAMAH_OFFSET_MINUTES: Record<string, number> = {
 
 export const COPY = {
   pageTitle: 'مواقيت الصلاة',
+  methodTitle: 'طريقة حساب المواقيت',
+  methodExplanation: 'تتغيّر التنبيهات فورًا على الطريقة الجديدة.',
+  calculation: 'الحساب',
+  location: 'الموقع',
+  locationReady: 'تم تحديد الموقع.',
+  refreshLocation: 'تحديث الموقع',
+  locationPrivacy: 'يُحسب الأذان على جهازك ولا يغادر موقعك الجهاز أبدًا.',
+  now: 'الآن',
+  ready: 'جاهز. الأوقات تُحدَّث كل دقيقة.',
+  elapsed: (label: string, duration: string) => `مضى على ${label} ${duration}`,
   enableLocation: 'فعّل الموقع لعرض مواقيت الصلاة',
   locationDenied: 'تعذّر الوصول إلى الموقع — لن تظهر مواقيت الصلاة.',
   tomorrowFajr: 'الفجر غدًا',

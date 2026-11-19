@@ -35,7 +35,11 @@ jest.mock('../../device/prayerAlarms', () => ({
   requestPrayerReschedule: jest.fn(),
 }))
 jest.mock('../../backup/useBackup', () => ({ useBackup: jest.fn() }))
-jest.mock('lucide-react-native', () => ({ ArrowRight: () => null, Check: () => null }))
+jest.mock('lucide-react-native', () => ({
+  ArrowRight: () => null,
+  Check: () => null,
+  ChevronLeft: () => null,
+}))
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: {
     celebratedDay: 'nabd:celebrated-day',
@@ -224,12 +228,15 @@ describe('SettingsRoute', () => {
     )
     expect(screen.getByTestId('theme-dark').props.accessibilityState.selected).toBe(true)
     expect(screen.getByTestId('theme-system').props.accessibilityState.selected).toBe(false)
-    expect(screen.getByTestId('method-umm_al_qura').props.accessibilityState.selected).toBe(true)
+    expect(screen.getByTestId('settings-method-row')).toHaveTextContent('أم القرى (مكة المكرمة)', {
+      exact: false,
+    })
 
     fireEvent.press(screen.getByTestId('theme-light'))
     fireEvent.press(screen.getByTestId('theme-system'))
     fireEvent.press(screen.getByTestId('theme-dark'))
-    fireEvent.press(screen.getByTestId('method-egyptian'))
+    fireEvent.press(screen.getByTestId('settings-method-row'))
+    fireEvent.press(screen.getByRole('radio', { name: 'الهيئة المصرية العامة للمساحة' }))
     fireEvent.press(screen.getByTestId('level-level-2'))
 
     await waitFor(() => {
@@ -272,8 +279,9 @@ describe('SettingsRoute', () => {
     writePreference.mockRejectedValueOnce(cause)
     render(<SettingsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('method-egyptian')).toBeTruthy())
-    fireEvent.press(screen.getByTestId('method-egyptian'))
+    await waitFor(() => expect(screen.getByTestId('settings-method-row')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('settings-method-row'))
+    fireEvent.press(screen.getByRole('radio', { name: 'الهيئة المصرية العامة للمساحة' }))
 
     await waitFor(() =>
       expect(logger.error).toHaveBeenCalledWith(
@@ -313,8 +321,9 @@ describe('SettingsRoute', () => {
     mockRefreshWirdDay.mockImplementation(() => steps.push('refreshed'))
     render(<SettingsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('method-egyptian')).toBeTruthy())
-    fireEvent.press(screen.getByTestId('method-egyptian'))
+    await waitFor(() => expect(screen.getByTestId('settings-method-row')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('settings-method-row'))
+    fireEvent.press(screen.getByRole('radio', { name: 'الهيئة المصرية العامة للمساحة' }))
 
     await waitFor(() => expect(steps).toEqual(['saved', 'refreshed']))
     expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)

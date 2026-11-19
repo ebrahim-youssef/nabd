@@ -1,5 +1,5 @@
-import { LibrariesRoute as LibrariesScreen } from '../../src/shell/LibrariesRoute'
+import { Redirect } from 'expo-router'
 
 export default function LibrariesRoute() {
-  return <LibrariesScreen />
+  return <Redirect href="/more" />
 }
