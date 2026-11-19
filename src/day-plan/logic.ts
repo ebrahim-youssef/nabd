@@ -65,6 +65,7 @@ function itemView(item: WirdItem, states: Map<string, boolean>, label = item.lab
     optional: item.optional ?? false,
     kind: item.kind,
     target: item.target,
+    ...(item.minimum === undefined ? {} : { minimum: item.minimum }),
   }
 }
 

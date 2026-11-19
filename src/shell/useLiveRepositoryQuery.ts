@@ -6,12 +6,14 @@ import { logger } from '../observability/logger'
 type LiveRepositoryQueryState<T> = {
   data: T | undefined
   isLoading: boolean
+  hasError: boolean
   refresh: () => void
 }
 
 export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositoryQueryState<T> {
   const [data, setData] = useState<T>()
   const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
   const [refreshToken, setRefreshToken] = useState(0)
   const dataRef = useRef<T | undefined>(undefined)
   const cachedReadRef = useRef<(() => Promise<T>) | undefined>(undefined)
@@ -19,6 +21,7 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
 
   const refresh = useCallback(() => {
     if (dataRef.current === undefined) setIsLoading(true)
+    setHasError(false)
     setRefreshToken((current) => current + 1)
   }, [])
 
@@ -40,6 +43,7 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
       cachedReadRef.current = undefined
       setData(undefined)
       setIsLoading(true)
+      setHasError(false)
     }
     void Promise.resolve()
       .then(read)
@@ -49,12 +53,14 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
         cachedReadRef.current = read
         setData(nextData)
         setIsLoading(false)
+        setHasError(false)
       })
       .catch((cause: unknown) => {
         logger.error('Native repository query failed', cause)
         if (!active) return
         if (dataRef.current === undefined) setData(undefined)
         setIsLoading(false)
+        setHasError(true)
       })
 
     return () => {
@@ -62,5 +68,5 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
     }
   }, [read, refreshToken])
 
-  return { data, isLoading, refresh }
+  return { data, isLoading, hasError, refresh }
 }

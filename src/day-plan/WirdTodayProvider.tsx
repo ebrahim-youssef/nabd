@@ -40,6 +40,7 @@ export function WirdTodayProvider({ children }: { children: ReactNode }) {
   const [locationReadTimedOut, setLocationReadTimedOut] = useState(false)
   const [methodReadTimedOut, setMethodReadTimedOut] = useState(false)
   const isMounted = useRef(false)
+  const [hasBeenReady, setHasBeenReady] = useState(false)
 
   useEffect(() => {
     isMounted.current = true
@@ -133,7 +134,8 @@ export function WirdTodayProvider({ children }: { children: ReactNode }) {
 
   const isReady =
     (location.hasReadCache || locationReadTimedOut) && (hasLoadedMethod || methodReadTimedOut)
-  if (!isReady) return null
+  if (isReady && !hasBeenReady) setHasBeenReady(true)
+  if (!isReady && !hasBeenReady) return null
   return (
     <WirdTodayRefreshContext.Provider value={refreshWirdDay}>
       <WirdTodayContext.Provider value={day}>{children}</WirdTodayContext.Provider>

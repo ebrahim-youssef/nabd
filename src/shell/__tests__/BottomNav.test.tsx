@@ -1,16 +1,17 @@
-import { render, screen } from '@testing-library/react-native'
+import { fireEvent, render, screen } from '@testing-library/react-native'
 
 import { shellCopy } from '../copy'
 
 import { BottomNav } from '../BottomNav'
 
 const mockUsePathname = jest.fn(() => '/')
-const mockPush = jest.fn()
+const mockNavigate = jest.fn()
 
 jest.mock('expo-router', () => ({
   usePathname: () => mockUsePathname(),
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ navigate: mockNavigate }),
 }))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-11-19' }))
 
 jest.mock('lucide-react-native', () => ({
   BookOpen: () => null,
@@ -26,7 +27,7 @@ describe('BottomNav', () => {
 
   beforeEach(() => {
     mockUsePathname.mockReturnValue('/')
-    mockPush.mockReset()
+    mockNavigate.mockReset()
   })
 
   it('renders the four Arabic items in the new tab order', () => {
@@ -60,9 +61,19 @@ describe('BottomNav', () => {
     expect(screen.getByTestId('bottom-nav')).toBeTruthy()
   })
 
+  it('navigates the Today tab directly to the current wird day', () => {
+    renderBottomNav()
+
+    fireEvent.press(screen.getByTestId('nav-today'))
+
+    expect(mockNavigate).toHaveBeenCalledWith('/today/2026-11-19')
+  })
+
   it.each([
     ['/', 'nav-home'],
+    ['/today', 'nav-today'],
     ['/today/2026-11-19', 'nav-today'],
+    ['/adhkar', 'nav-adhkar'],
     ['/adhkar/morning', 'nav-adhkar'],
     ['/more', 'nav-more'],
     ['/prayer-times', 'nav-more'],

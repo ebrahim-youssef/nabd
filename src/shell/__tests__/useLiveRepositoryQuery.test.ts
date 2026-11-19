@@ -25,8 +25,10 @@ describe('useLiveRepositoryQuery', () => {
     const { result } = renderHook(() => useLiveRepositoryQuery(read))
 
     expect(result.current.isLoading).toBe(true)
+    expect(result.current.hasError).toBe(false)
     await waitFor(() => expect(result.current.data).toBe('first'))
     expect(result.current.isLoading).toBe(false)
+    expect(result.current.hasError).toBe(false)
   })
 
   it('clears cached data when a new read rejects', async () => {
@@ -46,6 +48,7 @@ describe('useLiveRepositoryQuery', () => {
     )
     expect(result.current.data).toBeUndefined()
     expect(result.current.isLoading).toBe(false)
+    expect(result.current.hasError).toBe(true)
   })
 
   it('reports loading until a new read resolves', async () => {
@@ -103,6 +106,19 @@ describe('useLiveRepositoryQuery', () => {
     )
     expect(result.current.data).toBe('first')
     expect(result.current.isLoading).toBe(false)
+    expect(result.current.hasError).toBe(true)
+  })
+
+  it('clears the read error after a successful retry', async () => {
+    const cause = new Error('read failed')
+    const read = jest.fn().mockRejectedValueOnce(cause).mockResolvedValueOnce('recovered')
+    const { result } = renderHook(() => useLiveRepositoryQuery(read))
+
+    await waitFor(() => expect(result.current.hasError).toBe(true))
+    act(() => result.current.refresh())
+    await waitFor(() => expect(result.current.data).toBe('recovered'))
+
+    expect(result.current.hasError).toBe(false)
   })
 
   it('re-reads the repository after a subsequent tab focus', async () => {
@@ -125,6 +141,7 @@ describe('useLiveRepositoryQuery', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.data).toBeUndefined()
+    expect(result.current.hasError).toBe(true)
     expect(mockedLogger.error).toHaveBeenCalledWith('Native repository query failed', cause)
   })
 

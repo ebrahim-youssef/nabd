@@ -20,6 +20,7 @@ export type DayPlanItem = {
   optional: boolean
   kind: WirdItemKind
   target?: number
+  minimum?: string
 }
 
 export type DayPlanBlock = {
