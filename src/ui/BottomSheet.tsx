@@ -7,7 +7,7 @@ type BottomSheetProps = {
   visible: boolean
   onClose: () => void
   title: string
-  explanation: string
+  explanation?: string
   children?: ReactNode
   footer?: ReactNode
 }
@@ -44,8 +44,10 @@ export function BottomSheet({
           <Text accessibilityRole="header" className="font-display text-sheet-title text-ink">
             {title}
           </Text>
-          <Text className="mt-0.5 font-sans text-meta text-mute">{explanation}</Text>
-          <ScrollView className="mt-3" keyboardShouldPersistTaps="handled">
+          {explanation ? (
+            <Text className="mt-0.5 font-sans text-meta text-mute">{explanation}</Text>
+          ) : null}
+          <ScrollView className={explanation ? 'mt-3' : 'mt-1'} keyboardShouldPersistTaps="handled">
             {children}
           </ScrollView>
           {footer ? <View className="mt-3">{footer}</View> : null}

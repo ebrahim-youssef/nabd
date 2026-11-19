@@ -16,15 +16,15 @@ export function PageHeader({ title, backHref }: { title: string; backHref: strin
       <Pressable
         accessibilityLabel={shellCopy.back}
         accessibilityRole="button"
-        className="size-9 items-center justify-center rounded-full border border-line bg-surface shadow-card"
+        className="size-9 items-center justify-center rounded-control border border-line bg-surface"
         onPress={() => (router.canGoBack() ? router.back() : router.replace(backHref))}
         testID="page-back"
       >
-        <ArrowRight accessible={false} color={theme.accent} size={ICON_SIZE} />
+        <ArrowRight accessible={false} color={theme.ink} size={ICON_SIZE} />
       </Pressable>
       <Text
         accessibilityRole="header"
-        className="font-display text-sheet-title text-start text-accent"
+        className="font-display text-screen-title text-start text-ink"
       >
         {title}
       </Text>

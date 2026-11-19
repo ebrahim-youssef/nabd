@@ -79,3 +79,21 @@ Design weight 600 uses the Bold file because no SemiBold file is licensed.
 | Hero       |   262 |
 
 Large text must remain usable at 130% and 200% text scaling.
+
+## Components
+
+- `SectionHeader({ title })` — labels a content section; `title`.
+- `ListGroup({ children })` — groups adjacent settings rows in one card; `children`.
+- `ListRow({ label, description?, value?, icon?, onPress?, disabled?, accessory?, current?, testID? })` — presents a setting or navigable row.
+- `SegmentedControl<T>({ options, value, onChange, accessibilityLabel })` — selects one value from a short set; `options`, `value`, `onChange`, `accessibilityLabel`.
+- `SwitchRow({ label, description?, value, onValueChange, disabled?, disabledReason? })` — toggles a preference with supporting text.
+- `OptionCard({ title, description?, selected, onPress, badge?, disabled? })` — selects a described option.
+- `Stepper({ label, value, onChange, min?, max, step? })` — adjusts a bounded number by steps or direct numeric entry.
+- `StatusCard({ tone, icon, message, detail?, action? })` — reports an inline status with an optional action.
+- `StateView({ kind, icon?, title?, body?, action? })` — presents empty, error, or loading content.
+- `ConfirmSheet({ visible, onClose, title, explanation, children?, confirmLabel, cancelLabel, onConfirm, confirmDisabled?, busy? })` — asks for confirmation in a bottom sheet.
+- `Accordion({ title, subtitle?, expanded, onToggle, children, testID? })` — reveals controlled supporting content.
+- `StatTile({ label, value, caption?, onPress? })` — displays one summary metric, optionally actionable.
+- `WeekBars({ days, summary })` — compares seven daily completion ratios with one accessible summary.
+- `AudioRow({ label, description, playing, onToggle })` — toggles playback for a named audio item.
+- `ToastProvider` and `useToast()` — show one temporary app-wide message with optional undo; `show({ message, onUndo? })`.
