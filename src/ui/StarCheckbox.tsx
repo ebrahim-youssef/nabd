@@ -1,4 +1,4 @@
-import { Pressable } from 'react-native'
+import { Pressable, View } from 'react-native'
 import Svg, { Path, Polygon } from 'react-native-svg'
 
 import { STAR_SIZE, useThemeColors } from '../../theme/tokens'
@@ -9,6 +9,7 @@ type StarCheckboxProps = {
   onChange: (checked: boolean) => void
   interactive?: boolean
   accessible?: boolean
+  testID?: string
 }
 
 const CHECK_PATH = 'M8.4 14.2 12 17.7 19.8 9.8'
@@ -19,9 +20,40 @@ export function StarCheckbox({
   onChange,
   interactive = true,
   accessible = true,
+  testID,
 }: StarCheckboxProps) {
   const theme = useThemeColors()
   const stateLabel = `${label}، ${checked ? 'تم' : 'لم يُسجَّل'}`
+  const star = (
+    <Svg accessible={false} height={STAR_SIZE} viewBox="0 0 28 28" width={STAR_SIZE}>
+      <Polygon
+        fill={checked ? theme.gold : 'none'}
+        points={starPoints()}
+        stroke={checked ? theme['gold-ink'] : theme.box}
+        strokeLinejoin="round"
+        strokeWidth={1.6}
+      />
+      {checked ? (
+        <Path
+          d={CHECK_PATH}
+          fill="none"
+          stroke={theme.tick}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2.2}
+        />
+      ) : null}
+    </Svg>
+  )
+
+  if (!interactive) {
+    return (
+      <View pointerEvents="none" testID={testID}>
+        {star}
+      </View>
+    )
+  }
+
   return (
     <Pressable
       accessible={accessible}
@@ -31,30 +63,13 @@ export function StarCheckbox({
       accessibilityLabel={stateLabel}
       accessibilityRole={accessible ? 'checkbox' : undefined}
       accessibilityState={{ checked }}
-      onPress={interactive ? () => onChange(!checked) : undefined}
+      onPress={() => onChange(!checked)}
+      testID={testID}
       onAccessibilityAction={({ nativeEvent }) => {
         if (nativeEvent.actionName === 'activate') onChange(!checked)
       }}
     >
-      <Svg accessible={false} height={STAR_SIZE} viewBox="0 0 28 28" width={STAR_SIZE}>
-        <Polygon
-          fill={checked ? theme.gold : 'none'}
-          points={starPoints()}
-          stroke={checked ? theme['gold-ink'] : theme.box}
-          strokeLinejoin="round"
-          strokeWidth={1.6}
-        />
-        {checked ? (
-          <Path
-            d={CHECK_PATH}
-            fill="none"
-            stroke={theme.tick}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2.2}
-          />
-        ) : null}
-      </Svg>
+      {star}
     </Pressable>
   )
 }

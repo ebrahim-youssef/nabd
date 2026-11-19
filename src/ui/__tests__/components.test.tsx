@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native'
-import { PixelRatio } from 'react-native'
+import { PixelRatio, View } from 'react-native'
 
 import { StarCheckbox } from '../StarCheckbox'
 import { ChecklistRow } from '../ChecklistRow'
@@ -22,6 +22,19 @@ describe('Home design components', () => {
       screen.getByRole('checkbox', { name: 'صلاة الظهر، لم يُسجَّل' }).props.accessibilityState,
     ).toEqual({ checked: false })
     fireEvent.press(screen.getByRole('checkbox', { name: 'صلاة الظهر، لم يُسجَّل' }))
+    expect(onToggle).toHaveBeenCalledTimes(1)
+  })
+
+  it('toggles the checklist row when its star is pressed', () => {
+    const onToggle = jest.fn()
+    render(
+      <ChecklistRow label="صلاة الظهر" done={false} onToggle={onToggle} testID="checklist-row" />,
+    )
+
+    const star = screen.getByTestId('checklist-row-star')
+    expect(star.props.pointerEvents).toBe('none')
+    fireEvent.press(star)
+
     expect(onToggle).toHaveBeenCalledTimes(1)
   })
 

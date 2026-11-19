@@ -3,6 +3,7 @@ import { usePathname, useRouter } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { useWirdToday } from '../day-plan/WirdTodayProvider'
 import { ICON_SIZE, TABBAR_HEIGHT, useThemeColors } from '../../theme/tokens'
 import { shellCopy } from './copy'
 import { Text } from './Text'
@@ -34,6 +35,7 @@ export function BottomNav({ isVisible = true }: { isVisible?: boolean }) {
   const { BookOpen, CalendarDays, Ellipsis, Home } = require('lucide-react-native') as NativeIcons
   const pathname = usePathname()
   const router = useRouter()
+  const today = useWirdToday()
   const theme = useThemeColors()
   const { bottom } = useSafeAreaInsets()
 
@@ -50,7 +52,7 @@ export function BottomNav({ isVisible = true }: { isVisible?: boolean }) {
       testId: 'nav-home',
     },
     {
-      href: '/today',
+      href: `/today/${today}`,
       label: shellCopy.nav.today,
       icon: CalendarDays,
       match: ['/today'],
@@ -98,7 +100,7 @@ export function BottomNav({ isVisible = true }: { isVisible?: boolean }) {
             className="w-[72px] items-center gap-1"
             hitSlop={TAB_HIT_SLOP}
             key={href}
-            onPress={() => router.push(href)}
+            onPress={() => router.navigate(href)}
             testID={testId}
           >
             <Icon

@@ -57,6 +57,7 @@ export function ChecklistRow({
         interactive={false}
         label={label}
         onChange={() => onToggle()}
+        testID={testID ? `${testID}-star` : undefined}
       />
     </Pressable>
   )
