@@ -73,13 +73,30 @@ const INITIAL_VIEW: LocationCapabilityViewState = {
   isRefreshing: true,
 }
 
+let publishedLocationView = INITIAL_VIEW
+let publishedCachedLocation: CachedLocation | null = null
+
+export function __resetLocationViewForTests() {
+  publishedLocationView = INITIAL_VIEW
+  publishedCachedLocation = null
+}
+
 function subscribeLocationView(listener: LocationViewListener): () => void {
   locationViewListeners.add(listener)
+  listener(publishedLocationView, publishedCachedLocation)
   return () => locationViewListeners.delete(listener)
 }
 
 function publishLocationView(view: LocationCapabilityViewState, cached: CachedLocation | null) {
-  for (const listener of locationViewListeners) listener(view, cached)
+  const cacheWasRead = publishedLocationView.hasReadCache
+  const cacheReadWasDowngraded = cacheWasRead && !view.hasReadCache
+  const nextView = cacheReadWasDowngraded
+    ? { ...publishedLocationView, isRefreshing: view.isRefreshing }
+    : view
+  const nextCached = cacheReadWasDowngraded ? publishedCachedLocation : cached
+  publishedLocationView = nextView
+  publishedCachedLocation = nextCached
+  for (const listener of locationViewListeners) listener(nextView, nextCached)
 }
 
 function refreshAcrossInstances(force: boolean, performRefresh: RefreshOperation): Promise<void> {
@@ -166,10 +183,10 @@ export function useLocationCapability(
   const { state: connectivity, refreshAndSet } = useConnectivityState(connectivityProvider)
   const now = options.now ?? Date.now
 
-  const [view, setView] = useState<LocationCapabilityViewState>(INITIAL_VIEW)
+  const [view, setView] = useState<LocationCapabilityViewState>(publishedLocationView)
   const mountedRef = useRef(false)
-  const viewRef = useRef<LocationCapabilityViewState>(INITIAL_VIEW)
-  const cachedLocationRef = useRef<CachedLocation | null>(null)
+  const viewRef = useRef<LocationCapabilityViewState>(publishedLocationView)
+  const cachedLocationRef = useRef<CachedLocation | null>(publishedCachedLocation)
   const connectivityRef = useRef(connectivity)
   const actionPromiseRef = useRef<Promise<void> | null>(null)
 

@@ -1,4 +1,5 @@
 import { act, render, renderHook, screen, waitFor } from '@testing-library/react-native'
+import { useEffect } from 'react'
 import { AppState, View } from 'react-native'
 import type { AppStateStatus } from 'react-native'
 import { useSQLiteContext } from 'expo-sqlite'
@@ -23,6 +24,7 @@ const mockRefreshLocation = jest.fn<Promise<void>, [options?: { force?: boolean 
 let mockTimeChangeListener: (() => void) | undefined
 const MINUTE_MS = 60_000
 const READINESS_TIMEOUT_MS = 3_000
+let childMountCount = 0
 
 const mockDatabase = {}
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn(() => mockDatabase) }))
@@ -54,9 +56,17 @@ function WirdDayChild() {
   return <View accessibilityLabel={useWirdToday()} testID="provider-child" />
 }
 
+function MountTrackedChild() {
+  useEffect(() => {
+    childMountCount += 1
+  }, [])
+  return <View testID="mount-tracked-child" />
+}
+
 describe('useWirdToday', () => {
   beforeEach(() => {
     jest.useFakeTimers()
+    childMountCount = 0
     jest.setSystemTime(new Date('2026-06-10T00:00:00.000Z'))
     mockReadPreference.mockReset().mockResolvedValue(null)
     mockedUseLocationCapability.mockReturnValue({
@@ -113,6 +123,30 @@ describe('useWirdToday', () => {
       )
     })
     expect(await screen.findByTestId('provider-child')).toBeTruthy()
+  })
+
+  it('keeps ready children mounted if the location view later reports an unread cache', async () => {
+    const view = render(
+      <WirdTodayProvider>
+        <MountTrackedChild />
+      </WirdTodayProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('mount-tracked-child')).toBeTruthy())
+    await waitFor(() => expect(childMountCount).toBe(1))
+
+    mockedUseLocationCapability.mockReturnValue({
+      coordinates: null,
+      hasReadCache: false,
+      refresh: mockRefreshLocation,
+    } as unknown as ReturnType<typeof useLocationCapability>)
+    view.rerender(
+      <WirdTodayProvider>
+        <MountTrackedChild />
+      </WirdTodayProvider>,
+    )
+
+    expect(screen.getByTestId('mount-tracked-child')).toBeTruthy()
+    expect(childMountCount).toBe(1)
   })
 
   it('first renders the previous wird day at 01:00 with a saved location', async () => {

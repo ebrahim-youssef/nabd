@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native'
+import { useEffect } from 'react'
 import { computeDayTimes } from '../../prayer-times/logic'
 import * as Location from 'expo-location'
 import { useSQLiteContext } from 'expo-sqlite'
@@ -7,7 +8,7 @@ import { AppState } from 'react-native'
 import type { CachedLocation } from '../db'
 import { createDeviceRepository } from '../db'
 import { devicePlatform } from '../platform'
-import { useLocationCapability } from '../useLocationCapability'
+import { __resetLocationViewForTests, useLocationCapability } from '../useLocationCapability'
 import { requestPrayerReschedule } from '../prayerAlarms'
 import { logger } from '../../observability/logger'
 
@@ -135,6 +136,7 @@ describe('useLocationCapability', () => {
   beforeEach(() => {
     jest.restoreAllMocks()
     jest.clearAllMocks()
+    __resetLocationViewForTests()
     repository = createRepository()
     mockedCreateDeviceRepository.mockReturnValue(repository as never)
     mockedUseSQLiteContext.mockReturnValue({} as never)
@@ -211,6 +213,30 @@ describe('useLocationCapability', () => {
 
     await act(async () => resolvePosition?.({ coords: { latitude: 30.04, longitude: 31.24 } }))
     await waitFor(() => expect(result.current.isRefreshing).toBe(false))
+  })
+
+  it('keeps cache readiness when a second capability instance mounts', async () => {
+    const firstReadiness: boolean[] = []
+    const first = renderHook(() => {
+      const location = useLocationCapability({ now })
+      useEffect(() => {
+        firstReadiness.push(location.hasReadCache)
+      }, [location.hasReadCache])
+      return location
+    })
+
+    await waitFor(() => expect(first.result.current.hasReadCache).toBe(true))
+    await waitFor(() => expect(first.result.current.isRefreshing).toBe(false))
+    await act(async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    firstReadiness.length = 0
+    const second = renderLocation()
+    expect(second.result.current.hasReadCache).toBe(true)
+    await waitFor(() => expect(second.result.current.isRefreshing).toBe(false))
+
+    expect(firstReadiness).not.toContain(false)
   })
 
   it.each(['permission', 'cache'] as const)(
