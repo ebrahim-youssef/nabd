@@ -62,9 +62,13 @@ export function DayHeader({ day, progress, onPrev, onNext, onPickDate }: DayHead
           ) : null}
         </View>
       </View>
-      <Pressable accessibilityRole="button" accessibilityLabel={dateLabel} onPress={onPickDate}>
+      {onPickDate ? (
+        <Pressable accessibilityRole="button" accessibilityLabel={dateLabel} onPress={onPickDate}>
+          <Text className="font-sans-medium text-body text-ink">{dateLabel}</Text>
+        </Pressable>
+      ) : (
         <Text className="font-sans-medium text-body text-ink">{dateLabel}</Text>
-      </Pressable>
+      )}
       <Text className="font-sans text-meta text-mute">{daySpan(weekday, nextWeekday)}</Text>
       <ProgressBar done={progress.done} total={progress.required} />
     </View>
