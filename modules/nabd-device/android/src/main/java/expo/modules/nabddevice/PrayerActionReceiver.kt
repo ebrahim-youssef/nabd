@@ -28,15 +28,16 @@ class PrayerActionReceiver : BroadcastReceiver() {
     }
 
     val action = payload.toPendingAction(System.currentTimeMillis())
-    var queued = false
-    synchronized(OutsideAppActionLock) {
-      if (PendingPrayerActionStore.append(context, action)) {
-        queued = true
+    val queued = synchronized(OutsideAppActionLock) {
+      if (!PendingPrayerActionStore.append(context, action)) {
+        false
+      } else {
         val snapshot = WidgetSnapshotStore.read(context)
         val updated = snapshot?.let { applyPrayerActionToSnapshot(it, action) }
         if (updated != null && !WidgetSnapshotStore.write(context, updated)) {
           Log.w(LOG_TAG, "Could not update widget snapshot after committed prayer action; actionId=${action.actionId}")
         }
+        true
       }
     }
     if (!queued) return
