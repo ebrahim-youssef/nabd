@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import type { DayId } from './types'
 
 import { logger } from '../observability/logger'
+import { refreshLiveRepositoryQueries } from '../shell/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
 
 let actionSequence = 0
@@ -39,6 +40,7 @@ export function useToggleItem(versionId: string | null, onRefresh?: () => void) 
             })
           : { ok: false as const, error: 'version_not_found' }
         const wasSaved = result.ok && result.value.outcome !== 'stale'
+        if (result.ok && result.value.outcome === 'applied') refreshLiveRepositoryQueries()
         if (!wasSaved) setHasError(true)
         else onRefresh?.()
         return wasSaved

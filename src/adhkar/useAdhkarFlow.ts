@@ -8,6 +8,7 @@ import type { FlowState } from './logic'
 
 import { createAdhkarRepository } from './db'
 import { normalizeFlowState } from './logic'
+import { refreshLiveRepositoryQueries } from '../shell/useLiveRepositoryQuery'
 
 export function useAdhkarFlow(
   categoryId: string,
@@ -80,6 +81,7 @@ export function useAdhkarFlow(
     if (persisted) void repository.writeFlowProgress(categoryId, day, next)
     if (finishedNow) {
       void repository.completeLinkedWirdItem(day, categoryId, now()).then((result) => {
+        if (result.ok && result.value) refreshLiveRepositoryQueries()
         if (result.ok) setMarked({ key: flowKey, value: true })
       })
     }

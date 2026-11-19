@@ -9,6 +9,7 @@ import TodayIndexRoute from '../../../app/(tabs)/today/index'
 import TodayLayout from '../../../app/(tabs)/today/_layout'
 import { Text } from '../Text'
 
+jest.mock('../../wird/CompletionCelebration', () => ({ CompletionCelebration: () => null }))
 jest.mock('../../day-plan/WirdTodayProvider', () => ({
   useWirdToday: () => '2026-11-19',
 }))

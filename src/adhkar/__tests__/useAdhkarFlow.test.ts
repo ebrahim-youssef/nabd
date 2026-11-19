@@ -6,8 +6,10 @@ import type { WirdEntry } from '../../wird/types'
 import type { FlowState } from '../logic'
 
 import { useAdhkarFlow } from '../useAdhkarFlow'
+import { refreshLiveRepositoryQueries } from '../../shell/useLiveRepositoryQuery'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => ({}) }))
+jest.mock('../../shell/useLiveRepositoryQuery', () => ({ refreshLiveRepositoryQueries: jest.fn() }))
 
 type Progress = Awaited<ReturnType<AdhkarProgressRepository['readFlowProgress']>>
 
@@ -36,6 +38,27 @@ describe('useAdhkarFlow', () => {
     mockRepository.isLinkedWirdItemDone.mockResolvedValue(false)
     mockRepository.completeLinkedWirdItem.mockResolvedValue({ ok: true, value: null })
   })
+
+  it.each([
+    [{ ok: true, value: { id: 'entry' } as WirdEntry }, 1],
+    [{ ok: true, value: null }, 0],
+    [{ ok: false, error: 'write failed' }, 0],
+  ] as const)(
+    'refreshes only when the linked completion inserts an entry',
+    async (completion, calls) => {
+      mockRepository.completeLinkedWirdItem.mockResolvedValue(completion)
+      const { result } = renderHook(() => useAdhkarFlow('morning', ITEMS, DAY))
+      await waitFor(() => expect(mockRepository.isLinkedWirdItemDone).toHaveBeenCalled(), {
+        timeout: 5000,
+      })
+      await act(async () => {
+        result.current.tap()
+        result.current.tap()
+        await Promise.resolve()
+      })
+      expect(refreshLiveRepositoryQueries).toHaveBeenCalledTimes(calls)
+    },
+  )
 
   it('resumes saved morning progress and appends one linked completion at the end', async () => {
     mockRepository.readFlowProgress.mockResolvedValue({
@@ -78,6 +101,16 @@ describe('useAdhkarFlow', () => {
     rerender({ categoryId: 'sleep' })
     expect(result.current.state).toEqual({ index: 0, count: 0, finished: false })
     expect(mockRepository.writeFlowProgress).toHaveBeenCalledTimes(1)
+  })
+
+  it('starts repeatable progress over after a reader remount', async () => {
+    const first = renderHook(() => useAdhkarFlow('sleep', ITEMS, DAY))
+    await act(async () => first.result.current.tap())
+    expect(first.result.current.state.index).toBe(1)
+    first.unmount()
+
+    const second = renderHook(() => useAdhkarFlow('sleep', ITEMS, DAY))
+    expect(second.result.current.state).toEqual({ index: 0, count: 0, finished: false })
   })
 
   it('does not let an old category hydration overwrite the current flow', async () => {

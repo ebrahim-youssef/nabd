@@ -1,323 +1,218 @@
-import { act, fireEvent, render, screen } from '@testing-library/react-native'
+import { act, renderHook } from '@testing-library/react-native'
+import { DAILY_ADHKAR_CATEGORY } from '../../content/daily-adhkar'
 import type { Result } from '../../lib/result'
 import type { ChecklistAreaView, WirdEntry } from '../../wird/types'
+import { computeDailyItemState } from '../logic'
+import { useDailyAdhkarProgress } from '../useDailyAdhkarProgress'
+import { refreshLiveRepositoryQueries } from '../../shell/useLiveRepositoryQuery'
 
-import { DailyAdhkarList } from '../DailyAdhkarList'
+jest.mock('../../shell/useLiveRepositoryQuery', () => ({ refreshLiveRepositoryQueries: jest.fn() }))
 
 let mockToday = '2026-09-20'
-
-jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => mockToday }))
-
-const mockChecklist = {
-  isLoading: false,
-  areas: [] as ChecklistAreaView[],
-  versionId: 'version-1',
-  refresh: jest.fn(),
-}
-
+const mockChecklist = { isLoading: false, areas: [] as ChecklistAreaView[], refresh: jest.fn() }
 const mockUseFocusEffect = jest.fn()
-
+const mockDatabase = {}
 const mockRepository = {
   completeLinkedWirdItem: jest.fn<Promise<Result<WirdEntry | null>>, [string, string, number]>(),
 }
-
-jest.mock('../../wird/useWirdChecklist', () => ({
-  useWirdChecklist: () => mockChecklist,
-}))
-
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => mockToday }))
+jest.mock('../../wird/useWirdChecklist', () => ({ useWirdChecklist: () => mockChecklist }))
 jest.mock('expo-router', () => ({
   useFocusEffect: (...args: unknown[]) => mockUseFocusEffect(...args),
 }))
+jest.mock('../../counter/db', () => ({ createDhikrCompletionRepository: () => mockRepository }))
+jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => mockDatabase }))
 
-jest.mock('../../counter/db', () => ({
-  createDhikrCompletionRepository: () => mockRepository,
-}))
-
-jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => ({}) }))
-
-function withDailyItems(items: ChecklistAreaView['items']) {
-  mockChecklist.areas = [{ id: 'adhkar', label: 'الأذكار', order: 1, items }]
+const item = DAILY_ADHKAR_CATEGORY.items[0]
+function setItem(target: number, done = false) {
+  mockChecklist.areas = [
+    {
+      id: 'adhkar',
+      label: 'الأذكار',
+      order: 1,
+      items: [{ id: item.id, label: 'الاستغفار', kind: 'counter', target, done }],
+    },
+  ]
+}
+function state(result: ReturnType<typeof useDailyAdhkarProgress>) {
+  const linked = result.checklistItems.get(item.id)
+  return computeDailyItemState(result.counts[item.id], linked?.target, linked?.done, item.repeat)
+}
+function press(result: ReturnType<typeof useDailyAdhkarProgress>) {
+  return result.tap(item, result.checklistItems.get(item.id))
 }
 
-describe('DailyAdhkarList', () => {
+describe('daily reader progress', () => {
   beforeEach(() => {
+    jest.clearAllMocks()
     jest.useFakeTimers()
     jest.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
     mockToday = '2026-09-20'
     mockChecklist.isLoading = false
     mockChecklist.areas = []
     mockChecklist.refresh.mockReset()
+    mockUseFocusEffect.mockReset()
     mockRepository.completeLinkedWirdItem.mockReset()
     mockRepository.completeLinkedWirdItem.mockResolvedValue({ ok: true, value: null })
-    mockUseFocusEffect.mockReset()
   })
+  afterEach(() => jest.useRealTimers())
 
-  afterEach(() => {
-    jest.useRealTimers()
-  })
-
-  it('renders exactly five cards from the shared daily content', async () => {
-    await render(<DailyAdhkarList />)
-
-    expect(screen.getAllByTestId(/adhkar-daily-card-/)).toHaveLength(5)
-  })
+  it.each([
+    [{ ok: true, value: { id: 'entry' } as WirdEntry }, 1],
+    [{ ok: true, value: null }, 0],
+    [{ ok: false, error: 'write failed' }, 0],
+  ] as const)(
+    'refreshes live queries only after an applied daily completion',
+    async (completion, calls) => {
+      setItem(1)
+      mockRepository.completeLinkedWirdItem.mockResolvedValue(completion)
+      const { result } = renderHook(() => useDailyAdhkarProgress())
+      await act(async () => {
+        await press(result.current)
+      })
+      expect(refreshLiveRepositoryQueries).toHaveBeenCalledTimes(calls)
+    },
+  )
 
   it('increments to the live wird target, caps, and completes the linked item once', async () => {
-    withDailyItems([
-      {
-        id: 'istighfar',
-        label: 'الاستغفار',
-        kind: 'counter',
-        target: 3,
-        done: false,
-      },
-    ])
-    await render(<DailyAdhkarList />)
-    const card = screen.getByTestId('adhkar-daily-card-istighfar')
-
+    setItem(3)
+    const { result } = renderHook(() => useDailyAdhkarProgress())
     await act(async () => {
-      await fireEvent.press(card)
+      await press(result.current)
     })
     await act(async () => {
-      await fireEvent.press(card)
+      await press(result.current)
     })
     await act(async () => {
-      await fireEvent.press(card)
+      await press(result.current)
     })
     await act(async () => {
-      await fireEvent.press(card)
+      await press(result.current)
     })
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٣/٣')
+    expect(state(result.current)).toMatchObject({ count: 3, target: 3, done: true })
     expect(mockRepository.completeLinkedWirdItem).toHaveBeenCalledTimes(1)
   })
 
-  it('rolls back a failed completion and lets the user retry it', async () => {
-    withDailyItems([
-      {
-        id: 'istighfar',
-        label: 'الاستغفار',
-        kind: 'counter',
-        target: 1,
-        done: false,
-      },
-    ])
-    mockRepository.completeLinkedWirdItem.mockResolvedValueOnce({
-      ok: false,
-      error: 'write failed',
-    })
-
-    await render(<DailyAdhkarList />)
-    const card = screen.getByTestId('adhkar-daily-card-istighfar')
-
-    await act(async () => {
-      await fireEvent.press(card)
-    })
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/١')
-    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
-      checked: false,
-      disabled: false,
-    })
-    expect(screen.getByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeTruthy()
-
-    await act(async () => {
-      await fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
-    })
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١')
-    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
-      checked: true,
-      disabled: true,
-    })
-    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
-  })
-
-  it('rolls back a rejected completion and lets the user retry it', async () => {
-    withDailyItems([
-      {
-        id: 'istighfar',
-        label: 'الاستغفار',
-        kind: 'counter',
-        target: 1,
-        done: false,
-      },
-    ])
-    mockRepository.completeLinkedWirdItem.mockRejectedValueOnce(new Error('write failed'))
-
-    await render(<DailyAdhkarList />)
-    const card = screen.getByTestId('adhkar-daily-card-istighfar')
-
-    await act(async () => {
-      await fireEvent.press(card)
-    })
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/١')
-    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
-      checked: false,
-      disabled: false,
-    })
-    expect(screen.getByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeTruthy()
-
-    await act(async () => {
-      await fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
-    })
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١')
-    expect(screen.getByTestId('adhkar-daily-card-istighfar').props.accessibilityState).toEqual({
-      checked: true,
-      disabled: true,
-    })
-    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
-  })
+  it.each(['failure result', 'rejected write'])(
+    'rolls back a %s and lets the user retry',
+    async (failure) => {
+      setItem(1)
+      if (failure === 'failure result')
+        mockRepository.completeLinkedWirdItem.mockResolvedValueOnce({
+          ok: false,
+          error: 'write failed',
+        })
+      else mockRepository.completeLinkedWirdItem.mockRejectedValueOnce(new Error('write failed'))
+      const { result } = renderHook(() => useDailyAdhkarProgress())
+      await act(async () => {
+        await press(result.current)
+      })
+      expect(state(result.current)).toMatchObject({ count: 0, done: false })
+      expect(result.current.failedItems[item.id]).toBe(true)
+      await act(async () => {
+        await press(result.current)
+      })
+      expect(state(result.current)).toMatchObject({ count: 1, done: true })
+      expect(result.current.failedItems[item.id]).toBeUndefined()
+    },
+  )
 
   it('does not roll back a reset after a target-reaching completion fails', async () => {
-    withDailyItems([
-      {
-        id: 'istighfar',
-        label: 'الاستغفار',
-        kind: 'counter',
-        target: 3,
-        done: false,
-      },
-    ])
-    let resolveCompletion: (result: Result<WirdEntry | null>) => void = () => undefined
-    const completion = new Promise<Result<WirdEntry | null>>((resolve) => {
-      resolveCompletion = resolve
-    })
-    mockRepository.completeLinkedWirdItem.mockReturnValueOnce(completion)
-
-    await render(<DailyAdhkarList />)
-    const card = screen.getByTestId('adhkar-daily-card-istighfar')
-
+    setItem(1)
+    let resolveCompletion: (value: Result<WirdEntry | null>) => void = () => undefined
+    mockRepository.completeLinkedWirdItem.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveCompletion = resolve
+      }),
+    )
+    const { result } = renderHook(() => useDailyAdhkarProgress())
     await act(async () => {
-      await fireEvent.press(card)
+      void press(result.current)
+      await Promise.resolve()
     })
-    await act(async () => {
-      await fireEvent.press(card)
-    })
-    await act(async () => {
-      fireEvent.press(card)
-    })
-    await act(async () => {
-      await fireEvent.press(screen.getByTestId('adhkar-daily-reset-istighfar'))
-    })
-
+    act(() => result.current.reset(item.id))
     await act(async () => {
       resolveCompletion({ ok: false, error: 'write failed' })
+      await Promise.resolve()
     })
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/٣')
-    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
+    expect(state(result.current)).toMatchObject({ count: 0, done: false })
+    expect(result.current.failedItems[item.id]).toBeUndefined()
   })
 
   it('keeps the previous wird day after midnight and resets when it advances at Fajr', async () => {
-    withDailyItems([
-      {
-        id: 'istighfar',
-        label: 'الاستغفار',
-        kind: 'counter',
-        target: 3,
-        done: false,
-      },
-    ])
-    const view = await render(<DailyAdhkarList />)
-    await fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/٣')
+    setItem(3)
+    const view = renderHook((_: { tick: number }) => useDailyAdhkarProgress(), {
+      initialProps: { tick: 0 },
+    })
+    await act(async () => {
+      await press(view.result.current)
+    })
     jest.setSystemTime(new Date('2026-09-20T22:00:00.000Z'))
-    view.rerender(<DailyAdhkarList />)
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/٣')
-    expect(mockRepository.completeLinkedWirdItem).not.toHaveBeenCalled()
-
-    jest.setSystemTime(new Date('2026-09-21T02:00:00.000Z'))
+    view.rerender({ tick: 1 })
+    expect(state(view.result.current).count).toBe(1)
     mockToday = '2026-09-21'
-    view.rerender(<DailyAdhkarList />)
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/٣')
+    view.rerender({ tick: 2 })
+    expect(state(view.result.current).count).toBe(0)
   })
 
   it('ignores a stale failure after reset and recount so the newer completion stays done', async () => {
-    withDailyItems([
-      {
-        id: 'istighfar',
-        label: 'الاستغفار',
-        kind: 'counter',
-        target: 1,
-        done: false,
-      },
-    ])
-    let rejectFirstCompletion: (cause: Error) => void = () => undefined
-    const firstCompletion = new Promise<Result<WirdEntry | null>>((_, reject) => {
-      rejectFirstCompletion = reject
-    })
-    mockRepository.completeLinkedWirdItem
-      .mockReturnValueOnce(firstCompletion)
-      .mockResolvedValueOnce({ ok: true, value: null })
-
-    await render(<DailyAdhkarList />)
-    const card = screen.getByTestId('adhkar-daily-card-istighfar')
-    const reset = screen.getByTestId('adhkar-daily-reset-istighfar')
-
+    setItem(1)
+    let rejectFirst: (cause: Error) => void = () => undefined
+    mockRepository.completeLinkedWirdItem.mockReturnValueOnce(
+      new Promise((_, reject) => {
+        rejectFirst = reject
+      }),
+    )
+    const { result } = renderHook(() => useDailyAdhkarProgress())
     await act(async () => {
-      fireEvent.press(card)
+      void press(result.current)
       await Promise.resolve()
     })
-    await fireEvent.press(reset)
+    act(() => result.current.reset(item.id))
     await act(async () => {
-      fireEvent.press(screen.getByTestId('adhkar-daily-card-istighfar'))
+      void press(result.current)
       await Promise.resolve()
     })
-
     await act(async () => {
-      rejectFirstCompletion(new Error('write failed'))
+      rejectFirst(new Error('write failed'))
       await Promise.resolve()
       await Promise.resolve()
     })
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١')
-    expect(screen.queryByText('تعذّر الحفظ، اضغط مرة أخرى.')).toBeNull()
+    expect(state(result.current)).toMatchObject({ count: 1, done: true })
+    expect(result.current.failedItems[item.id]).toBeUndefined()
   })
 
   it('falls back to the content repeat when the linked item is unavailable', async () => {
-    await render(<DailyAdhkarList />)
-    const card = screen.getByTestId('adhkar-daily-card-istighfar')
-
-    await fireEvent.press(card)
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١٠')
+    const { result } = renderHook(() => useDailyAdhkarProgress())
+    await act(async () => {
+      await press(result.current)
+    })
+    expect(state(result.current)).toMatchObject({ count: 1, target: item.repeat })
     expect(mockRepository.completeLinkedWirdItem).not.toHaveBeenCalled()
   })
 
-  it('lets a local reset override linked completion without deleting it', async () => {
-    withDailyItems([
-      {
-        id: 'istighfar',
-        label: 'الاستغفار',
-        kind: 'counter',
-        target: 3,
-        done: true,
-      },
-    ])
-    await render(<DailyAdhkarList />)
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٣/٣')
-    await fireEvent.press(screen.getByTestId('adhkar-daily-reset-istighfar'))
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/٣')
+  it('lets a local reset override linked completion without deleting it', () => {
+    setItem(3, true)
+    const { result } = renderHook(() => useDailyAdhkarProgress())
+    expect(state(result.current).count).toBe(3)
+    act(() => result.current.reset(item.id))
+    expect(state(result.current).count).toBe(0)
     expect(mockRepository.completeLinkedWirdItem).not.toHaveBeenCalled()
   })
 
   it('resets in-memory counts and refreshes the checklist after a new day gains focus', async () => {
-    const view = await render(<DailyAdhkarList />)
-    const card = screen.getByTestId('adhkar-daily-card-istighfar')
-    await fireEvent.press(card)
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('١/١٠')
-
-    jest.setSystemTime(new Date('2026-09-21T12:00:00.000Z'))
+    const view = renderHook((_: { tick: number }) => useDailyAdhkarProgress(), {
+      initialProps: { tick: 0 },
+    })
+    await act(async () => {
+      await press(view.result.current)
+    })
+    expect(state(view.result.current).count).toBe(1)
     mockToday = '2026-09-21'
-    view.rerender(<DailyAdhkarList />)
-    const focus = mockUseFocusEffect.mock.calls[0]?.[0] as () => undefined
-    await act(async () => focus())
-
-    expect(screen.getByTestId('adhkar-daily-progress-istighfar')).toHaveTextContent('٠/١٠')
+    view.rerender({ tick: 1 })
+    const focus = mockUseFocusEffect.mock.calls.at(-1)?.[0] as () => undefined
+    act(() => focus())
+    expect(state(view.result.current).count).toBe(0)
     expect(mockChecklist.refresh).toHaveBeenCalled()
   })
 })

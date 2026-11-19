@@ -5,6 +5,7 @@ import TabsLayout from '../../../app/(tabs)/_layout'
 import { setOnboardingComplete } from '../completion'
 import { createOnboardingRepository } from '../db'
 
+jest.mock('../../wird/CompletionCelebration', () => ({ CompletionCelebration: () => null }))
 jest.mock('expo-router', () => {
   const React = require('react') as typeof import('react')
 
