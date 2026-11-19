@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { useFocusEffect } from 'expo-router'
 
 import { logger } from '../../observability/logger'
-import { useLiveRepositoryQuery } from '../useLiveRepositoryQuery'
+import { refreshLiveRepositoryQueries, useLiveRepositoryQuery } from '../useLiveRepositoryQuery'
 
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 
@@ -91,6 +91,17 @@ describe('useLiveRepositoryQuery', () => {
 
     await act(async () => resolveSecond('second'))
     await waitFor(() => expect(result.current.data).toBe('second'))
+  })
+
+  it('re-reads mounted repositories when an external write requests a live refresh', async () => {
+    const read = jest.fn().mockResolvedValueOnce('first').mockResolvedValueOnce('second')
+    const { result } = renderHook(() => useLiveRepositoryQuery(read))
+
+    await waitFor(() => expect(result.current.data).toBe('first'))
+    act(() => refreshLiveRepositoryQueries())
+
+    await waitFor(() => expect(result.current.data).toBe('second'))
+    expect(read).toHaveBeenCalledTimes(2)
   })
 
   it('keeps stale data when a refresh fails', async () => {
