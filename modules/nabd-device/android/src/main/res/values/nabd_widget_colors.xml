@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mirrors theme/tokens.ts: the widget sits on the hero surface in both themes. -->
+<resources>
+  <color name="nabd_widget_bg">#0B3A32</color>
+  <color name="nabd_widget_ink">#F2E5C6</color>
+  <color name="nabd_widget_mute">#B9C9C2</color>
+  <color name="nabd_widget_gold">#CFA552</color>
+  <color name="nabd_widget_line">#2EF2E5C6</color>
+  <color name="nabd_widget_tick">#0B3A32</color>
+</resources>

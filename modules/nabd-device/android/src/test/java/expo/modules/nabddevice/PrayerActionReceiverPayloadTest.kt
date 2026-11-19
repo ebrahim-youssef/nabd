@@ -2,9 +2,17 @@ package expo.modules.nabddevice
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PrayerActionReceiverPayloadTest {
+  @Test
+  fun acceptsNonPrayerItemsInAValidPendingAction() {
+    val widgetAction = PendingPrayerAction("widget:one", "custom-item", "2026-11-19", "v1", 1L, false)
+
+    assertTrue(isValidPendingPrayerAction(widgetAction))
+  }
+
   @Test
   fun createsAValidatedPendingActionFromReceiverExtras() {
     val payload = validPayload()
@@ -15,6 +23,7 @@ class PrayerActionReceiverPayloadTest {
     )
     assertEquals("nabd-prayer", payload?.notificationTag)
     assertEquals(-1, payload?.notificationId ?: 0)
+    assertTrue(payload?.toPendingAction(900L)?.done == true)
   }
 
   @Test

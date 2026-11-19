@@ -17,6 +17,7 @@ import {
 } from '../prayer-times/logic'
 import type { CalculationMethodId } from '../prayer-times/logic'
 import { isUsableDayTimes, resolveWirdDay } from './logic'
+import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 const MINUTE_MS = 60_000
 const READINESS_TIMEOUT_MS = 3_000
@@ -120,6 +121,9 @@ export function WirdTodayProvider({ children }: { children: ReactNode }) {
       : null
   const hasUsableTimes = isUsableDayTimes(times)
   const day = resolveWirdDay(now, times)
+  useEffect(() => {
+    void requestWidgetSnapshotWrite()
+  }, [day])
   const nextBoundaryAt =
     hasUsableTimes && times
       ? now < times.fajr

@@ -14,6 +14,7 @@ import type {
   WirdActionRow,
   WirdVersionRow,
 } from './types'
+import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 const SELECT_ONBOARDING_STATE =
   'SELECT id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id FROM onboarding_state'
@@ -206,6 +207,7 @@ export function createBackupRepository(database: ProductDatabase) {
           restoreCounts = planned.value.counts
         })
         if (!restoreCounts) throw new Error('Backup restore transaction returned no counts')
+        void requestWidgetSnapshotWrite()
         return { ok: true, value: restoreCounts }
       } catch (cause: unknown) {
         if (cause instanceof RestoreConflictError) {

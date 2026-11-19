@@ -10,12 +10,14 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import expo.modules.kotlin.exception.Exceptions
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 private const val TIME_CHANGE_EVENT = "onTimeChange"
 private const val PRAYER_ACTION_QUEUED_EVENT = "onPrayerActionQueued"
+private const val LOG_TAG = "NabdDevice"
 
 class NabdDeviceModule : Module() {
   private val context: Context
@@ -62,6 +64,33 @@ class NabdDeviceModule : Module() {
 
     Function("acknowledgePendingPrayerActions") { actionIds: List<String> ->
       PendingPrayerActionStore.acknowledge(context, actionIds)
+    }
+
+    Function("writeWidgetSnapshot") { json: String ->
+      val parsed = WidgetSnapshot.parse(json)
+      if (parsed == null) {
+        Log.w(LOG_TAG, "Rejected widget snapshot because JSON failed schema validation")
+        false
+      } else {
+        val committed = synchronized(OutsideAppActionLock) {
+          val pendingActions = PendingPrayerActions.decode(
+            PendingPrayerActionStore.readEncoded(context),
+          )
+          val merged = mergePendingWidgetActions(parsed, pendingActions)
+          WidgetSnapshotStore.write(context, merged)
+        }
+        NabdWidgetRefresh.refresh(context)
+        committed
+      }
+    }
+
+    Function("clearWidgetSnapshot") {
+      val committed = synchronized(OutsideAppActionLock) {
+        WidgetSnapshotStore.clear(context)
+      }
+      if (!committed) Log.w(LOG_TAG, "Could not remove the stored widget snapshot")
+      NabdWidgetRefresh.refresh(context)
+      committed
     }
 
     Function("isIgnoringBatteryOptimizations") {

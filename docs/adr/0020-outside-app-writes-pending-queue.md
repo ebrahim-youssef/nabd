@@ -53,3 +53,19 @@ again. The drain runs on the native signal right after the tap, so that window i
 fixing both cases needs a monotonic clock that survives reboots, which the app does not have. A full
 queue (100 actions) refuses the new tap and leaves the notification in place, so nothing queued is
 ever dropped.
+
+Accepted limits (2026-11-19, widget): the queue and the widget snapshot live in their own
+SharedPreferences files, which the backup rules leave out (only `SQLite/` is included), so a tap
+still queued when the phone is backed up is lost on a new phone, and the widget shows the
+placeholder until the restored app is opened. When the app writes a snapshot, still-queued taps for the same day and
+version are applied on top of it, so a snapshot built from the database a moment before a drain
+cannot undo a widget tick. After a force-stop the widget keeps its last snapshot but its taps and
+boundary updates stop until the app is opened.
+
+Accepted limit (2026-11-19, race review of P6): a snapshot the app built from the database just
+before a widget tick can land after the drain has written and acknowledged that tick, so the merge
+no longer sees it. The writer then runs once more at once and corrects the widget; only a process
+death in that short gap leaves the widget showing the tick undone until the app next opens. The
+database is right either way. Holding acknowledgement until a later snapshot write commits would
+close the gap, but it ties the drain to the widget, which is a larger change than the window
+justifies.

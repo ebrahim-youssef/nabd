@@ -22,6 +22,7 @@ const validEntry = {
   day: '2026-11-19',
   versionId: 'v1',
   at: 1_800_000_000_000,
+  done: true,
 }
 
 describe('native prayer action adapter', () => {
@@ -34,16 +35,43 @@ describe('native prayer action adapter', () => {
       readPendingPrayerActions: () =>
         JSON.stringify([
           validEntry,
-          { ...validEntry, actionId: 'bad-item', itemId: 'sunrise' },
+          { ...validEntry, actionId: 'undo', done: false },
+          { ...validEntry, actionId: 'widget-item', itemId: 'custom-item' },
+          { ...validEntry, actionId: 'bad-item', itemId: ' ' },
           { ...validEntry, actionId: 'bad-day', day: '2026-2-19' },
+          { ...validEntry, actionId: 'bad-negative-at', at: -1 },
           { ...validEntry, actionId: 'bad-at', at: Number.POSITIVE_INFINITY },
         ]),
     } as never)
 
     expect(readPendingPrayerActions()).toEqual({
-      valid: [validEntry],
-      malformedIds: ['bad-item', 'bad-day', 'bad-at'],
+      valid: [
+        validEntry,
+        { ...validEntry, actionId: 'undo', done: false },
+        { ...validEntry, actionId: 'widget-item', itemId: 'custom-item' },
+      ],
+      malformedIds: ['bad-item', 'bad-day', 'bad-negative-at', 'bad-at'],
     })
+  })
+
+  it('defaults legacy non-prayer entries to done', () => {
+    mockedRequireOptionalNativeModule.mockReturnValue({
+      readPendingPrayerActions: () =>
+        JSON.stringify([{ ...validEntry, done: undefined, itemId: 'custom' }]),
+    } as never)
+
+    expect(readPendingPrayerActions()).toEqual({
+      valid: [{ ...validEntry, itemId: 'custom', done: true }],
+      malformedIds: [],
+    })
+  })
+
+  it('rejects a non-boolean desired state', () => {
+    mockedRequireOptionalNativeModule.mockReturnValue({
+      readPendingPrayerActions: () => JSON.stringify([{ ...validEntry, done: 'true' }]),
+    } as never)
+
+    expect(readPendingPrayerActions()).toEqual({ valid: [], malformedIds: [validEntry.actionId] })
   })
 
   it('returns an empty queue when the native module is unavailable', () => {

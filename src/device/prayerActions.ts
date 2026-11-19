@@ -6,7 +6,6 @@ import type { DayId } from '../wird/types'
 
 const NATIVE_MODULE_NAME = 'NabdDevice'
 const PRAYER_ACTION_QUEUED_EVENT = 'onPrayerActionQueued'
-const PRAYER_ITEM_IDS = new Set(['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'])
 
 export type PrayerActionQueueEntry = {
   actionId: string
@@ -14,6 +13,7 @@ export type PrayerActionQueueEntry = {
   day: DayId
   versionId: string
   at: number
+  done: boolean
 }
 
 export type PrayerActionQueueRead = {
@@ -135,18 +135,20 @@ function parsePrayerActionEntry(value: unknown): PrayerActionQueueEntry | null {
   const itemId = nonEmptyString(value.itemId)
   const day = nonEmptyString(value.day)
   const versionId = nonEmptyString(value.versionId)
+  const done = value.done === undefined ? true : value.done
   if (
     !actionId ||
     !itemId ||
-    !PRAYER_ITEM_IDS.has(itemId) ||
     !day ||
     !isDayId(day) ||
     !versionId ||
+    typeof done !== 'boolean' ||
     typeof value.at !== 'number' ||
-    !Number.isFinite(value.at)
+    !Number.isFinite(value.at) ||
+    value.at < 0
   )
     return null
-  return { actionId, itemId, day, versionId, at: value.at }
+  return { actionId, itemId, day, versionId, at: value.at, done }
 }
 
 function nonEmptyString(value: unknown): string | null {
