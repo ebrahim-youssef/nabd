@@ -64,6 +64,8 @@ export const NOTIFICATION_COPY = {
   }),
 } as const
 
+export const PRAYER_ACTION_COPY = (label: string): string => `صلّيت ${label}`
+
 // Merged label map for all notification moments (prayers + adhkar). Used by both schedulers.
 export const MOMENT_LABELS: Record<string, string> = {
   ...PRAYER_LABELS,

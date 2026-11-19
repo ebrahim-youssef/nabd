@@ -7,6 +7,7 @@ import { useCallback } from 'react'
 
 import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
+import { requestPrayerReschedule } from '../device/prayerAlarms'
 
 export function useWirdLevel() {
   const repository = useWirdRepository()
@@ -32,7 +33,10 @@ export function useWirdLevel() {
       const chosenLevel = WIRD_LEVELS.find((level) => level.id === levelId)
       if (!chosenLevel) return
       const result = await repository.setWirdLevel(chosenLevel.wird, today, now)
-      if (result.ok) refresh()
+      if (result.ok) {
+        refresh()
+        requestPrayerReschedule()
+      }
       return result
     },
     [latestVersion, refresh, repository],

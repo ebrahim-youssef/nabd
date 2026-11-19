@@ -128,6 +128,38 @@ describe('native notification adapter', () => {
     )
   })
 
+  it('serializes prayer action context only for adhan alarms', async () => {
+    const native = { replacePrayerAlarms: jest.fn((_snapshotJson: string) => 'scheduled') }
+    mockedNativeModule.mockReturnValue(native as never)
+    const prayerAction = {
+      itemId: 'fajr',
+      day: '2026-11-19',
+      versionId: 'version-1',
+      actionId: 'adhan:2026-11-19:fajr:version-1',
+      label: 'صلّيت الفجر',
+    }
+
+    await replacePrayerAlarms(
+      [
+        alarm({ channelKey: 'adhanFajr', prayerAction }),
+        alarm({ id: 102, channelKey: 'iqamah', prayerAction: undefined }),
+      ],
+      false,
+      NOW,
+    )
+
+    const snapshotJson = native.replacePrayerAlarms.mock.calls[0]?.[0] ?? ''
+    const snapshot = JSON.parse(snapshotJson)
+    expect(snapshot.alarms[0]).toMatchObject({
+      actionItemId: 'fajr',
+      actionDay: '2026-11-19',
+      actionVersionId: 'version-1',
+      actionId: 'adhan:2026-11-19:fajr:version-1',
+      actionLabel: 'صلّيت الفجر',
+    })
+    expect(snapshot.alarms[1]).not.toHaveProperty('actionItemId')
+  })
+
   it('migrates old Expo scheduled and presented notifications before native scheduling', async () => {
     const native = { replacePrayerAlarms: jest.fn(() => 'scheduled') }
     mockedNativeModule.mockReturnValue(native as never)

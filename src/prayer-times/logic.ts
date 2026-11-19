@@ -9,6 +9,9 @@ import {
   PrayerTimes,
 } from 'adhan'
 import type { Coords } from '../device/types'
+import type { DayId, WirdVersion } from '../wird/types'
+import { versionInForce } from '../lib/wird'
+import { PRAYER_ACTION_COPY } from './copy'
 
 export type DayPrayerTimes = {
   fajr: number
@@ -194,6 +197,13 @@ export type AlarmPayload = {
   body: string
   channelKey: 'before' | 'adhan' | 'adhanFajr' | 'iqamah' | 'adhkarReminder'
   at: number
+  prayerAction?: {
+    itemId: string
+    day: DayId
+    versionId: string
+    actionId: string
+    label: string
+  }
 }
 
 // Android notification ids are int32; a minute-resolution slot + the moment kind keeps ids
@@ -206,15 +216,32 @@ const KIND_SLOT: Record<NotificationMoment['kind'], number> = {
 }
 const ID_SLOTS = 4
 const INT32_SAFE = 2_000_000_000
+const ACTION_PRAYER_IDS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha']
 
 export function buildAlarmPayloads(
   moments: NotificationMoment[],
   labels: Record<string, string>,
   copy: Record<NotificationMoment['kind'], (label: string) => { title: string; body: string }>,
+  versions: WirdVersion[],
+  scheduleDay: DayId,
 ): AlarmPayload[] {
   return moments.map((moment) => {
     const label = labels[moment.prayerId] ?? moment.prayerId
     const { title, body } = copy[moment.kind](label)
+    const day = moment.kind === 'adhan' ? scheduleDay : null
+    const version = day ? versionInForce(versions, day) : null
+    const hasPrayerItem = version?.definition.items.some((item) => item.id === moment.prayerId)
+    const prayerAction =
+      day && ACTION_PRAYER_IDS.includes(moment.prayerId) && version && hasPrayerItem
+        ? {
+            itemId: moment.prayerId,
+            day,
+            versionId: version.id,
+            actionId: `adhan:${day}:${moment.prayerId}:${version.id}`,
+            label: PRAYER_ACTION_COPY(labels[moment.prayerId] ?? moment.prayerId),
+          }
+        : undefined
+
     return {
       id: ((Math.floor(moment.at / MS_PER_MINUTE) * ID_SLOTS + KIND_SLOT[moment.kind]) %
         INT32_SAFE) as number,
@@ -229,6 +256,7 @@ export function buildAlarmPayloads(
               ? 'adhkarReminder'
               : moment.kind,
       at: moment.at,
+      ...(prayerAction ? { prayerAction } : {}),
     }
   })
 }
