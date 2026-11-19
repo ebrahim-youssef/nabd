@@ -1,18 +1,13 @@
-import type { CalculationMethodId } from '../prayer-times/logic'
-import { WIRD_LEVELS } from '../content/levels'
-import { CALCULATION_METHODS, DEFAULT_METHOD_ID } from '../prayer-times/logic'
-import { SETTINGS_COPY } from './copy'
+import { TriangleAlert } from 'lucide-react-native'
 import { useRouter } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
 import { useColorScheme } from 'nativewind'
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
-import { Pressable, Switch, View } from 'react-native'
+import { AppState, View } from 'react-native'
 
-import { ScreenContainer } from '../shell/ScreenContainer'
-import { Text } from '../shell/Text'
-import { logger } from '../observability/logger'
+import { WIRD_LEVELS } from '../content/levels'
 import { deviceCopy } from '../device/copy'
-import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
+import { devicePlatform, type CountdownNotificationResult } from '../device/platform'
 import {
   getPrayerAlarmSyncOutcome,
   requestPrayerReschedule,
@@ -22,148 +17,91 @@ import {
   useNotificationSettings,
   type NotificationMomentKey,
 } from '../device/useNotificationSettings'
+import { useRefreshWirdDay } from '../day-plan/WirdTodayProvider'
+import { logger } from '../observability/logger'
+import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import {
   DEFAULT_NATIVE_THEME,
   readStoredTheme,
   type NativeThemePreference,
 } from '../preferences/theme'
-import { NATIVE_SETTINGS_COPY } from './constants'
-import { BatterySection } from './BatterySection'
-import { CountdownToggle } from './CountdownToggle'
-import { useRefreshWirdDay, useWirdToday } from '../day-plan/WirdTodayProvider'
-import { LocationSection } from './LocationSection'
-import { SoundPreviewSection } from './SoundPreviewSection'
-import { useWirdLevel } from '../wird/useWirdLevel'
-import type { DayId } from '../wird/types'
-import { BackupSection } from '../backup/BackupSection'
+import {
+  CALCULATION_METHODS,
+  DEFAULT_METHOD_ID,
+  type CalculationMethodId,
+} from '../prayer-times/logic'
 import { MethodSheet } from '../prayer-times/MethodSheet'
+import { ScreenContainer } from '../shell/ScreenContainer'
+import { Text } from '../shell/Text'
 import { ListGroup } from '../ui/ListGroup'
 import { ListRow } from '../ui/ListRow'
+import { SectionHeader } from '../ui/SectionHeader'
+import { SegmentedControl } from '../ui/SegmentedControl'
+import { StatusCard } from '../ui/StatusCard'
+import { SwitchRow } from '../ui/SwitchRow'
+import { useWirdLevel } from '../wird/useWirdLevel'
+import { BatterySection } from './BatterySection'
+import { NATIVE_SETTINGS_COPY } from './constants'
+import { SETTINGS_COPY, SETTINGS_LAYOUT_COPY as COPY } from './copy'
+import { CountdownToggle } from './CountdownToggle'
+import { LocationSection } from './LocationSection'
+import { SoundPreviewSection } from './SoundPreviewSection'
 
-type SettingsState = {
-  theme: NativeThemePreference
-  methodId: CalculationMethodId
-}
-
-const THEME_OPTIONS: readonly { id: NativeThemePreference; label: string }[] = [
-  { id: 'light', label: SETTINGS_COPY.appearance.light },
-  { id: 'dark', label: SETTINGS_COPY.appearance.dark },
-  { id: 'system', label: NATIVE_SETTINGS_COPY.systemTheme },
+const THEME_OPTIONS: { value: NativeThemePreference; label: string }[] = [
+  { value: 'light', label: SETTINGS_COPY.appearance.light },
+  { value: 'dark', label: SETTINGS_COPY.appearance.dark },
+  { value: 'system', label: NATIVE_SETTINGS_COPY.systemTheme },
 ]
-
-const NOTIFICATION_MOMENTS: readonly { key: NotificationMomentKey; label: string }[] = [
-  { key: 'beforeAdhan', label: SETTINGS_COPY.notifications.beforeAdhan },
-  { key: 'atAdhan', label: SETTINGS_COPY.notifications.atAdhan },
-  { key: 'atIqamah', label: SETTINGS_COPY.notifications.atIqamah },
-  { key: 'morningAdhkar', label: SETTINGS_COPY.notifications.morningAdhkar },
-  { key: 'eveningAdhkar', label: SETTINGS_COPY.notifications.eveningAdhkar },
+const MOMENTS: { key: NotificationMomentKey; label: string; description: string }[] = [
+  {
+    key: 'beforeAdhan',
+    label: SETTINGS_COPY.notifications.beforeAdhan,
+    description: COPY.beforeAdhan,
+  },
+  { key: 'atAdhan', label: SETTINGS_COPY.notifications.atAdhan, description: COPY.atAdhan },
+  { key: 'atIqamah', label: SETTINGS_COPY.notifications.atIqamah, description: COPY.atIqamah },
+  {
+    key: 'morningAdhkar',
+    label: SETTINGS_COPY.notifications.morningAdhkar,
+    description: COPY.morningAdhkar,
+  },
+  {
+    key: 'eveningAdhkar',
+    label: SETTINGS_COPY.notifications.eveningAdhkar,
+    description: COPY.eveningAdhkar,
+  },
 ]
-
-function OptionButton({
-  label,
-  selected,
-  onPress,
-  testID,
-  description,
-  disabled = false,
-}: {
-  label: string
-  selected: boolean
-  onPress: () => void
-  testID: string
-  description?: string
-  disabled?: boolean
-}) {
-  return (
-    <Pressable
-      accessibilityRole="radio"
-      accessibilityState={{ selected, disabled }}
-      className={`rounded-card border p-3 ${selected ? 'border-accent bg-accent/10' : 'border-line bg-surface'} ${disabled ? 'opacity-50' : ''}`}
-      disabled={disabled}
-      onPress={onPress}
-      testID={testID}
-    >
-      <Text className="text-body text-start text-ink">{label}</Text>
-      {description ? (
-        <Text className="text-meta mt-1 text-start text-ink">{description}</Text>
-      ) : null}
-    </Pressable>
-  )
-}
-
-function ActionButton({
-  label,
-  onPress,
-  testID,
-}: {
-  label: string
-  onPress: () => void
-  testID: string
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      className="rounded-button border border-accent bg-accent/10 px-4 py-3"
-      onPress={onPress}
-      testID={testID}
-    >
-      <Text className="text-body text-center font-sans-medium text-accent">{label}</Text>
-    </Pressable>
-  )
-}
 
 export function SettingsRoute() {
-  const today = useWirdToday()
-  const refreshWirdDay = useRefreshWirdDay()
-  const [refreshKey, setRefreshKey] = useState(0)
-
-  return (
-    <SettingsContent
-      key={refreshKey}
-      today={today}
-      onRestored={() => {
-        refreshWirdDay()
-        requestPrayerReschedule()
-        setRefreshKey((current) => current + 1)
-      }}
-    />
-  )
-}
-
-function SettingsContent({ onRestored, today }: { onRestored: () => void; today: DayId }) {
   const database = useSQLiteContext()
+  const preferences = useMemo(() => createPreferencesRepository(database), [database])
   const router = useRouter()
   const { setColorScheme } = useColorScheme()
-  const preferences = useMemo(() => createPreferencesRepository(database), [database])
-  const { currentLevelId, canChangeLevel, changeLevel, isLoading: isLevelLoading } = useWirdLevel()
-  const notificationSettings = useNotificationSettings()
   const refreshWirdDay = useRefreshWirdDay()
-  const prayerAlarmSyncOutcome = useSyncExternalStore(
-    subscribePrayerAlarmSyncOutcome,
-    getPrayerAlarmSyncOutcome,
-  )
-  const [methodSheetVisible, setMethodSheetVisible] = useState(false)
+  const { currentLevelId } = useWirdLevel()
+  const notifications = useNotificationSettings()
+  const sync = useSyncExternalStore(subscribePrayerAlarmSyncOutcome, getPrayerAlarmSyncOutcome)
+  const [theme, setTheme] = useState<NativeThemePreference>(DEFAULT_NATIVE_THEME)
+  const [methodId, setMethodId] = useState<CalculationMethodId>(DEFAULT_METHOD_ID)
   const [hydrated, setHydrated] = useState(false)
-  const [state, setState] = useState<SettingsState>({
-    theme: DEFAULT_NATIVE_THEME,
-    methodId: DEFAULT_METHOD_ID,
-  })
+  const [methodVisible, setMethodVisible] = useState(false)
+  const [countdownStatus, setCountdownStatus] = useState<CountdownNotificationResult | null>(null)
 
   useEffect(() => {
     let active = true
     void Promise.all([
       preferences.read(PREFERENCE_KEYS.theme),
       preferences.read(PREFERENCE_KEYS.calculationMethod),
-    ]).then(([theme, method]) => {
+    ]).then(([storedTheme, method]) => {
       if (!active) return
-      const nextTheme = readStoredTheme(theme)
-      setState({
-        theme: nextTheme,
-        methodId: CALCULATION_METHODS.some((entry) => entry.id === method)
+      const nextTheme = readStoredTheme(storedTheme)
+      setTheme(nextTheme)
+      setColorScheme(nextTheme)
+      setMethodId(
+        CALCULATION_METHODS.some((entry) => entry.id === method)
           ? (method as CalculationMethodId)
           : DEFAULT_METHOD_ID,
-      })
-      setColorScheme(nextTheme)
+      )
       setHydrated(true)
     })
     return () => {
@@ -171,24 +109,24 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
     }
   }, [preferences, setColorScheme])
 
-  function writePreference(
-    key: (typeof PREFERENCE_KEYS)[keyof typeof PREFERENCE_KEYS],
-    value: string,
-    updatedAt: number,
-  ): Promise<void> {
-    return preferences.write(key, value, updatedAt)
-  }
+  useEffect(() => {
+    const readStatus = () => setCountdownStatus(devicePlatform.getCountdownNotificationStatus())
+    readStatus()
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') readStatus()
+    })
+    return () => subscription.remove()
+  }, [])
 
-  function changeTheme(theme: NativeThemePreference, updatedAt: number) {
-    setState((previous) => ({ ...previous, theme }))
-    setColorScheme(theme)
-    void writePreference(PREFERENCE_KEYS.theme, theme, updatedAt)
+  function changeTheme(value: NativeThemePreference) {
+    setTheme(value)
+    setColorScheme(value)
+    void preferences.write(PREFERENCE_KEYS.theme, value, Date.now())
   }
-
-  async function changeMethod(methodId: CalculationMethodId, updatedAt: number) {
-    setState((previous) => ({ ...previous, methodId }))
+  async function changeMethod(value: CalculationMethodId) {
+    setMethodId(value)
     try {
-      await writePreference(PREFERENCE_KEYS.calculationMethod, methodId, updatedAt)
+      await preferences.write(PREFERENCE_KEYS.calculationMethod, value, Date.now())
       refreshWirdDay()
       requestPrayerReschedule()
     } catch (cause: unknown) {
@@ -198,20 +136,67 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
     }
   }
 
-  const notificationStatus = notificationSettings.notificationStatus
-  const notificationAction = notificationStatus.action
-  const exactAlarmStatus = notificationSettings.exactAlarmStatus
-  const exactAlarmAction = exactAlarmStatus.action
-  const showNotificationDetails =
-    notificationSettings.prefs.enabled && notificationSettings.permission === 'granted'
-  const showExactAlarm =
-    showNotificationDetails &&
-    exactAlarmStatus.state !== 'not-required' &&
-    exactAlarmStatus.state !== 'ready'
-  const showPrayerAlarmSyncDegraded =
-    showNotificationDetails && prayerAlarmSyncOutcome === 'degraded'
-  const showPrayerAlarmSyncFailure =
-    notificationSettings.prefs.enabled && prayerAlarmSyncOutcome === 'failed'
+  const permissionBlocked = notifications.permission === 'blocked'
+  const permissionRequired = notifications.permission === 'denied'
+  const exactBlocked =
+    notifications.prefs.enabled &&
+    notifications.permission === 'granted' &&
+    notifications.exactAlarmStatus.state !== 'ready' &&
+    notifications.exactAlarmStatus.state !== 'not-required'
+  const syncFailed = notifications.prefs.enabled && sync === 'failed'
+  const countdownBlocked = countdownStatus === 'channel-blocked'
+  const detailsDisabled = !notifications.prefs.enabled || notifications.permission !== 'granted'
+  const alarmDisabled = detailsDisabled || exactBlocked || syncFailed
+  const reason =
+    permissionBlocked || permissionRequired
+      ? notifications.notificationStatus.message
+      : exactBlocked
+        ? notifications.exactAlarmStatus.message
+        : syncFailed
+          ? deviceCopy.notifications.syncFailed
+          : COPY.notificationsOff
+  const status =
+    permissionBlocked || permissionRequired
+      ? {
+          message: notifications.notificationStatus.message,
+          action: notifications.notificationStatus.action
+            ? {
+                label: notifications.notificationStatus.action.label,
+                onPress: () =>
+                  void notifications.runAction(notifications.notificationStatus.action!.type),
+              }
+            : undefined,
+        }
+      : exactBlocked
+        ? {
+            message: notifications.exactAlarmStatus.message,
+            action: notifications.exactAlarmStatus.action
+              ? {
+                  label: notifications.exactAlarmStatus.action.label,
+                  onPress: () =>
+                    void notifications.runAction(notifications.exactAlarmStatus.action!.type),
+                }
+              : sync === 'degraded'
+                ? { label: deviceCopy.actions.retry, onPress: requestPrayerReschedule }
+                : undefined,
+          }
+        : syncFailed
+          ? {
+              message: deviceCopy.notifications.syncFailed,
+              action: { label: deviceCopy.actions.retry, onPress: requestPrayerReschedule },
+            }
+          : countdownBlocked
+            ? {
+                message: NATIVE_SETTINGS_COPY.notifications.countdownBlocked,
+                action: {
+                  label: deviceCopy.actions.openAppSettings,
+                  onPress: () => void notifications.runAction('open-app-settings'),
+                },
+              }
+            : null
+  const level = WIRD_LEVELS.find((entry) => entry.id === currentLevelId)
+  const duration = level?.description.split(' — ').pop()?.replace(/\.$/, '')
+  const levelValue = level ? `${level.title} · ${duration}` : undefined
 
   return (
     <ScreenContainer testID="settings-screen">
@@ -220,266 +205,134 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
           accessibilityRole="header"
           className="font-display text-sheet-title text-start text-accent"
         >
-          الإعدادات
+          {COPY.title}
         </Text>
-        {!hydrated ? (
-          <Text className="text-body text-start text-ink">جارٍ تحميل الإعدادات…</Text>
-        ) : null}
-
-        <View className="gap-3" testID="settings-appearance">
-          <Text className="font-sans-bold text-chip text-start text-ink">
-            {SETTINGS_COPY.appearance.themeTitle}
-          </Text>
-          <View className="gap-2" accessibilityRole="radiogroup">
-            {THEME_OPTIONS.map((option) => (
-              <OptionButton
-                key={option.id}
-                label={option.label}
-                selected={state.theme === option.id}
-                onPress={() => changeTheme(option.id, Date.now())}
-                testID={`theme-${option.id}`}
-              />
-            ))}
-          </View>
+        {!hydrated ? <Text className="text-body text-start text-ink">{COPY.loading}</Text> : null}
+        <View className="gap-3">
+          <SectionHeader title={SETTINGS_COPY.appearance.themeTitle} />
+          <SegmentedControl
+            options={THEME_OPTIONS}
+            value={theme}
+            onChange={changeTheme}
+            accessibilityLabel={SETTINGS_COPY.appearance.themeTitle}
+          />
         </View>
-
-        <View testID="settings-prayer-method">
+        <View className="gap-3">
+          <SectionHeader title={COPY.wird} />
+          <ListGroup>
+            <ListRow
+              label={SETTINGS_COPY.level.title}
+              value={levelValue}
+              onPress={() => router.push('/level')}
+              testID="settings-level-row"
+            />
+          </ListGroup>
+        </View>
+        <View className="gap-3">
+          <SectionHeader title={SETTINGS_COPY.groups.prayerTimes} />
           <ListGroup>
             <ListRow
               label={SETTINGS_COPY.prayerMethod.title}
-              value={CALCULATION_METHODS.find((method) => method.id === state.methodId)?.label}
-              onPress={() => setMethodSheetVisible(true)}
+              value={CALCULATION_METHODS.find((method) => method.id === methodId)?.label}
+              onPress={() => setMethodVisible(true)}
               testID="settings-method-row"
             />
+            <LocationSection />
           </ListGroup>
           <MethodSheet
-            visible={methodSheetVisible}
-            onClose={() => setMethodSheetVisible(false)}
-            methodId={state.methodId}
-            onSelect={(id) => void changeMethod(id, Date.now())}
+            visible={methodVisible}
+            onClose={() => setMethodVisible(false)}
+            methodId={methodId}
+            onSelect={(id) => void changeMethod(id)}
           />
         </View>
-        <LocationSection />
-
-        <View className="gap-3" testID="settings-notifications">
-          <Text className="font-sans-bold text-chip text-start text-ink">
-            {SETTINGS_COPY.groups.notifications}
-          </Text>
-          <Text
-            accessibilityRole="header"
-            className="font-display text-sheet-title text-start text-accent"
-          >
-            {SETTINGS_COPY.notifications.heading}
-          </Text>
-          <View
-            className="gap-3 rounded-card border border-line bg-surface p-4"
-            testID="notification-settings"
-          >
-            <View
-              className="flex-row items-center justify-between gap-3"
-              testID="notification-master-row"
-            >
-              <Text className="text-body text-start text-ink">
-                {SETTINGS_COPY.notifications.enable}
-              </Text>
-              <Switch
-                accessibilityLabel={SETTINGS_COPY.notifications.enable}
-                accessibilityRole="switch"
-                accessibilityState={{
-                  disabled: notificationSettings.isPending('enabled'),
-                }}
-                disabled={notificationSettings.isPending('enabled')}
-                onValueChange={(value) => void notificationSettings.setEnabled(value)}
-                testID="notification-enabled"
-                value={notificationSettings.prefs.enabled}
-              />
-            </View>
-            <View className="gap-2" testID="notification-status">
-              <Text className="text-meta text-start text-ink" testID="notification-status-message">
-                {notificationStatus.message}
-              </Text>
-              {notificationAction ? (
-                <ActionButton
-                  label={notificationAction.label}
-                  onPress={() => void notificationSettings.runAction(notificationAction.type)}
-                  testID="notification-action"
-                />
-              ) : null}
-            </View>
-            <CountdownToggle
-              notificationPermission={notificationSettings.permission}
-              notificationsEnabled={notificationSettings.prefs.enabled}
+        <View className="gap-3">
+          <SectionHeader title={SETTINGS_COPY.groups.notifications} />
+          {status ? (
+            <StatusCard
+              tone="warn"
+              icon={TriangleAlert}
+              message={status.message}
+              action={status.action}
             />
-            {!notificationSettings.hasCoordinates ? (
-              <Text
-                className="text-meta text-start text-ink"
-                testID="notification-location-required"
-              >
-                {SETTINGS_COPY.notifications.locationRequired}
-              </Text>
-            ) : null}
-            {showPrayerAlarmSyncFailure ? (
-              <View className="gap-2" testID="notification-alarm-sync-failure">
-                <Text
-                  className="text-meta text-start text-ink"
-                  testID="notification-alarm-sync-failure-message"
-                >
-                  {deviceCopy.notifications.syncFailed}
-                </Text>
-                <ActionButton
-                  label={deviceCopy.actions.retry}
-                  onPress={requestPrayerReschedule}
-                  testID="notification-alarm-sync-retry"
-                />
-              </View>
-            ) : null}
-          </View>
-          {showNotificationDetails ? (
-            <View className="gap-3">
-              <View className="gap-2" testID="notification-moments">
-                {NOTIFICATION_MOMENTS.map((moment) => {
-                  const pending = notificationSettings.isPending(moment.key)
-                  return (
-                    <View
-                      className={`flex-row items-center justify-between gap-3 rounded-card border p-3 ${notificationSettings.prefs[moment.key] ? 'border-accent bg-accent/10' : 'border-line bg-surface'}`}
-                      key={moment.key}
-                    >
-                      <Text className="text-meta text-start text-ink">{moment.label}</Text>
-                      <Switch
-                        accessibilityLabel={moment.label}
-                        accessibilityRole="switch"
-                        accessibilityState={{ disabled: pending }}
-                        disabled={pending}
-                        onValueChange={(value) =>
-                          void notificationSettings.setMoment(moment.key, value)
-                        }
-                        testID={`notification-moment-${moment.key}`}
-                        value={notificationSettings.prefs[moment.key]}
-                      />
-                    </View>
-                  )
-                })}
-              </View>
-              <View
-                className="flex-row items-start justify-between gap-3 rounded-card border border-line bg-surface p-4"
-                testID="notification-silent-mode"
-              >
-                <View className="flex-1 gap-1">
-                  <Text className="text-body text-start text-ink">
-                    {NATIVE_SETTINGS_COPY.notifications.silentTitle}
-                  </Text>
-                  <Text className="text-meta text-start text-ink">
-                    {NATIVE_SETTINGS_COPY.notifications.silentBody}
-                  </Text>
-                </View>
-                <Switch
-                  accessibilityLabel={NATIVE_SETTINGS_COPY.notifications.silentTitle}
-                  accessibilityRole="switch"
-                  accessibilityState={{
-                    disabled: notificationSettings.isPending('silentMode'),
-                  }}
-                  disabled={notificationSettings.isPending('silentMode')}
-                  onValueChange={(value) => void notificationSettings.setSilentMode(value)}
-                  testID="notification-alarm-on-silent"
-                  value={notificationSettings.silentMode}
-                />
-              </View>
-              {showPrayerAlarmSyncDegraded ? (
-                <Text
-                  className="text-meta text-start text-ink"
-                  testID="notification-alarm-sync-degraded-notice"
-                >
+          ) : null}
+          <ListGroup>
+            <SwitchRow
+              label={SETTINGS_COPY.notifications.enable}
+              description={COPY.masterDescription}
+              value={notifications.prefs.enabled}
+              onValueChange={(value) => void notifications.setEnabled(value)}
+              disabled={permissionBlocked || notifications.isPending('enabled')}
+              disabledReason={
+                permissionBlocked ? notifications.notificationStatus.message : undefined
+              }
+            />
+            {MOMENTS.map((moment) => (
+              <SwitchRow
+                key={moment.key}
+                label={moment.label}
+                description={moment.description}
+                value={notifications.prefs[moment.key]}
+                onValueChange={(value) => void notifications.setMoment(moment.key, value)}
+                disabled={alarmDisabled || notifications.isPending(moment.key)}
+                disabledReason={alarmDisabled ? reason : undefined}
+              />
+            ))}
+            <CountdownToggle
+              disabled={detailsDisabled || countdownBlocked}
+              disabledReason={
+                countdownBlocked
+                  ? NATIVE_SETTINGS_COPY.notifications.countdownBlocked
+                  : detailsDisabled
+                    ? reason
+                    : undefined
+              }
+            />
+            <SwitchRow
+              label={NATIVE_SETTINGS_COPY.notifications.silentTitle}
+              description={NATIVE_SETTINGS_COPY.notifications.silentBody}
+              value={notifications.silentMode}
+              onValueChange={(value) => void notifications.setSilentMode(value)}
+              disabled={alarmDisabled || notifications.isPending('silentMode')}
+              disabledReason={alarmDisabled ? reason : undefined}
+            />
+          </ListGroup>
+          {!notifications.hasCoordinates ? (
+            <Text className="font-sans text-meta text-mute">
+              {SETTINGS_COPY.notifications.locationRequired}
+            </Text>
+          ) : null}
+          {notifications.prefs.enabled && notifications.permission === 'granted' ? (
+            <View className="gap-2">
+              {sync === 'degraded' ? (
+                <Text className="font-sans text-meta text-mute">
                   {deviceCopy.notifications.syncDegradedNotice}
                 </Text>
               ) : null}
-              {showExactAlarm || showPrayerAlarmSyncDegraded ? (
-                <View
-                  className="gap-2 rounded-card border border-line bg-surface p-4"
-                  testID="notification-exact-alarm"
-                >
-                  <Text className="text-meta text-start text-ink">{exactAlarmStatus.message}</Text>
-                  {exactAlarmAction ? (
-                    <ActionButton
-                      label={exactAlarmAction.label}
-                      onPress={() => void notificationSettings.runAction(exactAlarmAction.type)}
-                      testID="notification-exact-alarm-action"
-                    />
-                  ) : showPrayerAlarmSyncDegraded ? (
-                    <ActionButton
-                      label={deviceCopy.actions.retry}
-                      onPress={requestPrayerReschedule}
-                      testID="notification-exact-alarm-retry"
-                    />
-                  ) : null}
-                </View>
-              ) : null}
-              <View className="gap-2" testID="notification-lifecycle-guidance">
-                <Text className="text-meta text-start text-ink">
-                  {deviceCopy.notifications.recoveryHeading}
-                </Text>
-                <Text
-                  className="text-meta text-start text-ink"
-                  testID="notification-reboot-recovery"
-                >
-                  {deviceCopy.notifications.rebootRecovery}
-                </Text>
-                <Text
-                  className="text-meta text-start text-ink"
-                  testID="notification-time-change-recovery"
-                >
-                  {deviceCopy.notifications.timeChangeRecovery}
-                </Text>
-              </View>
+              <Text className="font-sans text-meta text-mute">
+                {deviceCopy.notifications.recoveryHeading}
+              </Text>
+              <Text className="font-sans text-meta text-mute">
+                {deviceCopy.notifications.rebootRecovery}
+              </Text>
+              <Text className="font-sans text-meta text-mute">
+                {deviceCopy.notifications.timeChangeRecovery}
+              </Text>
             </View>
           ) : null}
         </View>
-
         <BatterySection />
-
         <SoundPreviewSection />
-
-        <View className="gap-3" testID="settings-level">
-          <Text className="font-sans-bold text-chip text-start text-ink">
-            {SETTINGS_COPY.level.title}
-          </Text>
-          <Text className="text-body text-start text-ink">{SETTINGS_COPY.level.label}</Text>
-          <View className="gap-2" accessibilityRole="radiogroup">
-            {WIRD_LEVELS.map((level) => (
-              <OptionButton
-                key={level.id}
-                label={level.title}
-                description={level.description}
-                selected={!isLevelLoading && canChangeLevel && currentLevelId === level.id}
-                disabled={isLevelLoading || !canChangeLevel}
-                onPress={() => void changeLevel(level.id, today, Date.now())}
-                testID={`level-${level.id}`}
-              />
-            ))}
-          </View>
-          <Text className="text-meta text-start text-ink">{SETTINGS_COPY.level.hint}</Text>
+        <View className="gap-3">
+          <SectionHeader title={COPY.data} />
+          <ListGroup>
+            <ListRow
+              label={COPY.backup}
+              description={COPY.backupDescription}
+              onPress={() => router.push('/backup')}
+            />
+          </ListGroup>
         </View>
-
-        <View className="gap-2" testID="settings-links">
-          <Text className="font-sans-bold text-chip text-start text-ink">
-            {SETTINGS_COPY.links.title}
-          </Text>
-          {[
-            ['/prayer-times', 'مواقيت الصلاة', 'settings-link-prayer-times'],
-            ['/more', 'المزيد', 'settings-link-libraries'],
-            ['/stats', 'الإحصائيات', 'settings-link-stats'],
-          ].map(([href, label, testID]) => (
-            <Pressable
-              accessibilityRole="button"
-              className="rounded-card border border-line bg-surface p-3"
-              key={href}
-              onPress={() => router.push(href)}
-              testID={testID}
-            >
-              <Text className="text-body text-start text-accent">{label}</Text>
-            </Pressable>
-          ))}
-        </View>
-        <BackupSection onRestored={onRestored} />
       </View>
     </ScreenContainer>
   )
