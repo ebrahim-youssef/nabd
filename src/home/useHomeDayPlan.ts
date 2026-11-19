@@ -40,8 +40,8 @@ export type HomeDayPlan = {
   coordinates: { latitude: number; longitude: number } | null
   runLocationAction: () => Promise<void>
   dailyLines: ReturnType<typeof dailyLines>
-  prayerActionReview: { day: DayId; at: number } | null
-  markPrayerActionReviewSeen: (at: number) => Promise<void>
+  prayerActionReview: { actionId: string; day: DayId; at: number } | null
+  markPrayerActionReviewSeen: (actionId: string) => Promise<void>
 }
 
 export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
@@ -97,8 +97,10 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
   const { data, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
   const readPrayerActionReview = useCallback(async () => {
     try {
-      const seenAtValue = await preferences.read(PREFERENCE_KEYS.prayerActionReviewSeenAt)
-      return await repository.readLatestStaleAction(parsePrayerActionReviewSeenAt(seenAtValue))
+      const seenIdValue = await preferences.read(PREFERENCE_KEYS.prayerActionReviewSeenId)
+      const seenActionId = parsePrayerActionReviewSeenId(seenIdValue)
+      const latestStaleAction = await repository.readLatestStaleAction()
+      return latestStaleAction?.actionId === seenActionId ? null : latestStaleAction
     } catch (cause: unknown) {
       logger.error('Native Home prayer action review read failed', cause)
       return null
@@ -107,12 +109,15 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
   const { data: prayerActionReview, refresh: refreshPrayerActionReview } =
     useLiveRepositoryQuery(readPrayerActionReview)
   const markPrayerActionReviewSeen = useCallback(
-    async (at: number) => {
+    async (actionId: string) => {
       try {
-        await preferences.write(PREFERENCE_KEYS.prayerActionReviewSeenAt, String(at), Date.now())
+        await preferences.write(PREFERENCE_KEYS.prayerActionReviewSeenId, actionId, Date.now())
         refreshPrayerActionReview()
       } catch (cause: unknown) {
-        logger.error(`Native Home prayer action review preference write failed at ${at}`, cause)
+        logger.error(
+          `Native Home prayer action review preference write failed for ${actionId}`,
+          cause,
+        )
       }
     },
     [preferences, refreshPrayerActionReview],
@@ -164,8 +169,7 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
   }
 }
 
-function parsePrayerActionReviewSeenAt(value: string | null): number {
-  if (value === null || !/^\d+$/.test(value)) return 0
-  const parsed = Number(value)
-  return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0
+function parsePrayerActionReviewSeenId(value: string | null): string | null {
+  const actionId = value?.trim()
+  return actionId || null
 }

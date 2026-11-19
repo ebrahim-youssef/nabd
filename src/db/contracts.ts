@@ -14,7 +14,7 @@ export type SetItemStateInput = {
 
 export type SetItemStateOutcome = 'applied' | 'unchanged' | 'duplicate' | 'stale'
 
-export type StaleActionReview = { day: DayId; at: number }
+export type StaleActionReview = { actionId: string; day: DayId; at: number }
 
 // Contracts describe product persistence without choosing Dexie, SQLite, ids, clocks, or sync.
 // Each platform owns those details and passes explicit day/time values into its adapter.
@@ -25,7 +25,7 @@ export type WirdRepository = {
   getMonthEntries(month: string): Promise<WirdEntry[]>
   getEntriesInRange(fromDay: DayId, toDay: DayId): Promise<WirdEntry[]>
   getAllEntries(): Promise<WirdEntry[]>
-  readLatestStaleAction(afterAt: number): Promise<StaleActionReview | null>
+  readLatestStaleAction(): Promise<StaleActionReview | null>
   addVersion(
     effectiveFrom: DayId,
     definition: WirdDefinition,

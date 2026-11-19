@@ -8,7 +8,7 @@ import org.json.JSONArray
 class PendingPrayerActionsTest {
   @Test
   fun appendsAndDecodesAnEntry() {
-    val encoded = PendingPrayerActions.append("[]", entry("one", at = 10L))
+    val encoded = appendEntry("[]", entry("one", at = 10L))
 
     assertEquals(listOf(entry("one", at = 10L)), PendingPrayerActions.decode(encoded))
   }
@@ -16,36 +16,55 @@ class PendingPrayerActionsTest {
   @Test
   fun keepsTheExistingEntryWhenAnActionIdIsAppendedAgain() {
     val existing = entry("same", at = 10L)
-    val encoded = PendingPrayerActions.append("[]", existing)
-    val appended = PendingPrayerActions.append(encoded, entry("same", itemId = "isha", at = 20L))
+    val encoded = appendEntry("[]", existing)
+    val appended = appendEntry(encoded, entry("same", itemId = "isha", at = 20L))
 
     assertEquals(listOf(existing), PendingPrayerActions.decode(appended))
   }
 
   @Test
-  fun dropsTheOldestEntryWhenTheQueueExceedsItsLimit() {
+  fun preservesInsertionOrderWhenActionTimesAreOutOfOrder() {
+    val encoded = appendEntry(
+      appendEntry("[]", entry("later-time", at = 20L)),
+      entry("earlier-time", at = 10L),
+    )
+
+    assertEquals(
+      listOf("later-time", "earlier-time"),
+      PendingPrayerActions.decode(encoded).map { it.actionId },
+    )
+  }
+
+  @Test
+  fun refusesANewEntryWhenFullWithoutDroppingExistingEntries() {
     var encoded = "[]"
     repeat(PendingPrayerActions.MAX_PENDING_ACTIONS) { index ->
-      encoded = PendingPrayerActions.append(encoded, entry("action-$index", at = index.toLong()))
+      encoded = appendEntry(encoded, entry("action-$index", at = index.toLong()))
     }
-    encoded = PendingPrayerActions.append(encoded, entry("newest", at = 100L))
+    val appended = PendingPrayerActions.append(encoded, entry("overflow", at = 100L))
     val actions = PendingPrayerActions.decode(encoded)
 
     assertEquals(PendingPrayerActions.MAX_PENDING_ACTIONS, actions.size)
-    assertEquals("action-1", actions.first().actionId)
-    assertEquals("newest", actions.last().actionId)
+    assertEquals(null, appended)
+    assertEquals(
+      (0 until PendingPrayerActions.MAX_PENDING_ACTIONS).map { "action-$it" },
+      actions.map { it.actionId },
+    )
   }
 
   @Test
   fun acknowledgesOnlyRequestedActionIds() {
-    val encoded = PendingPrayerActions.append(
-      PendingPrayerActions.append("[]", entry("one")),
-      entry("two"),
+    val encoded = appendEntry(
+      appendEntry(
+        appendEntry("[]", entry("one", at = 20L)),
+        entry("two", at = 10L),
+      ),
+      entry("three", at = 5L),
     )
 
     assertEquals(
-      listOf(entry("two")),
-      PendingPrayerActions.decode(PendingPrayerActions.acknowledge(encoded, listOf("one"))),
+      listOf(entry("one", at = 20L), entry("three", at = 5L)),
+      PendingPrayerActions.decode(PendingPrayerActions.acknowledge(encoded, listOf("two"))),
     )
   }
 
@@ -74,6 +93,9 @@ class PendingPrayerActionsTest {
     itemId: String = "fajr",
     at: Long = 42L,
   ) = PendingPrayerAction(actionId, itemId, "2026-11-19", "v1", at)
+
+  private fun appendEntry(json: String?, action: PendingPrayerAction): String =
+    requireNotNull(PendingPrayerActions.append(json, action))
 
   private object JSONArrayEntry {
     fun valid(actionId: String) = json(actionId, "fajr", "2026-11-19", "v1", 42L)

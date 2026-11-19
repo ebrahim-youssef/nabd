@@ -19,6 +19,7 @@ internal object PendingPrayerActionStore {
   fun append(context: Context, action: PendingPrayerAction): Boolean = synchronized(lock) {
     val preferences = preferences(context)
     val encoded = PendingPrayerActions.append(preferences.getString(PENDING_ACTIONS_KEY, null), action)
+      ?: return@synchronized false
     commit(preferences, encoded, "Could not commit a pending prayer action")
   }
 

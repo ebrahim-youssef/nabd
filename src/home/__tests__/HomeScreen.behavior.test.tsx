@@ -127,7 +127,7 @@ describe('HomeScreen', () => {
     showPlan(makePlan(NOW))
     mockedUseHomeDayPlan.mockImplementation(() => ({
       ...homeDayPlan(makePlan(NOW)),
-      prayerActionReview: { day: '2026-06-09', at: NOW },
+      prayerActionReview: { actionId: 'stale-action', day: '2026-06-09', at: NOW },
     }))
 
     render(<HomeScreen persisted={persisted()} />)

@@ -59,7 +59,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const openPrayerActionReview = async () => {
     const review = home.prayerActionReview
     if (!review) return
-    await home.markPrayerActionReviewSeen(review.at)
+    await home.markPrayerActionReviewSeen(review.actionId)
     router.push(`/today/${review.day}`)
   }
 

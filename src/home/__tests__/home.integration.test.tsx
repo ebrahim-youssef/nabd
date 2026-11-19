@@ -38,15 +38,15 @@ type EntryRow = {
 function createDatabase(
   failHealing = false,
   failVersionReadNumber = 0,
-  initialSeenAt: string | null = null,
+  initialSeenId: string | null = null,
 ) {
   const entries: EntryRow[] = []
   const actionIds = new Set<string>()
-  const staleActions: { day: string; at: number }[] = []
+  const staleActions: { actionId: string; day: string; at: number }[] = []
   let staleActionReadCount = 0
   const preferences = new Map<string, string>()
-  if (initialSeenAt !== null) {
-    preferences.set(PREFERENCE_KEYS.prayerActionReviewSeenAt, initialSeenAt)
+  if (initialSeenId !== null) {
+    preferences.set(PREFERENCE_KEYS.prayerActionReviewSeenId, initialSeenId)
   }
   let versionReadCount = 0
   const versions = [
@@ -71,21 +71,19 @@ function createDatabase(
       }
       if (source.includes("outcome = 'stale'")) {
         staleActionReadCount += 1
-        const action = staleActions
-          .filter(({ at }) => at > Number(parameters[0]))
-          .sort((left, right) => right.at - left.at)[0]
+        const action = staleActions[staleActions.length - 1]
         return (action ?? null) as T | null
       }
       if (source.includes('SELECT action_id FROM wird_actions')) {
         return actionIds.has(String(parameters[0])) ? ({ action_id: parameters[0] } as T) : null
       }
-      if (source.includes('SELECT done FROM wird_entries')) {
+      if (source.includes('SELECT done, at FROM wird_entries')) {
         const matchingEntries = entries.filter(
           (candidate) =>
             candidate.day === String(parameters[0]) && candidate.item_id === String(parameters[1]),
         )
         const entry = matchingEntries[matchingEntries.length - 1]
-        return entry ? ({ done: entry.done } as T) : null
+        return entry ? ({ done: entry.done, at: entry.at } as T) : null
       }
       if (source.includes('INSERT INTO wird_entries')) {
         const entry: EntryRow = {
@@ -134,7 +132,8 @@ function createDatabase(
     database,
     entries,
     preferences,
-    addStaleAction: (day: string, at: number) => staleActions.push({ day, at }),
+    addStaleAction: (actionId: string, day: string, at: number) =>
+      staleActions.push({ actionId, day, at }),
     getStaleActionReadCount: () => staleActionReadCount,
     getVersionReadCount: () => versionReadCount,
   }
@@ -162,8 +161,12 @@ describe('HomeScreen repository integration', () => {
   })
 
   it('hides the review line when the newest stale action is already seen', async () => {
-    const { database, addStaleAction, getStaleActionReadCount } = createDatabase(false, 0, '300')
-    addStaleAction('2026-09-13', 300)
+    const { database, addStaleAction, getStaleActionReadCount } = createDatabase(
+      false,
+      0,
+      'stale-seen',
+    )
+    addStaleAction('stale-seen', '2026-09-13', 300)
     mockedUseSQLiteContext.mockReturnValue(database as never)
     jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
 
@@ -174,9 +177,12 @@ describe('HomeScreen repository integration', () => {
     expect(screen.queryByTestId('prayer-action-review')).toBeNull()
   })
 
-  it('treats an invalid review seen-at preference as zero', async () => {
-    const { database, addStaleAction } = createDatabase(false, 0, 'invalid')
-    addStaleAction('2026-09-13', 1)
+  it.each([
+    ['missing', null],
+    ['invalid', '   '],
+  ] as const)('shows the review line when the seen action id is %s', async (_label, seenId) => {
+    const { database, addStaleAction } = createDatabase(false, 0, seenId)
+    addStaleAction('stale-action', '2026-09-13', 1)
     mockedUseSQLiteContext.mockReturnValue(database as never)
     jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
 
@@ -189,12 +195,12 @@ describe('HomeScreen repository integration', () => {
     const { database, addStaleAction, preferences, getVersionReadCount } = createDatabase(
       false,
       0,
-      '100',
+      'older-action',
     )
-    addStaleAction('2026-09-13', 200)
-    addStaleAction('2026-09-12', 300)
+    addStaleAction('stale-older', '2026-09-13', 200)
+    addStaleAction('stale-newest', '2026-09-12', 300)
     mockPush.mockImplementation(() =>
-      expect(preferences.get(PREFERENCE_KEYS.prayerActionReviewSeenAt)).toBe('300'),
+      expect(preferences.get(PREFERENCE_KEYS.prayerActionReviewSeenId)).toBe('stale-newest'),
     )
     mockedUseSQLiteContext.mockReturnValue(database as never)
     jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
@@ -205,15 +211,19 @@ describe('HomeScreen repository integration', () => {
     const versionReadsBeforeOpening = getVersionReadCount()
 
     await waitFor(() =>
-      expect(preferences.get(PREFERENCE_KEYS.prayerActionReviewSeenAt)).toBe('300'),
+      expect(preferences.get(PREFERENCE_KEYS.prayerActionReviewSeenId)).toBe('stale-newest'),
     )
     expect(getVersionReadCount()).toBe(versionReadsBeforeOpening)
     expect(mockPush).toHaveBeenCalledWith('/today/2026-09-12')
   })
 
-  it('shows a newer stale action after the saved seen-at timestamp', async () => {
-    const { database, addStaleAction, getStaleActionReadCount } = createDatabase(false, 0, '200')
-    addStaleAction('2026-09-13', 200)
+  it('shows a later stale action even when its wall-clock time is earlier', async () => {
+    const { database, addStaleAction, getStaleActionReadCount } = createDatabase(
+      false,
+      0,
+      'stale-seen',
+    )
+    addStaleAction('stale-seen', '2026-09-13', 200)
     mockedUseSQLiteContext.mockReturnValue(database as never)
     jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
 
@@ -223,7 +233,7 @@ describe('HomeScreen repository integration', () => {
     await waitFor(() => expect(getStaleActionReadCount()).toBeGreaterThan(0))
     expect(screen.queryByTestId('prayer-action-review')).toBeNull()
 
-    addStaleAction('2026-09-12', 300)
+    addStaleAction('stale-later', '2026-09-12', 100)
     act(() => refreshLiveRepositoryQueries())
 
     expect(await screen.findByTestId('prayer-action-review')).toHaveTextContent(

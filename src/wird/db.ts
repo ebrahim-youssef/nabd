@@ -136,11 +136,10 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
         )
       ).map(asEntry)
     },
-    async readLatestStaleAction(afterAt): Promise<StaleActionReview | null> {
+    async readLatestStaleAction(): Promise<StaleActionReview | null> {
       return database.getFirstAsync<StaleActionReview>(
-        "SELECT day, at FROM wird_actions WHERE outcome = 'stale' AND at > ? " +
-          'ORDER BY at DESC, rowid DESC LIMIT 1',
-        afterAt,
+        "SELECT action_id AS actionId, day, at FROM wird_actions WHERE outcome = 'stale' " +
+          'ORDER BY rowid DESC LIMIT 1',
       )
     },
     async setWirdLevel(definition, today, now) {

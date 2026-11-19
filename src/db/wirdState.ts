@@ -70,13 +70,15 @@ export async function setItemStateInTransaction(
     !!version &&
     version.id === input.versionId &&
     version.definition.items.some((item) => item.id === input.itemId)
-  const latest = isCurrentItem
-    ? await transaction.getFirstAsync<{ done: number }>(
-        'SELECT done FROM wird_entries WHERE day = ? AND item_id = ? ORDER BY at DESC, rowid DESC LIMIT 1',
-        input.day,
-        input.itemId,
-      )
-    : null
+  const latest =
+    isCurrentItem || input.actionId !== undefined
+      ? await transaction.getFirstAsync<{ done: number; at: number }>(
+          'SELECT done, at FROM wird_entries WHERE day = ? AND item_id = ? ORDER BY at DESC, rowid DESC LIMIT 1',
+          input.day,
+          input.itemId,
+        )
+      : null
+  const at = input.actionId !== undefined && latest ? Math.max(input.at, latest.at + 1) : input.at
   const outcome: SetItemStateOutcome = !isCurrentItem
     ? 'stale'
     : latest && (latest.done === 1) === input.done
@@ -90,7 +92,7 @@ export async function setItemStateInTransaction(
           input.versionId,
           input.itemId,
           input.done ? 1 : 0,
-          input.at,
+          at,
         )
       : null
   if (outcome === 'applied' && !row) throw new Error('wird state insert returned no row')
@@ -105,7 +107,7 @@ export async function setItemStateInTransaction(
       input.versionId,
       input.done ? 1 : 0,
       outcome,
-      input.at,
+      at,
     )
   }
   return { outcome, entry }

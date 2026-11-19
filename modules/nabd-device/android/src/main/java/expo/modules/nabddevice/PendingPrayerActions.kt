@@ -22,17 +22,18 @@ internal object PendingPrayerActions {
     }
   }
 
-  fun append(json: String?, action: PendingPrayerAction): String {
+  fun append(json: String?, action: PendingPrayerAction): String? {
     val actions = decode(json)
     if (!isValidPendingPrayerAction(action) || actions.any { it.actionId == action.actionId }) {
-      return encode(cap(actions))
+      return encode(actions)
     }
-    return encode(cap(actions + action))
+    if (actions.size >= MAX_PENDING_ACTIONS) return null
+    return encode(actions + action)
   }
 
   fun acknowledge(json: String?, actionIds: List<String>): String {
     val acknowledged = actionIds.toSet()
-    return encode(cap(decode(json).filterNot { it.actionId in acknowledged }))
+    return encode(decode(json).filterNot { it.actionId in acknowledged })
   }
 
   private fun parse(json: JSONObject): PendingPrayerAction? {
@@ -43,9 +44,6 @@ internal object PendingPrayerActions {
     val at = (json.opt("at") as? Number)?.toString()?.toLongOrNull() ?: return null
     return PendingPrayerAction(actionId, itemId, day, versionId, at)
   }
-
-  private fun cap(actions: List<PendingPrayerAction>): List<PendingPrayerAction> =
-    actions.sortedBy { it.at }.takeLast(MAX_PENDING_ACTIONS)
 
   private fun encode(actions: List<PendingPrayerAction>): String {
     val encodedActions = JSONArray()
