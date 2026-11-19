@@ -22,12 +22,29 @@ class PrayerActionReceiver : BroadcastReceiver() {
       notificationId = readIntExtra(intent, NOTIFICATION_ID_EXTRA),
     )
     if (payload == null) {
-      Log.w(LOG_TAG, "Rejected prayer action broadcast with invalid extras")
+      val actionId = readStringExtra(intent, ACTION_ID_EXTRA) ?: "unavailable"
+      Log.w(LOG_TAG, "Rejected prayer action because payload validation failed; actionId=$actionId")
       return
     }
 
     val action = payload.toPendingAction(System.currentTimeMillis())
-    if (!PendingPrayerActionStore.append(context, action)) return
+    var queued = false
+    synchronized(OutsideAppActionLock) {
+      if (PendingPrayerActionStore.append(context, action)) {
+        queued = true
+        val snapshot = WidgetSnapshotStore.read(context)
+        val updated = snapshot?.let { applyPrayerActionToSnapshot(it, action) }
+        if (updated != null && !WidgetSnapshotStore.write(context, updated)) {
+          Log.w(LOG_TAG, "Could not update widget snapshot after committed prayer action; actionId=${action.actionId}")
+        }
+      }
+    }
+    if (!queued) return
+    try {
+      NabdWidgetRefresh.refresh(context)
+    } catch (cause: Exception) {
+      Log.w(LOG_TAG, "Could not refresh widgets after committed prayer action; actionId=${action.actionId}", cause)
+    }
 
     try {
       NotificationManagerCompat.from(context).cancel(payload.notificationTag, payload.notificationId)

@@ -65,6 +65,63 @@ class WidgetSnapshotTest {
   }
 
   @Test
+  fun widgetTickAdjustsUnrecordedCountOnlyWhenAFlaggedItemChanges() {
+    val flagged = snapshot().copy(
+      blocks = snapshot().blocks.mapIndexed { index, block ->
+        if (index == 1) block.copy(items = listOf(block.items.single().copy(countsAsUnrecorded = true)))
+        else block
+      },
+    )
+
+    val completed = applyWidgetTick(flagged, "dhuhr", true)
+    assertEquals(1, completed.unrecordedCount)
+    assertEquals(2, applyWidgetTick(completed, "dhuhr", false).unrecordedCount)
+    assertEquals(3, applyWidgetTick(completed.copy(unrecordedCount = 2), "dhuhr", false).unrecordedCount)
+    assertEquals(flagged, applyWidgetTick(flagged, "dhuhr", false))
+    assertEquals(flagged, applyWidgetTick(flagged, "missing", true))
+    assertEquals(0, applyWidgetTick(flagged.copy(unrecordedCount = 0), "dhuhr", true).unrecordedCount)
+  }
+
+  @Test
+  fun absentCountsAsUnrecordedDefaultsToFalseAndRoundTripsWhenPresent() {
+    val oldJson = snapshot().toJson().replace(",\"countsAsUnrecorded\":false", "")
+    val parsedOld = WidgetSnapshot.parse(oldJson)
+    assertFalse(parsedOld?.blocks?.first()?.items?.first()?.countsAsUnrecorded ?: true)
+
+    val current = snapshot().copy(
+      blocks = snapshot().blocks.mapIndexed { index, block ->
+        if (index == 0) block.copy(items = listOf(block.items.single().copy(countsAsUnrecorded = true)))
+        else block
+      },
+    )
+    assertEquals(current, WidgetSnapshot.parse(current.toJson()))
+  }
+
+  @Test
+  fun widgetTickValidationRequiresCurrentMatchingOpenItem() {
+    val target = WidgetTickTarget(7, "2026-11-19", "v1", "dhuhr")
+    val value = snapshot()
+
+    assertEquals(WidgetTickValidation.Valid, validateWidgetTick(target, value, TWO_PM))
+    assertEquals(WidgetTickValidation.MissingSnapshot, validateWidgetTick(target, null, TWO_PM))
+    assertEquals(WidgetTickValidation.WrongDay, validateWidgetTick(target.copy(day = "2026-11-20"), value, TWO_PM))
+    assertEquals(WidgetTickValidation.WrongVersion, validateWidgetTick(target.copy(versionId = "v2"), value, TWO_PM))
+    assertEquals(WidgetTickValidation.ItemNotInOpenBlock, validateWidgetTick(target.copy(itemId = "fajr"), value, TWO_PM))
+    assertEquals(WidgetTickValidation.StaleSnapshot, validateWidgetTick(target, value, NEXT_FAJR))
+  }
+
+  @Test
+  fun notificationActionMarksOnlyMatchingSnapshotOccurrenceDone() {
+    val value = snapshot()
+    val action = PendingPrayerAction("adhan:one", "dhuhr", value.day, value.versionId, 1L)
+
+    assertTrue(applyPrayerActionToSnapshot(value, action)?.blocks?.get(1)?.items?.single()?.done == true)
+    assertNull(applyPrayerActionToSnapshot(value.copy(day = "2026-11-20"), action))
+    assertNull(applyPrayerActionToSnapshot(value.copy(versionId = "v2"), action))
+    assertNull(applyPrayerActionToSnapshot(value, action.copy(itemId = "missing")))
+  }
+
+  @Test
   fun validatesWidgetActionsAgainstSnapshotItems() {
     val action = PendingPrayerAction("widget:one", "custom-item", "2026-11-19", "v1", 1L, false)
     val allowedSnapshot = snapshot().copy(

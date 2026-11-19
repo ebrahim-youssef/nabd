@@ -22,7 +22,13 @@ data class WidgetSnapshot(
     blocks.forEach { block ->
       val items = JSONArray()
       block.items.forEach { item ->
-        items.put(JSONObject().put("id", item.id).put("label", item.label).put("done", item.done))
+        items.put(
+          JSONObject()
+            .put("id", item.id)
+            .put("label", item.label)
+            .put("done", item.done)
+            .put("countsAsUnrecorded", item.countsAsUnrecorded),
+        )
       }
       encodedBlocks.put(
         JSONObject()
@@ -137,7 +143,12 @@ data class WidgetSnapshot(
       val id = value.string("id")?.takeIf(String::isNotBlank) ?: return null
       val label = value.string("label")?.takeIf(String::isNotBlank) ?: return null
       val done = value.boolean("done") ?: return null
-      return WidgetPrayerItem(id, label, done)
+      val countsAsUnrecorded = if (value.has("countsAsUnrecorded")) {
+        value.boolean("countsAsUnrecorded") ?: return null
+      } else {
+        false
+      }
+      return WidgetPrayerItem(id, label, done, countsAsUnrecorded)
     }
 
     private fun parseNextPrayer(value: JSONObject): WidgetNextPrayer? {
@@ -157,13 +168,43 @@ data class WidgetPrayerBlock(
   val items: List<WidgetPrayerItem>,
 )
 
-data class WidgetPrayerItem(val id: String, val label: String, val done: Boolean)
+data class WidgetPrayerItem(
+  val id: String,
+  val label: String,
+  val done: Boolean,
+  val countsAsUnrecorded: Boolean = false,
+)
 
 data class WidgetNextPrayer(val id: String, val label: String, val at: Long)
 
 internal fun isValidWidgetPrayerAction(action: PendingPrayerAction, snapshot: WidgetSnapshot): Boolean =
   isValidPendingPrayerAction(action) &&
     snapshot.blocks.any { block -> block.items.any { item -> item.id == action.itemId } }
+
+internal fun applyWidgetTick(snapshot: WidgetSnapshot, itemId: String, done: Boolean): WidgetSnapshot {
+  val current = snapshot.blocks.asSequence().flatMap { it.items.asSequence() }.firstOrNull { it.id == itemId }
+    ?: return snapshot
+  if (current.done == done) return snapshot
+  val updated = WidgetSnapshot.withItemDone(snapshot, itemId, done)
+  if (!current.countsAsUnrecorded) return updated
+  val unrecordedCount = if (done) {
+    (updated.unrecordedCount - 1).coerceAtLeast(0)
+  } else if (updated.unrecordedCount < Int.MAX_VALUE) {
+    updated.unrecordedCount + 1
+  } else {
+    Int.MAX_VALUE
+  }
+  return updated.copy(unrecordedCount = unrecordedCount)
+}
+
+internal fun applyPrayerActionToSnapshot(
+  snapshot: WidgetSnapshot,
+  action: PendingPrayerAction,
+): WidgetSnapshot? {
+  if (snapshot.day != action.day || snapshot.versionId != action.versionId) return null
+  if (snapshot.blocks.none { block -> block.items.any { item -> item.id == action.itemId } }) return null
+  return applyWidgetTick(snapshot, action.itemId, true)
+}
 
 private fun JSONObject.string(key: String): String? = opt(key) as? String
 

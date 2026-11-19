@@ -11,6 +11,7 @@ const PRAYER_ALARM_RECEIVER = 'expo.modules.nabddevice.PrayerAlarmReceiver'
 const PRAYER_ACTION_RECEIVER = 'expo.modules.nabddevice.PrayerActionReceiver'
 const SYSTEM_TIME_RECEIVER = 'expo.modules.nabddevice.SystemTimeReceiver'
 const WIDGET_BOUNDARY_RECEIVER = 'expo.modules.nabddevice.WidgetBoundaryReceiver'
+const WIDGET_TICK_RECEIVER = 'expo.modules.nabddevice.WidgetTickReceiver'
 const WIDGET_PROVIDER_UPDATE = 'android.appwidget.action.APPWIDGET_UPDATE'
 const WIDGET_PROVIDERS = [
   {
@@ -101,6 +102,13 @@ function applyManifest(androidManifest) {
   const boundaryTarget = boundaryReceiver ?? { $: { 'android:name': WIDGET_BOUNDARY_RECEIVER } }
   boundaryTarget.$['android:exported'] = 'false'
   if (!boundaryReceiver) receivers.push(boundaryTarget)
+
+  const tickReceiver = receivers.find(
+    (receiver) => receiver.$?.['android:name'] === WIDGET_TICK_RECEIVER,
+  )
+  const tickTarget = tickReceiver ?? { $: { 'android:name': WIDGET_TICK_RECEIVER } }
+  tickTarget.$['android:exported'] = 'false'
+  if (!tickReceiver) receivers.push(tickTarget)
 
   for (const widget of WIDGET_PROVIDERS) {
     const existing = receivers.find((receiver) => receiver.$?.['android:name'] === widget.name)

@@ -60,6 +60,7 @@ describe('withNabdAlarms', () => {
       'expo.modules.nabddevice.PrayerActionReceiver',
       'expo.modules.nabddevice.SystemTimeReceiver',
       'expo.modules.nabddevice.WidgetBoundaryReceiver',
+      'expo.modules.nabddevice.WidgetTickReceiver',
       'expo.modules.nabddevice.NabdLargeWidgetProvider',
       'expo.modules.nabddevice.NabdSmallWidgetProvider',
     ])
@@ -82,7 +83,13 @@ describe('withNabdAlarms', () => {
         'android:exported': 'false',
       },
     })
-    expect(receivers.slice(4)).toEqual([
+    expect(receivers[4]).toEqual({
+      $: {
+        'android:name': 'expo.modules.nabddevice.WidgetTickReceiver',
+        'android:exported': 'false',
+      },
+    })
+    expect(receivers.slice(5)).toEqual([
       {
         $: {
           'android:name': 'expo.modules.nabddevice.NabdLargeWidgetProvider',
@@ -136,9 +143,15 @@ describe('withNabdAlarms', () => {
     expect(entries).toHaveLength(4)
     expect(entries[1].$['android:maxSdkVersion']).toBe('32')
     const receivers = manifest.manifest.application[0].receiver ?? []
-    expect(receivers).toHaveLength(6)
+    expect(receivers).toHaveLength(7)
     expect(manifest.manifest.application[0].provider).toEqual([])
-    receivers.slice(4).forEach((receiver) => {
+    expect(receivers[4]).toEqual({
+      $: {
+        'android:name': 'expo.modules.nabddevice.WidgetTickReceiver',
+        'android:exported': 'false',
+      },
+    })
+    receivers.slice(5).forEach((receiver) => {
       expect(receiver['intent-filter']?.[0].action).toHaveLength(1)
       expect(receiver['meta-data']).toHaveLength(1)
     })

@@ -51,20 +51,19 @@
         android:background="@color/nabd_widget_line" />
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
       <LinearLayout
           android:id="@+id/nabd_widget_item_row_1"
           android:layout_width="match_parent"
-          android:layout_height="0dp"
-          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:minHeight="34dp"
           android:gravity="center_vertical"
           android:orientation="horizontal">
         <CheckBox
             android:id="@+id/nabd_widget_item_toggle_1"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:button="@drawable/nabd_widget_star"
             android:ellipsize="end"
             android:maxLines="1"
@@ -77,14 +76,14 @@
       <LinearLayout
           android:id="@+id/nabd_widget_item_row_2"
           android:layout_width="match_parent"
-          android:layout_height="0dp"
-          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:minHeight="34dp"
           android:gravity="center_vertical"
           android:orientation="horizontal">
         <CheckBox
             android:id="@+id/nabd_widget_item_toggle_2"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:button="@drawable/nabd_widget_star"
             android:ellipsize="end"
             android:maxLines="1"
@@ -97,14 +96,14 @@
       <LinearLayout
           android:id="@+id/nabd_widget_item_row_3"
           android:layout_width="match_parent"
-          android:layout_height="0dp"
-          android:layout_weight="1"
+          android:layout_height="wrap_content"
+          android:minHeight="34dp"
           android:gravity="center_vertical"
           android:orientation="horizontal">
         <CheckBox
             android:id="@+id/nabd_widget_item_toggle_3"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:button="@drawable/nabd_widget_star"
             android:ellipsize="end"
             android:maxLines="1"
@@ -115,6 +114,10 @@
             android:textSize="14sp" />
       </LinearLayout>
     </LinearLayout>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

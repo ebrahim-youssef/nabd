@@ -5,7 +5,12 @@ import type { DayId, WirdDefinition, WirdEntry } from '../wird/types'
 const MAX_WIDGET_ITEMS_PER_BLOCK = 3
 const PRAYER_IDS = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const
 
-export type WidgetSnapshotItem = { id: string; label: string; done: boolean }
+export type WidgetSnapshotItem = {
+  id: string
+  label: string
+  done: boolean
+  countsAsUnrecorded: boolean
+}
 
 export type WidgetSnapshotBlock = {
   id: (typeof PRAYER_IDS)[number]
@@ -50,6 +55,15 @@ export function buildWidgetSnapshot(input: BuildWidgetSnapshotInput): WidgetSnap
   })
   if (!plan.hasTimes || plan.blocks.some(({ window }) => window === null)) return null
 
+  const countsAsUnrecordedIds = new Set(plan.unrecorded.map(({ id }) => id))
+  for (const { window, items } of [...plan.blocks, ...plan.timedActs]) {
+    if (!window) continue
+    // Home counts only required items whose window has ended; an open window is not unrecorded yet.
+    if (window.end <= input.now) {
+      items.filter(({ optional }) => !optional).forEach(({ id }) => countsAsUnrecordedIds.add(id))
+    }
+  }
+
   const blocks: WidgetSnapshotBlock[] = []
   for (const block of plan.blocks) {
     const window = block.window
@@ -63,6 +77,7 @@ export function buildWidgetSnapshot(input: BuildWidgetSnapshotInput): WidgetSnap
         id,
         label,
         done,
+        countsAsUnrecorded: countsAsUnrecordedIds.has(id),
       })),
     })
   }

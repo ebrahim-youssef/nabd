@@ -24,7 +24,7 @@ internal object NabdWidgetRenderer {
       WidgetViewModel.Placeholder -> showMessage(context, views, R.string.nabd_widget_open_app, false)
       WidgetViewModel.Stale -> showMessage(context, views, R.string.nabd_widget_stale, true)
       is WidgetViewModel.Content -> {
-        showContent(context, views, model, isLarge)
+        showContent(context, views, appWidgetId, snapshot!!, model, isLarge)
         setRootClick(context, views, appWidgetId, model.clickUri)
       }
     }
@@ -47,15 +47,25 @@ internal object NabdWidgetRenderer {
   private fun showContent(
     context: Context,
     views: RemoteViews,
+    appWidgetId: Int,
+    snapshot: WidgetSnapshot,
     model: WidgetViewModel.Content,
     isLarge: Boolean,
   ) {
     views.setViewVisibility(R.id.nabd_widget_content, View.VISIBLE)
     views.setViewVisibility(R.id.nabd_widget_message, View.GONE)
-    if (isLarge) showLargeContent(context, views, model) else showSmallContent(context, views, model)
+    if (isLarge) showLargeContent(context, views, appWidgetId, snapshot, model) else {
+      showSmallContent(context, views, appWidgetId, snapshot, model)
+    }
   }
 
-  private fun showLargeContent(context: Context, views: RemoteViews, model: WidgetViewModel.Content) {
+  private fun showLargeContent(
+    context: Context,
+    views: RemoteViews,
+    appWidgetId: Int,
+    snapshot: WidgetSnapshot,
+    model: WidgetViewModel.Content,
+  ) {
     views.setTextViewText(R.id.nabd_widget_block_title, model.title)
     when (val window = model.window) {
       is WidgetViewModel.BlockWindow.Open -> views.setTextViewText(
@@ -77,6 +87,11 @@ internal object NabdWidgetRenderer {
           val toggleId = largeToggleId(index)
           views.setTextViewText(toggleId, item.label)
           views.setCompoundButtonChecked(toggleId, item.done)
+          val isOpen = model.window is WidgetViewModel.BlockWindow.Open
+          views.setBoolean(toggleId, "setEnabled", isOpen)
+          if (isOpen) {
+            setToggleResponse(context, views, toggleId, appWidgetId, snapshot, item.id)
+          }
           views.setContentDescription(
             rowId,
             context.getString(if (item.done) R.string.nabd_widget_item_done else R.string.nabd_widget_item_open, item.label),
@@ -118,7 +133,13 @@ internal object NabdWidgetRenderer {
     setNextPrayer(context, views, model.nextPrayer)
   }
 
-  private fun showSmallContent(context: Context, views: RemoteViews, model: WidgetViewModel.Content) {
+  private fun showSmallContent(
+    context: Context,
+    views: RemoteViews,
+    appWidgetId: Int,
+    snapshot: WidgetSnapshot,
+    model: WidgetViewModel.Content,
+  ) {
     views.setTextViewText(R.id.nabd_widget_small_next, nextPrayerText(context, model.nextPrayer))
     views.setViewVisibility(
       R.id.nabd_widget_small_next,
@@ -128,7 +149,11 @@ internal object NabdWidgetRenderer {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
       views.setTextViewText(R.id.nabd_widget_small_toggle, model.title)
       views.setCompoundButtonChecked(R.id.nabd_widget_small_toggle, item?.done == true)
-      views.setBoolean(R.id.nabd_widget_small_toggle, "setEnabled", item != null)
+      val isOpen = item != null && model.window is WidgetViewModel.BlockWindow.Open
+      views.setBoolean(R.id.nabd_widget_small_toggle, "setEnabled", isOpen)
+      if (isOpen && item != null) {
+        setToggleResponse(context, views, R.id.nabd_widget_small_toggle, appWidgetId, snapshot, item.id)
+      }
     } else {
       views.setTextViewText(R.id.nabd_widget_small_title, model.title)
       views.setViewVisibility(
@@ -165,6 +190,39 @@ internal object NabdWidgetRenderer {
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )
     views.setOnClickPendingIntent(R.id.nabd_widget_root, pendingIntent)
+  }
+
+  private fun setToggleResponse(
+    context: Context,
+    views: RemoteViews,
+    toggleId: Int,
+    appWidgetId: Int,
+    snapshot: WidgetSnapshot,
+    itemId: String,
+  ) {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+    val data = Uri.Builder()
+      .scheme("nabd-widget")
+      .authority("tick")
+      .appendPath(appWidgetId.toString())
+      .appendPath(snapshot.day)
+      .appendPath(snapshot.versionId)
+      .appendPath(itemId)
+      .build()
+    val intent = Intent(context, WidgetTickReceiver::class.java).apply {
+      action = WIDGET_TICK_ACTION
+      this.data = data
+    }
+    val pendingIntent = PendingIntent.getBroadcast(
+      context,
+      appWidgetId,
+      intent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
+    )
+    views.setOnCheckedChangeResponse(
+      toggleId,
+      RemoteViews.RemoteResponse.fromPendingIntent(pendingIntent),
+    )
   }
 
   private fun largeRowId(index: Int): Int = when (index) {
