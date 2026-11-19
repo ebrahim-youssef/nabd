@@ -36,6 +36,9 @@ import { SoundPreviewSection } from './SoundPreviewSection'
 import { useWirdLevel } from '../wird/useWirdLevel'
 import type { DayId } from '../wird/types'
 import { BackupSection } from '../backup/BackupSection'
+import { MethodSheet } from '../prayer-times/MethodSheet'
+import { ListGroup } from '../ui/ListGroup'
+import { ListRow } from '../ui/ListRow'
 
 type SettingsState = {
   theme: NativeThemePreference
@@ -139,6 +142,7 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
     subscribePrayerAlarmSyncOutcome,
     getPrayerAlarmSyncOutcome,
   )
+  const [methodSheetVisible, setMethodSheetVisible] = useState(false)
   const [hydrated, setHydrated] = useState(false)
   const [state, setState] = useState<SettingsState>({
     theme: DEFAULT_NATIVE_THEME,
@@ -239,23 +243,22 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
           </View>
         </View>
 
-        <View className="gap-3" testID="settings-prayer-method">
-          <Text className="font-sans-bold text-chip text-start text-ink">
-            {SETTINGS_COPY.prayerMethod.title}
-          </Text>
-          <View className="gap-2" accessibilityRole="radiogroup">
-            {CALCULATION_METHODS.map((method) => (
-              <OptionButton
-                key={method.id}
-                label={method.label}
-                selected={state.methodId === method.id}
-                onPress={() => void changeMethod(method.id, Date.now())}
-                testID={`method-${method.id}`}
-              />
-            ))}
-          </View>
+        <View testID="settings-prayer-method">
+          <ListGroup>
+            <ListRow
+              label={SETTINGS_COPY.prayerMethod.title}
+              value={CALCULATION_METHODS.find((method) => method.id === state.methodId)?.label}
+              onPress={() => setMethodSheetVisible(true)}
+              testID="settings-method-row"
+            />
+          </ListGroup>
+          <MethodSheet
+            visible={methodSheetVisible}
+            onClose={() => setMethodSheetVisible(false)}
+            methodId={state.methodId}
+            onSelect={(id) => void changeMethod(id, Date.now())}
+          />
         </View>
-
         <LocationSection />
 
         <View className="gap-3" testID="settings-notifications">
@@ -462,7 +465,7 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
           </Text>
           {[
             ['/prayer-times', 'مواقيت الصلاة', 'settings-link-prayer-times'],
-            ['/libraries', 'المكتبات', 'settings-link-libraries'],
+            ['/more', 'المزيد', 'settings-link-libraries'],
             ['/stats', 'الإحصائيات', 'settings-link-stats'],
           ].map(([href, label, testID]) => (
             <Pressable
