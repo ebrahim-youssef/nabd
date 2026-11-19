@@ -167,10 +167,10 @@ describe('design token parity', () => {
     expect(tailwindCss).toContain('var(--alpha-scrim)')
     expect(tailwindCss).toContain('var(--alpha-path-rest)')
     expect(tailwindCss).toContain('var(--alpha-mark-rest)')
-    const compiled = cssToReactNativeRuntime(
-      `${GLOBAL_CSS}\n${tailwindCss}\n.shadow-card { box-shadow: var(--shadow-card); }`,
-      { darkMode: { type: 'class', value: 'dark' } } as never,
-    )
+    expect(tailwindCss).toContain('var(--shadow-card)')
+    const compiled = cssToReactNativeRuntime(`${GLOBAL_CSS}\n${tailwindCss}`, {
+      darkMode: { type: 'class', value: 'dark' },
+    } as never)
     const rootVariables = compiled.rootVariables as Record<
       string,
       { light?: unknown; dark?: unknown }

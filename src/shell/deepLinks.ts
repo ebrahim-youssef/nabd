@@ -15,6 +15,14 @@ function pathFromScheme(path: string): string | null {
   return match ? `/${match[1]}${match[2]}${match[3] ?? ''}` : null
 }
 
+function decodePathSegment(segment: string): string | null {
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return null
+  }
+}
+
 export function resolveSystemPath(path: string): string {
   const incomingPath = pathFromScheme(path) ?? path
   const { pathname, suffix } = splitPathAndSuffix(incomingPath)
@@ -22,12 +30,12 @@ export function resolveSystemPath(path: string): string {
 
   if (normalizedPath === '/home') return `/${suffix}`
   if (normalizedPath === '/today' || normalizedPath.startsWith('/today/')) {
-    const day = normalizedPath.slice('/today/'.length)
-    return isDayId(day) ? `/today/${day}${suffix}` : '/today'
+    const day = decodePathSegment(normalizedPath.slice('/today/'.length))
+    return day && isDayId(day) ? `/today/${day}${suffix}` : '/today'
   }
   if (normalizedPath === '/adhkar' || normalizedPath.startsWith('/adhkar/')) {
-    const setId = normalizedPath.slice('/adhkar/'.length)
-    return ADHKAR_IDS.has(setId) ? `/adhkar/${setId}${suffix}` : '/adhkar'
+    const setId = decodePathSegment(normalizedPath.slice('/adhkar/'.length))
+    return setId && ADHKAR_IDS.has(setId) ? `/adhkar/${setId}${suffix}` : '/adhkar'
   }
 
   return path

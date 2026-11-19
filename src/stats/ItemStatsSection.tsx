@@ -67,7 +67,7 @@ function ItemStatRow({ item }: { item: ItemStat }) {
           {item.label}
         </Text>
         {item.optional ? (
-          <Text className="shrink-0 rounded-pill bg-now px-2 py-0.5 font-sans-bold text-chip text-gold">
+          <Text className="shrink-0 rounded-pill bg-now px-2 py-0.5 font-sans-bold text-chip text-gold-ink">
             {STATS_COPY.voluntary}
           </Text>
         ) : (

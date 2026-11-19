@@ -86,7 +86,7 @@ export function AdhkarFlow({ category }: { category: AdhkarCategory }) {
               testID={`adhkar-flow-next-${item.id}`}
             >
               <Text className="text-meta text-ink text-start">{item.text}</Text>
-              <Text className="self-start rounded-pill bg-now px-2 py-1 font-sans-bold text-chip text-gold">
+              <Text className="self-start rounded-pill bg-now px-2 py-1 font-sans-bold text-chip text-gold-ink">
                 ×{toArabicIndic(item.repeat)}
               </Text>
             </View>
@@ -134,7 +134,7 @@ function AdhkarReference({ category }: { category: AdhkarCategory }) {
             >
               <Text className="font-text text-daily-line text-ink text-start">{item.text}</Text>
               <View className="flex-row flex-wrap items-center gap-3">
-                <Text className="text-meta text-gold">×{toArabicIndic(item.repeat)}</Text>
+                <Text className="text-meta text-gold-ink">×{toArabicIndic(item.repeat)}</Text>
                 {item.virtue && (
                   <Text className="text-meta text-ink text-start">{item.virtue}</Text>
                 )}

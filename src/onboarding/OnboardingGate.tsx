@@ -142,7 +142,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
               className="flex-row items-center gap-3 rounded-card border border-line bg-surface p-3 shadow-card"
               key={point}
             >
-              <Text accessibilityElementsHidden className="text-sheet-title text-gold">
+              <Text accessibilityElementsHidden className="text-sheet-title text-gold-ink">
                 ✦
               </Text>
               <Text className="text-body flex-1 text-start text-ink">{point}</Text>

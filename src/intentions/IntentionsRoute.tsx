@@ -47,7 +47,7 @@ export function IntentionsRoute() {
                   onPress={() => toggleDeed(entry.id)}
                   testID={`deed-${entry.id}`}
                 >
-                  <Text className="shrink-0 text-meta text-gold">{DEED_GLYPH}</Text>
+                  <Text className="shrink-0 text-meta text-gold-ink">{DEED_GLYPH}</Text>
                   <Text className="min-w-0 flex-1 text-body text-ink">{entry.deed}</Text>
                   <Text
                     className="shrink-0 rounded-pill bg-bg px-2.5 py-0.5 text-meta text-ink"
@@ -62,11 +62,11 @@ export function IntentionsRoute() {
                   )}
                 </Pressable>
                 {expanded && (
-                  <View className="mb-4 me-4 ms-6 gap-3 border-s-2 border-gold/40 ps-3">
+                  <View className="mb-4 me-4 ms-6 gap-3 border-s-2 border-gold-ink/40 ps-3">
                     {entry.intentions.map((intention, intentionIndex) => (
                       <View className="gap-0.5" key={intention.text}>
                         <View className="flex-row items-start gap-2">
-                          <Text className="shrink-0 pt-1 text-meta text-gold">
+                          <Text className="shrink-0 pt-1 text-meta text-gold-ink">
                             {INTENTION_GLYPH}
                           </Text>
                           <Text className="min-w-0 flex-1 text-body text-ink">

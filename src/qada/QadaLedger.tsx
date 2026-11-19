@@ -78,7 +78,7 @@ export function QadaLedger() {
               <View className="min-w-0 flex-1 flex-row items-center gap-3">
                 <Text className="text-body text-ink">{prayer.label}</Text>
                 <Text
-                  className={`shrink-0 rounded-pill border px-2.5 py-0.5 text-meta ${clear ? 'border-gold/40 bg-now text-gold' : 'border-line bg-bg text-ink'}`}
+                  className={`shrink-0 rounded-pill border px-2.5 py-0.5 text-meta ${clear ? 'border-gold-ink/40 bg-now text-gold-ink' : 'border-line bg-bg text-ink'}`}
                   testID={`${COUNT_TEST_PREFIX}${prayer.id}`}
                 >
                   {clear ? QADA_COPY.done : QADA_COPY.remaining(count)}

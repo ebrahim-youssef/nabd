@@ -57,7 +57,10 @@ function LocationSetup({ location }: { location: LocationView }) {
             testID="onboarding-location"
           />
           {showMessage ? (
-            <Text className="text-meta text-start text-gold" testID="onboarding-location-message">
+            <Text
+              className="text-meta text-start text-gold-ink"
+              testID="onboarding-location-message"
+            >
               {location.status.message}
             </Text>
           ) : null}
@@ -103,7 +106,10 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
       </View>
       {showDenied ? (
         <>
-          <Text className="text-meta text-start text-gold" testID="onboarding-notifications-denied">
+          <Text
+            className="text-meta text-start text-gold-ink"
+            testID="onboarding-notifications-denied"
+          >
             {NATIVE_ONBOARDING_COPY.notificationsDenied}
           </Text>
           <OnboardingButton
@@ -115,7 +121,7 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
       ) : null}
       {showBlocked ? (
         <>
-          <Text className="text-meta text-start text-gold">
+          <Text className="text-meta text-start text-gold-ink">
             {notifications.notificationStatus.message}
           </Text>
           <OnboardingButton

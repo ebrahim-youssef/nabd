@@ -55,7 +55,7 @@ export function LibrariesRoute() {
               <View className="min-w-0 flex-1 gap-1">
                 <Text className="font-display text-sheet-title text-accent">{title}</Text>
                 <Text className="text-meta text-ink">{description}</Text>
-                <Text className="font-sans-bold text-chip text-gold">{count}</Text>
+                <Text className="font-sans-bold text-chip text-gold-ink">{count}</Text>
               </View>
               <ChevronLeft accessible={false} color={theme['mute']} size={ICON_SIZE} />
             </Pressable>

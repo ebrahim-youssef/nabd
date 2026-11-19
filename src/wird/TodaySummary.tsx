@@ -37,7 +37,7 @@ export function TodaySummary() {
   return (
     <View
       accessibilityLabel={WIRD_COPY.summaryAria(toArabicIndic(done), toArabicIndic(total))}
-      className="flex-row items-center gap-5 rounded-card bg-accent p-5"
+      className="flex-row items-center gap-5 rounded-card bg-hero p-5"
       testID={SUMMARY_TEST_ID}
     >
       <View className="relative shrink-0" style={{ height: RING_SIZE, width: RING_SIZE }}>
@@ -71,7 +71,7 @@ export function TodaySummary() {
           />
         </Svg>
         <View className="absolute inset-0 items-center justify-center">
-          <Text className="font-display text-sheet-title text-on-accent">
+          <Text className="font-display text-sheet-title text-hero-ink">
             <Text testID={SUMMARY_DONE_TEST_ID}>{toArabicIndic(done)}</Text>
             {COUNT_SEPARATOR}
             <Text testID={SUMMARY_TOTAL_TEST_ID}>{toArabicIndic(total)}</Text>
@@ -79,8 +79,8 @@ export function TodaySummary() {
         </View>
       </View>
       <View className="min-w-0 flex-1 gap-1">
-        <Text className="font-display text-sheet-title text-on-accent">{WIRD_COPY.todayTitle}</Text>
-        <Text className="text-meta text-on-accent">
+        <Text className="font-display text-sheet-title text-hero-ink">{WIRD_COPY.todayTitle}</Text>
+        <Text className="text-meta text-hero-ink">
           {WIRD_COPY.remainingPrefix}{' '}
           <Text testID={SUMMARY_REMAINING_TEST_ID}>{toArabicIndic(remaining)}</Text>{' '}
           {WIRD_COPY.remainingSuffix}

@@ -55,7 +55,7 @@ export function CompletionCelebration() {
     >
       <View
         accessibilityViewIsModal
-        className="flex-1 items-center justify-center gap-6 bg-accent px-6"
+        className="flex-1 items-center justify-center gap-6 bg-hero px-6"
         testID={CELEBRATION_TEST_ID}
       >
         <View className="h-28 w-28 items-center justify-center rounded-pill border-4 border-gold">
@@ -63,10 +63,10 @@ export function CompletionCelebration() {
             {AWARD_MARK}
           </Text>
         </View>
-        <Text className="font-display text-screen-title text-center text-on-accent">
+        <Text className="font-display text-screen-title text-center text-hero-ink">
           {WIRD_COPY.celebrationTitle}
         </Text>
-        <Text className="font-text text-daily-line text-center text-on-accent">
+        <Text className="font-text text-daily-line text-center text-hero-ink">
           {WIRD_COPY.celebrationHadith}
         </Text>
         <View className="flex-row items-center gap-3">

@@ -126,7 +126,7 @@ function AreaHeader({
           </View>
           <Text
             className={`rounded-pill border px-2 py-1 text-meta ${
-              complete ? 'border-gold bg-now text-gold' : 'border-line bg-surface text-ink'
+              complete ? 'border-gold-ink bg-now text-gold-ink' : 'border-line bg-surface text-ink'
             }`}
             testID={`${COUNT_TEST_PREFIX}${area.id}`}
           >
@@ -199,7 +199,7 @@ function ChecklistRow({
           </Text>
         )}
         {item.optional && (
-          <Text className="rounded-pill bg-now px-2 py-1 font-sans-bold text-chip text-gold">
+          <Text className="rounded-pill bg-now px-2 py-1 font-sans-bold text-chip text-gold-ink">
             {WIRD_COPY.voluntary}
           </Text>
         )}
