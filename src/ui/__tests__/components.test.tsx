@@ -163,9 +163,9 @@ describe('Home design components', () => {
       />,
     )
 
-    expect(getByText('العصر بعد ١:٠٠:٠٠')).toBeTruthy()
+    expect(getByText('بعد ١:٠٠:٠٠')).toBeTruthy()
     act(() => jest.advanceTimersByTime(1_000))
-    expect(getByText('العصر بعد ٠:٥٩:٥٩')).toBeTruthy()
+    expect(getByText('بعد ٠:٥٩:٥٩')).toBeTruthy()
     jest.useRealTimers()
   })
 })

@@ -231,7 +231,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
 
 function renderTimedAct(
   act: DayPlanTimedAct,
-  renderItem: (item: DayPlanItem, sub: string, first: boolean) => ReactNode,
+  renderItem: (item: DayPlanItem, sub: string | undefined, first: boolean) => ReactNode,
 ) {
   if (act.items.length === 0) return null
   const end = act.window?.end
@@ -243,9 +243,7 @@ function renderTimedAct(
       title={act.label}
     >
       {act.items.map((item, index) => (
-        <View key={item.id}>
-          {renderItem(item, end ? `${HOME_COPY.until} ${formatPrayerTime(end)}` : '', index === 0)}
-        </View>
+        <View key={item.id}>{renderItem(item, undefined, index === 0)}</View>
       ))}
     </BlockCard>
   )

@@ -82,7 +82,7 @@ export function HeroHeader({
   const progressFraction = header?.position ?? 0
   const geometry = heroPathGeometry(HERO_WIDTH, ARC_HEIGHT, progressFraction)
   const countdown = formatCountdown(header, clockNow)
-  const heroTitle = currentPrayer ?? header?.nextEvent?.label ?? 'الصلاة القادمة'
+  const heroTitle = header?.nextEvent?.label ?? currentPrayer ?? 'الصلاة القادمة'
 
   if (
     PixelRatio.getFontScale() >= LARGE_FONT_SCALE - FONT_SCALE_FLOAT_TOLERANCE ||
@@ -313,7 +313,7 @@ function formatCountdown(header: DayPlanHeader | null, now: number): string {
     toArabicIndic(minutes).padStart(TIME_PART_WIDTH, ARABIC_ZERO),
     toArabicIndic(seconds).padStart(TIME_PART_WIDTH, ARABIC_ZERO),
   ].join(':')
-  return `${header?.nextEvent?.label ?? 'الصلاة القادمة'} بعد ${remaining}`
+  return `بعد ${remaining}`
 }
 
 function starPoints(centerX: number, centerY: number, radius: number): string {
