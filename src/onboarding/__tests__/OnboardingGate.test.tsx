@@ -16,6 +16,13 @@ import type { OnboardingDatabase } from '../db'
 import { PowerStep } from '../PowerStep'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('lucide-react-native', () => ({
+  ChevronLeft: () => null,
+  Download: () => null,
+  ShieldCheck: () => null,
+  TriangleAlert: () => null,
+  Upload: () => null,
+}))
 jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-08-10' }))
 jest.mock('expo-router', () => ({
   useFocusEffect: jest.fn(),

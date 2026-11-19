@@ -1,6 +1,12 @@
 import { Pressable, View } from 'react-native'
+import { Download, ShieldCheck, TriangleAlert, Upload } from 'lucide-react-native'
 
 import { Text } from '../shell/Text'
+import { ConfirmSheet } from '../ui/ConfirmSheet'
+import { ListGroup } from '../ui/ListGroup'
+import { ListRow } from '../ui/ListRow'
+import { StatusCard } from '../ui/StatusCard'
+import { useToast } from '../ui/ToastProvider'
 import { BACKUP_COPY, BACKUP_TABLE_LABELS, backupStatusMessage, countLabel } from './copy'
 import { BACKUP_TABLES } from './logic'
 import { useBackup } from './useBackup'
@@ -141,31 +147,86 @@ export function BackupImport({
 
 export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) {
   const backup = useBackup()
+  const toast = useToast()
+  const preview = backup.preview
+  const previewTables = preview ? BACKUP_TABLES.filter((table) => preview.counts[table] > 0) : []
+  const error =
+    backup.status && backup.status.kind !== 'exported' && backup.status.kind !== 'restored'
+      ? backupStatusMessage(backup.status)
+      : null
+
+  async function handleExport() {
+    const result = await backup.exportBackup()
+    if (result?.ok) toast.show({ message: BACKUP_COPY.status.exported })
+  }
+
+  async function handleConfirm() {
+    const result = await backup.confirmRestore()
+    if (result?.ok) {
+      toast.show({ message: backupStatusMessage({ kind: 'restored', counts: result.value }) })
+      onRestored?.()
+    }
+  }
 
   return (
     <View className="gap-3" testID="settings-backup">
-      <Text className="font-sans-bold text-chip text-start text-ink" selectable>
-        {BACKUP_COPY.title}
+      <Text className="font-sans text-body text-start text-mute" selectable>
+        {BACKUP_COPY.description}
       </Text>
-      <View className="gap-3 rounded-card border border-line bg-surface p-4" testID="backup-card">
-        <Text className="text-body text-start text-ink" selectable>
-          {BACKUP_COPY.description}
-        </Text>
-        {backup.preview ? (
-          <BackupImport {...backup} onRestored={onRestored} />
+      {error ? <StatusCard tone="warn" icon={TriangleAlert} message={error} /> : null}
+      <ListGroup>
+        <ListRow
+          label={BACKUP_COPY.export}
+          description={BACKUP_COPY.exportDescription}
+          icon={Upload}
+          disabled={backup.isBusy}
+          onPress={() => void handleExport()}
+          testID="backup-export"
+        />
+        <ListRow
+          label={BACKUP_COPY.import}
+          description={BACKUP_COPY.importDescription}
+          icon={Download}
+          disabled={backup.isBusy}
+          onPress={() => void backup.chooseFile()}
+          testID="backup-import"
+        />
+      </ListGroup>
+      <StatusCard
+        tone="info"
+        icon={ShieldCheck}
+        message={BACKUP_COPY.privacyTitle}
+        detail={BACKUP_COPY.privacyDetail}
+      />
+      <ConfirmSheet
+        visible={backup.preview !== null}
+        onClose={backup.cancelRestore}
+        title={BACKUP_COPY.previewTitle}
+        explanation={BACKUP_COPY.previewBody}
+        confirmLabel={BACKUP_COPY.confirm}
+        cancelLabel={BACKUP_COPY.cancel}
+        onConfirm={() => void handleConfirm()}
+        confirmDisabled={backup.isBusy || previewTables.length === 0}
+        busy={backup.isBusy}
+      >
+        {error ? <StatusCard tone="warn" icon={TriangleAlert} message={error} /> : null}
+        {previewTables.length > 0 && preview ? (
+          <ListGroup>
+            {previewTables.map((table) => (
+              <ListRow
+                key={table}
+                label={BACKUP_TABLE_LABELS[table]}
+                value={countLabel(preview.counts[table])}
+                testID={`backup-count-${table}`}
+              />
+            ))}
+          </ListGroup>
         ) : (
-          <View className="gap-2">
-            <BackupButton
-              disabled={backup.isBusy}
-              label={BACKUP_COPY.export}
-              onPress={() => void backup.exportBackup()}
-              primary
-              testID="backup-export"
-            />
-            <BackupImport {...backup} onRestored={onRestored} />
-          </View>
+          <Text className="font-sans text-body text-start text-ink">
+            {BACKUP_COPY.previewEmpty}
+          </Text>
         )}
-      </View>
+      </ConfirmSheet>
     </View>
   )
 }

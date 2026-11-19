@@ -90,11 +90,23 @@ jest.mock('lucide-react-native', () => {
   const React = require('react') as typeof import('react')
   const MockIcon = () => React.createElement('View')
   return {
+    ArrowRight: MockIcon,
     BarChart3: MockIcon,
+    BookOpen: MockIcon,
+    CalendarDays: MockIcon,
+    Check: MockIcon,
+    ChevronLeft: MockIcon,
     Clock: MockIcon,
+    Download: MockIcon,
+    Ellipsis: MockIcon,
     Home: MockIcon,
     LibraryBig: MockIcon,
+    Play: MockIcon,
     Settings: MockIcon,
+    ShieldCheck: MockIcon,
+    Square: MockIcon,
+    TriangleAlert: MockIcon,
+    Upload: MockIcon,
   }
 })
 

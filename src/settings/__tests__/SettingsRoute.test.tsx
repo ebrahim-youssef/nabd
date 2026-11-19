@@ -1,401 +1,238 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
-
-import { WIRD_LEVELS } from '../../content/levels'
-import { DEFAULT_NOTIFICATION_PREFS } from '../../device/logic'
-import { useSQLiteContext } from 'expo-sqlite'
-
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
+import { AppState } from 'react-native'
 import { SettingsRoute } from '../SettingsRoute'
 import { deviceCopy } from '../../device/copy'
-import { useNotificationSettings } from '../../device/useNotificationSettings'
 import { requestPrayerReschedule, setPrayerAlarmSyncOutcome } from '../../device/prayerAlarms'
+import { useNotificationSettings } from '../../device/useNotificationSettings'
 import { logger } from '../../observability/logger'
-import { useBackup, type BackupPreview } from '../../backup/useBackup'
-import type { BackupRestoreResult } from '../../backup/db'
-import { createPreferencesRepository, PREFERENCE_KEYS } from '../../preferences/db'
-import { useWirdRepository } from '../../wird/useWirdRepository'
+import { NATIVE_SETTINGS_COPY } from '../constants'
+import { SETTINGS_COPY } from '../copy'
 
-const mockSetColorScheme = jest.fn()
+const mockDatabase = {}
+const mockPush = jest.fn()
+const mockRead = jest.fn(async (_key: string): Promise<string | null> => null)
+const mockWrite = jest.fn(async (_key: string, _value: string, _updatedAt: number) => undefined)
+const mockEnabled = jest.fn()
+const mockMoment = jest.fn()
+const mockSilent = jest.fn()
+const mockAction = jest.fn()
+const mockSetColor = jest.fn()
 const mockRefreshWirdDay = jest.fn()
-
-jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
-jest.mock('../../day-plan/WirdTodayProvider', () => ({
-  useWirdToday: () => '2026-09-20',
-  useRefreshWirdDay: () => mockRefreshWirdDay,
+const mockCountdownStatus = jest.fn(() => 'posted')
+const mockIsPending = jest.fn((_key: string) => false)
+const mockNotifications = {
+  permission: 'granted',
+  prefs: {
+    enabled: true,
+    beforeAdhan: false,
+    atAdhan: false,
+    atIqamah: false,
+    morningAdhkar: false,
+    eveningAdhkar: false,
+  },
+  silentMode: false,
+  hasCoordinates: true,
+  notificationStatus: { state: 'ready', message: 'ready', action: null },
+  exactAlarmStatus: { state: 'ready', message: 'ready', action: null },
+  isPending: mockIsPending,
+  setEnabled: mockEnabled,
+  setMoment: mockMoment,
+  setSilentMode: mockSilent,
+  runAction: mockAction,
+}
+jest.mock('lucide-react-native', () => ({
+  TriangleAlert: () => null,
+  ChevronLeft: () => null,
+  Check: () => null,
+  ArrowRight: () => null,
 }))
-jest.mock('nativewind', () => ({ useColorScheme: () => ({ setColorScheme: mockSetColorScheme }) }))
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
   useFocusEffect: jest.fn(),
 }))
-jest.mock('../../device/useNotificationSettings', () => ({
-  useNotificationSettings: jest.fn(),
+jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => mockDatabase }))
+jest.mock('nativewind', () => ({ useColorScheme: () => ({ setColorScheme: mockSetColor }) }))
+jest.mock('../../preferences/db', () => ({
+  PREFERENCE_KEYS: { theme: 'theme', calculationMethod: 'method' },
+  createPreferencesRepository: () => ({ read: mockRead, write: mockWrite }),
+}))
+jest.mock('../../device/useNotificationSettings', () => ({ useNotificationSettings: jest.fn() }))
+jest.mock('../../device/platform', () => ({
+  devicePlatform: { getCountdownNotificationStatus: () => mockCountdownStatus() },
 }))
 jest.mock('../../device/prayerAlarms', () => ({
   ...jest.requireActual('../../device/prayerAlarms'),
   requestPrayerReschedule: jest.fn(),
 }))
-jest.mock('../../backup/useBackup', () => ({ useBackup: jest.fn() }))
-jest.mock('lucide-react-native', () => ({
-  ArrowRight: () => null,
-  Check: () => null,
-  ChevronLeft: () => null,
+jest.mock('../../day-plan/WirdTodayProvider', () => ({
+  useRefreshWirdDay: () => mockRefreshWirdDay,
 }))
-jest.mock('../../preferences/db', () => ({
-  PREFERENCE_KEYS: {
-    celebratedDay: 'nabd:celebrated-day',
-    calculationMethod: 'nabd:prayer-calculation-method',
-    latitude: 'nabd:cached-latitude',
-    longitude: 'nabd:cached-longitude',
-    countdownEnabled: 'nabd:notification-countdown-enabled',
-    theme: 'nabd:theme',
-  },
-  createPreferencesRepository: jest.fn(),
+jest.mock('../../observability/logger', () => ({ logger: { error: jest.fn() } }))
+jest.mock('../../wird/useWirdLevel', () => ({
+  useWirdLevel: () => ({ currentLevelId: 'level-1' }),
 }))
-jest.mock('../../preferences/theme', () => ({
-  DEFAULT_NATIVE_THEME: 'system',
-  SYSTEM_THEME_LABEL: 'حسب الجهاز',
-  readStoredTheme: (value: string | null) =>
-    value === 'light' || value === 'dark' || value === 'system' ? value : 'system',
-}))
-jest.mock('../../wird/useWirdRepository', () => ({ useWirdRepository: jest.fn() }))
 jest.mock('../LocationSection', () => ({ LocationSection: () => null }))
 jest.mock('../SoundPreviewSection', () => ({ SoundPreviewSection: () => null }))
+jest.mock('../BatterySection', () => ({ BatterySection: () => null }))
 jest.mock('../useCountdownPreference', () => ({
-  useCountdownPreference: () => ({ enabled: false, setEnabled: jest.fn(async () => undefined) }),
+  useCountdownPreference: () => ({ enabled: false, setEnabled: jest.fn() }),
 }))
 
-const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
-const mockedCreatePreferencesRepository = createPreferencesRepository as jest.MockedFunction<
-  typeof createPreferencesRepository
->
-const mockedUseWirdRepository = useWirdRepository as jest.MockedFunction<typeof useWirdRepository>
-const mockedUseNotificationSettings = useNotificationSettings as jest.MockedFunction<
-  typeof useNotificationSettings
->
-const mockedUseBackup = useBackup as jest.MockedFunction<typeof useBackup>
+// The two preference reads resolve after several renders; under the parallel full run that
+// outlasts the default one-second waitFor.
+const SETTINGS_LOAD_TIMEOUT_MS = 5_000
 
-const readPreference = jest.fn()
-const writePreference = jest.fn()
-const setWirdLevel = jest.fn()
-const setNotificationEnabled = jest.fn(async () => undefined)
-const setNotificationMoment = jest.fn(async () => undefined)
-const setNotificationSilentMode = jest.fn(async () => undefined)
-const runNotificationAction = jest.fn(async () => undefined)
-const isNotificationPending = jest.fn((_key: string) => false)
-const notificationSettings = {
-  permission: 'granted' as const,
-  prefs: { ...DEFAULT_NOTIFICATION_PREFS, enabled: true },
-  silentMode: false,
-  hasCoordinates: true,
-  notificationStatus: {
-    state: 'ready' as const,
-    message: 'الإشعارات مفعّلة.',
-    action: null,
-  },
-  exactAlarmStatus: {
-    state: 'settings-required' as const,
-    message: 'اسمح بالمنبّهات الدقيقة من إعدادات أندرويد لضبط مواقيت الصلاة.',
-    action: {
-      type: 'open-exact-alarm-settings' as const,
-      label: 'فتح إعدادات المنبّهات الدقيقة',
-    },
-  },
-  isPending: isNotificationPending,
-  setEnabled: setNotificationEnabled,
-  setMoment: setNotificationMoment,
-  setSilentMode: setNotificationSilentMode,
-  runAction: runNotificationAction,
-} as unknown as ReturnType<typeof useNotificationSettings>
-
-const backupCounts = {
-  onboarding_state: 0,
-  wird_versions: 0,
-  wird_entries: 0,
-  qada_events: 0,
-  adhkar_flow_progress: 0,
-  app_preferences: 1,
-  wird_actions: 0,
+function waitForSettingsLoaded() {
+  return waitFor(() => expect(screen.queryByText('جارٍ تحميل الإعدادات…')).toBeNull(), {
+    timeout: SETTINGS_LOAD_TIMEOUT_MS,
+  })
 }
-const backupPreview = {
-  backup: {
-    formatVersion: 2 as const,
-    schemaVersion: 1,
-    exportedAt: '2026-10-18T10:00:00.000Z',
-    data: {
-      onboarding_state: [],
-      wird_versions: [],
-      wird_entries: [],
-      qada_events: [],
-      adhkar_flow_progress: [],
-      app_preferences: [],
-      wird_actions: [],
-    },
-  },
-  counts: backupCounts,
-} satisfies BackupPreview
-const confirmRestore = jest.fn<Promise<BackupRestoreResult | null>, []>(async () => ({
-  ok: true,
-  value: backupCounts,
-}))
 
 describe('SettingsRoute', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    jest.spyOn(AppState, 'addEventListener').mockImplementation(() => ({ remove: jest.fn() }))
+    mockRead.mockReset().mockResolvedValue(null)
+    mockWrite.mockReset().mockResolvedValue(undefined)
+    mockIsPending.mockReset().mockReturnValue(false)
+    mockCountdownStatus.mockReset().mockReturnValue('posted')
     mockRefreshWirdDay.mockReset()
-    confirmRestore.mockReset().mockResolvedValue({ ok: true, value: backupCounts })
     setPrayerAlarmSyncOutcome('ok')
-    jest.useFakeTimers()
-    jest.setSystemTime(new Date('2026-09-20T12:00:00.000Z'))
-    mockedUseSQLiteContext.mockReturnValue({} as ReturnType<typeof useSQLiteContext>)
-    mockedCreatePreferencesRepository.mockReturnValue({
-      read: readPreference,
-      write: writePreference,
-      clear: jest.fn(),
-    })
-    readPreference.mockImplementation(async (key: string) => {
-      const values: Record<string, string> = {
-        [PREFERENCE_KEYS.theme]: 'dark',
-        [PREFERENCE_KEYS.calculationMethod]: 'umm_al_qura',
-      }
-      return values[key] ?? null
-    })
-    Object.assign(notificationSettings, {
-      permission: 'granted',
-      prefs: { ...DEFAULT_NOTIFICATION_PREFS, enabled: true },
-      silentMode: false,
-      hasCoordinates: true,
-      notificationStatus: {
-        state: 'ready',
-        message: 'الإشعارات مفعّلة.',
-        action: null,
-      },
-      exactAlarmStatus: {
-        state: 'settings-required',
-        message: 'اسمح بالمنبّهات الدقيقة من إعدادات أندرويد لضبط مواقيت الصلاة.',
-        action: {
-          type: 'open-exact-alarm-settings',
-          label: 'فتح إعدادات المنبّهات الدقيقة',
-        },
-      },
-    })
-    isNotificationPending.mockReturnValue(false)
-    setNotificationEnabled.mockResolvedValue(undefined)
-    setNotificationMoment.mockResolvedValue(undefined)
-    setNotificationSilentMode.mockResolvedValue(undefined)
-    runNotificationAction.mockResolvedValue(undefined)
-    mockedUseNotificationSettings.mockReturnValue(notificationSettings)
-    mockedUseBackup.mockReturnValue({
-      cancelRestore: jest.fn(),
-      chooseFile: jest.fn(),
-      confirmRestore,
-      exportBackup: jest.fn(),
-      isBusy: false,
-      preview: backupPreview,
-      status: null,
-    })
-    mockedUseWirdRepository.mockReturnValue({
-      listVersions: jest.fn(async () => [
-        {
-          id: 'v1',
-          effectiveFrom: '2026-09-20',
-          definition: WIRD_LEVELS[0].wird,
-          createdAt: 1,
-        },
-      ]),
-      getDayEntries: jest.fn(),
-      getMonthEntries: jest.fn(),
-      getEntriesInRange: jest.fn(),
-      getAllEntries: jest.fn(),
-      readLatestStaleAction: jest.fn(async () => null),
-      addVersion: jest.fn(),
-      setItemState: jest.fn(),
-      healVersionFromLevels: jest.fn(),
-      setWirdLevel,
-    })
-    setWirdLevel.mockResolvedValue({ ok: true, value: undefined })
+    jest.mocked(useNotificationSettings).mockReturnValue(mockNotifications as never)
   })
 
   afterEach(() => {
-    jest.useRealTimers()
+    jest.restoreAllMocks()
+  })
+  it('writes the selected theme and opens the level page', async () => {
+    render(<SettingsRoute />)
+    await waitForSettingsLoaded()
+    fireEvent.press(screen.getByRole('radio', { name: 'ليلي' }))
+    expect(mockWrite).toHaveBeenCalledWith('theme', 'dark', expect.any(Number))
+    fireEvent.press(screen.getByTestId('settings-level-row'))
+    expect(mockPush).toHaveBeenCalledWith('/level')
+  })
+  it('writes each notification preference', () => {
+    render(<SettingsRoute />)
+    fireEvent.press(screen.getByRole('switch', { name: SETTINGS_COPY.notifications.enable }))
+    for (const key of [
+      'beforeAdhan',
+      'atAdhan',
+      'atIqamah',
+      'morningAdhkar',
+      'eveningAdhkar',
+    ] as const) {
+      fireEvent.press(screen.getByRole('switch', { name: SETTINGS_COPY.notifications[key] }))
+      expect(mockMoment).toHaveBeenCalledWith(key, true)
+    }
+    fireEvent.press(screen.getByRole('switch', { name: 'التنبيه ولو كان الجهاز صامتًا' }))
+    expect(mockEnabled).toHaveBeenCalledWith(false)
+    expect(mockSilent).toHaveBeenCalledWith(true)
+  })
+  it('shows the permission action and disables affected switches with a reason', () => {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
+      permission: 'blocked',
+      notificationStatus: {
+        state: 'blocked',
+        message: 'افتح الإعدادات',
+        action: { label: 'فتح الإعدادات', type: 'open-app-settings' },
+      },
+    } as never)
+    render(<SettingsRoute />)
+    expect(screen.getAllByText('افتح الإعدادات').length).toBeGreaterThan(1)
+    expect(
+      screen.getByRole('switch', { name: SETTINGS_COPY.notifications.atAdhan }).props
+        .accessibilityState.disabled,
+    ).toBe(true)
+    fireEvent.press(screen.getByRole('button', { name: 'فتح الإعدادات' }))
+    expect(mockAction).toHaveBeenCalledWith('open-app-settings')
   })
 
-  it('renders persisted controls and writes changes for appearance, method, and tomorrow level', async () => {
-    const { unmount } = render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('settings-screen')).toBeTruthy())
-    await waitFor(() =>
-      expect(screen.getByTestId('level-level-1').props.accessibilityState.selected).toBe(true),
-    )
-    expect(screen.getByTestId('theme-dark').props.accessibilityState.selected).toBe(true)
-    expect(screen.getByTestId('theme-system').props.accessibilityState.selected).toBe(false)
-    expect(screen.getByTestId('settings-method-row')).toHaveTextContent('أم القرى (مكة المكرمة)', {
-      exact: false,
+  it('loads persisted theme and method and writes changes to both', async () => {
+    mockRead.mockImplementation(async (key) => {
+      if (key === 'theme') return 'dark'
+      if (key === 'method') return 'umm_al_qura'
+      return null
     })
-
-    fireEvent.press(screen.getByTestId('theme-light'))
-    fireEvent.press(screen.getByTestId('theme-system'))
-    fireEvent.press(screen.getByTestId('theme-dark'))
+    render(<SettingsRoute />)
+    await waitFor(() => expect(screen.getByRole('radio', { name: 'ليلي' })).toBeChecked())
+    expect(
+      within(screen.getByTestId('settings-method-row')).getByText('أم القرى (مكة المكرمة)'),
+    ).toBeTruthy()
+    for (const [label, value] of [
+      ['فاتح', 'light'],
+      ['حسب الجهاز', 'system'],
+      ['ليلي', 'dark'],
+    ]) {
+      fireEvent.press(screen.getByRole('radio', { name: label }))
+      expect(mockWrite).toHaveBeenCalledWith('theme', value, expect.any(Number))
+    }
+    expect(mockSetColor).toHaveBeenCalledWith('system')
+    expect(mockSetColor).toHaveBeenCalledWith('dark')
     fireEvent.press(screen.getByTestId('settings-method-row'))
     fireEvent.press(screen.getByRole('radio', { name: 'الهيئة المصرية العامة للمساحة' }))
-    fireEvent.press(screen.getByTestId('level-level-2'))
-
-    await waitFor(() => {
-      expect(writePreference).toHaveBeenCalledWith(
-        PREFERENCE_KEYS.theme,
-        'light',
-        expect.any(Number),
-      )
-      expect(writePreference).toHaveBeenCalledWith(
-        PREFERENCE_KEYS.theme,
-        'system',
-        expect.any(Number),
-      )
-      expect(writePreference).toHaveBeenCalledWith(
-        PREFERENCE_KEYS.theme,
-        'dark',
-        expect.any(Number),
-      )
-      expect(writePreference).toHaveBeenCalledWith(
-        PREFERENCE_KEYS.calculationMethod,
-        'egyptian',
-        expect.any(Number),
-      )
-      expect(setWirdLevel).toHaveBeenCalledWith(
-        WIRD_LEVELS[1].wird,
-        '2026-09-20',
-        expect.any(Number),
-      )
-      expect(mockSetColorScheme).toHaveBeenCalledWith('system')
-      expect(mockSetColorScheme).toHaveBeenCalledWith('dark')
-      expect(requestPrayerReschedule).toHaveBeenCalledTimes(2)
-      expect(readPreference).not.toHaveBeenCalledWith('nabd:mode')
-    })
-
-    unmount()
+    await waitFor(() =>
+      expect(mockWrite).toHaveBeenCalledWith('method', 'egyptian', expect.any(Number)),
+    )
+    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
+    expect(mockRead).not.toHaveBeenCalledWith('nabd:mode')
   })
 
   it('logs a failed calculation-method write without requesting a reschedule', async () => {
     const cause = new Error('write failed')
-    writePreference.mockRejectedValueOnce(cause)
+    mockRead.mockResolvedValue(null)
+    mockWrite.mockRejectedValueOnce(cause)
     render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('settings-method-row')).toBeTruthy())
+    await waitForSettingsLoaded()
     fireEvent.press(screen.getByTestId('settings-method-row'))
     fireEvent.press(screen.getByRole('radio', { name: 'الهيئة المصرية العامة للمساحة' }))
-
     await waitFor(() =>
       expect(logger.error).toHaveBeenCalledWith(
         'Native prayer calculation method write failed',
         cause,
-        { operation: 'change-calculation-method' },
+        {
+          operation: 'change-calculation-method',
+        },
       ),
     )
     expect(requestPrayerReschedule).not.toHaveBeenCalled()
+    expect(mockRefreshWirdDay).not.toHaveBeenCalled()
   })
 
-  it('requests an alarm reschedule after a successful level change', async () => {
-    render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('level-level-1')).toBeTruthy())
-    fireEvent.press(screen.getByTestId('level-level-2'))
-
-    await waitFor(() => expect(requestPrayerReschedule).toHaveBeenCalledTimes(1))
-  })
-
-  it('does not request an alarm reschedule after a failed level change', async () => {
-    setWirdLevel.mockResolvedValueOnce({ ok: false, error: 'set_failed' })
-    render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('level-level-1')).toBeTruthy())
-    fireEvent.press(screen.getByTestId('level-level-2'))
-
-    await waitFor(() => expect(setWirdLevel).toHaveBeenCalledTimes(1))
-    expect(requestPrayerReschedule).not.toHaveBeenCalled()
-  })
-
-  it('refreshes the wird-day preference after a successful method save', async () => {
+  it('refreshes the wird day after a successful method save', async () => {
     const steps: string[] = []
-    writePreference.mockImplementation(async () => {
+    mockRead.mockResolvedValue(null)
+    mockWrite.mockImplementation(async () => {
       steps.push('saved')
+      return undefined
     })
-    mockRefreshWirdDay.mockImplementation(() => steps.push('refreshed'))
+    mockRefreshWirdDay.mockImplementation(() => {
+      steps.push('refreshed')
+    })
     render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('settings-method-row')).toBeTruthy())
+    await waitForSettingsLoaded()
     fireEvent.press(screen.getByTestId('settings-method-row'))
     fireEvent.press(screen.getByRole('radio', { name: 'الهيئة المصرية العامة للمساحة' }))
-
     await waitFor(() => expect(steps).toEqual(['saved', 'refreshed']))
     expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
+    mockRefreshWirdDay.mockReset()
   })
 
-  it('remounts settings state after a successful backup restore', async () => {
-    render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('backup-preview')).toBeTruthy())
-    await act(async () => {
-      await fireEvent.press(screen.getByTestId('backup-confirm'))
-    })
-
-    await waitFor(() => expect(mockedUseNotificationSettings.mock.calls.length).toBeGreaterThan(1))
-    await waitFor(() => expect(screen.getByTestId('settings-screen')).toBeTruthy())
-    expect(confirmRestore).toHaveBeenCalledTimes(1)
-    expect(mockRefreshWirdDay).toHaveBeenCalledTimes(1)
-    expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not refresh the provider after a failed backup restore', async () => {
-    confirmRestore.mockResolvedValueOnce({ ok: false, error: { reason: 'write_failed' } })
-    render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('backup-preview')).toBeTruthy())
-    await act(async () => {
-      await fireEvent.press(screen.getByTestId('backup-confirm'))
-    })
-
-    expect(confirmRestore).toHaveBeenCalledTimes(1)
-    expect(mockRefreshWirdDay).not.toHaveBeenCalled()
-    expect(requestPrayerReschedule).not.toHaveBeenCalled()
-  })
-
-  it('renders the notification controls in the settings section', async () => {
-    render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('settings-notifications')).toBeTruthy())
-    expect(screen.getByTestId('notification-enabled').props.value).toBe(true)
-    expect(screen.getByTestId('notification-moment-beforeAdhan')).toBeTruthy()
-    expect(screen.getByTestId('notification-silent-mode')).toBeTruthy()
-    expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy()
-
-    fireEvent(screen.getByTestId('notification-moment-atIqamah'), 'valueChange', false)
-    fireEvent(screen.getByTestId('notification-alarm-on-silent'), 'valueChange', true)
-    fireEvent.press(screen.getByTestId('notification-exact-alarm-action'))
-
-    expect(setNotificationMoment).toHaveBeenCalledWith('atIqamah', false)
-    expect(setNotificationSilentMode).toHaveBeenCalledWith(true)
-    expect(runNotificationAction).toHaveBeenCalledWith('open-exact-alarm-settings')
-  })
-
-  it('shows a retryable alarm-sync failure and hides it after success', async () => {
+  it('shows a retryable scheduling failure and removes it after success', async () => {
     setPrayerAlarmSyncOutcome('failed')
     render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('notification-alarm-sync-failure')).toBeTruthy())
-    expect(screen.getByText(deviceCopy.notifications.syncFailed)).toBeTruthy()
-    expect(screen.getByTestId('notification-alarm-sync-retry')).toHaveTextContent(
-      deviceCopy.actions.retry,
-    )
-
-    fireEvent.press(screen.getByTestId('notification-alarm-sync-retry'))
+    expect(screen.getAllByText(deviceCopy.notifications.syncFailed).length).toBeGreaterThan(0)
+    fireEvent.press(screen.getByRole('button', { name: deviceCopy.actions.retry }))
     expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
-
     act(() => setPrayerAlarmSyncOutcome('ok'))
-    await waitFor(() => expect(screen.queryByTestId('notification-alarm-sync-failure')).toBeNull())
+    await waitFor(() => expect(screen.queryByText(deviceCopy.notifications.syncFailed)).toBeNull())
   })
 
-  it('keeps the exact-alarm settings action visible for degraded sync on API 31 or 32', async () => {
+  it('offers exact-alarm settings for degraded sync on API 31 or 32', () => {
     setPrayerAlarmSyncOutcome('degraded')
-    Object.assign(notificationSettings, {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
       exactAlarmStatus: {
         state: 'settings-required',
         message: deviceCopy.exactAlarm.settingsRequired,
@@ -404,89 +241,50 @@ describe('SettingsRoute', () => {
           label: deviceCopy.actions.openExactAlarmSettings,
         },
       },
-    })
-
-    await render(<SettingsRoute />)
-
-    await waitFor(() =>
-      expect(screen.getByTestId('notification-alarm-sync-degraded-notice')).toBeTruthy(),
-    )
-    expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy()
-    expect(screen.getByText(deviceCopy.exactAlarm.settingsRequired)).toBeTruthy()
-    expect(screen.getByTestId('notification-exact-alarm-action')).toHaveTextContent(
-      deviceCopy.actions.openExactAlarmSettings,
-    )
-    expect(screen.queryByTestId('notification-alarm-sync-degraded')).toBeNull()
+    } as never)
+    render(<SettingsRoute />)
+    expect(screen.getByText(deviceCopy.notifications.syncDegradedNotice)).toBeTruthy()
+    expect(screen.getAllByText(deviceCopy.exactAlarm.settingsRequired).length).toBeGreaterThan(0)
+    fireEvent.press(screen.getByRole('button', { name: deviceCopy.actions.openExactAlarmSettings }))
+    expect(mockAction).toHaveBeenCalledWith('open-exact-alarm-settings')
   })
 
-  it('uses app settings for degraded sync with an unavailable exact alarm on API 33 or newer', async () => {
+  it('opens app settings for degraded sync and unavailable exact alarms on API 33 or newer', () => {
     setPrayerAlarmSyncOutcome('degraded')
-    Object.assign(notificationSettings, {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
       exactAlarmStatus: {
         state: 'unavailable',
         message: deviceCopy.exactAlarm.unavailable,
         action: { type: 'open-app-settings', label: deviceCopy.actions.openAppSettings },
       },
-    })
-
-    await render(<SettingsRoute />)
-
-    await waitFor(() =>
-      expect(screen.getByTestId('notification-alarm-sync-degraded-notice')).toBeTruthy(),
-    )
-    await waitFor(() => expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy())
-    expect(screen.getByText(deviceCopy.exactAlarm.unavailable)).toBeTruthy()
-    await fireEvent.press(screen.getByTestId('notification-exact-alarm-action'))
-
-    expect(runNotificationAction).toHaveBeenCalledWith('open-app-settings')
+    } as never)
+    render(<SettingsRoute />)
+    expect(screen.getByText(deviceCopy.notifications.syncDegradedNotice)).toBeTruthy()
+    expect(screen.getAllByText(deviceCopy.exactAlarm.unavailable).length).toBeGreaterThan(0)
+    fireEvent.press(screen.getByRole('button', { name: deviceCopy.actions.openAppSettings }))
+    expect(mockAction).toHaveBeenCalledWith('open-app-settings')
   })
 
-  it('offers retry when degraded sync has no exact-alarm action', async () => {
+  it('offers retry when degraded sync has no exact-alarm action', () => {
     setPrayerAlarmSyncOutcome('degraded')
-    Object.assign(notificationSettings, {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
       exactAlarmStatus: {
         state: 'unavailable',
         message: deviceCopy.exactAlarm.unavailable,
         action: null,
       },
-    })
-
-    await render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('notification-exact-alarm')).toBeTruthy())
-    expect(screen.getByTestId('notification-exact-alarm-retry')).toHaveTextContent(
-      deviceCopy.actions.retry,
-    )
-    await fireEvent.press(screen.getByTestId('notification-exact-alarm-retry'))
-
+    } as never)
+    render(<SettingsRoute />)
+    fireEvent.press(screen.getByRole('button', { name: deviceCopy.actions.retry }))
     expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
   })
 
-  it('shows the notification permission action and hides exact alarms until permission is granted', async () => {
-    Object.assign(notificationSettings, {
-      permission: 'denied',
-      notificationStatus: {
-        state: 'permission-required',
-        message: deviceCopy.notifications.permissionRequired,
-        action: {
-          type: 'request-notification-permission',
-          label: deviceCopy.actions.requestNotificationPermission,
-        },
-      },
-    })
-
-    await render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('notification-action')).toBeTruthy())
-    expect(screen.queryByTestId('notification-exact-alarm')).toBeNull()
-    await fireEvent.press(screen.getByTestId('notification-action'))
-
-    expect(runNotificationAction).toHaveBeenCalledWith('request-notification-permission')
-  })
-
-  it('hides degraded exact-alarm guidance until notification permission is granted', async () => {
+  it('offers the notification permission action before showing exact-alarm guidance', () => {
     setPrayerAlarmSyncOutcome('degraded')
-    Object.assign(notificationSettings, {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
       permission: 'denied',
       notificationStatus: {
         state: 'permission-required',
@@ -496,61 +294,127 @@ describe('SettingsRoute', () => {
           label: deviceCopy.actions.requestNotificationPermission,
         },
       },
-    })
-
-    await render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('notification-status')).toBeTruthy())
-    expect(screen.queryByTestId('notification-alarm-sync-degraded')).toBeNull()
-    expect(screen.queryByTestId('notification-exact-alarm')).toBeNull()
-  })
-
-  it('shows recovery guidance for reboot and clock or time-zone changes', async () => {
-    await render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('notification-lifecycle-guidance')).toBeTruthy())
-    expect(screen.getByTestId('notification-reboot-recovery')).toHaveTextContent(
-      deviceCopy.notifications.rebootRecovery,
-    )
-    expect(screen.getByTestId('notification-time-change-recovery')).toHaveTextContent(
-      deviceCopy.notifications.timeChangeRecovery,
-    )
-  })
-
-  it.each(['not-required', 'ready'] as const)(
-    'hides the exact-alarm row when it is %s',
-    async (access) => {
-      Object.assign(notificationSettings, {
-        exactAlarmStatus: {
-          state: access,
-          message: 'المنبّهات الدقيقة متاحة.',
-          action: null,
+      exactAlarmStatus: {
+        state: 'settings-required',
+        message: deviceCopy.exactAlarm.settingsRequired,
+        action: {
+          type: 'open-exact-alarm-settings',
+          label: deviceCopy.actions.openExactAlarmSettings,
         },
-      })
-
-      render(<SettingsRoute />)
-
-      await waitFor(() => expect(screen.getByTestId('settings-notifications')).toBeTruthy())
-      expect(screen.queryByTestId('notification-exact-alarm')).toBeNull()
-    },
-  )
-
-  it('shows the location requirement when coordinates are missing', async () => {
-    Object.assign(notificationSettings, { hasCoordinates: false })
-
+      },
+    } as never)
     render(<SettingsRoute />)
-
-    await waitFor(() => expect(screen.getByTestId('notification-location-required')).toBeTruthy())
+    expect(screen.queryByText(deviceCopy.exactAlarm.settingsRequired)).toBeNull()
+    expect(screen.queryByText(deviceCopy.notifications.syncDegradedNotice)).toBeNull()
+    fireEvent.press(
+      screen.getByRole('button', { name: deviceCopy.actions.requestNotificationPermission }),
+    )
+    expect(mockAction).toHaveBeenCalledWith('request-notification-permission')
   })
 
-  it('disables only the switch whose write is pending', async () => {
-    isNotificationPending.mockImplementation((key) => key === 'atIqamah')
-
+  it('shows recovery guidance for reboot and clock or time-zone changes', () => {
     render(<SettingsRoute />)
+    expect(screen.getByText(deviceCopy.notifications.recoveryHeading)).toBeTruthy()
+    expect(screen.getByText(deviceCopy.notifications.rebootRecovery)).toBeTruthy()
+    expect(screen.getByText(deviceCopy.notifications.timeChangeRecovery)).toBeTruthy()
+  })
 
-    await waitFor(() => expect(screen.getByTestId('notification-moment-atIqamah')).toBeTruthy())
-    expect(screen.getByTestId('notification-moment-atIqamah').props.disabled).toBe(true)
-    expect(screen.getByTestId('notification-moment-atAdhan').props.disabled).toBe(false)
-    expect(screen.getByTestId('notification-enabled').props.disabled).toBe(false)
+  it.each(['ready', 'not-required'] as const)('hides exact-alarm guidance when %s', (state) => {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
+      exactAlarmStatus: { state, message: 'المنبّهات متاحة', action: null },
+    } as never)
+    render(<SettingsRoute />)
+    expect(screen.queryByText('المنبّهات متاحة')).toBeNull()
+  })
+
+  it('shows the location requirement when coordinates are missing', () => {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
+      hasCoordinates: false,
+    } as never)
+    render(<SettingsRoute />)
+    expect(screen.getByText(SETTINGS_COPY.notifications.locationRequired)).toBeTruthy()
+  })
+
+  it('disables only the switch whose write is pending', () => {
+    mockIsPending.mockImplementation((key) => key === 'atIqamah')
+    render(<SettingsRoute />)
+    expect(
+      screen.getByRole('switch', { name: SETTINGS_COPY.notifications.atIqamah }),
+    ).toBeDisabled()
+    expect(screen.getByRole('switch', { name: SETTINGS_COPY.notifications.atAdhan })).toBeEnabled()
+    expect(screen.getByRole('switch', { name: SETTINGS_COPY.notifications.enable })).toBeEnabled()
+  })
+
+  it('shows the blocked countdown warning and disables its switch with a reason', async () => {
+    mockCountdownStatus.mockReturnValue('channel-blocked')
+    render(<SettingsRoute />)
+    await waitFor(() =>
+      expect(
+        screen.getAllByText(NATIVE_SETTINGS_COPY.notifications.countdownBlocked).length,
+      ).toBeGreaterThan(1),
+    )
+    expect(
+      screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }),
+    ).toBeDisabled()
+    fireEvent.press(screen.getByRole('button', { name: deviceCopy.actions.openAppSettings }))
+    expect(mockAction).toHaveBeenCalledWith('open-app-settings')
+  })
+
+  it('hides the blocked countdown warning when the channel is available', () => {
+    render(<SettingsRoute />)
+    expect(screen.queryByText(NATIVE_SETTINGS_COPY.notifications.countdownBlocked)).toBeNull()
+    expect(
+      screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }),
+    ).toBeEnabled()
+  })
+
+  it('rereads countdown status when the app becomes active', async () => {
+    const listeners: ((
+      state: 'active' | 'background' | 'inactive' | 'unknown' | 'extension',
+    ) => void)[] = []
+    const spy = jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, listener) => {
+      listeners.push(listener)
+      return { remove: jest.fn() }
+    })
+    const view = render(<SettingsRoute />)
+    mockCountdownStatus.mockReturnValue('channel-blocked')
+    act(() => listeners.forEach((listener) => listener('active')))
+    await waitFor(() =>
+      expect(
+        screen.getAllByText(NATIVE_SETTINGS_COPY.notifications.countdownBlocked).length,
+      ).toBeGreaterThan(1),
+    )
+    expect(mockCountdownStatus).toHaveBeenCalledTimes(2)
+    view.unmount()
+    spy.mockRestore()
+  })
+
+  it('disables countdown when notification permission is denied', () => {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
+      permission: 'denied',
+      notificationStatus: {
+        state: 'permission-required',
+        message: deviceCopy.notifications.permissionRequired,
+        action: null,
+      },
+    } as never)
+    render(<SettingsRoute />)
+    expect(
+      screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }),
+    ).toBeDisabled()
+  })
+
+  it('disables countdown when notifications are switched off', () => {
+    jest.mocked(useNotificationSettings).mockReturnValue({
+      ...mockNotifications,
+      prefs: { ...mockNotifications.prefs, enabled: false },
+    } as never)
+    render(<SettingsRoute />)
+    expect(
+      screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }),
+    ).toBeDisabled()
   })
 })
