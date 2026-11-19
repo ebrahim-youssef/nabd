@@ -26,6 +26,7 @@ export const STATS_WINDOW_DAYS = 30
 export const CHART_WINDOW_DAYS = 7
 
 type StatsData = {
+  hasHistory: boolean
   completions: DayCompletion[]
   summary: RangeSummary
   todayAreas: AreaStat[]
@@ -112,6 +113,7 @@ export function useStats(): {
   const data = useMemo<StatsData>(() => {
     if (!persisted || persisted.status === 'error') {
       return {
+        hasHistory: false,
         completions: [],
         summary: EMPTY_SUMMARY,
         todayAreas: [],
@@ -127,6 +129,9 @@ export function useStats(): {
       today,
     )
     return {
+      hasHistory:
+        persisted.allEntries.length > 0 ||
+        earliestDay(persisted.versions, persisted.allEntries, today) < today,
       completions,
       summary: summarize(completions),
       todayAreas: dayAreaStats(persisted.versions, persisted.entries, today),

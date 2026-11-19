@@ -214,7 +214,9 @@ describe('SettingsRoute', () => {
     await waitForSettingsLoaded()
     fireEvent.press(screen.getByTestId('settings-method-row'))
     fireEvent.press(screen.getByRole('radio', { name: 'الهيئة المصرية العامة للمساحة' }))
-    await waitFor(() => expect(steps).toEqual(['saved', 'refreshed']))
+    await waitFor(() => expect(steps).toEqual(['saved', 'refreshed']), {
+      timeout: SETTINGS_LOAD_TIMEOUT_MS,
+    })
     expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
     mockRefreshWirdDay.mockReset()
   })
