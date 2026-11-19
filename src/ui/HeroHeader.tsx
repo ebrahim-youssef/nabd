@@ -26,6 +26,7 @@ type HeroHeaderProps = {
 const HERO_WIDTH = 350
 const ARC_HEIGHT = 124
 const LARGE_FONT_SCALE = 1.3
+const FONT_SCALE_FLOAT_TOLERANCE = 0.000001
 const MARKER_INNER_RADIUS = 4.8
 const MARKER_OUTER_RADIUS = 3.8
 const PATTERN_OPACITY_LIGHT = 0.15
@@ -83,7 +84,11 @@ export function HeroHeader({
   const countdown = formatCountdown(header, clockNow)
   const heroTitle = currentPrayer ?? header?.nextEvent?.label ?? 'الصلاة القادمة'
 
-  if (PixelRatio.getFontScale() >= LARGE_FONT_SCALE || !times || !header) {
+  if (
+    PixelRatio.getFontScale() >= LARGE_FONT_SCALE - FONT_SCALE_FLOAT_TOLERANCE ||
+    !times ||
+    !header
+  ) {
     return (
       <View
         className="min-h-[76px] justify-center rounded-b-hero bg-hero px-5 py-3"

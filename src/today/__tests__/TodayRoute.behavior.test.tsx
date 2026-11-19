@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useRouter } from 'expo-router'
 
 import { WIRD_LEVELS } from '../../content/levels'
@@ -45,6 +45,7 @@ describe('TodayRoute', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    toggle.mockResolvedValue(true)
     mockedUseToggleItem.mockReturnValue({ toggle, pendingItemIds: new Set(), hasError: false })
     mockedUseRouter.mockReturnValue(router as never)
   })
@@ -80,7 +81,7 @@ describe('TodayRoute', () => {
     expect(screen.queryByRole('button', { name: 'اليوم التالي' })).toBeNull()
   })
 
-  it('shows an older version item and records a past-day tick with that version', () => {
+  it('shows an older version item and records a past-day tick with that version', async () => {
     const olderDefinition = {
       ...WIRD_LEVELS[1].wird,
       items: WIRD_LEVELS[1].wird.items
@@ -105,9 +106,26 @@ describe('TodayRoute', () => {
     fireEvent.press(screen.getByTestId('today-row-fajr'))
     expect(toggle).toHaveBeenCalledWith(DAY, 'fajr', true)
     expect(mockedUseToggleItem).toHaveBeenCalledWith('version-old', refresh)
-    expect(screen.getByTestId('today-toast')).toBeTruthy()
+    expect(await screen.findByTestId('today-toast')).toBeTruthy()
     fireEvent.press(screen.getByRole('button', { name: 'تراجع' }))
     expect(toggle).toHaveBeenLastCalledWith(DAY, 'fajr', false)
+    await waitFor(() => expect(screen.queryByTestId('today-toast')).toBeNull())
+  })
+
+  it('does not show a success toast when the write fails', async () => {
+    let resolveWrite: (saved: boolean) => void = () => {}
+    toggle.mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        resolveWrite = resolve
+      }),
+    )
+    showDay(DAY, 'version-1', WIRD_LEVELS[1].wird, NOW)
+    render(<TodayRoute day={DAY} />)
+
+    fireEvent.press(screen.getByTestId('today-row-fajr'))
+    expect(screen.queryByTestId('today-toast')).toBeNull()
+    await act(async () => resolveWrite(false))
+    expect(screen.queryByTestId('today-toast')).toBeNull()
   })
 
   it('marks optional rows as voluntary and excludes them from required progress', () => {

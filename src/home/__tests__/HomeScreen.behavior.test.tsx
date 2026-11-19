@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useRouter } from 'expo-router'
 
 import { WIRD_LEVELS } from '../../content/levels'
@@ -44,6 +44,7 @@ describe('HomeScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    toggle.mockResolvedValue(true)
     mockedUseToggleItem.mockReturnValue({ toggle, pendingItemIds: new Set(), hasError: false })
     mockedUseRouter.mockReturnValue(openRouter as never)
   })
@@ -122,15 +123,32 @@ describe('HomeScreen', () => {
     expect(screen.getByTestId('current-block')).toHaveTextContent('يبدأ', { exact: false })
   })
 
-  it('sets a ticked row to done and offers undo that records false', () => {
+  it('sets a ticked row to done and offers undo that records false', async () => {
     showPlan(makePlan(NOW))
     render(<HomeScreen persisted={persisted()} />)
 
     fireEvent.press(screen.getByRole('checkbox', { name: /سنة الظهر القبلية/ }))
     expect(toggle).toHaveBeenLastCalledWith(DAY, 'rawatib-dhuhr-before', true)
-    expect(screen.getByText('سُجّل سنة الظهر القبلية')).toBeTruthy()
+    expect(await screen.findByText('سُجّل سنة الظهر القبلية')).toBeTruthy()
     fireEvent.press(screen.getByRole('button', { name: 'تراجع' }))
-    expect(toggle).toHaveBeenLastCalledWith(DAY, 'rawatib-dhuhr-before', false)
+    await waitFor(() => expect(toggle).toHaveBeenLastCalledWith(DAY, 'rawatib-dhuhr-before', false))
+    await waitFor(() => expect(screen.queryByTestId('home-toast')).toBeNull())
+  })
+
+  it('does not show a success toast after a stale write', async () => {
+    let resolveWrite: (saved: boolean) => void = () => {}
+    toggle.mockReturnValueOnce(
+      new Promise<boolean>((resolve) => {
+        resolveWrite = resolve
+      }),
+    )
+    showPlan(makePlan(NOW))
+    render(<HomeScreen persisted={persisted()} />)
+
+    fireEvent.press(screen.getByRole('checkbox', { name: /سنة الظهر القبلية/ }))
+    expect(screen.queryByTestId('home-toast')).toBeNull()
+    await act(async () => resolveWrite(false))
+    expect(screen.queryByTestId('home-toast')).toBeNull()
   })
 
   it('lists exactly the plan unrecorded items and opens the selected day', () => {

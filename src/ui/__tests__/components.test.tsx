@@ -102,7 +102,7 @@ describe('Home design components', () => {
 
   it('uses stable pure path geometry and collapses for large text', () => {
     expect(heroPathGeometry(350, 124, 0.5).travelledPath).toContain('A')
-    jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1.3)
+    jest.spyOn(PixelRatio, 'getFontScale').mockReturnValue(1.2999999523)
     const { getByTestId } = render(
       <HeroHeader
         header={{

@@ -15,11 +15,11 @@ function nextActionId(itemId: string): string {
 export function useToggleItem(versionId: string | null, onRefresh?: () => void) {
   const repository = useWirdRepository()
   const pendingItems = useRef(new Set<string>())
-  const pendingOperations = useRef(new Map<string, Promise<void>>())
+  const pendingOperations = useRef(new Map<string, Promise<boolean>>())
   const [pendingItemIds, setPendingItemIds] = useState<ReadonlySet<string>>(new Set())
   const [hasError, setHasError] = useState(false)
 
-  async function toggle(day: DayId, itemId: string, nextDone: boolean) {
+  async function toggle(day: DayId, itemId: string, nextDone: boolean): Promise<boolean> {
     const previousOperation = pendingOperations.current.get(itemId)
 
     pendingItems.current.add(itemId)
@@ -38,20 +38,24 @@ export function useToggleItem(versionId: string | null, onRefresh?: () => void) 
               at: Date.now(),
             })
           : { ok: false as const, error: 'version_not_found' }
-        if (!result.ok || result.value.outcome === 'stale') setHasError(true)
+        const wasSaved = result.ok && result.value.outcome !== 'stale'
+        if (!wasSaved) setHasError(true)
         else onRefresh?.()
+        return wasSaved
       } catch (cause: unknown) {
         logger.error('Native wird item toggle failed', cause)
         setHasError(true)
+        return false
       }
     })()
     pendingOperations.current.set(itemId, operation)
-    await operation
+    const wasSaved = await operation
     if (pendingOperations.current.get(itemId) === operation) {
       pendingOperations.current.delete(itemId)
       pendingItems.current.delete(itemId)
       setPendingItemIds(new Set(pendingItems.current))
     }
+    return wasSaved
   }
 
   return { toggle, pendingItemIds, hasError }

@@ -5,6 +5,7 @@ describe('resolveSystemPath', () => {
     ['nabd://home', '/'],
     ['/home', '/'],
     ['nabd://today/2026-11-19', '/today/2026-11-19'],
+    ['nabd://today', '/today'],
     ['nabd://today/2026%2D11%2D19', '/today/2026-11-19'],
     ['/today/2026-11-19', '/today/2026-11-19'],
     ['nabd://today/not-a-day', '/today'],

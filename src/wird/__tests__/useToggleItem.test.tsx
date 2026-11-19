@@ -14,12 +14,16 @@ describe('useToggleItem', () => {
       value: { outcome: 'applied', entry: null },
     })
     mockedUseWirdRepository.mockReturnValue({ setItemState } as never)
-    const { result } = renderHook(() => useToggleItem('version-1'))
+    const onRefresh = jest.fn()
+    const { result } = renderHook(() => useToggleItem('version-1', onRefresh))
+    let saved = false
 
     await act(async () => {
-      await result.current.toggle('2026-06-10', 'fajr', true)
+      saved = await result.current.toggle('2026-06-10', 'fajr', true)
     })
 
+    expect(saved).toBe(true)
+    expect(onRefresh).toHaveBeenCalledTimes(1)
     expect(setItemState).toHaveBeenCalledWith(
       expect.objectContaining({
         actionId: expect.any(String),
@@ -29,6 +33,24 @@ describe('useToggleItem', () => {
         done: true,
       }),
     )
+  })
+
+  it('reports a stale write as unsuccessful and does not refresh', async () => {
+    const setItemState = jest.fn().mockResolvedValue({
+      ok: true,
+      value: { outcome: 'stale', entry: null },
+    })
+    const onRefresh = jest.fn()
+    mockedUseWirdRepository.mockReturnValue({ setItemState } as never)
+    const { result } = renderHook(() => useToggleItem('version-1', onRefresh))
+    let saved = true
+
+    await act(async () => {
+      saved = await result.current.toggle('2026-06-10', 'fajr', true)
+    })
+
+    expect(saved).toBe(false)
+    expect(onRefresh).not.toHaveBeenCalled()
   })
 
   it('queues an undo behind an in-flight tick for the same item', async () => {
@@ -45,8 +67,8 @@ describe('useToggleItem', () => {
       .mockResolvedValueOnce({ ok: true, value: { outcome: 'applied', entry: null } })
     mockedUseWirdRepository.mockReturnValue({ setItemState } as never)
     const { result } = renderHook(() => useToggleItem('version-1'))
-    let tick = Promise.resolve()
-    let undo = Promise.resolve()
+    let tick: Promise<boolean> = Promise.resolve(false)
+    let undo: Promise<boolean> = Promise.resolve(false)
 
     act(() => {
       tick = result.current.toggle('2026-06-10', 'fajr', true)

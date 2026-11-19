@@ -26,15 +26,16 @@ export function TodayRoute({ day }: { day: DayId }) {
   const [undoItem, setUndoItem] = useState<UndoItem | null>(null)
   const canGoNext = compareDayId(day, today.currentDay) < 0
 
-  const record = (item: DayPlanItem, done: boolean) => {
-    void toggle(day, item.id, done)
-    setUndoItem(done ? { item } : null)
+  const record = async (item: DayPlanItem, done: boolean) => {
+    setUndoItem(null)
+    const wasSaved = await toggle(day, item.id, done)
+    if (wasSaved && done) setUndoItem({ item })
   }
 
-  const undo = () => {
+  const undo = async () => {
     if (!undoItem) return
-    void toggle(day, undoItem.item.id, false)
-    setUndoItem(null)
+    const wasSaved = await toggle(day, undoItem.item.id, false)
+    if (wasSaved) setUndoItem(null)
   }
 
   const renderRows = (items: DayPlanItem[]) =>
@@ -45,7 +46,7 @@ export function TodayRoute({ day }: { day: DayId }) {
           first={index === 0}
           label={item.label}
           muteDone={false}
-          onToggle={() => record(item, !item.done)}
+          onToggle={() => void record(item, !item.done)}
           optional={item.optional}
           sub={item.minimum}
           testID={`today-row-${item.id}`}
@@ -106,7 +107,7 @@ export function TodayRoute({ day }: { day: DayId }) {
                       first={index === 0}
                       label={item.label}
                       muteDone={false}
-                      onToggle={() => record(item, !item.done)}
+                      onToggle={() => void record(item, !item.done)}
                       optional={item.optional}
                       sub={`${toArabicIndic(progress.done)} من ${toArabicIndic(progress.target)}`}
                       testID={`today-row-${item.id}`}

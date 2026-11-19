@@ -62,7 +62,9 @@ describe('BottomNav', () => {
 
   it.each([
     ['/', 'nav-home'],
+    ['/today', 'nav-today'],
     ['/today/2026-11-19', 'nav-today'],
+    ['/adhkar', 'nav-adhkar'],
     ['/adhkar/morning', 'nav-adhkar'],
     ['/more', 'nav-more'],
     ['/prayer-times', 'nav-more'],

@@ -36,15 +36,19 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const dateLabel = formatHeaderDate(home.day, plan.header?.mode)
   const unrecordedGroups = buildUnrecordedGroups(plan)
 
-  const record = (item: DayPlanItem, done: boolean, inline = false) => {
-    void toggle(home.day, item.id, done)
+  const record = async (item: DayPlanItem, done: boolean, inline = false) => {
+    const wasSaved = await toggle(home.day, item.id, done)
+    if (!wasSaved) {
+      setUndoRecord(null)
+      return
+    }
     setUndoRecord(done ? { item, inline } : null)
   }
 
-  const undo = () => {
+  const undo = async () => {
     if (!undoRecord) return
-    void toggle(home.day, undoRecord.item.id, false)
-    setUndoRecord(null)
+    const wasSaved = await toggle(home.day, undoRecord.item.id, false)
+    if (wasSaved) setUndoRecord(null)
   }
 
   const goToToday = () => {
@@ -57,7 +61,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
       done={item.done}
       first={first}
       label={item.label}
-      onToggle={() => record(item, !item.done, inline)}
+      onToggle={() => void record(item, !item.done, inline)}
       optional={item.optional}
       sub={sub ?? item.minimum}
       testID={inline ? `sheet-row-${item.id}` : `home-row-${item.id}`}
