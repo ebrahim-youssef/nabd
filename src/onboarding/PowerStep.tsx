@@ -1,5 +1,6 @@
 import { COPY as ONBOARDING_COPY } from './copy'
 import { View } from 'react-native'
+import { useEffect } from 'react'
 
 import type { BatteryOptimizationStatus } from '../device/types'
 import { NATIVE_SETTINGS_COPY } from '../settings/constants'
@@ -13,6 +14,9 @@ type PowerStepProps = {
 }
 
 export function PowerStep({ status, onRequest, onFinish }: PowerStepProps) {
+  useEffect(() => {
+    if (status === 'exempt') onFinish()
+  }, [status, onFinish])
   return (
     <View testID="onboarding-power">
       <Text
@@ -26,9 +30,9 @@ export function PowerStep({ status, onRequest, onFinish }: PowerStepProps) {
           {ONBOARDING_COPY.powerBody}
         </Text>
         <View className="gap-1 ps-5">
-          {ONBOARDING_COPY.powerSteps.map((step) => (
+          {ONBOARDING_COPY.powerSteps.map((step, index) => (
             <Text className="text-meta text-start text-ink" key={step}>
-              {step}
+              {ONBOARDING_COPY.powerStepNumbers[index]} {step}
             </Text>
           ))}
         </View>
@@ -47,6 +51,7 @@ export function PowerStep({ status, onRequest, onFinish }: PowerStepProps) {
       <OnboardingButton
         label={ONBOARDING_COPY.finish}
         onPress={onFinish}
+        secondary
         testID="onboarding-finish"
       />
     </View>

@@ -13,6 +13,9 @@ export function DatabaseLoading() {
       testID="database-loading"
     >
       <ActivityIndicator />
+      <Text className="font-display text-sheet-title text-center text-accent">
+        {shellCopy.appName}
+      </Text>
       <Text className="text-body text-center text-ink">{NATIVE_SHELL_COPY.databaseLoading}</Text>
     </View>
   )
@@ -21,8 +24,11 @@ export function DatabaseLoading() {
 export function DatabaseError({ onRetry }: { onRetry: () => void }) {
   return (
     <View className="flex-1 justify-center gap-4 bg-bg px-6" testID="database-error">
-      <Text accessibilityRole="header" className="text-sheet-title text-start text-accent">
+      <Text accessibilityRole="header" className="text-sheet-title text-center text-accent">
         {NATIVE_SHELL_COPY.databaseError}
+      </Text>
+      <Text className="text-body text-center text-mute">
+        {NATIVE_SHELL_COPY.databaseErrorDetail}
       </Text>
       <Pressable
         accessibilityLabel={shellCopy.retry}

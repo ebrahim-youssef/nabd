@@ -130,6 +130,12 @@ describe('BackupSection', () => {
     expect(screen.getByTestId('backup-import')).toBeDisabled()
   })
 
+  it('disables confirmation while a review is busy', () => {
+    mockedUseBackup.mockReturnValue(state({ preview, isBusy: true }))
+    render(<BackupSection />)
+    expect(screen.getByRole('button', { name: BACKUP_COPY.confirm })).toBeDisabled()
+  })
+
   it('keeps the review open and does not refresh after a failed import', async () => {
     const onRestored = jest.fn()
     const confirmRestore = jest

@@ -17,8 +17,8 @@ import { useBatteryOptimization } from '../device/useBatteryOptimization'
 import { useLocationCapability } from '../device/useLocationCapability'
 import { useNotificationSettings } from '../device/useNotificationSettings'
 import { requestPrayerReschedule } from '../device/prayerAlarms'
-import { BackupImport } from '../backup/BackupSection'
-import { BACKUP_COPY } from '../backup/copy'
+import { BACKUP_COPY, backupStatusMessage } from '../backup/copy'
+import { BackupReviewSheet } from '../backup/BackupReviewSheet'
 import { useBackup } from '../backup/useBackup'
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import { readStoredTheme } from '../preferences/theme'
@@ -29,6 +29,7 @@ import { OnboardingButton } from './OnboardingButton'
 import { PermissionsStep } from './PermissionsStep'
 import { PowerStep } from './PowerStep'
 import { useWirdToday } from '../day-plan/WirdTodayProvider'
+import { OptionCard } from '../ui/OptionCard'
 
 type Screen = 'welcome' | 'questions' | 'level' | 'permissions' | 'power'
 type GateState =
@@ -73,6 +74,8 @@ export function OnboardingGate({ now }: { now: () => Date }) {
   const [gate, setGate] = useState<GateState>({ status: 'loading' })
   const [screen, setScreen] = useState<Screen>('welcome')
   const [answers, setAnswers] = useState<Answers>({})
+  const [questionIndex, setQuestionIndex] = useState(0)
+  const [recommendedLevelId, setRecommendedLevelId] = useState<LevelId | null>(null)
   const [selectedLevelId, setSelectedLevelId] = useState<LevelId | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const completionInFlight = useRef(false)
@@ -155,78 +158,81 @@ export function OnboardingGate({ now }: { now: () => Date }) {
           testID="onboarding-begin"
         />
         <View className="mt-6 gap-2" testID="onboarding-restore-card">
-          <Text className="font-sans-bold text-chip text-start text-ink">
-            {BACKUP_COPY.onboardingRestoreTitle}
-          </Text>
-          <Text className="text-meta text-start text-ink">{BACKUP_COPY.onboardingRestoreBody}</Text>
-          <BackupImport
-            {...backup}
-            importLabel={BACKUP_COPY.onboardingRestoreTitle}
-            importTestID="onboarding-restore"
-            onRestored={() => {
-              requestPrayerReschedule()
-              void applyRestoredTheme()
-              setGate({ status: 'loading' })
-            }}
+          <OnboardingButton
+            label={BACKUP_COPY.onboardingRestoreTitle}
+            onPress={() => void backup.chooseFile()}
+            disabled={backup.isBusy}
+            secondary
+            testID="onboarding-restore"
           />
+          {backup.status ? (
+            <Text className="text-meta text-start text-ink">
+              {backupStatusMessage(backup.status)}
+            </Text>
+          ) : null}
         </View>
+        <BackupReviewSheet
+          preview={backup.preview}
+          isBusy={backup.isBusy}
+          error={backup.status ? backupStatusMessage(backup.status) : null}
+          onCancel={backup.cancelRestore}
+          onConfirm={() => {
+            void backup.confirmRestore().then((result) => {
+              if (result?.ok) {
+                requestPrayerReschedule()
+                void applyRestoredTheme()
+                setGate({ status: 'loading' })
+              }
+            })
+          }}
+        />
       </ScreenContainer>
     )
   }
 
   if (screen === 'questions') {
-    const answered = isComplete(QUESTIONS, answers)
+    const question = QUESTIONS[questionIndex]
     return (
       <ScreenContainer testID="onboarding-questionnaire">
+        <Progress
+          step={0}
+          onBack={() =>
+            questionIndex === 0 ? setScreen('welcome') : setQuestionIndex(questionIndex - 1)
+          }
+        />
+        <Text className="text-meta mt-6 text-start text-mute">
+          {SHARED_COPY.questionNumbers[questionIndex]}
+        </Text>
         <Text
           accessibilityRole="header"
           className="font-display text-sheet-title text-start text-accent"
         >
-          {SHARED_COPY.title}
+          {question.prompt}
         </Text>
-        <Text className="text-body mt-2 text-start text-ink">{SHARED_COPY.intro}</Text>
-        <View className="mt-6 gap-6">
-          {QUESTIONS.map((question) => (
-            <View accessibilityRole="radiogroup" key={question.id}>
-              <Text className="text-body mb-2 text-start font-sans-medium text-ink">
-                {question.prompt}
-              </Text>
-              <View className="gap-2">
-                {question.options.map((option) => {
-                  const checked = answers[question.id] === option.id
-                  return (
-                    <Pressable
-                      accessibilityLabel={option.label}
-                      accessibilityRole="radio"
-                      accessibilityState={{ checked }}
-                      className={`rounded-card border p-3 ${
-                        checked
-                          ? 'border-accent bg-accent/10'
-                          : 'border-line bg-surface shadow-card'
-                      }`}
-                      key={option.id}
-                      onPress={() =>
-                        setAnswers((current) => ({ ...current, [question.id]: option.id }))
-                      }
-                      testID={`answer-${question.id}-${option.id}`}
-                    >
-                      <Text className="text-body text-start text-ink">{option.label}</Text>
-                    </Pressable>
-                  )
-                })}
-              </View>
-            </View>
+        <View accessibilityRole="radiogroup" className="mt-6 gap-2">
+          {question.options.map((option) => (
+            <OptionCard
+              key={option.id}
+              title={option.label}
+              selected={answers[question.id] === option.id}
+              onPress={() => {
+                const next = { ...answers, [question.id]: option.id }
+                setAnswers(next)
+                if (questionIndex < QUESTIONS.length - 1) {
+                  setQuestionIndex(questionIndex + 1)
+                } else {
+                  const recommendation = recommendLevel(WIRD_LEVELS, QUESTIONS, next)
+                  setRecommendedLevelId(recommendation)
+                  if (recommendedLevelId !== recommendation || selectedLevelId === null) {
+                    setSelectedLevelId(recommendation)
+                  }
+                  setScreen('level')
+                }
+              }}
+            />
           ))}
         </View>
-        <OnboardingButton
-          disabled={!answered}
-          label={SHARED_COPY.submit}
-          onPress={() => {
-            setSelectedLevelId(recommendLevel(WIRD_LEVELS, QUESTIONS, answers))
-            setScreen('level')
-          }}
-          testID="onboarding-submit"
-        />
+        <Text className="text-meta mt-6 text-center text-mute">{SHARED_COPY.intro}</Text>
       </ScreenContainer>
     )
   }
@@ -263,10 +269,10 @@ export function OnboardingGate({ now }: { now: () => Date }) {
       <OnboardingDeviceSetup>
         {({ battery, location, notifications }) => (
           <ScreenContainer testID="onboarding-permissions-screen">
+            <Progress step={2} onBack={() => setScreen('level')} />
             <PermissionsStep
               location={location}
               notifications={notifications}
-              isFinalStep={battery.status !== 'optimized'}
               onContinue={() => {
                 if (battery.status === 'optimized') {
                   setScreen('power')
@@ -286,6 +292,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
       <OnboardingDeviceSetup>
         {({ battery }) => (
           <ScreenContainer testID="onboarding-power-screen">
+            <Progress step={3} onBack={() => setScreen('permissions')} />
             <PowerStep
               status={battery.status}
               onRequest={battery.request}
@@ -299,37 +306,40 @@ export function OnboardingGate({ now }: { now: () => Date }) {
 
   return (
     <ScreenContainer testID="onboarding-level">
+      <Progress
+        step={1}
+        onBack={() => {
+          setQuestionIndex(QUESTIONS.length - 1)
+          setScreen('questions')
+        }}
+      />
       <Text
         accessibilityRole="header"
         className="font-display text-sheet-title text-start text-accent"
       >
         {SHARED_COPY.recommendationTitle}
       </Text>
-      <Text className="text-body mt-2 text-start text-ink">{SHARED_COPY.otherLevels}</Text>
       <View className="mt-6 gap-3" accessibilityRole="radiogroup">
-        {WIRD_LEVELS.map((level) => {
-          const checked = selectedLevelId === level.id
-          return (
-            <Pressable
-              accessibilityLabel={level.title}
-              accessibilityRole="radio"
-              accessibilityState={{ checked }}
-              className={`rounded-card border p-4 ${
-                checked
-                  ? 'border-accent bg-accent/10 shadow-card'
-                  : 'border-line bg-surface shadow-card'
-              }`}
-              key={level.id}
-              onPress={() => setSelectedLevelId(level.id)}
-              testID={`level-${level.id}`}
-            >
-              <Text className="font-display text-sheet-title text-start text-accent">
-                {level.title}
-              </Text>
-              <Text className="text-body mt-2 text-start text-ink">{level.description}</Text>
-            </Pressable>
-          )
-        })}
+        {WIRD_LEVELS.filter((level) => level.id === recommendedLevelId).map((level) => (
+          <OptionCard
+            key={level.id}
+            title={level.title}
+            description={level.description}
+            badge={SHARED_COPY.recommended}
+            selected={selectedLevelId === level.id}
+            onPress={() => setSelectedLevelId(level.id)}
+          />
+        ))}
+        <Text className="text-body text-start text-ink">{SHARED_COPY.otherLevels}</Text>
+        {WIRD_LEVELS.filter((level) => level.id !== recommendedLevelId).map((level) => (
+          <OptionCard
+            key={level.id}
+            title={level.title}
+            description={level.description}
+            selected={selectedLevelId === level.id}
+            onPress={() => setSelectedLevelId(level.id)}
+          />
+        ))}
       </View>
       <OnboardingButton
         disabled={submitting}
@@ -338,5 +348,29 @@ export function OnboardingGate({ now }: { now: () => Date }) {
         testID="onboarding-confirm"
       />
     </ScreenContainer>
+  )
+}
+
+function Progress({ step, onBack }: { step: number; onBack: () => void }) {
+  return (
+    <View className="flex-row items-center justify-between" testID="onboarding-dots">
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={SHARED_COPY.back}
+        onPress={onBack}
+        testID="onboarding-back"
+      >
+        <Text className="text-body text-accent">{SHARED_COPY.back}</Text>
+      </Pressable>
+      <View className="flex-row gap-2">
+        {[0, 1, 2, 3].map((index) => (
+          <View
+            key={index}
+            className={`size-2 rounded-pill ${index === step ? 'bg-accent' : 'bg-track'}`}
+          />
+        ))}
+      </View>
+      <View className="w-8" />
+    </View>
   )
 }
