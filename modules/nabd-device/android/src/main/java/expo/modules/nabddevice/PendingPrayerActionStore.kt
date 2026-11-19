@@ -20,7 +20,7 @@ internal object PendingPrayerActionStore {
     val preferences = preferences(context)
     val encoded = PendingPrayerActions.append(preferences.getString(PENDING_ACTIONS_KEY, null), action)
       ?: return@synchronized false
-    commit(preferences, encoded, "Could not commit a pending prayer action")
+    commit(preferences, encoded, "Could not commit pending prayer action ${action.actionId}")
   }
 
   fun acknowledge(context: Context, actionIds: List<String>): Boolean = synchronized(lock) {
@@ -29,7 +29,7 @@ internal object PendingPrayerActionStore {
       preferences.getString(PENDING_ACTIONS_KEY, null),
       actionIds,
     )
-    commit(preferences, encoded, "Could not commit acknowledged prayer actions")
+    commit(preferences, encoded, "Could not commit acknowledged prayer actions $actionIds")
   }
 
   private fun preferences(context: Context): SharedPreferences =
