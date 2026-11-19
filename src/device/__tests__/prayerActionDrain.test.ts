@@ -2,7 +2,8 @@ import type { SetItemStateInput } from '../../db/contracts'
 import { logger } from '../../observability/logger'
 import type { SetItemStateOutcome } from '../../db/contracts'
 import type { PrayerActionQueueEntry, PrayerActionQueueRead } from '../prayerActions'
-import { drainPrayerActions } from '../prayerActionDrain'
+import { drainPrayerActions, getLastPrayerActionDrainFailed } from '../prayerActionDrain'
+import * as widgetSnapshotWriter from '../widgetSnapshotWriter'
 
 const firstEntry: PrayerActionQueueEntry = {
   actionId: 'prayer:2026-11-19:fajr:v1',
@@ -53,6 +54,7 @@ describe('drainPrayerActions', () => {
 
   it('applies a queued prayer and acknowledges it after the repository write', async () => {
     const state = createDependencies([firstEntry])
+    const snapshotWrite = jest.spyOn(widgetSnapshotWriter, 'requestWidgetSnapshotWrite')
 
     await expect(drainPrayerActions(state.deps)).resolves.toEqual({
       applied: 1,
@@ -72,6 +74,8 @@ describe('drainPrayerActions', () => {
     )
     expect(state.refreshViews).toHaveBeenCalledTimes(1)
     expect(state.queuedEntries()).toEqual([])
+    expect(snapshotWrite).toHaveBeenCalledTimes(1)
+    snapshotWrite.mockRestore()
   })
 
   it('applies the queued absolute desired state when it is false', async () => {
@@ -131,6 +135,7 @@ describe('drainPrayerActions', () => {
     state.repository.setItemState.mockRejectedValueOnce(new Error('write failed'))
 
     await expect(drainPrayerActions(state.deps)).resolves.toMatchObject({ failed: 1 })
+    expect(getLastPrayerActionDrainFailed()).toBe(true)
     expect(state.acknowledge).not.toHaveBeenCalled()
     expect(state.queuedEntries()).toEqual([firstEntry, secondEntry])
     expect(logger.error).toHaveBeenCalledWith(
@@ -143,6 +148,7 @@ describe('drainPrayerActions', () => {
       applied: 2,
       failed: 0,
     })
+    expect(getLastPrayerActionDrainFailed()).toBe(false)
     expect(state.repository.setItemState.mock.calls.map(([input]) => input.actionId)).toEqual([
       firstEntry.actionId,
       firstEntry.actionId,

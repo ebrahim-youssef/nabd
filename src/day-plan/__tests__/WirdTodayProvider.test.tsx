@@ -6,6 +6,7 @@ import { useSQLiteContext } from 'expo-sqlite'
 import type { PropsWithChildren } from 'react'
 
 import { useLocationCapability } from '../../device/useLocationCapability'
+import { requestWidgetSnapshotWrite } from '../../device/widgetSnapshotWriter'
 import { previousDay, toDayId } from '../../lib/day'
 import { logger } from '../../observability/logger'
 import {
@@ -40,6 +41,9 @@ jest.mock('../../device/exactAlarm', () => ({
     mockTimeChangeListener = listener
     return () => undefined
   }),
+}))
+jest.mock('../../device/widgetSnapshotWriter', () => ({
+  requestWidgetSnapshotWrite: jest.fn(() => Promise.resolve()),
 }))
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: { calculationMethod: 'calculation-method' },
@@ -160,6 +164,30 @@ describe('useWirdToday', () => {
     expect(times.fajr).toBeGreaterThan(now)
     const { result } = renderHook(() => useWirdToday(), { wrapper })
     await waitFor(() => expect(result.current).toBe(previousDay(toDayId(new Date(now)))))
+  })
+
+  it('requests a widget snapshot when the resolved wird day changes at Fajr', async () => {
+    const now = new Date(2026, 5, 10, 1).getTime()
+    jest.setSystemTime(now)
+    const times = computeDayTimes(
+      { latitude: 30.04, longitude: 31.24 },
+      dateForCalendarDayInTimeZone(now, currentTimeZone()),
+    )
+    render(
+      <WirdTodayProvider>
+        <WirdDayChild />
+      </WirdTodayProvider>,
+    )
+    await waitFor(() => expect(screen.getByTestId('provider-child')).toBeTruthy())
+    const callsBeforeBoundary = jest.mocked(requestWidgetSnapshotWrite).mock.calls.length
+
+    await act(async () => {
+      jest.advanceTimersByTime(times.fajr - now + 1)
+    })
+
+    await waitFor(() =>
+      expect(requestWidgetSnapshotWrite).toHaveBeenCalledTimes(callsBeforeBoundary + 1),
+    )
   })
 
   it('returns the calendar day after Fajr', async () => {

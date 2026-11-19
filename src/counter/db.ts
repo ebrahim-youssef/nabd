@@ -3,7 +3,12 @@ import type { DhikrCompletionRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
 import type { DayId, WirdEntry } from '../wird/types'
 import type { ProductDatabase } from '../db/productDatabase'
-import { asEntry, readVersionInForce, setItemStateInTransaction } from '../db/wirdState'
+import {
+  asEntry,
+  readVersionInForce,
+  runWirdStateTransaction,
+  setItemStateInTransaction,
+} from '../db/wirdState'
 import type { EntryRow } from '../db/wirdState'
 export function createDhikrCompletionRepository(
   database: ProductDatabase,
@@ -16,7 +21,7 @@ export function createDhikrCompletionRepository(
   ): Promise<Result<WirdEntry>> {
     try {
       let value: WirdEntry | null = null
-      await database.withExclusiveTransactionAsync(async (transaction) => {
+      await runWirdStateTransaction(database, async (transaction) => {
         const result = await setItemStateInTransaction(transaction, {
           day,
           versionId,
@@ -36,6 +41,7 @@ export function createDhikrCompletionRepository(
         if (result.outcome === 'stale' || !value) {
           throw new Error(`wird item ${itemId} was stale or missing for day ${day}`)
         }
+        return result
       })
       if (!value) throw new Error('wird item completion returned no entry')
       return { ok: true, value }
@@ -57,7 +63,7 @@ export function createDhikrCompletionRepository(
     async completeLinkedWirdItem(day, itemId, at): Promise<Result<WirdEntry | null>> {
       try {
         let value: WirdEntry | null = null
-        await database.withExclusiveTransactionAsync(async (tx) => {
+        await runWirdStateTransaction(database, async (tx) => {
           const version = await readVersionInForce(tx, day)
           const result = await setItemStateInTransaction(
             tx,
@@ -71,6 +77,7 @@ export function createDhikrCompletionRepository(
             version,
           )
           value = result.entry
+          return result
         })
         return { ok: true, value }
       } catch {

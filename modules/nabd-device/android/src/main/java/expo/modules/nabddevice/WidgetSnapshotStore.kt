@@ -22,6 +22,10 @@ internal object WidgetSnapshotStore {
     committed
   }
 
+  fun clear(context: Context): Boolean = synchronized(OutsideAppActionLock) {
+    preferences(context).edit().remove(WIDGET_SNAPSHOT_KEY).commit()
+  }
+
   private fun preferences(context: Context): SharedPreferences =
     context.getSharedPreferences(WIDGET_SNAPSHOT_PREFERENCES, Context.MODE_PRIVATE)
 }

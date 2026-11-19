@@ -1,7 +1,12 @@
 import { WIRD_LEVELS } from '../content/levels'
 import { nextDay } from '../lib/day'
 import { versionInForce } from '../lib/wird'
-import { asEntry, asVersion, setItemStateInTransaction } from '../db/wirdState'
+import {
+  asEntry,
+  asVersion,
+  runWirdStateTransaction,
+  setItemStateInTransaction,
+} from '../db/wirdState'
 import type { EntryRow, VersionRow } from '../db/wirdState'
 import { sameDefinition } from './logic'
 import type {
@@ -15,6 +20,7 @@ import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 import { planVersionHealing } from './logic'
+import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 // Keep a healed version just above the version it heals so later explicit choices still win.
 const HEALED_VERSION_CREATED_AT_OFFSET = 1
@@ -53,6 +59,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
         createdAt,
       )
       if (!row) throw new Error('missing version')
+      void requestWidgetSnapshotWrite()
       return { ok: true, value: asVersion(row) }
     } catch (cause: unknown) {
       logger.error('Native wird version insert failed', cause)
@@ -64,8 +71,8 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
   ): Promise<Result<{ outcome: SetItemStateOutcome; entry: WirdEntry | null }>> {
     try {
       let value: { outcome: SetItemStateOutcome; entry: WirdEntry | null } | undefined
-      await database.withExclusiveTransactionAsync(async (transaction) => {
-        value = await setItemStateInTransaction(transaction, input)
+      value = await runWirdStateTransaction(database, async (transaction) => {
+        return setItemStateInTransaction(transaction, input)
       })
       if (!value) throw new Error('wird state transaction returned no outcome')
       return { ok: true, value }
@@ -94,6 +101,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
       )
       result = { created: true, effectiveFrom: plan.effectiveFrom }
     })
+    if (result.created) void requestWidgetSnapshotWrite()
     return result
   }
   return {

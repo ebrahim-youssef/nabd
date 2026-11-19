@@ -1,6 +1,7 @@
 import type { WirdRepository } from '../db/contracts'
 import { logger } from '../observability/logger'
 import type { PrayerActionQueueEntry, PrayerActionQueueRead } from './prayerActions'
+import { requestWidgetSnapshotWrite } from './widgetSnapshotWriter'
 
 export type PrayerActionDrainSummary = {
   applied: number
@@ -31,6 +32,11 @@ const DRAIN_OPERATION = 'drain-prayer-actions'
 let activeDrain: Promise<PrayerActionDrainSummary> | null = null
 let drainQueued = false
 let queuedDependencies: PrayerActionDrainDependencies | null = null
+let lastDrainFailed = false
+
+export function getLastPrayerActionDrainFailed(): boolean {
+  return lastDrainFailed
+}
 
 export function drainPrayerActions(
   dependencies: PrayerActionDrainDependencies,
@@ -51,11 +57,13 @@ export function drainPrayerActions(
       summary = addSummaries(summary, await performDrain(currentDependencies))
       nextDependencies = queuedDependencies ?? currentDependencies
     } while (drainQueued)
+    lastDrainFailed = summary.failed > 0
     return summary
   })()
   let serializedOperation: Promise<PrayerActionDrainSummary>
-  serializedOperation = operation.finally(() => {
+  serializedOperation = operation.finally(async () => {
     if (activeDrain === serializedOperation) activeDrain = null
+    await requestWidgetSnapshotWrite()
   })
   activeDrain = serializedOperation
   return serializedOperation

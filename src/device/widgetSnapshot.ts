@@ -30,7 +30,7 @@ export type WidgetSnapshot = {
   blocks: WidgetSnapshotBlock[]
   nextPrayers: WidgetSnapshotPrayer[]
   unrecordedCount: number
-  writeFailed: false
+  writeFailed: boolean
 }
 
 export type BuildWidgetSnapshotInput = {
@@ -41,6 +41,7 @@ export type BuildWidgetSnapshotInput = {
   nextFajr: number | null
   definition: WirdDefinition
   entries: WirdEntry[]
+  writeFailed?: boolean
 }
 
 export function buildWidgetSnapshot(input: BuildWidgetSnapshotInput): WidgetSnapshot | null {
@@ -103,6 +104,6 @@ export function buildWidgetSnapshot(input: BuildWidgetSnapshotInput): WidgetSnap
     blocks,
     nextPrayers,
     unrecordedCount: plan.unrecorded.length,
-    writeFailed: false,
+    writeFailed: input.writeFailed ?? false,
   }
 }

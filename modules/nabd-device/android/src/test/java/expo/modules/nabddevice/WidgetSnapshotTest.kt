@@ -122,6 +122,38 @@ class WidgetSnapshotTest {
   }
 
   @Test
+  fun pendingActionsMergeInOrderAndOnlyMatchingKnownItemChangesCount() {
+    val value = snapshot().copy(
+      blocks = snapshot().blocks.mapIndexed { index, block ->
+        if (index == 1) block.copy(items = listOf(block.items.single().copy(countsAsUnrecorded = true)))
+        else block
+      },
+    )
+    val merged = mergePendingWidgetActions(
+      value,
+      listOf(
+        PendingPrayerAction("done", "dhuhr", value.day, value.versionId, 1L, true),
+        PendingPrayerAction("other-day", "dhuhr", "2026-11-20", value.versionId, 2L, false),
+        PendingPrayerAction("other-version", "dhuhr", value.day, "v2", 3L, false),
+        PendingPrayerAction("unknown", "missing", value.day, value.versionId, 4L, true),
+        PendingPrayerAction("undone", "dhuhr", value.day, value.versionId, 5L, false),
+      ),
+    )
+
+    assertFalse(merged.blocks[1].items.single().done)
+    assertEquals(value.unrecordedCount, merged.unrecordedCount)
+    val completedTwice = mergePendingWidgetActions(
+      value,
+      listOf(
+        PendingPrayerAction("done", "dhuhr", value.day, value.versionId, 1L, true),
+        PendingPrayerAction("done-again", "dhuhr", value.day, value.versionId, 2L, true),
+      ),
+    )
+    assertTrue(completedTwice.blocks[1].items.single().done)
+    assertEquals(value.unrecordedCount - 1, completedTwice.unrecordedCount)
+  }
+
+  @Test
   fun validatesWidgetActionsAgainstSnapshotItems() {
     val action = PendingPrayerAction("widget:one", "custom-item", "2026-11-19", "v1", 1L, false)
     val allowedSnapshot = snapshot().copy(

@@ -8,6 +8,7 @@ import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { parseBackup, serializeBackup, type BackupEnvelope, type BackupRows } from '../logic'
 import { createBackupRepository } from '../db'
+import * as widgetSnapshotWriter from '../../device/widgetSnapshotWriter'
 
 type BackupDatabase = ProductDatabase & MigrationDatabase
 
@@ -198,6 +199,7 @@ describe('backup SQLite repository', () => {
     try {
       await seed(source.database, rows)
       const snapshot = await createBackupRepository(source.database).readSnapshot()
+      const snapshotWrite = jest.spyOn(widgetSnapshotWriter, 'requestWidgetSnapshotWrite')
 
       await expect(
         createBackupRepository(target.database).restore(validBackup(snapshot)),
@@ -213,6 +215,7 @@ describe('backup SQLite repository', () => {
           wird_actions: 1,
         },
       })
+      expect(snapshotWrite).toHaveBeenCalledTimes(1)
       await expect(createBackupRepository(target.database).readSnapshot()).resolves.toEqual(
         snapshot,
       )

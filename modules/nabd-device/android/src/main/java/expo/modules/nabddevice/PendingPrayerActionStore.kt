@@ -9,6 +9,10 @@ private const val PENDING_ACTIONS_KEY = "queue"
 private const val LOG_TAG = "NabdDevice"
 
 internal object PendingPrayerActionStore {
+  fun readEncoded(context: Context): String? = synchronized(OutsideAppActionLock) {
+    preferences(context).getString(PENDING_ACTIONS_KEY, null)
+  }
+
   fun read(context: Context): String = synchronized(OutsideAppActionLock) {
     val encoded = preferences(context).getString(PENDING_ACTIONS_KEY, null)
     PendingPrayerActions.acknowledge(encoded, emptyList())

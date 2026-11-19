@@ -120,4 +120,19 @@ describe('buildWidgetSnapshot', () => {
       }),
     ).toBeNull()
   })
+
+  it('carries whether the most recent prayer action drain left a failed write', () => {
+    const snapshot = buildWidgetSnapshot({
+      now: Date.parse('2026-06-10T13:05:00+03:00'),
+      day: DAY,
+      versionId: 'v1',
+      times: TIMES,
+      nextFajr: NEXT_FAJR,
+      definition: DEFINITION,
+      entries: [],
+      writeFailed: true,
+    })
+
+    expect(snapshot?.writeFailed).toBe(true)
+  })
 })

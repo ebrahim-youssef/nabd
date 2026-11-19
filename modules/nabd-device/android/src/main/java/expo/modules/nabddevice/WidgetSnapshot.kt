@@ -206,6 +206,14 @@ internal fun applyPrayerActionToSnapshot(
   return applyWidgetTick(snapshot, action.itemId, true)
 }
 
+internal fun mergePendingWidgetActions(
+  snapshot: WidgetSnapshot,
+  actions: List<PendingPrayerAction>,
+): WidgetSnapshot = actions.fold(snapshot) { current, action ->
+  if (current.day != action.day || current.versionId != action.versionId) current
+  else applyWidgetTick(current, action.itemId, action.done)
+}
+
 private fun JSONObject.string(key: String): String? = opt(key) as? String
 
 private fun JSONObject.boolean(key: String): Boolean? = opt(key) as? Boolean
