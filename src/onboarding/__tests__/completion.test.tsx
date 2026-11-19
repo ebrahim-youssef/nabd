@@ -27,6 +27,7 @@ jest.mock('../../shell/BottomNav', () => {
   const { View } = require('react-native') as typeof import('react-native')
 
   return {
+    BOTTOM_NAV_CLEARANCE: 86,
     BottomNav: ({ isVisible }: { isVisible: boolean }) =>
       isVisible ? React.createElement(View, { testID: 'bottom-nav' }) : null,
   }
