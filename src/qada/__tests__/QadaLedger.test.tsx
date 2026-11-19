@@ -1,120 +1,158 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, within } from '@testing-library/react-native'
+import { useState } from 'react'
 
 import { QADA_COPY } from '../copy'
 import { QADA_PRAYERS, daysFromPeriod } from '../logic'
-
 import { QadaLedger } from '../QadaLedger'
 import { useQada } from '../useQada'
+import { ToastProvider } from '../../ui/ToastProvider'
 
 jest.mock('../useQada', () => ({ useQada: jest.fn() }))
 jest.mock('lucide-react-native', () => ({
-  Check: () => null,
+  Minus: () => null,
   Plus: () => null,
+  ChevronLeft: () => null,
 }))
 
 const mockedUseQada = useQada as jest.MockedFunction<typeof useQada>
-const addDebt = jest.fn<Promise<void>, [number]>().mockResolvedValue(undefined)
-const payPrayer = jest.fn<Promise<void>, [string]>().mockResolvedValue(undefined)
+const addDebt = jest.fn().mockResolvedValue(true)
+const payPrayer = jest.fn().mockResolvedValue(true)
+const undoPrayer = jest.fn().mockResolvedValue(true)
 
-function remainingWith(
-  overrides: Partial<Record<(typeof QADA_PRAYERS)[number]['id'], number>> = {},
-) {
-  return Object.fromEntries(
-    QADA_PRAYERS.map((prayer) => [prayer.id, overrides[prayer.id] ?? 0]),
-  ) as Record<(typeof QADA_PRAYERS)[number]['id'], number>
+function useStatefulQada(): ReturnType<typeof useQada> {
+  const [count, setCount] = useState(2)
+  return {
+    isLoading: false,
+    hasAny: true,
+    remaining: { fajr: count, dhuhr: 2, asr: 0, maghrib: 0, isha: 0 },
+    addDebt,
+    payPrayer: async (id) => {
+      await payPrayer(id)
+      setCount((value) => value - 1)
+      return true
+    },
+    undoPrayer: async (id) => {
+      await undoPrayer(id)
+      setCount((value) => value + 1)
+      return true
+    },
+  }
 }
 
 function renderLedger(
   overrides: Partial<Record<(typeof QADA_PRAYERS)[number]['id'], number>> = {},
+  hasAny = true,
 ) {
+  const remaining = Object.fromEntries(
+    QADA_PRAYERS.map((prayer) => [prayer.id, overrides[prayer.id] ?? 0]),
+  ) as Record<(typeof QADA_PRAYERS)[number]['id'], number>
   mockedUseQada.mockReturnValue({
     isLoading: false,
-    hasAny: Object.values(overrides).some((count) => count > 0),
-    remaining: remainingWith(overrides),
+    hasAny,
+    remaining,
     addDebt,
     payPrayer,
+    undoPrayer,
   })
-  return render(<QadaLedger />)
+  return render(
+    <ToastProvider>
+      <QadaLedger />
+    </ToastProvider>,
+  )
 }
 
 describe('QadaLedger', () => {
   beforeEach(() => {
     jest.clearAllMocks()
-    addDebt.mockResolvedValue(undefined)
-    payPrayer.mockResolvedValue(undefined)
+    addDebt.mockResolvedValue(true)
+    payPrayer.mockResolvedValue(true)
+    undoPrayer.mockResolvedValue(true)
   })
 
   it('renders all five prayers with done and remaining copy', () => {
-    renderLedger({ fajr: 0, dhuhr: 3 })
-
+    renderLedger({ dhuhr: 3 })
     for (const prayer of QADA_PRAYERS)
       expect(screen.getByTestId(`qada-row-${prayer.id}`)).toBeTruthy()
-    expect(screen.getByText('الفجر')).toBeTruthy()
-    expect(screen.getByTestId('qada-count-fajr')).toHaveTextContent(QADA_COPY.done)
-    expect(screen.getByTestId('qada-count-dhuhr')).toHaveTextContent(QADA_COPY.remaining(3))
+    for (const prayer of QADA_PRAYERS)
+      expect(screen.getByRole('button', { name: `تم قضاء صلاة ${prayer.label}` })).toBeTruthy()
+    expect(within(screen.getByTestId('qada-row-fajr')).getByText('لا فوائت')).toBeTruthy()
+    expect(
+      within(screen.getByTestId('qada-row-dhuhr')).getByText(QADA_COPY.remaining(3)),
+    ).toBeTruthy()
   })
 
   it('disables payment for a cleared prayer and enables it for debt', () => {
-    renderLedger({ fajr: 0, dhuhr: 1 })
-
-    expect(screen.getByTestId('qada-pay-fajr').props.accessibilityState.disabled).toBe(true)
-    expect(screen.getByTestId('qada-pay-dhuhr').props.accessibilityState.disabled).toBe(false)
+    renderLedger({ dhuhr: 1 })
+    expect(
+      screen.getByRole('button', { name: 'تم قضاء صلاة الفجر' }).props.accessibilityState.disabled,
+    ).toBe(true)
+    expect(
+      screen.getByRole('button', { name: 'تم قضاء صلاة الظهر' }).props.accessibilityState.disabled,
+    ).toBe(false)
   })
 
-  it('pays only the selected prayer', async () => {
-    renderLedger({ fajr: 2, dhuhr: 2 })
-
-    await act(async () => {
-      fireEvent.press(screen.getByTestId('qada-pay-fajr'))
-    })
-
-    expect(payPrayer).toHaveBeenCalledTimes(1)
+  it('pays only the selected prayer and undoes it', async () => {
+    mockedUseQada.mockImplementation(useStatefulQada)
+    render(
+      <ToastProvider>
+        <QadaLedger />
+      </ToastProvider>,
+    )
+    await act(async () =>
+      fireEvent.press(screen.getByRole('button', { name: 'تم قضاء صلاة الفجر' })),
+    )
     expect(payPrayer).toHaveBeenCalledWith('fajr')
+    expect(screen.getByText(QADA_COPY.paid('الفجر', 1))).toBeTruthy()
+    await act(async () => fireEvent.press(screen.getByText('تراجع')))
+    expect(undoPrayer).toHaveBeenCalledWith('fajr')
+    expect(
+      within(screen.getByTestId('qada-row-fajr')).getByText(QADA_COPY.remaining(2)),
+    ).toBeTruthy()
+    expect(
+      within(screen.getByTestId('qada-row-dhuhr')).getByText(QADA_COPY.remaining(2)),
+    ).toBeTruthy()
   })
 
-  it('opens with empty fields and resets them on reopen', () => {
-    renderLedger()
+  it('shows failure when payment fails', async () => {
+    payPrayer.mockResolvedValue(false)
+    renderLedger({ fajr: 1 })
+    await act(async () =>
+      fireEvent.press(screen.getByRole('button', { name: 'تم قضاء صلاة الفجر' })),
+    )
+    expect(screen.getByText(QADA_COPY.writeError)).toBeTruthy()
+  })
 
-    fireEvent.press(screen.getByTestId('qada-add'))
-    fireEvent.changeText(screen.getByTestId('qada-years'), '2')
-    fireEvent.changeText(screen.getByTestId('qada-months'), '3')
-    fireEvent.changeText(screen.getByTestId('qada-days'), '4')
+  it('opens with zero steppers and resets them on reopen', () => {
+    renderLedger({}, false)
+    fireEvent.press(screen.getByText(QADA_COPY.addButton))
+    fireEvent(screen.getByLabelText(QADA_COPY.years), 'accessibilityAction', {
+      nativeEvent: { actionName: 'increment' },
+    })
     fireEvent.press(screen.getByText(QADA_COPY.cancel))
-    fireEvent.press(screen.getByTestId('qada-add'))
-
-    expect(screen.getByTestId('qada-years').props.value).toBe('')
-    expect(screen.getByTestId('qada-months').props.value).toBe('')
-    expect(screen.getByTestId('qada-days').props.value).toBe('')
+    fireEvent.press(screen.getByText(QADA_COPY.addButton))
+    expect(screen.getByLabelText(QADA_COPY.years).props.accessibilityValue.now).toBe(0)
   })
 
   it('computes the total live and confirms only a non-zero debt', async () => {
-    renderLedger()
-
-    fireEvent.press(screen.getByTestId('qada-add'))
-    expect(screen.getByTestId('qada-confirm').props.accessibilityState.disabled).toBe(true)
-    fireEvent.changeText(screen.getByTestId('qada-years'), '1')
-    fireEvent.changeText(screen.getByTestId('qada-months'), '2')
-    fireEvent.changeText(screen.getByTestId('qada-days'), '3')
-    expect(screen.getByTestId('qada-total')).toHaveTextContent(
-      QADA_COPY.total(daysFromPeriod(1, 2, 3)),
-    )
-    expect(screen.getByTestId('qada-confirm').props.accessibilityState.disabled).toBe(false)
-
-    await act(async () => {
-      fireEvent.press(screen.getByTestId('qada-confirm'))
-    })
-
-    await waitFor(() => expect(addDebt).toHaveBeenCalledWith(daysFromPeriod(1, 2, 3)))
-    expect(screen.queryByTestId('qada-modal')).toBeNull()
+    renderLedger({}, false)
+    fireEvent.press(screen.getByText(QADA_COPY.addButton))
+    expect(
+      screen.getByRole('button', { name: QADA_COPY.confirm }).props.accessibilityState.disabled,
+    ).toBe(true)
+    for (const label of [QADA_COPY.years, QADA_COPY.months, QADA_COPY.days])
+      fireEvent(screen.getByLabelText(label), 'accessibilityAction', {
+        nativeEvent: { actionName: 'increment' },
+      })
+    expect(screen.getByText(QADA_COPY.total(daysFromPeriod(1, 1, 1)))).toBeTruthy()
+    await act(async () => fireEvent.press(screen.getByRole('button', { name: QADA_COPY.confirm })))
+    expect(addDebt).toHaveBeenCalledWith(daysFromPeriod(1, 1, 1))
+    expect(screen.queryByText(QADA_COPY.modalNote)).toBeNull()
   })
 
   it('dismisses the sheet through the native back callback', () => {
-    renderLedger()
-    fireEvent.press(screen.getByTestId('qada-add'))
-
-    const modal = screen.getByTestId('qada-modal')
-    expect(modal.props.visible).toBe(true)
-    act(() => modal.props.onRequestClose())
-    expect(screen.queryByTestId('qada-modal')).toBeNull()
+    renderLedger({}, false)
+    fireEvent.press(screen.getByText(QADA_COPY.addButton))
+    act(() => screen.getByTestId('bottom-sheet-modal').props.onRequestClose())
+    expect(screen.queryByText(QADA_COPY.modalNote)).toBeNull()
   })
 })

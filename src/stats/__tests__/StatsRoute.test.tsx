@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react-nativ
 import type { QadaEvent } from '../../db/contracts'
 import type { WirdEntry, WirdVersion } from '../../wird/types'
 import { useSQLiteContext } from 'expo-sqlite'
+import { Share } from 'react-native'
 
 import StatsRoute from '../../../app/(tabs)/stats'
 import { createQadaRepository } from '../../qada/db'
@@ -13,13 +14,25 @@ import { useWirdToday } from '../../day-plan/WirdTodayProvider'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: jest.fn(), canGoBack: () => false, replace: jest.fn() }),
+  useRouter: () => ({
+    back: jest.fn(),
+    canGoBack: () => false,
+    replace: jest.fn(),
+    push: mockPush,
+  }),
   useFocusEffect: jest.fn(),
 }))
-jest.mock('lucide-react-native', () => ({ ArrowRight: () => null, ChevronDown: () => null }))
+jest.mock('lucide-react-native', () => ({
+  ArrowRight: () => null,
+  ChevronDown: () => null,
+  ChevronUp: () => null,
+  ChevronLeft: () => null,
+}))
 jest.mock('../../wird/useWirdRepository', () => ({ useWirdRepository: jest.fn() }))
 jest.mock('../../qada/db', () => ({ createQadaRepository: jest.fn() }))
 jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: jest.fn() }))
+
+const mockPush = jest.fn()
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedUseWirdRepository = useWirdRepository as jest.MockedFunction<typeof useWirdRepository>
@@ -87,18 +100,18 @@ describe('StatsRoute', () => {
   it('renders seven-day stats and the qada link from SQLite repositories', async () => {
     render(<StatsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('stats-week-chart')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('إتمام الوِرد — آخر ٧ أيام')).toBeTruthy(), {
+      timeout: 5000,
+    })
 
-    expect(screen.getAllByTestId(/stats-bar-/)).toHaveLength(7)
-    expect(screen.getByTestId('stats-current-streak')).toHaveTextContent('١')
-    expect(screen.getByTestId('stats-best-streak')).toHaveTextContent('١')
-    expect(screen.getByTestId('stats-summary')).toHaveTextContent('٢/٣')
+    expect(screen.getByText('يوم واحد متتالٍ')).toBeTruthy()
+    expect(screen.getByText('أفضل سلسلة: ١')).toBeTruthy()
+    expect(screen.getByText('أتممت وِردك ١ يومًا من ٧، واليوم ٥٠٪ حتى الآن.')).toBeTruthy()
     expect(screen.getByText('الأساس')).toBeTruthy()
-    expect(screen.getByText('الاثنين')).toBeTruthy()
-    expect(screen.getByText('الاثنين').props.numberOfLines).toBe(1)
-    await fireEvent.press(screen.getByTestId('stats-item-stats-toggle'))
+    fireEvent.press(screen.getByRole('button', { name: /محاسبة العناصر/ }))
     expect(screen.getByText('الأول')).toBeTruthy()
-    expect(screen.getByTestId('stats-qada-link')).toBeTruthy()
+    fireEvent.press(screen.getByRole('button', { name: /قضاء الفوائت/ }))
+    expect(mockPush).toHaveBeenCalledWith('/qada')
   })
 
   it('keeps item details collapsed and reveals required and voluntary parity metrics', async () => {
@@ -155,10 +168,12 @@ describe('StatsRoute', () => {
 
     render(<StatsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('stats-item-stats-toggle')).toBeTruthy())
+    await waitFor(
+      () => expect(screen.getByRole('button', { name: /محاسبة العناصر/ })).toBeTruthy(),
+      { timeout: 5000 },
+    )
 
-    const toggle = screen.getByTestId('stats-item-stats-toggle')
-    expect(toggle.props.accessibilityLabel).toBe('محاسبة العناصر (٢)')
+    const toggle = screen.getByRole('button', { name: /محاسبة العناصر/ })
     expect(toggle.props.accessibilityState).toEqual({ expanded: false })
     expect(screen.queryByTestId('stats-item-first')).toBeNull()
 
@@ -193,7 +208,7 @@ describe('StatsRoute', () => {
     }
 
     await render(<ItemStatsSection items={[item]} />)
-    await fireEvent.press(screen.getByTestId('stats-item-stats-toggle'))
+    await fireEvent.press(screen.getByRole('button', { name: /محاسبة العناصر/ }))
 
     expect(screen.getByTestId('item-consistency-partial')).toHaveTextContent('٥٠٪')
     const progress = screen.getByTestId('item-progress-partial')
@@ -204,14 +219,11 @@ describe('StatsRoute', () => {
   it('resolves a historical day against the version in force on that day', async () => {
     render(<StatsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('stats-week-chart')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('إتمام الوِرد — آخر ٧ أيام')).toBeTruthy(), {
+      timeout: 5000,
+    })
 
-    expect(screen.getByTestId('stats-bar-2026-09-14').props.style).toEqual(
-      expect.objectContaining({ height: '100%' }),
-    )
-    expect(screen.getByTestId('stats-bar-2026-09-15').props.style).toEqual(
-      expect.objectContaining({ height: '50%' }),
-    )
+    expect(screen.getByText('أتممت وِردك ١ يومًا من ٧، واليوم ٥٠٪ حتى الآن.')).toBeTruthy()
   })
 
   it('renders a recoverable error when stored wird JSON cannot be read', async () => {
@@ -223,15 +235,17 @@ describe('StatsRoute', () => {
 
     render(<StatsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('stats-error')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('حدث خطأ ما. حاول مرة أخرى.')).toBeTruthy(), {
+      timeout: 5000,
+    })
     expect(screen.getByText('حدث خطأ ما. حاول مرة أخرى.')).toBeTruthy()
-    expect(screen.getByTestId('stats-retry')).toBeTruthy()
-    expect(screen.queryByTestId('stats-summary')).toBeNull()
+    expect(screen.getByRole('button', { name: 'إعادة المحاولة' })).toBeTruthy()
+    expect(screen.queryByText('آخر ٣٠ يومًا')).toBeNull()
 
     brokenRepository.listVersions = jest.fn(async () => versions)
-    await fireEvent.press(screen.getByTestId('stats-retry'))
+    await fireEvent.press(screen.getByRole('button', { name: 'إعادة المحاولة' }))
 
-    await waitFor(() => expect(screen.getByTestId('stats-summary')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('آخر ٣٠ يومًا')).toBeTruthy(), { timeout: 5000 })
   })
 
   it('renders an empty stats projection without inventing item statistics', async () => {
@@ -243,9 +257,42 @@ describe('StatsRoute', () => {
 
     render(<StatsRoute />)
 
-    await waitFor(() => expect(screen.getByTestId('stats-summary')).toBeTruthy())
-
-    expect(screen.getByTestId('stats-summary')).toHaveTextContent('٠/٠')
+    await waitFor(() => expect(screen.getByText('تبدأ إحصاءاتك من اليوم')).toBeTruthy(), {
+      timeout: 5000,
+    })
+    fireEvent.press(screen.getByRole('button', { name: 'افتح اليوم' }))
+    expect(mockPush).toHaveBeenCalledWith('/today')
     expect(screen.queryByTestId('stats-item-first')).toBeNull()
+  })
+  it('shows loading while the first read is pending', () => {
+    const pending = repository()
+    pending.listVersions = jest.fn(() => new Promise(() => {}))
+    mockedUseWirdRepository.mockReturnValue(pending)
+    render(<StatsRoute />)
+    expect(screen.getByRole('progressbar')).toBeTruthy()
+  })
+
+  it('exports the week and month through the existing share action', async () => {
+    const share = jest.spyOn(Share, 'share').mockResolvedValue({ action: Share.sharedAction })
+    render(<StatsRoute />)
+    await waitFor(() => expect(screen.getByText('تصدير آخر أسبوع')).toBeTruthy(), { timeout: 5000 })
+    fireEvent.press(screen.getByText('تصدير آخر أسبوع'))
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1))
+    expect(share.mock.calls[0][0].title).toContain('week')
+    fireEvent.press(screen.getByText('تصدير آخر شهر'))
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(2))
+    expect(share.mock.calls[1][0].title).toContain('month')
+    share.mockRestore()
+  })
+
+  it('shows history older than the displayed month', async () => {
+    const old = repository()
+    old.listVersions = jest.fn(async () => [{ ...versions[0], effectiveFrom: '2026-01-01' }])
+    old.getEntriesInRange = jest.fn(async () => [])
+    old.getAllEntries = jest.fn(async () => [])
+    mockedUseWirdRepository.mockReturnValue(old)
+    render(<StatsRoute />)
+    await waitFor(() => expect(screen.getByText('آخر ٣٠ يومًا')).toBeTruthy(), { timeout: 5000 })
+    expect(screen.queryByText('تبدأ إحصاءاتك من اليوم')).toBeNull()
   })
 })

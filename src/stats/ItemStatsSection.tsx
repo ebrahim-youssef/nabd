@@ -1,11 +1,10 @@
 import { toArabicIndic } from '../lib/format'
 import { STATS_COPY } from './copy'
-import { ChevronDown } from 'lucide-react-native'
 import { useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 import type { ItemStat } from './types'
 
-import { ICON_SIZE, useThemeColors } from '../../theme/tokens'
+import { Accordion } from '../ui/Accordion'
 import { Text } from '../shell/Text'
 import { completionPercent, formatCompletion, formatPercentage, PERCENT } from './logic'
 
@@ -15,42 +14,24 @@ type ItemStatsSectionProps = {
 
 export function ItemStatsSection({ items }: ItemStatsSectionProps) {
   const [isExpanded, setIsExpanded] = useState(false)
-  const theme = useThemeColors()
   const title = `${STATS_COPY.itemStats} (${toArabicIndic(items.length)})`
 
   if (items.length === 0) return null
 
   return (
-    <View className="gap-2 rounded-card border border-line bg-surface" testID="stats-item-section">
-      <Pressable
-        accessibilityLabel={title}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: isExpanded }}
-        className="flex-row items-center justify-between gap-3 p-4"
-        onPress={() => setIsExpanded((expanded) => !expanded)}
-        testID="stats-item-stats-toggle"
-      >
-        <Text
-          className="min-w-0 flex-1 font-display text-sheet-title text-accent"
-          numberOfLines={1}
-        >
-          {title}
-        </Text>
-        <ChevronDown
-          accessible={false}
-          color={theme['mute']}
-          size={ICON_SIZE}
-          style={{ transform: [{ rotate: isExpanded ? '180deg' : '0deg' }] }}
-        />
-      </Pressable>
-      {isExpanded ? (
-        <View className="gap-2 px-4 pb-4">
-          {items.map((item) => (
-            <ItemStatRow item={item} key={item.itemId} />
-          ))}
-        </View>
-      ) : null}
-    </View>
+    <Accordion
+      title={title}
+      subtitle={STATS_COPY.itemSubtitle}
+      expanded={isExpanded}
+      onToggle={() => setIsExpanded((expanded) => !expanded)}
+      testID="stats-item-section"
+    >
+      <View className="gap-2 py-4">
+        {items.map((item) => (
+          <ItemStatRow item={item} key={item.itemId} />
+        ))}
+      </View>
+    </Accordion>
   )
 }
 

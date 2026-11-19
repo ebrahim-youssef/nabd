@@ -1,23 +1,51 @@
+import { useRouter } from 'expo-router'
+import { View } from 'react-native'
+
 import { toArabicIndic } from '../lib/format'
-import { QADA_COPY } from '../qada/copy'
+import { formatStreak } from '../more/copy'
 import { QADA_PRAYERS } from '../qada/logic'
 import { shellCopy } from '../shell/copy'
-import { STATS_COPY } from './copy'
-import { bestStreak, currentStreak } from './logic'
-import { useRouter } from 'expo-router'
-import { Pressable, View } from 'react-native'
-
 import { PageHeader } from '../shell/PageHeader'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
+import { ListGroup } from '../ui/ListGroup'
+import { ListRow } from '../ui/ListRow'
+import { SectionHeader } from '../ui/SectionHeader'
+import { StateView } from '../ui/StateView'
+import { StatTile } from '../ui/StatTile'
+import { WeekBars } from '../ui/WeekBars'
+import { STATS_COPY, formatWeekSummary } from './copy'
 import { ItemStatsSection } from './ItemStatsSection'
-import { completionPercent, formatArabicWeekday, formatCompletion } from './logic'
+import {
+  bestStreak,
+  completionPercent,
+  currentStreak,
+  formatArabicWeekday,
+  formatPercentage,
+} from './logic'
 import { CHART_WINDOW_DAYS, STATS_WINDOW_DAYS, useStats } from './useStats'
-const CHART_BAR_MIN_HEIGHT = 4
 
 export function StatsRoute() {
   const router = useRouter()
   const { data, chartDays, error, exportRange, isLoading, refresh } = useStats()
+  const today = chartDays[chartDays.length - 1]
+  const todayCompletion = data.completions.find((entry) => entry.day === today)
+  const todayPercent = todayCompletion
+    ? completionPercent(todayCompletion.done, todayCompletion.total)
+    : 0
+  const weekCompletions = data.completions.filter((entry) => chartDays.includes(entry.day))
+  const completedDays = weekCompletions.filter(
+    (entry) => entry.total > 0 && entry.done === entry.total,
+  ).length
+  const weekSummary = formatWeekSummary(completedDays, todayPercent)
+  const bars = chartDays.map((day) => {
+    const completion = weekCompletions.find((entry) => entry.day === day)
+    return {
+      label: day === today ? STATS_COPY.today : formatArabicWeekday(day),
+      ratio: completion ? completionPercent(completion.done, completion.total) / 100 : 0,
+      isToday: day === today,
+    }
+  })
   const current = currentStreak(data.completions)
   const best = bestStreak(data.completions)
   const qadaTotal = QADA_PRAYERS.reduce((total, prayer) => total + data.qada[prayer.id], 0)
@@ -26,144 +54,91 @@ export function StatsRoute() {
     <ScreenContainer testID="stats-screen">
       <View className="gap-6">
         <PageHeader backHref="/" title={STATS_COPY.pageTitle} />
-        {isLoading ? <View className="h-40 w-full rounded-card bg-bg" /> : null}
+        {isLoading ? <StateView kind="loading" /> : null}
         {!isLoading && error ? (
-          <View
-            className="gap-4 rounded-card border border-line bg-surface p-4"
-            testID="stats-error"
-          >
-            <Text className="text-body text-start text-accent">{shellCopy.error}</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={shellCopy.retry}
-              className="rounded-button bg-accent px-5 py-4"
-              onPress={refresh}
-              testID="stats-retry"
-            >
-              <Text className="text-body text-center font-sans-medium text-on-accent">
-                {shellCopy.retry}
-              </Text>
-            </Pressable>
-          </View>
+          <StateView
+            kind="error"
+            title={shellCopy.error}
+            action={{ label: shellCopy.retry, onPress: refresh }}
+          />
         ) : null}
-        {!isLoading && !error ? (
+        {!isLoading && !error && !data.hasHistory ? (
+          <StateView
+            kind="empty"
+            title={STATS_COPY.emptyTitle}
+            body={STATS_COPY.emptyBody}
+            action={{ label: STATS_COPY.openToday, onPress: () => router.push('/today') }}
+          />
+        ) : null}
+        {!isLoading && !error && data.hasHistory ? (
           <>
-            <View
-              className="gap-3 rounded-card border border-line bg-surface p-4"
-              testID="stats-streak-card"
-            >
-              <Text className="text-body text-ink">{STATS_COPY.streakSuffix}</Text>
-              <Text
-                className="font-display text-screen-title text-accent"
-                testID="stats-current-streak"
-              >
-                {toArabicIndic(current)}
+            <View className="gap-2 rounded-card border border-line bg-surface p-4">
+              <Text className="font-display text-screen-title text-accent">
+                {formatStreak(current) ??
+                  `${toArabicIndic(0)} ${STATS_COPY.streakPlural} ${STATS_COPY.streakSuffix}`}
               </Text>
-              <Text className="text-meta text-ink">{STATS_COPY.streakPrompt}</Text>
+              <Text className="text-meta text-mute">{STATS_COPY.best(toArabicIndic(best))}</Text>
+              {todayPercent < 100 ? (
+                <Text className="text-meta text-ink">{STATS_COPY.streakPrompt}</Text>
+              ) : null}
             </View>
-            <View className="gap-3" testID="stats-week-chart">
-              <Text className="font-display text-sheet-title text-accent">
-                {STATS_COPY.completionTile}
-              </Text>
-              <View className="h-32 flex-row items-end justify-between gap-1 rounded-card border border-line bg-surface p-3">
-                {chartDays.map((day) => {
-                  const completion = data.completions.find((entry) => entry.day === day)
-                  const percent = completion
-                    ? completionPercent(completion.done, completion.total)
-                    : 0
-                  return (
-                    <View
-                      className="h-full min-w-0 flex-1 items-center justify-end gap-1"
-                      key={day}
-                    >
-                      <View
-                        className="w-full rounded-pill bg-accent"
-                        style={{
-                          height: `${Math.max(percent, completion ? CHART_BAR_MIN_HEIGHT : 0)}%`,
-                        }}
-                        testID={`stats-bar-${day}`}
-                      />
-                      <Text
-                        className="min-w-0 max-w-full text-center text-meta text-ink"
-                        ellipsizeMode="tail"
-                        numberOfLines={1}
-                      >
-                        {formatArabicWeekday(day)}
-                      </Text>
-                    </View>
-                  )
-                })}
-              </View>
-            </View>
-            <View className="gap-3" testID="stats-summary-card">
-              <View className="flex-row items-center justify-between gap-3 rounded-card border border-line bg-surface p-4">
-                <Text className="text-body text-ink">{STATS_COPY.completionTile}</Text>
-                <Text className="font-display text-sheet-title text-accent" testID="stats-summary">
-                  {formatCompletion(data.summary.done, data.summary.total)}
+            <View className="gap-3">
+              <View className="flex-row items-center justify-between">
+                <SectionHeader title={STATS_COPY.weekTitle} />
+                <Text className="text-meta text-mute">
+                  {STATS_COPY.countOf(
+                    toArabicIndic(completedDays),
+                    toArabicIndic(CHART_WINDOW_DAYS),
+                  )}
                 </Text>
               </View>
-              <View className="flex-row items-center justify-between gap-3 rounded-card border border-line bg-surface p-4">
-                <Text className="text-body text-ink">{STATS_COPY.bestStreakTile}</Text>
-                <Text
-                  className="font-display text-sheet-title text-accent"
-                  testID="stats-best-streak"
-                >
-                  {toArabicIndic(best)}
-                </Text>
+              <WeekBars days={bars} summary={weekSummary} />
+              <Text className="text-meta text-mute">{weekSummary}</Text>
+            </View>
+            <View className="flex-row gap-3">
+              <View className="flex-1">
+                <StatTile
+                  label={STATS_COPY.lastMonth}
+                  value={formatPercentage(
+                    completionPercent(data.summary.completedDays, data.summary.days),
+                  )}
+                  caption={STATS_COPY.completedDays}
+                />
+              </View>
+              <View className="flex-1">
+                <StatTile
+                  label={STATS_COPY.qada}
+                  value={toArabicIndic(qadaTotal)}
+                  caption={STATS_COPY.openLedger}
+                  onPress={() => router.push('/qada')}
+                />
               </View>
             </View>
-            <View className="gap-3" testID="stats-today-areas">
-              <Text className="font-display text-sheet-title text-accent">
-                {STATS_COPY.todayDetail}
-              </Text>
-              {data.todayAreas.map((area) => (
-                <View
-                  className="flex-row items-center justify-between gap-3 rounded-card border border-line bg-surface p-4"
-                  key={area.areaId}
-                  testID={`stats-area-${area.areaId}`}
-                >
-                  <Text className="text-body text-ink">{area.label}</Text>
-                  <Text className="text-body text-accent">
-                    {formatCompletion(area.done, area.total)}
-                  </Text>
-                </View>
-              ))}
+            <View className="gap-3">
+              <SectionHeader title={STATS_COPY.todayDetail} />
+              <ListGroup>
+                {data.todayAreas.map((area) => (
+                  <ListRow
+                    key={area.areaId}
+                    label={area.label}
+                    value={STATS_COPY.countOf(toArabicIndic(area.done), toArabicIndic(area.total))}
+                  />
+                ))}
+              </ListGroup>
             </View>
             <ItemStatsSection items={data.itemStats} />
-            <Pressable
-              accessibilityRole="button"
-              className="gap-1 rounded-card border border-line bg-surface p-4"
-              onPress={() => router.push('/qada')}
-              testID="stats-qada-link"
-            >
-              <View className="flex-row items-center justify-between gap-3">
-                <Text className="font-sans text-body text-accent">{QADA_COPY.pageTitle}</Text>
-                <Text className="text-body text-accent">{toArabicIndic(qadaTotal)}</Text>
-              </View>
-              <Text className="text-meta text-ink">{QADA_COPY.statsDescription}</Text>
-            </Pressable>
-            <View className="gap-3" testID="stats-export">
-              <Text className="font-sans-bold text-chip text-start text-ink">
-                {STATS_COPY.exportData}
-              </Text>
-              <View className="flex-row gap-2">
-                <Pressable
-                  accessibilityRole="button"
-                  className="rounded-button bg-bg px-3 py-2"
+            <View className="gap-3">
+              <SectionHeader title={STATS_COPY.exportData} />
+              <ListGroup>
+                <ListRow
+                  label={STATS_COPY.exportWeek}
                   onPress={() => void exportRange(CHART_WINDOW_DAYS, 'week')}
-                  testID="stats-export-week"
-                >
-                  <Text className="text-meta text-ink">{STATS_COPY.exportWeek}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  className="rounded-button bg-bg px-3 py-2"
+                />
+                <ListRow
+                  label={STATS_COPY.exportMonth}
                   onPress={() => void exportRange(STATS_WINDOW_DAYS, 'month')}
-                  testID="stats-export-month"
-                >
-                  <Text className="text-meta text-ink">{STATS_COPY.exportMonth}</Text>
-                </Pressable>
-              </View>
+                />
+              </ListGroup>
             </View>
           </>
         ) : null}

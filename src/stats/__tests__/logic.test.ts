@@ -1,4 +1,5 @@
 import { completionPercent, earliestDay, formatArabicWeekday, formatCompletion } from '../logic'
+import { formatWeekSummary } from '../copy'
 import type { WirdDefinition, WirdEntry, WirdItem, WirdVersion } from '../../wird/types'
 
 import {
@@ -356,5 +357,13 @@ describe('itemStat (per-item history, NBD-47)', () => {
     )
     expect(stats).toHaveLength(1)
     expect(stats[0]).toMatchObject({ itemId: 'fajr', doneDays: 1, currentStreak: 1 })
+  })
+})
+
+describe('week summary copy', () => {
+  it('describes complete days and today’s progress in Arabic', () => {
+    expect(formatWeekSummary(5, 40)).toBe('أتممت وِردك ٥ أيام من ٧، واليوم ٤٠٪ حتى الآن.')
+    expect(formatWeekSummary(1, 0)).toBe('أتممت وِردك ١ يومًا من ٧، واليوم ٠٪ حتى الآن.')
+    expect(formatWeekSummary(2, 100)).toBe('أتممت وِردك ٢ يومين من ٧، واليوم ١٠٠٪ حتى الآن.')
   })
 })

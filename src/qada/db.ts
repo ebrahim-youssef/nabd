@@ -38,15 +38,35 @@ export function createQadaRepository(database: ProductDatabase): QadaRepository 
     },
     async payQadaPrayer(prayerId: QadaPrayerId, at: number): Promise<Result<null>> {
       try {
-        await database.runAsync(
-          `INSERT INTO qada_events (id, prayer_id, delta, at) VALUES (${SQLITE_ID}, ?, -1, ?)`,
+        const result = (await database.runAsync(
+          `INSERT INTO qada_events (id, prayer_id, delta, at)
+           SELECT ${SQLITE_ID}, ?, -1, ?
+           WHERE (SELECT COALESCE(SUM(delta), 0) FROM qada_events WHERE prayer_id = ?) > 0`,
           prayerId,
           at,
-        )
-        return { ok: true, value: null }
+          prayerId,
+        )) as { changes: number | bigint }
+        return result.changes ? { ok: true, value: null } : { ok: false, error: 'pay_failed' }
       } catch {
         return { ok: false, error: 'pay_failed' }
       }
     },
+  }
+}
+
+export async function restoreQadaPrayer(
+  database: ProductDatabase,
+  prayerId: QadaPrayerId,
+  at: number,
+): Promise<Result<null>> {
+  try {
+    await database.runAsync(
+      `INSERT INTO qada_events (id, prayer_id, delta, at) VALUES (${SQLITE_ID}, ?, 1, ?)`,
+      prayerId,
+      at,
+    )
+    return { ok: true, value: null }
+  } catch {
+    return { ok: false, error: 'restore_failed' }
   }
 }
