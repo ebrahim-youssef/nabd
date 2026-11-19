@@ -5,7 +5,7 @@ import type { PrayerActionQueueEntry, PrayerActionQueueRead } from '../prayerAct
 import { drainPrayerActions } from '../prayerActionDrain'
 
 const firstEntry: PrayerActionQueueEntry = {
-  actionId: 'adhan:2026-11-19:fajr:v1',
+  actionId: 'prayer:2026-11-19:fajr:v1',
   itemId: 'fajr',
   day: '2026-11-19',
   versionId: 'v1',
@@ -13,7 +13,7 @@ const firstEntry: PrayerActionQueueEntry = {
 }
 const secondEntry: PrayerActionQueueEntry = {
   ...firstEntry,
-  actionId: 'adhan:2026-11-19:isha:v1',
+  actionId: 'prayer:2026-11-19:isha:v1',
   itemId: 'isha',
   at: firstEntry.at + 1,
 }

@@ -228,7 +228,8 @@ export function buildAlarmPayloads(
   return moments.map((moment) => {
     const label = labels[moment.prayerId] ?? moment.prayerId
     const { title, body } = copy[moment.kind](label)
-    const day = moment.kind === 'adhan' ? scheduleDay : null
+    const hasPrayerAction = moment.kind === 'adhan' || moment.kind === 'iqamah'
+    const day = hasPrayerAction ? scheduleDay : null
     const version = day ? versionInForce(versions, day) : null
     const hasPrayerItem = version?.definition.items.some((item) => item.id === moment.prayerId)
     const prayerAction =
@@ -237,7 +238,7 @@ export function buildAlarmPayloads(
             itemId: moment.prayerId,
             day,
             versionId: version.id,
-            actionId: `adhan:${day}:${moment.prayerId}:${version.id}`,
+            actionId: `prayer:${day}:${moment.prayerId}:${version.id}`,
             label: PRAYER_ACTION_COPY(labels[moment.prayerId] ?? moment.prayerId),
           }
         : undefined

@@ -4,7 +4,12 @@ import { versionInForce } from '../lib/wird'
 import { asEntry, asVersion, setItemStateInTransaction } from '../db/wirdState'
 import type { EntryRow, VersionRow } from '../db/wirdState'
 import { sameDefinition } from './logic'
-import type { SetItemStateInput, SetItemStateOutcome, WirdRepository } from '../db/contracts'
+import type {
+  SetItemStateInput,
+  SetItemStateOutcome,
+  StaleActionReview,
+  WirdRepository,
+} from '../db/contracts'
 import type { Result } from '../lib/result'
 import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
@@ -130,6 +135,13 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
           'SELECT id, day, version_id, item_id, done, at FROM wird_entries ORDER BY at, rowid',
         )
       ).map(asEntry)
+    },
+    async readLatestStaleAction(afterAt): Promise<StaleActionReview | null> {
+      return database.getFirstAsync<StaleActionReview>(
+        "SELECT day, at FROM wird_actions WHERE outcome = 'stale' AND at > ? " +
+          'ORDER BY at DESC, rowid DESC LIMIT 1',
+        afterAt,
+      )
     },
     async setWirdLevel(definition, today, now) {
       const current = versionInForce(await listVersions(), nextDay(today))

@@ -378,6 +378,54 @@ describe('native wird version healing', () => {
 })
 
 describe('native wird set-state writes', () => {
+  it('returns the newest stale action strictly after the seen-at timestamp', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+
+      await repository.setItemState({
+        actionId: 'stale-old',
+        day: TODAY,
+        versionId: 'old-version',
+        itemId,
+        done: true,
+        at: CREATED_AT,
+      })
+      await repository.setItemState({
+        actionId: 'stale-middle',
+        day: TODAY,
+        versionId: 'old-version',
+        itemId,
+        done: true,
+        at: CREATED_AT + 1,
+      })
+      await repository.setItemState({
+        actionId: 'stale-new',
+        day: TOMORROW,
+        versionId: 'old-version',
+        itemId,
+        done: true,
+        at: CREATED_AT + 10,
+      })
+
+      await expect(repository.readLatestStaleAction(CREATED_AT)).resolves.toEqual({
+        day: TOMORROW,
+        at: CREATED_AT + 10,
+      })
+      await expect(repository.readLatestStaleAction(CREATED_AT + 1)).resolves.toEqual({
+        day: TOMORROW,
+        at: CREATED_AT + 10,
+      })
+      await expect(repository.readLatestStaleAction(CREATED_AT + 10)).resolves.toBeNull()
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('appends only state changes and deduplicates action ids across reopen', async () => {
     const { directory, connection } = fresh()
     let connectionClosed = false

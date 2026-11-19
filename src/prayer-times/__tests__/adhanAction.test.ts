@@ -36,19 +36,23 @@ function payloads(
 }
 
 describe('adhan action payloads', () => {
-  it.each(PRAYERS)('maps %s adhan to the matching checklist item', (prayerId) => {
-    const [alarm] = payloads([{ at: atLocal(12), kind: 'adhan', prayerId }])
+  it.each(PRAYERS)('maps %s adhan and iqamah to the matching checklist item', (prayerId) => {
+    const [adhan, iqamah] = payloads([
+      { at: atLocal(12), kind: 'adhan', prayerId },
+      { at: atLocal(12, 5), kind: 'iqamah', prayerId },
+    ])
 
-    expect(alarm?.prayerAction).toEqual({
+    expect(adhan?.prayerAction).toEqual({
       itemId: prayerId,
       day: DAY,
       versionId: 'v1',
-      actionId: `adhan:${DAY}:${prayerId}:v1`,
+      actionId: `prayer:${DAY}:${prayerId}:v1`,
       label: `صلّيت ${MOMENT_LABELS[prayerId]}`,
     })
+    expect(iqamah?.prayerAction).toEqual(adhan?.prayerAction)
   })
 
-  it.each(['before', 'iqamah', 'adhkar'] as const)(
+  it.each(['before', 'adhkar'] as const)(
     'does not attach an action to %s notifications',
     (kind) => {
       expect(
@@ -67,7 +71,7 @@ describe('adhan action payloads', () => {
     const [alarm] = payloads([{ at: atLocal(2), kind: 'adhan', prayerId: 'isha' }])
 
     expect(alarm?.prayerAction?.day).toBe(DAY)
-    expect(alarm?.prayerAction?.actionId).toBe(`adhan:${DAY}:isha:v1`)
+    expect(alarm?.prayerAction?.actionId).toBe(`prayer:${DAY}:isha:v1`)
   })
 
   it('selects each version effective on the action day across a multi-day schedule', () => {
@@ -102,12 +106,16 @@ describe('adhan action payloads', () => {
     expect(alarm?.prayerAction).toBeUndefined()
   })
 
-  it('reproduces the same action id when the schedule is built twice', () => {
+  it('shares an action id between the adhan and iqamah and reproduces it across builds', () => {
     const moment = [{ at: atLocal(12), kind: 'adhan' as const, prayerId: 'asr' }]
+    const iqamah = [{ at: atLocal(12, 5), kind: 'iqamah' as const, prayerId: 'asr' }]
 
     const firstBuild = payloads(moment)[0]?.prayerAction?.actionId
     const secondBuild = payloads(moment)[0]?.prayerAction?.actionId
+    const iqamahBuild = payloads(iqamah)[0]?.prayerAction?.actionId
 
-    expect(firstBuild).toBe(secondBuild)
+    expect(firstBuild).toBe(`prayer:${DAY}:asr:v1`)
+    expect(secondBuild).toBe(firstBuild)
+    expect(iqamahBuild).toBe(firstBuild)
   })
 })

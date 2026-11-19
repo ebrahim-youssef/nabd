@@ -1,15 +1,17 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 import { useSQLiteContext } from 'expo-sqlite'
 
 import { WIRD_LEVELS } from '../../content/levels'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
+import { PREFERENCE_KEYS } from '../../preferences/db'
 import type { PersistedOnboarding } from '../../onboarding/db'
+import { refreshLiveRepositoryQueries } from '../../shell/useLiveRepositoryQuery'
 import { HomeScreen } from '../HomeScreen'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('expo-router', () => ({
   useFocusEffect: jest.fn(),
-  useRouter: () => ({ push: jest.fn() }),
+  useRouter: () => ({ push: mockPush }),
 }))
 jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-09-14' }))
 jest.mock('../../device/useLocationCapability', () => ({
@@ -18,6 +20,7 @@ jest.mock('../../device/useLocationCapability', () => ({
 jest.mock('nativewind', () => ({ useColorScheme: () => ({ colorScheme: 'light' }) }))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
+const mockPush = jest.fn()
 const DAY = '2026-09-14'
 const VERSION_ID = 'version-1'
 const ITEM_ID = 'istighfar'
@@ -32,9 +35,19 @@ type EntryRow = {
   at: number
 }
 
-function createDatabase(failHealing = false, failVersionReadNumber = 0) {
+function createDatabase(
+  failHealing = false,
+  failVersionReadNumber = 0,
+  initialSeenAt: string | null = null,
+) {
   const entries: EntryRow[] = []
   const actionIds = new Set<string>()
+  const staleActions: { day: string; at: number }[] = []
+  let staleActionReadCount = 0
+  const preferences = new Map<string, string>()
+  if (initialSeenAt !== null) {
+    preferences.set(PREFERENCE_KEYS.prayerActionReviewSeenAt, initialSeenAt)
+  }
   let versionReadCount = 0
   const versions = [
     {
@@ -49,7 +62,20 @@ function createDatabase(failHealing = false, failVersionReadNumber = 0) {
   const database: ProductDatabase = {
     execAsync: async () => undefined,
     getFirstAsync: async <T,>(source: string, ...parameters: SqlValue[]) => {
-      if (source.includes('app_preferences')) return null
+      if (source.includes('app_preferences')) {
+        return (
+          preferences.has(String(parameters[0]))
+            ? { value: preferences.get(String(parameters[0])) }
+            : null
+        ) as T | null
+      }
+      if (source.includes("outcome = 'stale'")) {
+        staleActionReadCount += 1
+        const action = staleActions
+          .filter(({ at }) => at > Number(parameters[0]))
+          .sort((left, right) => right.at - left.at)[0]
+        return (action ?? null) as T | null
+      }
       if (source.includes('SELECT action_id FROM wird_actions')) {
         return actionIds.has(String(parameters[0])) ? ({ action_id: parameters[0] } as T) : null
       }
@@ -94,6 +120,9 @@ function createDatabase(failHealing = false, failVersionReadNumber = 0) {
     },
     runAsync: async (source: string, ...parameters: SqlValue[]) => {
       if (source.includes('INSERT INTO wird_actions')) actionIds.add(String(parameters[0]))
+      if (source.includes('INSERT INTO app_preferences')) {
+        preferences.set(String(parameters[0]), String(parameters[1]))
+      }
     },
     withExclusiveTransactionAsync: async (task) => {
       if (failHealing) throw new Error('database locked during version healing')
@@ -101,7 +130,14 @@ function createDatabase(failHealing = false, failVersionReadNumber = 0) {
     },
   }
 
-  return { database, entries, getVersionReadCount: () => versionReadCount }
+  return {
+    database,
+    entries,
+    preferences,
+    addStaleAction: (day: string, at: number) => staleActions.push({ day, at }),
+    getStaleActionReadCount: () => staleActionReadCount,
+    getVersionReadCount: () => versionReadCount,
+  }
 }
 
 function persisted(): PersistedOnboarding {
@@ -120,7 +156,80 @@ function persisted(): PersistedOnboarding {
 }
 
 describe('HomeScreen repository integration', () => {
-  afterEach(() => jest.restoreAllMocks())
+  afterEach(() => {
+    jest.restoreAllMocks()
+    jest.clearAllMocks()
+  })
+
+  it('hides the review line when the newest stale action is already seen', async () => {
+    const { database, addStaleAction, getStaleActionReadCount } = createDatabase(false, 0, '300')
+    addStaleAction('2026-09-13', 300)
+    mockedUseSQLiteContext.mockReturnValue(database as never)
+    jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
+
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(await screen.findByRole('button', { name: /أعمال اليوم/ })).toBeTruthy()
+    await waitFor(() => expect(getStaleActionReadCount()).toBeGreaterThan(0))
+    expect(screen.queryByTestId('prayer-action-review')).toBeNull()
+  })
+
+  it('treats an invalid review seen-at preference as zero', async () => {
+    const { database, addStaleAction } = createDatabase(false, 0, 'invalid')
+    addStaleAction('2026-09-13', 1)
+    mockedUseSQLiteContext.mockReturnValue(database as never)
+    jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
+
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(await screen.findByTestId('prayer-action-review')).toBeTruthy()
+  })
+
+  it('marks the newest stale action as seen and navigates to its day', async () => {
+    const { database, addStaleAction, preferences, getVersionReadCount } = createDatabase(
+      false,
+      0,
+      '100',
+    )
+    addStaleAction('2026-09-13', 200)
+    addStaleAction('2026-09-12', 300)
+    mockPush.mockImplementation(() =>
+      expect(preferences.get(PREFERENCE_KEYS.prayerActionReviewSeenAt)).toBe('300'),
+    )
+    mockedUseSQLiteContext.mockReturnValue(database as never)
+    jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
+
+    render(<HomeScreen persisted={persisted()} />)
+
+    fireEvent.press(await screen.findByTestId('prayer-action-review'))
+    const versionReadsBeforeOpening = getVersionReadCount()
+
+    await waitFor(() =>
+      expect(preferences.get(PREFERENCE_KEYS.prayerActionReviewSeenAt)).toBe('300'),
+    )
+    expect(getVersionReadCount()).toBe(versionReadsBeforeOpening)
+    expect(mockPush).toHaveBeenCalledWith('/today/2026-09-12')
+  })
+
+  it('shows a newer stale action after the saved seen-at timestamp', async () => {
+    const { database, addStaleAction, getStaleActionReadCount } = createDatabase(false, 0, '200')
+    addStaleAction('2026-09-13', 200)
+    mockedUseSQLiteContext.mockReturnValue(database as never)
+    jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
+
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(await screen.findByRole('button', { name: /أعمال اليوم/ })).toBeTruthy()
+    await waitFor(() => expect(getStaleActionReadCount()).toBeGreaterThan(0))
+    expect(screen.queryByTestId('prayer-action-review')).toBeNull()
+
+    addStaleAction('2026-09-12', 300)
+    act(() => refreshLiveRepositoryQueries())
+
+    expect(await screen.findByTestId('prayer-action-review')).toHaveTextContent(
+      'تسجيل من الإشعار يحتاج مراجعة',
+    )
+  })
 
   it('continues rendering saved items when version healing fails', async () => {
     const { database, getVersionReadCount } = createDatabase(true)

@@ -129,7 +129,10 @@ function alarmSnapshot(alarms: AlarmPayload[], silentMode: boolean, now: number)
     alarms: alarms
       .filter((alarm) => alarm.at > now)
       .map((alarm) => {
-        const isAdhan = alarm.channelKey === 'adhan' || alarm.channelKey === 'adhanFajr'
+        const supportsPrayerAction =
+          alarm.channelKey === 'adhan' ||
+          alarm.channelKey === 'adhanFajr' ||
+          alarm.channelKey === 'iqamah'
         return {
           id: String(alarm.id),
           at: alarm.at,
@@ -138,7 +141,7 @@ function alarmSnapshot(alarms: AlarmPayload[], silentMode: boolean, now: number)
           sound: soundFor(alarm.channelKey),
           channelId: channelFor(alarm.channelKey, silentMode),
           isAlarmChannel: silentMode,
-          ...(isAdhan && alarm.prayerAction
+          ...(supportsPrayerAction && alarm.prayerAction
             ? {
                 actionItemId: alarm.prayerAction.itemId,
                 actionDay: alarm.prayerAction.day,

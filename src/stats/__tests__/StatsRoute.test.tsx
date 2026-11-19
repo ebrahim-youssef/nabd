@@ -57,6 +57,7 @@ function repository(): NativeWirdRepository {
     getMonthEntries: jest.fn(),
     getEntriesInRange: jest.fn(async () => entries),
     getAllEntries: jest.fn(async () => entries),
+    readLatestStaleAction: jest.fn(async () => null),
     addVersion: jest.fn(),
     setItemState: jest.fn(),
     healVersionFromLevels: jest.fn(),

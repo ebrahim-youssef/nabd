@@ -1,5 +1,6 @@
 export const HOME_COPY = {
   noLocation: 'لا نعرف مواقيت الصلاة بعد',
+  prayerActionReview: 'تسجيل من الإشعار يحتاج مراجعة',
   setLocation: 'حدّد موقعك',
   today: 'افتح اليوم',
   startsAt: 'يبدأ',

@@ -128,21 +128,23 @@ describe('native notification adapter', () => {
     )
   })
 
-  it('serializes prayer action context only for adhan alarms', async () => {
+  it('serializes prayer action context for adhan and iqamah alarms only', async () => {
     const native = { replacePrayerAlarms: jest.fn((_snapshotJson: string) => 'scheduled') }
     mockedNativeModule.mockReturnValue(native as never)
     const prayerAction = {
       itemId: 'fajr',
       day: '2026-11-19',
       versionId: 'version-1',
-      actionId: 'adhan:2026-11-19:fajr:version-1',
+      actionId: 'prayer:2026-11-19:fajr:version-1',
       label: 'صلّيت الفجر',
     }
 
     await replacePrayerAlarms(
       [
         alarm({ channelKey: 'adhanFajr', prayerAction }),
-        alarm({ id: 102, channelKey: 'iqamah', prayerAction: undefined }),
+        alarm({ id: 102, channelKey: 'iqamah', prayerAction }),
+        alarm({ id: 103, channelKey: 'before', prayerAction }),
+        alarm({ id: 104, channelKey: 'adhkarReminder', prayerAction }),
       ],
       false,
       NOW,
@@ -154,10 +156,18 @@ describe('native notification adapter', () => {
       actionItemId: 'fajr',
       actionDay: '2026-11-19',
       actionVersionId: 'version-1',
-      actionId: 'adhan:2026-11-19:fajr:version-1',
+      actionId: 'prayer:2026-11-19:fajr:version-1',
       actionLabel: 'صلّيت الفجر',
     })
-    expect(snapshot.alarms[1]).not.toHaveProperty('actionItemId')
+    expect(snapshot.alarms[1]).toMatchObject({
+      actionItemId: 'fajr',
+      actionDay: '2026-11-19',
+      actionVersionId: 'version-1',
+      actionId: 'prayer:2026-11-19:fajr:version-1',
+      actionLabel: 'صلّيت الفجر',
+    })
+    expect(snapshot.alarms[2]).not.toHaveProperty('actionItemId')
+    expect(snapshot.alarms[3]).not.toHaveProperty('actionItemId')
   })
 
   it('migrates old Expo scheduled and presented notifications before native scheduling', async () => {

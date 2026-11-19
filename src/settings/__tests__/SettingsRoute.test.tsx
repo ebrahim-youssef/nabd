@@ -202,6 +202,7 @@ describe('SettingsRoute', () => {
       getMonthEntries: jest.fn(),
       getEntriesInRange: jest.fn(),
       getAllEntries: jest.fn(),
+      readLatestStaleAction: jest.fn(async () => null),
       addVersion: jest.fn(),
       setItemState: jest.fn(),
       healVersionFromLevels: jest.fn(),

@@ -17,7 +17,7 @@ const mockedRequireOptionalNativeModule = requireOptionalNativeModule as jest.Mo
 >
 
 const validEntry = {
-  actionId: 'adhan:2026-11-19:fajr:v1',
+  actionId: 'prayer:2026-11-19:fajr:v1',
   itemId: 'fajr',
   day: '2026-11-19',
   versionId: 'v1',

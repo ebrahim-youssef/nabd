@@ -5,8 +5,8 @@
 
 ## Context
 
-In 1.1.0 two places outside the app record wird items: the "صلّيت" action on an adhan
-notification and the checkboxes on the home-screen widget (NBD-115, issue #284). Both run in
+In 1.1.0 two places outside the app record wird items: the "صلّيت" action on adhan and iqamah
+notifications and the checkboxes on the home-screen widget (NBD-115, issue #284). Both run in
 Kotlin, often while the JS runtime is not alive. The wird data lives in SQLite owned by the JS app,
 with its own schema and migrations. A second writer on that database would have to track every
 migration, and a tap that is lost or applied twice breaks the record.
@@ -21,6 +21,8 @@ Each action carries an action id, the item, the wird day and the wird version.
   runtime is alive. Each action goes through the same set-state write the app uses for its own
   ticks, and is removed from the queue only after its transaction commits. Drains run one at a
   time.
+- The adhan and matching iqamah notification for a prayer share one action id, so tapping either
+  notification records the action at most once.
 - Dedupe lives in a new table `wird_actions` (action id, item, day, version, outcome, time). A known
   action id is ignored. `wird_entries` keeps its six columns. Backup exports and imports the new
   table.
