@@ -17,7 +17,10 @@ import { PowerStep } from '../PowerStep'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-08-10' }))
-jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
+jest.mock('expo-router', () => ({
+  useFocusEffect: jest.fn(),
+  useRouter: () => ({ push: jest.fn() }),
+}))
 jest.mock('../../device/useBatteryOptimization', () => ({
   useBatteryOptimization: jest.fn(),
 }))
@@ -429,14 +432,14 @@ describe('OnboardingGate', () => {
     await fireEvent.press(screen.getByTestId('onboarding-finish'))
 
     await screen.findByTestId('home-shell')
-    expect(screen.getByText(WIRD_LEVELS[0].title)).toBeTruthy()
+    expect(screen.getByText('نية اليوم')).toBeTruthy()
     expect(persisted.database.runAsync).toHaveBeenCalledTimes(2)
     expect(persisted.state()?.effective_from).toBe('2026-08-10')
 
     firstMount.unmount()
     await renderGate(persisted.database)
     await waitFor(() => expect(screen.getByTestId('home-shell')).toBeTruthy())
-    expect(screen.getByText(WIRD_LEVELS[0].title)).toBeTruthy()
+    expect(screen.getByText('نية اليوم')).toBeTruthy()
   })
 
   it('shows permissions before the optimized battery step', async () => {
