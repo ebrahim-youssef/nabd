@@ -28,13 +28,13 @@ function BackupButton({
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
-      className={`rounded-button px-4 py-3 ${primary ? 'bg-primary' : 'border border-primary bg-primary/10'} ${disabled ? 'opacity-50' : ''}`}
+      className={`rounded-button px-4 py-3 ${primary ? 'bg-accent' : 'border border-accent bg-accent/10'} ${disabled ? 'opacity-50' : ''}`}
       disabled={disabled}
       onPress={onPress}
       testID={testID}
     >
       <Text
-        className={`text-body text-center font-body-medium ${primary ? 'text-on-primary' : 'text-primary'}`}
+        className={`text-body text-center font-sans-medium ${primary ? 'text-on-accent' : 'text-accent'}`}
         selectable
       >
         {label}
@@ -67,20 +67,20 @@ export function BackupImport({
         <View className="gap-3" testID="backup-preview">
           {previewTables.length > 0 ? (
             <>
-              <Text className="font-display text-body text-start text-primary" selectable>
+              <Text className="font-sans text-body text-start text-accent" selectable>
                 {BACKUP_COPY.previewTitle}
               </Text>
-              <Text className="text-small text-start text-muted-foreground" selectable>
+              <Text className="text-meta text-start text-ink" selectable>
                 {BACKUP_COPY.previewBody}
               </Text>
               <View className="gap-2">
                 {previewTables.map((table) => (
                   <View className="flex-row items-center justify-between gap-3" key={table}>
-                    <Text className="text-small text-start text-foreground" selectable>
+                    <Text className="text-meta text-start text-ink" selectable>
                       {BACKUP_TABLE_LABELS[table]}
                     </Text>
                     <Text
-                      className="text-small text-start font-body-medium text-primary"
+                      className="text-meta text-start font-sans-medium text-accent"
                       selectable
                       testID={`backup-count-${table}`}
                     >
@@ -92,7 +92,7 @@ export function BackupImport({
             </>
           ) : (
             <Text
-              className="text-body text-start text-foreground"
+              className="text-body text-start text-ink"
               selectable
               testID="backup-preview-empty"
             >
@@ -126,20 +126,12 @@ export function BackupImport({
         />
       )}
       {isBusy ? (
-        <Text
-          className="text-small text-start text-muted-foreground"
-          selectable
-          testID="backup-busy"
-        >
+        <Text className="text-meta text-start text-ink" selectable testID="backup-busy">
           {BACKUP_COPY.busy}
         </Text>
       ) : null}
       {status ? (
-        <Text
-          className="text-small text-start text-muted-foreground"
-          selectable
-          testID="backup-status"
-        >
+        <Text className="text-meta text-start text-ink" selectable testID="backup-status">
           {backupStatusMessage(status)}
         </Text>
       ) : null}
@@ -152,11 +144,11 @@ export function BackupSection({ onRestored }: { onRestored?: () => void } = {}) 
 
   return (
     <View className="gap-3" testID="settings-backup">
-      <Text className="font-display text-label text-start text-muted-foreground" selectable>
+      <Text className="font-sans-bold text-chip text-start text-ink" selectable>
         {BACKUP_COPY.title}
       </Text>
-      <View className="gap-3 rounded-card border border-border bg-surface p-4" testID="backup-card">
-        <Text className="text-body text-start text-foreground" selectable>
+      <View className="gap-3 rounded-card border border-line bg-surface p-4" testID="backup-card">
+        <Text className="text-body text-start text-ink" selectable>
           {BACKUP_COPY.description}
         </Text>
         {backup.preview ? (

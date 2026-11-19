@@ -28,32 +28,30 @@ export function DhikrCounter({ day, itemId, label, target, done }: DhikrCounterP
     >
       <View
         className={`relative flex-row items-center justify-between gap-3 overflow-hidden rounded-card border p-3 ${
-          done ? 'border-primary bg-primary/10' : 'border-border bg-surface'
+          done ? 'border-accent bg-accent/10' : 'border-line bg-surface'
         }`}
       >
-        <Text
-          className={`min-w-0 flex-1 text-body ${done ? 'text-muted-foreground' : 'text-foreground'}`}
-        >
+        <Text className={`min-w-0 flex-1 text-body ${done ? 'text-ink' : 'text-ink'}`}>
           {label}
         </Text>
         {done ? (
           <View
-            className="h-6 w-6 shrink-0 items-center justify-center rounded-icon border-2 border-primary bg-primary"
+            className="h-6 w-6 shrink-0 items-center justify-center rounded-pill border-2 border-accent bg-accent"
             testID={`dhikr-check-${itemId}`}
           >
-            <Text className="text-body text-on-primary">{CHECKMARK}</Text>
+            <Text className="text-body text-on-accent">{CHECKMARK}</Text>
           </View>
         ) : (
           <Text
-            className="shrink-0 rounded-chip bg-primary/10 px-2 py-1 text-small font-body-medium text-primary"
+            className="shrink-0 rounded-pill bg-accent/10 px-2 py-1 text-meta font-sans-medium text-accent"
             testID={`dhikr-count-${itemId}`}
           >
             {toArabicIndic(count)}/{toArabicIndic(target)}
           </Text>
         )}
         {!done && (
-          <View className="absolute bottom-0 start-0 h-1 w-full overflow-hidden rounded-chip bg-border">
-            <View className="h-full rounded-chip bg-accent" style={{ width: `${progress}%` }} />
+          <View className="absolute bottom-0 start-0 h-1 w-full overflow-hidden rounded-pill bg-line">
+            <View className="h-full rounded-pill bg-accent" style={{ width: `${progress}%` }} />
           </View>
         )}
       </View>

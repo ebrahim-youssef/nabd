@@ -27,7 +27,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
         <View className="gap-6">
           <Text
             accessibilityRole="header"
-            className="font-display text-title text-start text-primary"
+            className="font-display text-sheet-title text-start text-accent"
           >
             {level.title}
           </Text>

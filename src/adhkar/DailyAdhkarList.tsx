@@ -178,30 +178,26 @@ export function DailyAdhkarList() {
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ checked: state.done, disabled }}
-              className={`rounded-card border p-4 ${state.done ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
+              className={`rounded-card border p-4 ${state.done ? 'border-accent bg-accent/10' : 'border-line bg-surface'}`}
               disabled={disabled}
               onPress={() => tap(item, checklistItem)}
               testID={`adhkar-daily-card-${item.id}`}
             >
               <View className="gap-3">
-                <Text className="font-scripture text-scripture text-start text-foreground">
-                  {item.text}
-                </Text>
+                <Text className="font-text text-daily-line text-start text-ink">{item.text}</Text>
                 <View className="flex-row items-center justify-between gap-3">
                   <Text
-                    className="font-display text-title text-primary"
+                    className="font-display text-sheet-title text-accent"
                     testID={`adhkar-daily-progress-${item.id}`}
                   >
                     {toArabicIndic(state.count)}/{toArabicIndic(state.target)}
                   </Text>
-                  {state.done && (
-                    <Text className="text-small text-primary">{ADHKAR_COPY.done}</Text>
-                  )}
+                  {state.done && <Text className="text-meta text-accent">{ADHKAR_COPY.done}</Text>}
                 </View>
               </View>
             </Pressable>
             {failedItems[item.id] && (
-              <Text accessibilityRole="alert" className="text-small text-start text-destructive">
+              <Text accessibilityRole="alert" className="text-meta text-start text-gold-ink">
                 {ADHKAR_NATIVE_COPY.completionFailed}
               </Text>
             )}
@@ -211,9 +207,7 @@ export function DailyAdhkarList() {
               onPress={() => reset(item.id)}
               testID={`adhkar-daily-reset-${item.id}`}
             >
-              <Text className="text-small text-muted-foreground text-start">
-                {ADHKAR_COPY.reset}
-              </Text>
+              <Text className="text-meta text-ink text-start">{ADHKAR_COPY.reset}</Text>
             </Pressable>
           </View>
         )

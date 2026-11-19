@@ -20,10 +20,11 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/Amiri_400Regular.ttf",
-            "./assets/fonts/ArefRuqaa_400Regular.ttf",
-            "./assets/fonts/Tajawal_400Regular.ttf",
-            "./assets/fonts/Tajawal_500Medium.ttf"
+            "./assets/fonts/thmanyah/thmanyahserifdisplay-Bold.otf",
+            "./assets/fonts/thmanyah/thmanyahsans-Regular.otf",
+            "./assets/fonts/thmanyah/thmanyahsans-Medium.otf",
+            "./assets/fonts/thmanyah/thmanyahsans-Bold.otf",
+            "./assets/fonts/thmanyah/thmanyahseriftext-Regular.otf"
           ]
         }
       ],
@@ -45,7 +46,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/splash.png",
-          "backgroundColor": "#eaf2f0",
+          "backgroundColor": "#F5F0E5",
           "imageWidth": 100,
           "resizeMode": "contain"
         }

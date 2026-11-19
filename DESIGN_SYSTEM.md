@@ -1,85 +1,81 @@
-# DESIGN_SYSTEM.md, nabd (نبض)
+# Design system
 
-The source of truth for the native visual system. Components use semantic tokens only. The native
-theme is defined by the hand-written files `theme/palette.ts` and
-`theme/tailwind-theme.cjs`.
+The source is the Claude Design artifact [nabd](https://claude.ai/artifact/RkhFPns49rDaDVDgMxG4ah).
+Tokens are copied into the repository by hand; there is no MCP sync.
 
-## Product character
+## Colors
 
-nabd is Arabic-first and RTL. The visual language is calm, clear, and restrained. The native app
-supports light, dark, and system theme preference. That preference is stored in SQLite under
-`app_preferences` and restored when the app opens. The former web `classic` and `modern` display
-modes are not native settings; settings parity is tracked by NBD-100.
+| Token          | Light                    | Dark                     |
+| -------------- | ------------------------ | ------------------------ |
+| `bg`           | `#F5F0E5`                | `#06171A`                |
+| `surface`      | `#FFFFFF`                | `#0D2527`                |
+| `now`          | `#FBF6EA`                | `#102C2E`                |
+| `line`         | `#E7DECB`                | `#183539`                |
+| `track`        | `#EDE5D3`                | `#183539`                |
+| `ink`          | `#13302A`                | `#ECF2EE`                |
+| `mute`         | `#5B6B64`                | `#93A8A3`                |
+| `hero`         | `#0B3A32`                | `#030D10`                |
+| `hero-ink`     | `#F2E5C6`                | `#F2E5C6`                |
+| `hero-mute`    | `#B9C9C2`                | `#8DA19C`                |
+| `gold`         | `#CFA552`                | `#D9B25E`                |
+| `gold-ink`     | `#8A6620`                | `#D9B25E`                |
+| `progress`     | `#8A6620`                | `#D9B25E`                |
+| `accent`       | `#114A40`                | `#D9B25E`                |
+| `on-accent`    | `#FFFFFF`                | `#1A1405`                |
+| `box`          | `#9A8866`                | `#5E7E80`                |
+| `tick`         | `#13302A`                | `#06171A`                |
+| `toast-action` | `#CFA552`                | `#8A6620`                |
+| `scrim`        | `rgba(11,30,26,0.45)`    | `rgba(0,0,0,0.6)`        |
+| `sun`          | `#FFE3A3`                | `#FFE3A3`                |
+| `moon`         | `#F4E2B4`                | `#F4E2B4`                |
+| `path-rest`    | `rgba(242,229,198,0.22)` | `rgba(242,229,198,0.22)` |
+| `mark-rest`    | `rgba(242,229,198,0.4)`  | `rgba(242,229,198,0.4)`  |
 
-## Semantic color tokens
+## Type
 
-Use the semantic names exposed by the native theme:
+| Token          | Size / line height            | Family      |
+| -------------- | ----------------------------- | ----------- |
+| `screen-title` | 30px / 38px                   | Display     |
+| `prayer-name`  | 27px / 31.05px                | Display     |
+| `sheet-title`  | 22px / 30px                   | Display     |
+| `tile-count`   | 20px / 26px                   | Display     |
+| `card-title`   | 18px / 26px                   | Display     |
+| `countdown`    | 22px / 27.5px, 0.5px tracking | Sans Medium |
+| `row-label`    | 15px / 20.25px                | Sans Medium |
+| `button`       | 15px / 20px                   | Sans Bold   |
+| `body`         | 14px / 22.4px                 | Sans        |
+| `meta`         | 12.5px / 17.5px               | Sans        |
+| `caption`      | 12px / 16.2px                 | Sans        |
+| `chip`         | 11px / 16px                   | Sans Bold   |
+| `daily-line`   | 13.5px / 21.6px               | Text        |
 
-| Role                         | Light intent                  | Dark intent                   |
-| ---------------------------- | ----------------------------- | ----------------------------- |
-| `background`                 | pale teal ground              | deep teal ground              |
-| `surface` and `card`         | white surface                 | deep teal surface             |
-| `surface-2` and `muted`      | inset pale teal               | inset dark teal               |
-| `foreground`                 | dark teal ink                 | pale teal ink                 |
-| `primary`                    | deep teal action              | lighter teal action           |
-| `primary-deep`               | deep teal emphasis            | deep teal emphasis            |
-| `accent`                     | clear teal highlight          | bright teal highlight         |
-| `gold` and `destructive`     | muted gold                    | warm gold                     |
-| `gold-soft`                  | soft gold surface             | dark gold surface             |
-| `faint`                      | disabled and upcoming content | disabled and upcoming content |
-| `border`, `line`, and `ring` | low-contrast teal lines       | low-contrast light lines      |
+Font families are Thmanyah Serif Display Bold, Thmanyah Sans Regular, Thmanyah Sans Medium,
+Thmanyah Sans Bold, and Thmanyah Serif Text Regular. The license permits app embedding only.
+Keep the files only in the git-ignored `assets/fonts/thmanyah/` directory; never commit or host
+them. Copy the five OTFs there locally; release build scripts stop when a file is missing, empty,
+or smaller than 1 KB.
+Design weight 600 uses the Bold file because no SemiBold file is licensed.
 
-The palette remains teal-green and gold. There is no red destructive hue. Errors and destructive
-surfaces use the semantic gold token, with copy and accessible state carrying the meaning.
-Contrast must meet WCAG AA for body text and interactive controls. Disabled or decorative content
-may use the faint token only when it is not the sole carrier of meaning.
+## Radius and size
 
-## Typography
+| Radius token     | Value |
+| ---------------- | ----: |
+| `control`        |    10 |
+| `button`         |    14 |
+| `tile`           |    18 |
+| `card`           |    20 |
+| `widget`, `tabs` |    26 |
+| `sheet`          |    28 |
+| `hero`           |    30 |
+| `pill`           |  9999 |
 
-Fonts are bundled and registered through Expo in `app.json`:
+| Size token | Value |
+| ---------- | ----: |
+| Row        |    46 |
+| Star       |    28 |
+| Icon       |    24 |
+| Pattern    |    56 |
+| Tab bar    |    86 |
+| Hero       |   262 |
 
-| Role      | Font       | Use                            |
-| --------- | ---------- | ------------------------------ |
-| Body      | Tajawal    | interface and explanatory text |
-| Display   | Aref Ruqaa | headings and large numerals    |
-| Scripture | Amiri      | Quran and hadith text          |
-
-Do not fetch fonts at runtime. Use the named NativeWind font tokens and keep Arabic line height
-generous enough for shaping and diacritics.
-
-## Spacing, radius, and elevation
-
-- Spacing follows the shared four-point grid.
-- Buttons, cards, chips, icons, and rings use the named theme radii.
-- Cards use `surface` with a border and the semantic card shadow. `surface-2` is for nested wells
-  and progress tracks.
-- Shadows are soft and tinted toward the primary hue. Avoid hard black shadows in light mode.
-- Motion is quiet and short. Check-offs and screen transitions must remain usable with reduced
-  motion settings.
-
-## RTL and layout
-
-RTL is the default. Use logical spacing and alignment utilities, not left and right coordinates.
-Directional icons must mirror when their meaning changes direction. Do not use physical directional
-layout assumptions to position content.
-
-## Component states
-
-Every data-bound surface accounts for loading, empty, error, offline, and permission-denied states.
-Async controls show an in-flight state and prevent double submission. Permission failures explain
-the next action, including a system-settings path when the permission is permanently denied.
-
-## Accessibility and iconography
-
-Use native semantic controls and accessible names. Icon-only controls need a label. Focus, pressed,
-selected, disabled, and error states must be visible without color alone.
-
-Functional icons use `lucide-react-native`. Ornament is limited to the existing khatam and gold
-accent language, remains secondary to the content, and is hidden from assistive technology when it
-does not convey information. Do not use emoji as interface icons.
-
-## Signature surface
-
-The dhikr counter is the signature surface: a calm, oversized tap target with a large Arabic-Indic
-numeral. Completion flows into the linked wird checklist through the same append-only completion
-event. The exact component treatment follows these tokens and the shared domain contract.
+Large text must remain usable at 130% and 200% text scaling.

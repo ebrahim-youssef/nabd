@@ -5,7 +5,7 @@ import type { AdhkarCategory } from '../content/adhkar'
 import { useState } from 'react'
 import { Pressable, View } from 'react-native'
 
-import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
+import { ICON_SIZE, useThemeColors } from '../../theme/tokens'
 import { Text } from '../shell/Text'
 
 const COUNT_INCREMENT = 1
@@ -14,7 +14,7 @@ const TRACK_MIN_REPEAT = 2
 
 export function AdhkarList({ category }: { category: AdhkarCategory }) {
   const [counts, setCounts] = useState<Record<string, number>>({})
-  const theme = useThemeTokens()
+  const theme = useThemeColors()
 
   function increment(id: string, repeat: number) {
     setCounts((previous) => ({
@@ -36,54 +36,46 @@ export function AdhkarList({ category }: { category: AdhkarCategory }) {
 
         return (
           <View
-            className={`gap-3 rounded-card border p-4 ${done ? 'border-primary/40 bg-primary/5' : 'border-border bg-surface shadow-card-sm'}`}
+            className={`gap-3 rounded-card border p-4 ${done ? 'border-accent/40 bg-accent/5' : 'border-line bg-surface shadow-card'}`}
             key={item.id}
           >
-            <Text className="font-scripture text-scripture text-start text-foreground">
-              {item.text}
-            </Text>
-            {item.virtue && (
-              <Text className="text-small text-muted-foreground text-start">{item.virtue}</Text>
-            )}
+            <Text className="font-text text-daily-line text-start text-ink">{item.text}</Text>
+            {item.virtue && <Text className="text-meta text-ink text-start">{item.virtue}</Text>}
 
             <View className="flex-row items-center gap-3">
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ disabled: done }}
-                className="flex-1 flex-row items-center justify-center gap-2 rounded-card border border-primary/40 bg-primary/10 p-3"
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-card border border-accent/40 bg-accent/10 p-3"
                 disabled={done}
                 onPress={() => increment(item.id, item.repeat)}
                 testID={`adhkar-list-count-${item.id}`}
               >
-                {done && <Check accessible={false} color={theme.hex.primary} size={ICON_SIZE} />}
-                <Text className="text-body text-primary" testID={`adhkar-list-progress-${item.id}`}>
+                {done && <Check accessible={false} color={theme.accent} size={ICON_SIZE} />}
+                <Text className="text-body text-accent" testID={`adhkar-list-progress-${item.id}`}>
                   {toArabicIndic(count)}/{toArabicIndic(item.repeat)}
                 </Text>
-                {done && <Text className="text-body text-primary">{ADHKAR_COPY.done}</Text>}
+                {done && <Text className="text-body text-accent">{ADHKAR_COPY.done}</Text>}
               </Pressable>
               <Pressable
                 accessibilityLabel={ADHKAR_COPY.reset}
                 accessibilityRole="button"
-                className="min-h-11 min-w-11 items-center justify-center rounded-card border border-border bg-surface"
+                className="min-h-11 min-w-11 items-center justify-center rounded-card border border-line bg-surface"
                 onPress={() => reset(item.id)}
                 testID={`adhkar-list-reset-${item.id}`}
               >
-                <RotateCcw
-                  accessible={false}
-                  color={theme.hex['muted-foreground']}
-                  size={ICON_SIZE}
-                />
+                <RotateCcw accessible={false} color={theme['mute']} size={ICON_SIZE} />
               </Pressable>
             </View>
 
             {item.repeat >= TRACK_MIN_REPEAT && (
               <View
                 accessible={false}
-                className="h-1 w-full overflow-hidden rounded-chip bg-surface-2"
+                className="h-1 w-full overflow-hidden rounded-pill bg-bg"
                 testID={`adhkar-list-track-${item.id}`}
               >
                 <View
-                  className="h-full rounded-chip bg-gold"
+                  className="h-full rounded-pill bg-gold"
                   style={{ width: `${progress}%` }}
                   testID={`adhkar-list-track-progress-${item.id}`}
                 />

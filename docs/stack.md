@@ -50,11 +50,10 @@ APIs, or clock globals. It receives data and time as parameters.
 
 ## Native theme and fonts
 
-The native visual tokens are defined by `theme/palette.ts` and
-`theme/tailwind-theme.cjs`, where light and dark semantic palettes are exposed to
-components.
-Bundled Expo fonts are Tajawal for body text, Aref Ruqaa for display text, and Amiri for scripture
-text. Font registration is configured in `app.json`.
+The native visual tokens are defined by `theme/tokens.ts`, `global.css`, and
+`theme/tailwind-theme.cjs`. Their light and dark color values are parity-tested. Font paths are
+listed in `theme/fonts.cjs`, registered by `app.json`, and must be copied locally under
+`assets/fonts/thmanyah/` under the license rule in `DESIGN_SYSTEM.md`.
 
 Theme preference is stored in SQLite `app_preferences` under the native preference repository.
 The native setting supports light, dark, and system behavior. Components use semantic theme tokens,

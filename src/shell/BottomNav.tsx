@@ -3,18 +3,16 @@ import { usePathname, useRouter } from 'expo-router'
 import { Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { ICON_SIZE, TABBAR_HEIGHT, useThemeColors } from '../../theme/tokens'
 import { shellCopy } from './copy'
-
-import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
-import { isNavMatch } from './navMatch'
 import { Text } from './Text'
+import { isNavMatch } from './navMatch'
 
 type NativeIcons = {
-  BarChart3: LucideIcon
-  Clock: LucideIcon
+  BookOpen: LucideIcon
+  CalendarDays: LucideIcon
+  Ellipsis: LucideIcon
   Home: LucideIcon
-  LibraryBig: LucideIcon
-  Settings: LucideIcon
 }
 
 type NavItem = {
@@ -26,35 +24,23 @@ type NavItem = {
   testId: string
 }
 
-const NAV_BOTTOM_OFFSET = 12
-export const BOTTOM_NAV_CLEARANCE = 80
+const MIN_BOTTOM_PADDING = 12
+const ICON_STROKE_WIDTH = 1.7
+// Tabs are 72px wide; the slop keeps the whole column a comfortable touch target.
+const TAB_HIT_SLOP = { top: 10, bottom: 10, left: 8, right: 8 }
+export const BOTTOM_NAV_CLEARANCE = TABBAR_HEIGHT
 
 export function BottomNav({ isVisible = true }: { isVisible?: boolean }) {
-  const { BarChart3, Clock, Home, LibraryBig, Settings } =
-    require('lucide-react-native') as NativeIcons
+  const { BookOpen, CalendarDays, Ellipsis, Home } = require('lucide-react-native') as NativeIcons
   const pathname = usePathname()
   const router = useRouter()
-  const theme = useThemeTokens()
+  const theme = useThemeColors()
   const { bottom } = useSafeAreaInsets()
 
   if (!isVisible) return null
 
   // Keep this order aligned with NAV_ORDER.
   const navItems: readonly NavItem[] = [
-    {
-      href: '/libraries',
-      label: shellCopy.nav.libraries,
-      icon: LibraryBig,
-      match: ['/libraries', '/adhkar', '/niyyat'],
-      testId: 'nav-libraries',
-    },
-    {
-      href: '/prayer-times',
-      label: shellCopy.nav.prayerTimes,
-      icon: Clock,
-      match: ['/prayer-times'],
-      testId: 'nav-prayer-times',
-    },
     {
       href: '/',
       label: shellCopy.nav.home,
@@ -64,58 +50,72 @@ export function BottomNav({ isVisible = true }: { isVisible?: boolean }) {
       testId: 'nav-home',
     },
     {
-      href: '/stats',
-      label: shellCopy.nav.stats,
-      icon: BarChart3,
-      match: ['/stats', '/qada'],
-      testId: 'nav-stats',
+      href: '/today',
+      label: shellCopy.nav.today,
+      icon: CalendarDays,
+      match: ['/today'],
+      testId: 'nav-today',
     },
     {
-      href: '/settings',
-      label: shellCopy.nav.settings,
-      icon: Settings,
-      match: ['/settings'],
-      testId: 'nav-settings',
+      href: '/adhkar',
+      label: shellCopy.nav.adhkar,
+      icon: BookOpen,
+      match: ['/adhkar'],
+      testId: 'nav-adhkar',
+    },
+    {
+      href: '/more',
+      label: shellCopy.nav.more,
+      icon: Ellipsis,
+      match: [
+        '/more',
+        '/prayer-times',
+        '/stats',
+        '/qada',
+        '/niyyat',
+        '/libraries',
+        '/settings',
+        '/backup',
+      ],
+      testId: 'nav-more',
     },
   ]
 
   return (
     <View
       accessibilityLabel={shellCopy.navAriaLabel}
-      className="absolute inset-x-0 bottom-0 z-40 px-4"
-      style={{ paddingBottom: bottom + NAV_BOTTOM_OFFSET }}
+      className="absolute inset-x-0 bottom-0 z-40 flex-row justify-around rounded-t-tabs bg-hero px-3 pt-2.5 dark:border-t dark:border-line"
+      style={{ minHeight: TABBAR_HEIGHT, paddingBottom: Math.max(bottom, MIN_BOTTOM_PADDING) }}
       testID="bottom-nav"
     >
-      <View className="mx-auto w-full max-w-md flex-row items-stretch justify-around rounded-chip border border-border bg-surface px-2 py-1 shadow-card">
-        {navItems.map(({ href, label, icon: Icon, match, exact, testId }) => {
-          const active = isNavMatch(pathname, match, exact)
-          const activeStyles = active
-            ? {
-                container: 'bg-primary shadow-card-sm',
-                iconColor: theme.hex['on-primary'],
-                label: 'text-label text-on-primary',
-              }
-            : {
-                container: '',
-                iconColor: theme.hex['muted-foreground'],
-                label: 'text-label text-muted-foreground',
-              }
-          return (
-            <Pressable
-              accessibilityLabel={label}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              className={`flex-1 flex-col items-center gap-0.5 rounded-chip px-0.5 py-1.5 ${activeStyles.container}`}
-              key={href}
-              onPress={() => router.push(href)}
-              testID={testId}
+      {navItems.map(({ href, label, icon: Icon, match, exact, testId }) => {
+        const active = isNavMatch(pathname, match, exact)
+        return (
+          <Pressable
+            accessibilityLabel={label}
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            className="w-[72px] items-center gap-1"
+            hitSlop={TAB_HIT_SLOP}
+            key={href}
+            onPress={() => router.push(href)}
+            testID={testId}
+          >
+            <Icon
+              accessible={false}
+              color={active ? theme.gold : theme['hero-mute']}
+              size={ICON_SIZE}
+              strokeWidth={ICON_STROKE_WIDTH}
+            />
+            <Text
+              className={`font-sans-medium text-caption ${active ? 'text-gold' : 'text-hero-mute'}`}
             >
-              <Icon accessible={false} color={activeStyles.iconColor} size={ICON_SIZE} />
-              <Text className={activeStyles.label}>{label}</Text>
-            </Pressable>
-          )
-        })}
-      </View>
+              {label}
+            </Text>
+            <View className={`size-1 rounded-pill ${active ? 'bg-gold' : 'bg-transparent'}`} />
+          </Pressable>
+        )
+      })}
     </View>
   )
 }

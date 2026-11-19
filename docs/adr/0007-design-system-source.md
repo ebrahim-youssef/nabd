@@ -1,6 +1,6 @@
 # ADR-0007 — Design system source (Claude Design)
 
-- **Status:** accepted
+- **Status:** Superseded by ADR-0021
 - **Status note:** Its web token import and CSS mapping are superseded by
   [ADR-0017](./0017-native-only.md) for the native product; the design source remains historical.
 - **Date:** 2026-07-13

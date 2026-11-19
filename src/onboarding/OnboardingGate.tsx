@@ -55,14 +55,14 @@ function LoadingState() {
   return (
     <View
       accessibilityLabel={ONBOARDING_COPY.loading}
-      className="flex-1 justify-center gap-4 bg-background px-6"
+      className="flex-1 justify-center gap-4 bg-bg px-6"
       testID="gate-loading"
     >
       <ActivityIndicator />
-      <View className="h-8 rounded-card bg-surface-2" />
-      <View className="h-24 rounded-card bg-surface-2" />
-      <View className="h-14 rounded-button bg-surface-2" />
-      <Text className="text-body text-center text-muted-foreground">{ONBOARDING_COPY.loading}</Text>
+      <View className="h-8 rounded-card bg-bg" />
+      <View className="h-24 rounded-card bg-bg" />
+      <View className="h-14 rounded-button bg-bg" />
+      <Text className="text-body text-center text-ink">{ONBOARDING_COPY.loading}</Text>
     </View>
   )
 }
@@ -115,7 +115,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
   if (gate.status === 'error') {
     return (
       <ScreenContainer testID="gate-error">
-        <Text className="text-body text-start text-foreground">{SHARED_COPY.seedError}</Text>
+        <Text className="text-body text-start text-ink">{SHARED_COPY.seedError}</Text>
         <OnboardingButton
           label={ONBOARDING_COPY.retry}
           onPress={() => setGate({ status: 'loading' })}
@@ -131,23 +131,21 @@ export function OnboardingGate({ now }: { now: () => Date }) {
       <ScreenContainer testID="onboarding-welcome">
         <Text
           accessibilityRole="header"
-          className="font-display text-title text-start text-primary"
+          className="font-display text-sheet-title text-start text-accent"
         >
           {SHARED_COPY.title}
         </Text>
-        <Text className="text-body mt-4 text-start text-muted-foreground">
-          {SHARED_COPY.welcomeBody}
-        </Text>
+        <Text className="text-body mt-4 text-start text-ink">{SHARED_COPY.welcomeBody}</Text>
         <View className="mt-6 gap-3">
           {SHARED_COPY.welcomePoints.map((point) => (
             <View
-              className="flex-row items-center gap-3 rounded-card border border-border bg-surface p-3 shadow-card-sm"
+              className="flex-row items-center gap-3 rounded-card border border-line bg-surface p-3 shadow-card"
               key={point}
             >
-              <Text accessibilityElementsHidden className="text-title text-gold">
+              <Text accessibilityElementsHidden className="text-sheet-title text-gold-ink">
                 ✦
               </Text>
-              <Text className="text-body flex-1 text-start text-foreground">{point}</Text>
+              <Text className="text-body flex-1 text-start text-ink">{point}</Text>
             </View>
           ))}
         </View>
@@ -157,12 +155,10 @@ export function OnboardingGate({ now }: { now: () => Date }) {
           testID="onboarding-begin"
         />
         <View className="mt-6 gap-2" testID="onboarding-restore-card">
-          <Text className="font-display text-label text-start text-muted-foreground">
+          <Text className="font-sans-bold text-chip text-start text-ink">
             {BACKUP_COPY.onboardingRestoreTitle}
           </Text>
-          <Text className="text-small text-start text-muted-foreground">
-            {BACKUP_COPY.onboardingRestoreBody}
-          </Text>
+          <Text className="text-meta text-start text-ink">{BACKUP_COPY.onboardingRestoreBody}</Text>
           <BackupImport
             {...backup}
             importLabel={BACKUP_COPY.onboardingRestoreTitle}
@@ -184,15 +180,15 @@ export function OnboardingGate({ now }: { now: () => Date }) {
       <ScreenContainer testID="onboarding-questionnaire">
         <Text
           accessibilityRole="header"
-          className="font-display text-title text-start text-primary"
+          className="font-display text-sheet-title text-start text-accent"
         >
           {SHARED_COPY.title}
         </Text>
-        <Text className="text-body mt-2 text-start text-muted-foreground">{SHARED_COPY.intro}</Text>
+        <Text className="text-body mt-2 text-start text-ink">{SHARED_COPY.intro}</Text>
         <View className="mt-6 gap-6">
           {QUESTIONS.map((question) => (
             <View accessibilityRole="radiogroup" key={question.id}>
-              <Text className="text-body mb-2 text-start font-body-medium text-foreground">
+              <Text className="text-body mb-2 text-start font-sans-medium text-ink">
                 {question.prompt}
               </Text>
               <View className="gap-2">
@@ -205,8 +201,8 @@ export function OnboardingGate({ now }: { now: () => Date }) {
                       accessibilityState={{ checked }}
                       className={`rounded-card border p-3 ${
                         checked
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border bg-surface shadow-card-sm'
+                          ? 'border-accent bg-accent/10'
+                          : 'border-line bg-surface shadow-card'
                       }`}
                       key={option.id}
                       onPress={() =>
@@ -214,7 +210,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
                       }
                       testID={`answer-${question.id}-${option.id}`}
                     >
-                      <Text className="text-body text-start text-foreground">{option.label}</Text>
+                      <Text className="text-body text-start text-ink">{option.label}</Text>
                     </Pressable>
                   )
                 })}
@@ -302,12 +298,13 @@ export function OnboardingGate({ now }: { now: () => Date }) {
 
   return (
     <ScreenContainer testID="onboarding-level">
-      <Text accessibilityRole="header" className="font-display text-title text-start text-primary">
+      <Text
+        accessibilityRole="header"
+        className="font-display text-sheet-title text-start text-accent"
+      >
         {SHARED_COPY.recommendationTitle}
       </Text>
-      <Text className="text-body mt-2 text-start text-muted-foreground">
-        {SHARED_COPY.otherLevels}
-      </Text>
+      <Text className="text-body mt-2 text-start text-ink">{SHARED_COPY.otherLevels}</Text>
       <View className="mt-6 gap-3" accessibilityRole="radiogroup">
         {WIRD_LEVELS.map((level) => {
           const checked = selectedLevelId === level.id
@@ -318,17 +315,17 @@ export function OnboardingGate({ now }: { now: () => Date }) {
               accessibilityState={{ checked }}
               className={`rounded-card border p-4 ${
                 checked
-                  ? 'border-primary bg-primary/10 shadow-card'
-                  : 'border-border bg-surface shadow-card-sm'
+                  ? 'border-accent bg-accent/10 shadow-card'
+                  : 'border-line bg-surface shadow-card'
               }`}
               key={level.id}
               onPress={() => setSelectedLevelId(level.id)}
               testID={`level-${level.id}`}
             >
-              <Text className="font-display text-title text-start text-primary">{level.title}</Text>
-              <Text className="text-body mt-2 text-start text-muted-foreground">
-                {level.description}
+              <Text className="font-display text-sheet-title text-start text-accent">
+                {level.title}
               </Text>
+              <Text className="text-body mt-2 text-start text-ink">{level.description}</Text>
             </Pressable>
           )
         })}

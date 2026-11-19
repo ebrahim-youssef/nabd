@@ -18,8 +18,8 @@ describe('canonical Arabic content', () => {
     expect(INTENTIONS_LIBRARY.every((entry) => entry.intentions.length > 0)).toBe(true)
   })
 
-  it('exports the shared shell nav labels for the five-item pill', () => {
-    expect(NAV_ORDER).toHaveLength(5)
+  it('exports the four shared shell navigation labels in order', () => {
+    expect(NAV_ORDER).toEqual(['home', 'today', 'adhkar', 'more'])
     expect(NAV_ORDER.every((key) => shellCopy.nav[key].length > 0)).toBe(true)
   })
 })

@@ -48,10 +48,10 @@ describe('CompletionCelebration', () => {
     await screen.findByTestId('completion-celebration')
     expect(write).toHaveBeenCalledWith(PREFERENCE_KEYS.celebratedDay, DAY, expect.any(Number))
     expect(screen.getByTestId('celebration-dismiss').props.className).toEqual(
-      expect.stringContaining('bg-on-primary'),
+      expect.stringContaining('bg-on-accent'),
     )
     expect(screen.getByText(WIRD_COPY.celebrationDismiss).props.className).toEqual(
-      expect.stringContaining('text-primary'),
+      expect.stringContaining('text-accent'),
     )
 
     await fireEvent.press(screen.getByTestId('celebration-share'))

@@ -4,7 +4,7 @@ describe('native theme preference', () => {
   it('defaults absent and invalid values to follow-phone system mode', () => {
     expect(DEFAULT_NATIVE_THEME).toBe('system')
     expect(readStoredTheme(null)).toBe('system')
-    expect(readStoredTheme('modern')).toBe('system')
+    expect(readStoredTheme('unsupported-mode')).toBe('system')
     expect(readStoredTheme('invalid')).toBe('system')
   })
 

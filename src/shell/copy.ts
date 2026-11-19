@@ -1,15 +1,12 @@
-// Arabic application-shell copy: the five bottom-nav labels shared by every client shell,
-// plus the reusable back/loading/retry/error/not-found lines. Kept here so web and native
-// never diverge on navigation wording. Route paths and icons stay client-specific.
+// Arabic application-shell copy and the reusable back/loading/retry/error/not-found lines.
 export const shellCopy = {
   appName: 'نبض',
   navAriaLabel: 'التنقل الرئيسي',
   nav: {
-    libraries: 'المكتبات',
-    prayerTimes: 'المواقيت',
     home: 'الرئيسية',
-    stats: 'الإحصائيات',
-    settings: 'الإعدادات',
+    today: 'اليوم',
+    adhkar: 'الأذكار',
+    more: 'المزيد',
   },
   back: 'رجوع',
   themeToggle: 'تبديل المظهر الليلي',
@@ -23,8 +20,7 @@ export const shellCopy = {
   returnLanding: 'العودة إلى الصفحة الرئيسية',
 } as const
 
-// Navigation order follows the fixed five-item pill (r6 §2-amendment): libraries, prayer
-// times, centered home, statistics, settings.
-export const NAV_ORDER = ['libraries', 'prayerTimes', 'home', 'stats', 'settings'] as const
+// In forced RTL, the first tab renders at the right edge.
+export const NAV_ORDER = ['home', 'today', 'adhkar', 'more'] as const
 
 export type ShellNavKey = (typeof NAV_ORDER)[number]
