@@ -53,3 +53,11 @@ again. The drain runs on the native signal right after the tap, so that window i
 fixing both cases needs a monotonic clock that survives reboots, which the app does not have. A full
 queue (100 actions) refuses the new tap and leaves the notification in place, so nothing queued is
 ever dropped.
+
+Accepted limits (2026-11-19, widget): the queue and the widget snapshot live in their own
+SharedPreferences files, which the backup rules leave out (only `SQLite/` is included), so a tap
+still queued when the phone is backed up is lost on a new phone, and the widget shows the
+placeholder until the restored app is opened. When the app writes a snapshot, still-queued taps for the same day and
+version are applied on top of it, so a snapshot built from the database a moment before a drain
+cannot undo a widget tick. After a force-stop the widget keeps its last snapshot but its taps and
+boundary updates stop until the app is opened.
