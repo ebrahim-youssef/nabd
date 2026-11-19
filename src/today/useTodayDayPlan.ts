@@ -5,7 +5,7 @@ import { buildDayPlan } from '../day-plan/logic'
 import type { DayPlan } from '../day-plan/types'
 import { useWirdToday } from '../day-plan/WirdTodayProvider'
 import { useLocationCapability } from '../device/useLocationCapability'
-import { monthOf, nextDay } from '../lib/day'
+import { compareDayId, monthOf, nextDay } from '../lib/day'
 import { versionInForce } from '../lib/wird'
 import { logger } from '../observability/logger'
 import { PREFERENCE_KEYS, createPreferencesRepository } from '../preferences/db'
@@ -23,7 +23,8 @@ export type TodayDayPlan = {
   currentDay: DayId
   plan: DayPlan
   versionId: string | null
-  status: 'loading' | 'ready' | 'failed'
+  status: 'loading' | 'ready' | 'failed' | 'unavailable'
+  earliestVersionDay: DayId | null
   refresh: () => void
 }
 
@@ -76,9 +77,26 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
   const nextFajr = location.coordinates
     ? computeDayTimes(location.coordinates, nextDate, methodId).fajr
     : null
-  const version = data ? (versionInForce(data.versions, day) ?? data.versions[0] ?? null) : null
-  const status: TodayDayPlan['status'] =
-    data && version && !hasError ? 'ready' : isLoading && !hasError ? 'loading' : 'failed'
+  const version = data ? (versionInForce(data.versions, day) ?? null) : null
+  const earliestVersionDay =
+    data?.versions.reduce<DayId | null>(
+      (earliest, candidate) =>
+        earliest === null || compareDayId(candidate.effectiveFrom, earliest) < 0
+          ? candidate.effectiveFrom
+          : earliest,
+      null,
+    ) ?? null
+  const status: TodayDayPlan['status'] = data
+    ? hasError
+      ? 'failed'
+      : version
+        ? 'ready'
+        : 'unavailable'
+    : hasError
+      ? 'failed'
+      : isLoading
+        ? 'loading'
+        : 'failed'
   const plan = buildDayPlan({
     now,
     day,
@@ -94,6 +112,7 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
     plan,
     versionId: version?.id ?? null,
     status,
+    earliestVersionDay,
     refresh,
   }
 }

@@ -18,26 +18,28 @@ import { useTodayDayPlan } from './useTodayDayPlan'
 import { toArabicIndic } from '../lib/format'
 import { formatPrayerTime } from '../prayer-times/formatPrayerTime'
 
-type UndoItem = { item: DayPlanItem }
+type ToastItem = { item: DayPlanItem; saved: boolean }
 
 export function TodayRoute({ day }: { day: DayId }) {
   const today = useTodayDayPlan(day)
   const { plan } = today
   const { toggle } = useToggleItem(today.versionId, today.refresh)
   const router = useRouter()
-  const [undoItem, setUndoItem] = useState<UndoItem | null>(null)
+  const [toastItem, setToastItem] = useState<ToastItem | null>(null)
   const canGoNext = compareDayId(day, today.currentDay) < 0
+  const canGoPrevious =
+    today.earliestVersionDay !== null && compareDayId(day, today.earliestVersionDay) > 0
 
   const record = async (item: DayPlanItem, done: boolean) => {
-    setUndoItem(null)
+    setToastItem(null)
     const wasSaved = await toggle(day, item.id, done)
-    if (wasSaved && done) setUndoItem({ item })
+    setToastItem(wasSaved ? (done ? { item, saved: true } : null) : { item, saved: false })
   }
 
   const undo = async () => {
-    if (!undoItem) return
-    const wasSaved = await toggle(day, undoItem.item.id, false)
-    if (wasSaved) setUndoItem(null)
+    if (!toastItem?.saved) return
+    const wasSaved = await toggle(day, toastItem.item.id, false)
+    setToastItem(wasSaved ? null : { item: toastItem.item, saved: false })
   }
 
   const renderRows = (items: DayPlanItem[]) =>
@@ -62,7 +64,7 @@ export function TodayRoute({ day }: { day: DayId }) {
         <View className="gap-3">
           <DayHeader
             day={day}
-            onPrev={() => router.push(`/today/${previousDay(day)}`)}
+            onPrev={canGoPrevious ? () => router.push(`/today/${previousDay(day)}`) : undefined}
             onNext={canGoNext ? () => router.push(`/today/${nextDay(day)}`) : undefined}
             progress={
               today.status === 'ready'
@@ -131,15 +133,25 @@ export function TodayRoute({ day }: { day: DayId }) {
               </Text>
               <Button label={TODAY_COPY.retry} onPress={today.refresh} />
             </View>
+          ) : today.status === 'unavailable' ? (
+            <View className="px-6 py-4">
+              <Text className="text-center font-sans text-body text-mute">
+                {TODAY_COPY.unavailable}
+              </Text>
+            </View>
           ) : null}
         </View>
       </ScreenContainer>
 
-      {undoItem ? (
+      {toastItem ? (
         <View className="absolute inset-x-4 bottom-[94px] z-50">
           <Toast
-            message={`${TODAY_COPY.recorded} ${undoItem.item.label}`}
-            onUndo={undo}
+            message={
+              toastItem.saved
+                ? `${TODAY_COPY.recorded} ${toastItem.item.label}`
+                : TODAY_COPY.saveFailed(toastItem.item.label)
+            }
+            onUndo={toastItem.saved ? undo : undefined}
             testID="today-toast"
           />
         </View>

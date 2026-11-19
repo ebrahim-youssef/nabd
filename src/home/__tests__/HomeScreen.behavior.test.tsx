@@ -148,7 +148,63 @@ describe('HomeScreen', () => {
     fireEvent.press(screen.getByRole('checkbox', { name: /سنة الظهر القبلية/ }))
     expect(screen.queryByTestId('home-toast')).toBeNull()
     await act(async () => resolveWrite(false))
-    expect(screen.queryByTestId('home-toast')).toBeNull()
+    expect(await screen.findByText('تعذّر حفظ سنة الظهر القبلية. حاول مرة أخرى.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'تراجع' })).toBeNull()
+  })
+
+  it('keeps only the hero and daily lines while loading', () => {
+    showPlan(makePlan(NOW), undefined, 'loading')
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(
+      screen.queryByTestId('hero-expanded') ?? screen.queryByTestId('hero-collapsed'),
+    ).toBeTruthy()
+    expect(screen.getByText('الحمد لله')).toBeTruthy()
+    expect(screen.queryByTestId('current-block')).toBeNull()
+    expect(screen.queryAllByTestId(/^timed-act-/)).toHaveLength(0)
+    expect(screen.queryAllByTestId(/^home-row-/)).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: /أعمال اليوم/ })).toBeNull()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.queryByText(/مطلوبة/)).toBeNull()
+  })
+
+  it('shows retry instead of rows after a failed read and retries the query', () => {
+    showPlan(makePlan(NOW), undefined, 'failed')
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(screen.getByText('تعذّر تحميل اليوم. حاول مرة أخرى.')).toBeTruthy()
+    expect(screen.queryByTestId('current-block')).toBeNull()
+    expect(screen.queryAllByTestId(/^timed-act-/)).toHaveLength(0)
+    expect(screen.queryAllByTestId(/^home-row-/)).toHaveLength(0)
+    expect(screen.queryByRole('button', { name: /أعمال اليوم/ })).toBeNull()
+    fireEvent.press(screen.getByRole('button', { name: 'إعادة المحاولة' }))
+    expect(refresh).toHaveBeenCalled()
+  })
+
+  it('shows the failed-save toast without undo when an undo write fails', async () => {
+    toggle.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+    showPlan(makePlan(NOW))
+    render(<HomeScreen persisted={persisted()} />)
+
+    fireEvent.press(screen.getByRole('checkbox', { name: /سنة الظهر القبلية/ }))
+    fireEvent.press(await screen.findByRole('button', { name: 'تراجع' }))
+
+    expect(await screen.findByText('تعذّر حفظ سنة الظهر القبلية. حاول مرة أخرى.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'تراجع' })).toBeNull()
+  })
+
+  it('shows the failed-save toast without undo for a sheet row', async () => {
+    toggle.mockResolvedValueOnce(false)
+    showPlan(makePlan(NOW))
+    render(<HomeScreen persisted={persisted()} />)
+
+    fireEvent.press(screen.getByRole('button', { name: /أعمال اليوم/ }))
+    fireEvent.press(screen.getByRole('checkbox', { name: /الاستغفار/ }))
+
+    expect(
+      await screen.findByText('تعذّر حفظ الاستغفار — أستغفر الله العظيم. حاول مرة أخرى.'),
+    ).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'تراجع' })).toBeNull()
   })
 
   it('lists exactly the plan unrecorded items and opens the selected day', () => {
@@ -199,6 +255,7 @@ function makePlan(now: number): DayPlan {
 function showPlan(
   plan: DayPlan,
   coordinates: { latitude: number; longitude: number } | null = { latitude: 1, longitude: 2 },
+  status: 'loading' | 'ready' | 'failed' = 'ready',
 ) {
   const displayedPlan = coordinates
     ? plan
@@ -221,6 +278,7 @@ function showPlan(
     coordinates,
     runLocationAction,
     dailyLines: { intention: { deed: 'الصلاة', text: 'أحافظ عليها' }, dhikr: { text: 'الحمد لله' } },
+    status,
   })
 }
 

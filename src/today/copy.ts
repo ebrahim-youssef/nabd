@@ -8,6 +8,8 @@ export const TODAY_COPY = {
   recorded: 'سُجّل',
   loadFailed: 'تعذّر تحميل اليوم. حاول مرة أخرى.',
   retry: 'إعادة المحاولة',
+  unavailable: 'لا توجد خطة لهذا اليوم.',
+  saveFailed: (label: string) => `تعذّر حفظ ${label}. حاول مرة أخرى.`,
 } as const
 
 export function daySpan(weekday: string, nextWeekday: string): string {

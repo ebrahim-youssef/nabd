@@ -17,4 +17,7 @@ export const HOME_COPY = {
   adhkar: 'الأذكار',
   counterLink: 'العدّ ذكرًا ذكرًا في صفحة الأذكار',
   recorded: 'سُجّل',
+  loadFailed: 'تعذّر تحميل اليوم. حاول مرة أخرى.',
+  retry: 'إعادة المحاولة',
+  saveFailed: (label: string) => `تعذّر حفظ ${label}. حاول مرة أخرى.`,
 } as const

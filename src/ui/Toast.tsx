@@ -2,7 +2,7 @@ import { Pressable, View } from 'react-native'
 
 import { Text } from '../shell/Text'
 
-type ToastProps = { message: string; onUndo: () => void; testID?: string }
+type ToastProps = { message: string; onUndo?: () => void; testID?: string }
 
 export function Toast({ message, onUndo, testID }: ToastProps) {
   return (
@@ -12,9 +12,11 @@ export function Toast({ message, onUndo, testID }: ToastProps) {
       testID={testID}
     >
       <Text className="flex-1 font-sans-medium text-body text-bg">{message}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="تراجع" onPress={onUndo}>
-        <Text className="ms-4 font-sans-bold text-body text-toast-action">تراجع</Text>
-      </Pressable>
+      {onUndo ? (
+        <Pressable accessibilityRole="button" accessibilityLabel="تراجع" onPress={onUndo}>
+          <Text className="ms-4 font-sans-bold text-body text-toast-action">تراجع</Text>
+        </Pressable>
+      ) : null}
     </View>
   )
 }

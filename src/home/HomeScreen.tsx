@@ -23,7 +23,7 @@ import { HOME_COPY } from './copy'
 import { useHomeDayPlan } from './useHomeDayPlan'
 
 type OpenSheet = 'unrecorded' | 'any-time' | null
-type UndoRecord = { item: DayPlanItem; inline: boolean }
+type ToastRecord = { item: DayPlanItem; inline: boolean; saved: boolean }
 
 export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const home = useHomeDayPlan(persisted)
@@ -31,24 +31,26 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const { toggle } = useToggleItem(home.versionId, home.refresh)
   const router = useRouter()
   const [openSheet, setOpenSheet] = useState<OpenSheet>(null)
-  const [undoRecord, setUndoRecord] = useState<UndoRecord | null>(null)
+  const [toastRecord, setToastRecord] = useState<ToastRecord | null>(null)
   const currentBlock = plan.currentBlock ?? plan.nextBlock
   const dateLabel = formatHeaderDate(home.day, plan.header?.mode)
-  const unrecordedGroups = buildUnrecordedGroups(plan)
+  const unrecordedGroups = home.status === 'ready' ? buildUnrecordedGroups(plan) : []
 
   const record = async (item: DayPlanItem, done: boolean, inline = false) => {
     const wasSaved = await toggle(home.day, item.id, done)
     if (!wasSaved) {
-      setUndoRecord(null)
+      setToastRecord({ item, inline, saved: false })
       return
     }
-    setUndoRecord(done ? { item, inline } : null)
+    setToastRecord(done ? { item, inline, saved: true } : null)
   }
 
   const undo = async () => {
-    if (!undoRecord) return
-    const wasSaved = await toggle(home.day, undoRecord.item.id, false)
-    if (wasSaved) setUndoRecord(null)
+    if (!toastRecord?.saved) return
+    const wasSaved = await toggle(home.day, toastRecord.item.id, false)
+    setToastRecord(
+      wasSaved ? null : { item: toastRecord.item, inline: toastRecord.inline, saved: false },
+    )
   }
 
   const goToToday = () => {
@@ -71,8 +73,10 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const timedActCards = plan.openTimedActs.map((act) =>
     renderTimedAct(act, (item, sub, first) => renderItem(item, sub, false, first)),
   )
-  const anyTimeQuran = plan.anyTime.filter((item) => item.id.startsWith('quran'))
-  const anyTimeDhikr = plan.anyTime.filter((item) => item.kind === 'counter')
+  const anyTimeQuran =
+    home.status === 'ready' ? plan.anyTime.filter((item) => item.id.startsWith('quran')) : []
+  const anyTimeDhikr =
+    home.status === 'ready' ? plan.anyTime.filter((item) => item.kind === 'counter') : []
   const anyTimeFooter = (
     <View className="gap-3">
       <Pressable accessibilityRole="link" onPress={() => router.push('/adhkar')}>
@@ -95,7 +99,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
             noLocationPrompt={HOME_COPY.noLocation}
             now={home.now}
             nextFajr={home.nextFajr}
-            progress={plan.progress}
+            progress={home.status === 'ready' ? plan.progress : undefined}
             times={home.times}
           />
           {!plan.hasTimes ? (
@@ -111,7 +115,16 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
           <View className="gap-3 px-6 pt-4">
             <DailyLines dhikr={home.dailyLines.dhikr.text} intention={home.dailyLines.intention} />
 
-            {currentBlock ? (
+            {home.status === 'failed' ? (
+              <View className="gap-3 py-4">
+                <Text className="text-center font-sans text-body text-mute">
+                  {HOME_COPY.loadFailed}
+                </Text>
+                <Button label={HOME_COPY.retry} onPress={home.refresh} />
+              </View>
+            ) : null}
+
+            {home.status === 'ready' && currentBlock ? (
               <BlockCard
                 meta={
                   currentBlock === plan.currentBlock && currentBlock.window
@@ -131,40 +144,50 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
               </BlockCard>
             ) : null}
 
-            {timedActCards}
+            {home.status === 'ready' ? timedActCards : null}
 
-            <View className="flex-row gap-2.5">
-              <Tile
-                count={
-                  plan.unrecorded.length > 0 ? toArabicIndic(plan.unrecorded.length) : undefined
-                }
-                onPress={() => setOpenSheet('unrecorded')}
-                quiet={plan.unrecorded.length === 0}
-                sub={
-                  plan.unrecorded.length > 0 ? HOME_COPY.fromFajrToday : HOME_COPY.nothingUnrecorded
-                }
-                title={HOME_COPY.unrecorded}
-              />
-              <Tile
-                count={`${toArabicIndic(plan.anyTimeProgress.done)}/${toArabicIndic(
-                  plan.anyTimeProgress.total,
-                )}`}
-                onPress={() => setOpenSheet('any-time')}
-                sub={HOME_COPY.anytimeShort}
-                title={HOME_COPY.anyTime}
-              />
-            </View>
+            {home.status === 'ready' ? (
+              <View className="flex-row gap-2.5">
+                <Tile
+                  count={
+                    plan.unrecorded.length > 0 ? toArabicIndic(plan.unrecorded.length) : undefined
+                  }
+                  onPress={() => setOpenSheet('unrecorded')}
+                  quiet={plan.unrecorded.length === 0}
+                  sub={
+                    plan.unrecorded.length > 0
+                      ? HOME_COPY.fromFajrToday
+                      : HOME_COPY.nothingUnrecorded
+                  }
+                  title={HOME_COPY.unrecorded}
+                />
+                <Tile
+                  count={`${toArabicIndic(plan.anyTimeProgress.done)}/${toArabicIndic(
+                    plan.anyTimeProgress.total,
+                  )}`}
+                  onPress={() => setOpenSheet('any-time')}
+                  sub={HOME_COPY.anytimeShort}
+                  title={HOME_COPY.anyTime}
+                />
+              </View>
+            ) : null}
 
-            <ProgressBar done={plan.progress.done} total={plan.progress.required} />
+            {home.status === 'ready' ? (
+              <ProgressBar done={plan.progress.done} total={plan.progress.required} />
+            ) : null}
           </View>
         </View>
       </ScreenContainer>
 
-      {undoRecord && !undoRecord.inline ? (
+      {toastRecord && !toastRecord.inline ? (
         <View className="absolute inset-x-4 bottom-[94px] z-50">
           <Toast
-            message={`${HOME_COPY.recorded} ${undoRecord.item.label}`}
-            onUndo={undo}
+            message={
+              toastRecord.saved
+                ? `${HOME_COPY.recorded} ${toastRecord.item.label}`
+                : HOME_COPY.saveFailed(toastRecord.item.label)
+            }
+            onUndo={toastRecord.saved ? undo : undefined}
             testID="home-toast"
           />
         </View>
@@ -182,8 +205,15 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
             {group.items.map((item, index) => (
               <View key={item.id} testID="unrecorded-row">
                 {renderItem(item, undefined, true, index === 0)}
-                {undoRecord?.inline && undoRecord.item.id === item.id ? (
-                  <Toast message={`${HOME_COPY.recorded} ${item.label}`} onUndo={undo} />
+                {toastRecord?.inline && toastRecord.item.id === item.id ? (
+                  <Toast
+                    message={
+                      toastRecord.saved
+                        ? `${HOME_COPY.recorded} ${item.label}`
+                        : HOME_COPY.saveFailed(item.label)
+                    }
+                    onUndo={toastRecord.saved ? undo : undefined}
+                  />
                 ) : null}
               </View>
             ))}
@@ -221,8 +251,15 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
             ))}
           </BlockCard>
         ) : null}
-        {undoRecord?.inline ? (
-          <Toast message={`${HOME_COPY.recorded} ${undoRecord.item.label}`} onUndo={undo} />
+        {toastRecord?.inline ? (
+          <Toast
+            message={
+              toastRecord.saved
+                ? `${HOME_COPY.recorded} ${toastRecord.item.label}`
+                : HOME_COPY.saveFailed(toastRecord.item.label)
+            }
+            onUndo={toastRecord.saved ? undo : undefined}
+          />
         ) : null}
       </BottomSheet>
     </View>

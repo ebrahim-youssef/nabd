@@ -11,7 +11,7 @@ import { useThemeColors } from '../../theme/tokens'
 type DayHeaderProps = {
   day: DayId
   progress?: { done: number; required: number }
-  onPrev: () => void
+  onPrev?: () => void
   onNext?: () => void
   onPickDate?: () => void
 }
@@ -46,12 +46,14 @@ export function DayHeader({ day, progress, onPrev, onNext, onPickDate }: DayHead
           {TODAY_COPY.title}
         </Text>
         <View className="flex-row items-center gap-2">
-          <StepButton
-            accessibilityLabel={TODAY_COPY.previousDay}
-            onPress={onPrev}
-            direction="previous"
-            color={theme.ink}
-          />
+          {onPrev ? (
+            <StepButton
+              accessibilityLabel={TODAY_COPY.previousDay}
+              onPress={onPrev}
+              direction="previous"
+              color={theme.ink}
+            />
+          ) : null}
           {onNext ? (
             <StepButton
               accessibilityLabel={TODAY_COPY.nextDay}

@@ -31,6 +31,7 @@ const NUMBER_PADDING = '0'
 export type HomeDayPlan = {
   day: string
   plan: DayPlan
+  status: 'loading' | 'ready' | 'failed'
   versionId: string | null
   refresh: () => void
   now: number
@@ -91,7 +92,7 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
     const version = versionInForce(versions, day) ?? persisted.activeWird
     return { entries, monthEntries, version }
   }, [day, persisted.activeWird, repository])
-  const { data, refresh } = useLiveRepositoryQuery(read)
+  const { data, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
   const timeZone = currentTimeZone()
   const todayDate = dateForCalendarDayInTimeZone(now, timeZone)
   const localToday = [
@@ -119,11 +120,14 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
     monthEntries: data?.monthEntries ?? [],
   })
   const dailyLineContent = dailyLines(day)
+  const status: HomeDayPlan['status'] =
+    data && !hasError ? 'ready' : isLoading && !hasError ? 'loading' : 'failed'
 
   return {
     day,
     plan,
-    versionId: data?.version.id ?? persisted.activeWird.id,
+    status,
+    versionId: data?.version.id ?? null,
     refresh,
     now,
     times,

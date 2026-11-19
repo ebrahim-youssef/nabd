@@ -32,7 +32,7 @@ type EntryRow = {
   at: number
 }
 
-function createDatabase(failHealing = false) {
+function createDatabase(failHealing = false, failVersionReadNumber = 0) {
   const entries: EntryRow[] = []
   const actionIds = new Set<string>()
   let versionReadCount = 0
@@ -78,6 +78,9 @@ function createDatabase(failHealing = false) {
     getAllAsync: async <T,>(source: string, ...parameters: SqlValue[]) => {
       if (source.includes('wird_versions')) {
         versionReadCount += 1
+        if (versionReadCount === failVersionReadNumber) {
+          throw new Error('version read failed once')
+        }
         return versions as T[]
       }
       if (source.includes('wird_entries') && source.includes('LIKE')) {
@@ -132,6 +135,21 @@ describe('HomeScreen repository integration', () => {
     fireEvent.press(await screen.findByRole('button', { name: /أعمال اليوم/ }))
     expect(await screen.findByText('قراءة صفحتين من القرآن')).toBeTruthy()
     expect(screen.queryByText('قراءة حزب من القرآن')).toBeNull()
+  })
+
+  it('shows retry after a failed plan read and reloads the saved plan', async () => {
+    const { database, getVersionReadCount } = createDatabase(false, 2)
+    mockedUseSQLiteContext.mockReturnValue(database as never)
+    jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
+
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(await screen.findByText('تعذّر تحميل اليوم. حاول مرة أخرى.')).toBeTruthy()
+    fireEvent.press(screen.getByRole('button', { name: 'إعادة المحاولة' }))
+
+    await waitFor(() => expect(getVersionReadCount()).toBeGreaterThan(2))
+    fireEvent.press(await screen.findByRole('button', { name: /أعمال اليوم/ }))
+    expect(await screen.findByTestId(`sheet-row-${ITEM_ID}`)).toBeTruthy()
   })
 
   it('writes a tick and its undo through the repository', async () => {

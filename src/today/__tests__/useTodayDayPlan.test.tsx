@@ -107,13 +107,13 @@ describe('useTodayDayPlan', () => {
     expect(result.current.status).toBe(status)
   })
 
-  it('uses the earliest version for a day before the first version took effect', () => {
+  it('marks a day before the first version as unavailable', () => {
     const { result } = renderHook(() => useTodayDayPlan('2026-05-31'))
 
-    expect(result.current.versionId).toBe('version-old')
-    expect(result.current.plan.blocks.flatMap(({ items }) => items)).toContainEqual(
-      expect.objectContaining({ id: 'fajr', label: 'صلاة الفجر (النسخة السابقة)' }),
-    )
+    expect(result.current.status).toBe('unavailable')
+    expect(result.current.versionId).toBeNull()
+    expect(result.current.earliestVersionDay).toBe('2026-06-01')
+    expect(result.current.plan.blocks.flatMap(({ items }) => items)).toHaveLength(0)
   })
 
   it('continues using the saved version when best-effort healing fails', async () => {

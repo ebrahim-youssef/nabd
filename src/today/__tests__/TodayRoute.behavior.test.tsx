@@ -100,6 +100,23 @@ describe('TodayRoute', () => {
     expect(screen.queryByRole('button', { name: 'اليوم التالي' })).toBeNull()
   })
 
+  it('shows an unavailable day without progress or rows and hides its previous stepper', () => {
+    showDay('2026-05-31', null, WIRD_LEVELS[1].wird, NOW, undefined, 'unavailable', '2026-06-01')
+    render(<TodayRoute day="2026-05-31" />)
+
+    expect(screen.getByText('لا توجد خطة لهذا اليوم.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'اليوم السابق' })).toBeNull()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.queryByTestId(/^today-row-/)).toBeNull()
+  })
+
+  it('hides the previous stepper on the first day with a plan', () => {
+    showDay('2026-06-01', 'version-old', WIRD_LEVELS[1].wird, NOW, undefined, 'ready', '2026-06-01')
+    render(<TodayRoute day="2026-06-01" />)
+
+    expect(screen.queryByRole('button', { name: 'اليوم السابق' })).toBeNull()
+  })
+
   it('shows an older version item and records a past-day tick with that version', async () => {
     const olderDefinition = {
       ...WIRD_LEVELS[1].wird,
@@ -131,7 +148,7 @@ describe('TodayRoute', () => {
     await waitFor(() => expect(screen.queryByTestId('today-toast')).toBeNull())
   })
 
-  it('does not show a success toast when the write fails', async () => {
+  it('shows a failed-save toast without undo when the write fails', async () => {
     let resolveWrite: (saved: boolean) => void = () => {}
     toggle.mockReturnValueOnce(
       new Promise<boolean>((resolve) => {
@@ -144,7 +161,20 @@ describe('TodayRoute', () => {
     fireEvent.press(screen.getByTestId('today-row-fajr'))
     expect(screen.queryByTestId('today-toast')).toBeNull()
     await act(async () => resolveWrite(false))
-    expect(screen.queryByTestId('today-toast')).toBeNull()
+    expect(await screen.findByText('تعذّر حفظ الفجر (جماعة). حاول مرة أخرى.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'تراجع' })).toBeNull()
+  })
+
+  it('shows a failed-save toast without undo when the undo write fails', async () => {
+    toggle.mockResolvedValueOnce(true).mockResolvedValueOnce(false)
+    showDay(DAY, 'version-1', WIRD_LEVELS[1].wird, NOW)
+    render(<TodayRoute day={DAY} />)
+
+    fireEvent.press(screen.getByTestId('today-row-fajr'))
+    fireEvent.press(await screen.findByRole('button', { name: 'تراجع' }))
+
+    expect(await screen.findByText('تعذّر حفظ الفجر (جماعة). حاول مرة أخرى.')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'تراجع' })).toBeNull()
   })
 
   it('marks optional rows as voluntary and excludes them from required progress', () => {
@@ -208,11 +238,12 @@ describe('TodayRoute', () => {
 
 function showDay(
   day: DayId,
-  versionId: string,
+  versionId: string | null,
   definition: (typeof WIRD_LEVELS)[number]['wird'],
   now: number,
   providedPlan?: DayPlan,
-  status: 'loading' | 'ready' | 'failed' = 'ready',
+  status: 'loading' | 'ready' | 'failed' | 'unavailable' = 'ready',
+  earliestVersionDay: DayId | null = '2026-06-01',
 ) {
   const plan =
     providedPlan ??
@@ -230,6 +261,7 @@ function showDay(
     versionId,
     refresh,
     status,
+    earliestVersionDay,
   })
 }
 
