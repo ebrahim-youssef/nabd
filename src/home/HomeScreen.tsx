@@ -23,7 +23,7 @@ import { HOME_COPY } from './copy'
 import { useHomeDayPlan } from './useHomeDayPlan'
 
 type OpenSheet = 'unrecorded' | 'any-time' | null
-type ToastRecord = { item: DayPlanItem; inline: boolean; saved: boolean }
+type ToastRecord = { item: DayPlanItem; sheet: OpenSheet; saved: boolean }
 
 export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const home = useHomeDayPlan(persisted)
@@ -36,21 +36,19 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const dateLabel = formatHeaderDate(home.day, plan.header?.mode)
   const unrecordedGroups = home.status === 'ready' ? buildUnrecordedGroups(plan) : []
 
-  const record = async (item: DayPlanItem, done: boolean, inline = false) => {
+  const record = async (item: DayPlanItem, done: boolean, sheet: OpenSheet = null) => {
     const wasSaved = await toggle(home.day, item.id, done)
     if (!wasSaved) {
-      setToastRecord({ item, inline, saved: false })
+      setToastRecord({ item, sheet, saved: false })
       return
     }
-    setToastRecord(done ? { item, inline, saved: true } : null)
+    setToastRecord(done ? { item, sheet, saved: true } : null)
   }
 
   const undo = async () => {
     if (!toastRecord?.saved) return
     const wasSaved = await toggle(home.day, toastRecord.item.id, false)
-    setToastRecord(
-      wasSaved ? null : { item: toastRecord.item, inline: toastRecord.inline, saved: false },
-    )
+    setToastRecord(wasSaved ? null : { ...toastRecord, saved: false })
   }
 
   const goToToday = () => {
@@ -58,20 +56,20 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
     router.push(`/today/${home.day}`)
   }
 
-  const renderItem = (item: DayPlanItem, sub?: string, inline = false, first = false) => (
+  const renderItem = (item: DayPlanItem, sub?: string, sheet: OpenSheet = null, first = false) => (
     <ChecklistRow
       done={item.done}
       first={first}
       label={item.label}
-      onToggle={() => void record(item, !item.done, inline)}
+      onToggle={() => void record(item, !item.done, sheet)}
       optional={item.optional}
       sub={sub ?? item.minimum}
-      testID={inline ? `sheet-row-${item.id}` : `home-row-${item.id}`}
+      testID={sheet ? `sheet-row-${item.id}` : `home-row-${item.id}`}
     />
   )
 
   const timedActCards = plan.openTimedActs.map((act) =>
-    renderTimedAct(act, (item, sub, first) => renderItem(item, sub, false, first)),
+    renderTimedAct(act, (item, sub, first) => renderItem(item, sub, null, first)),
   )
   const anyTimeQuran =
     home.status === 'ready' ? plan.anyTime.filter((item) => item.id.startsWith('quran')) : []
@@ -139,7 +137,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
                 title={currentBlock.label}
               >
                 {currentBlock.items.map((item, index) => (
-                  <View key={item.id}>{renderItem(item, undefined, false, index === 0)}</View>
+                  <View key={item.id}>{renderItem(item, undefined, null, index === 0)}</View>
                 ))}
               </BlockCard>
             ) : null}
@@ -179,7 +177,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
         </View>
       </ScreenContainer>
 
-      {toastRecord && !toastRecord.inline ? (
+      {toastRecord && toastRecord.sheet === null ? (
         <View className="absolute inset-x-4 bottom-[94px] z-50">
           <Toast
             message={
@@ -204,21 +202,21 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
           <BlockCard key={group.id} meta={group.meta} shadow={false} title={group.title}>
             {group.items.map((item, index) => (
               <View key={item.id} testID="unrecorded-row">
-                {renderItem(item, undefined, true, index === 0)}
-                {toastRecord?.inline && toastRecord.item.id === item.id ? (
-                  <Toast
-                    message={
-                      toastRecord.saved
-                        ? `${HOME_COPY.recorded} ${item.label}`
-                        : HOME_COPY.saveFailed(item.label)
-                    }
-                    onUndo={toastRecord.saved ? undo : undefined}
-                  />
-                ) : null}
+                {renderItem(item, undefined, 'unrecorded', index === 0)}
               </View>
             ))}
           </BlockCard>
         ))}
+        {toastRecord?.sheet === 'unrecorded' ? (
+          <Toast
+            message={
+              toastRecord.saved
+                ? `${HOME_COPY.recorded} ${toastRecord.item.label}`
+                : HOME_COPY.saveFailed(toastRecord.item.label)
+            }
+            onUndo={toastRecord.saved ? undo : undefined}
+          />
+        ) : null}
       </BottomSheet>
 
       <BottomSheet
@@ -231,7 +229,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
         {anyTimeQuran.length > 0 ? (
           <BlockCard shadow={false} title={HOME_COPY.quran}>
             {anyTimeQuran.map((item, index) => (
-              <View key={item.id}>{renderItem(item, undefined, true, index === 0)}</View>
+              <View key={item.id}>{renderItem(item, undefined, 'any-time', index === 0)}</View>
             ))}
           </BlockCard>
         ) : null}
@@ -244,14 +242,14 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
                   item.target
                     ? `${toArabicIndic(item.target)} ${HOME_COPY.repetitions}`
                     : undefined,
-                  true,
+                  'any-time',
                   index === 0,
                 )}
               </View>
             ))}
           </BlockCard>
         ) : null}
-        {toastRecord?.inline ? (
+        {toastRecord?.sheet === 'any-time' ? (
           <Toast
             message={
               toastRecord.saved

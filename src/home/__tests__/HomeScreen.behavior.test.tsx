@@ -207,6 +207,47 @@ describe('HomeScreen', () => {
     expect(screen.queryByRole('button', { name: 'تراجع' })).toBeNull()
   })
 
+  it('keeps unrecorded undo after refresh removes the ticked row', async () => {
+    const plan = makePlan(NOW)
+    const item = plan.unrecorded[0]
+    if (!item) throw new Error('Expected an unrecorded item in the fixture plan')
+    let currentPlan = plan
+    showPlan(plan)
+    mockedUseHomeDayPlan.mockImplementation(() => ({
+      day: DAY,
+      plan: currentPlan,
+      versionId: 'version-1',
+      refresh,
+      now: NOW,
+      times: TIMES,
+      nextFajr: NEXT_FAJR,
+      coordinates: { latitude: 1, longitude: 2 },
+      runLocationAction,
+      dailyLines: {
+        intention: { deed: 'الصلاة', text: 'أحافظ عليها' },
+        dhikr: { text: 'الحمد لله' },
+      },
+      status: 'ready',
+    }))
+    const view = render(<HomeScreen persisted={persisted()} />)
+
+    fireEvent.press(screen.getByRole('button', { name: /لم يُسجَّل/ }))
+    fireEvent.press(screen.getByTestId(`sheet-row-${item.id}`))
+    expect(await screen.findByText(`سُجّل ${item.label}`)).toBeTruthy()
+
+    await act(async () => {
+      currentPlan = {
+        ...plan,
+        unrecorded: plan.unrecorded.filter(({ id }) => id !== item.id),
+      }
+      view.rerender(<HomeScreen persisted={persisted()} />)
+    })
+    expect(screen.queryByTestId(`sheet-row-${item.id}`)).toBeNull()
+    expect(screen.queryByTestId('sheet-row-morning-adhkar')).toBeNull()
+    fireEvent.press(screen.getByRole('button', { name: 'تراجع' }))
+    await waitFor(() => expect(toggle).toHaveBeenLastCalledWith(DAY, item.id, false))
+  })
+
   it('lists exactly the plan unrecorded items and opens the selected day', () => {
     const plan = makePlan(NOW)
     showPlan(plan)
