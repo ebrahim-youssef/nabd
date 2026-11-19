@@ -78,7 +78,11 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
   }, [])
 
   const read = useCallback(async () => {
-    await repository.healVersionFromLevels({ today: day })
+    try {
+      await repository.healVersionFromLevels({ today: day })
+    } catch (cause: unknown) {
+      logger.error(`Native Home version healing failed for day ${day}`, cause)
+    }
     const [versions, entries, monthEntries] = await Promise.all([
       repository.listVersions(),
       repository.getDayEntries(day),

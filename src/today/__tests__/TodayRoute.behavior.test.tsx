@@ -61,6 +61,25 @@ describe('TodayRoute', () => {
     expect(screen.getByText('صيام ثلاثة أيام من الشهر')).toBeTruthy()
   })
 
+  it('shows the header without blocks or progress while loading', () => {
+    showDay(DAY, 'version-1', WIRD_LEVELS[1].wird, NOW, undefined, 'loading')
+    render(<TodayRoute day={DAY} />)
+
+    expect(screen.getByText('اليوم')).toBeTruthy()
+    expect(screen.queryByTestId('today-block-fajr')).toBeNull()
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.queryByText(/٠ من ٠/)).toBeNull()
+  })
+
+  it('shows a retry action after a failed read', () => {
+    showDay(DAY, 'version-1', WIRD_LEVELS[1].wird, NOW, undefined, 'failed')
+    render(<TodayRoute day={DAY} />)
+
+    expect(screen.getByText('تعذّر تحميل اليوم. حاول مرة أخرى.')).toBeTruthy()
+    fireEvent.press(screen.getByRole('button', { name: 'إعادة المحاولة' }))
+    expect(refresh).toHaveBeenCalled()
+  })
+
   it('marks the current block only when the displayed day is today', () => {
     showDay(TODAY, 'version-1', WIRD_LEVELS[1].wird, NOW)
     const todayView = render(<TodayRoute day={TODAY} />)
@@ -193,6 +212,7 @@ function showDay(
   definition: (typeof WIRD_LEVELS)[number]['wird'],
   now: number,
   providedPlan?: DayPlan,
+  status: 'loading' | 'ready' | 'failed' = 'ready',
 ) {
   const plan =
     providedPlan ??
@@ -209,6 +229,7 @@ function showDay(
     plan,
     versionId,
     refresh,
+    status,
   })
 }
 

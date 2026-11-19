@@ -32,9 +32,10 @@ type EntryRow = {
   at: number
 }
 
-function createDatabase() {
+function createDatabase(failHealing = false) {
   const entries: EntryRow[] = []
   const actionIds = new Set<string>()
+  let versionReadCount = 0
   const versions = [
     {
       id: VERSION_ID,
@@ -75,7 +76,10 @@ function createDatabase() {
       return null
     },
     getAllAsync: async <T,>(source: string, ...parameters: SqlValue[]) => {
-      if (source.includes('wird_versions')) return versions as T[]
+      if (source.includes('wird_versions')) {
+        versionReadCount += 1
+        return versions as T[]
+      }
       if (source.includes('wird_entries') && source.includes('LIKE')) {
         const month = String(parameters[0]).replace('%', '')
         return entries.filter((entry) => entry.day.startsWith(month)) as T[]
@@ -88,10 +92,13 @@ function createDatabase() {
     runAsync: async (source: string, ...parameters: SqlValue[]) => {
       if (source.includes('INSERT INTO wird_actions')) actionIds.add(String(parameters[0]))
     },
-    withExclusiveTransactionAsync: async (task) => task(database),
+    withExclusiveTransactionAsync: async (task) => {
+      if (failHealing) throw new Error('database locked during version healing')
+      return task(database)
+    },
   }
 
-  return { database, entries }
+  return { database, entries, getVersionReadCount: () => versionReadCount }
 }
 
 function persisted(): PersistedOnboarding {
@@ -111,6 +118,21 @@ function persisted(): PersistedOnboarding {
 
 describe('HomeScreen repository integration', () => {
   afterEach(() => jest.restoreAllMocks())
+
+  it('continues rendering saved items when version healing fails', async () => {
+    const { database, getVersionReadCount } = createDatabase(true)
+    mockedUseSQLiteContext.mockReturnValue(database as never)
+    jest.spyOn(Date, 'now').mockReturnValue(FIXED_NOW)
+    const onboarding = persisted()
+    onboarding.activeWird.definition = WIRD_LEVELS[1].wird
+
+    render(<HomeScreen persisted={onboarding} />)
+
+    await waitFor(() => expect(getVersionReadCount()).toBeGreaterThan(0))
+    fireEvent.press(await screen.findByRole('button', { name: /أعمال اليوم/ }))
+    expect(await screen.findByText('قراءة صفحتين من القرآن')).toBeTruthy()
+    expect(screen.queryByText('قراءة حزب من القرآن')).toBeNull()
+  })
 
   it('writes a tick and its undo through the repository', async () => {
     const { database, entries } = createDatabase()

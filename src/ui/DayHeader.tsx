@@ -10,7 +10,7 @@ import { useThemeColors } from '../../theme/tokens'
 
 type DayHeaderProps = {
   day: DayId
-  progress: { done: number; required: number }
+  progress?: { done: number; required: number }
   onPrev: () => void
   onNext?: () => void
   onPickDate?: () => void
@@ -70,7 +70,7 @@ export function DayHeader({ day, progress, onPrev, onNext, onPickDate }: DayHead
         <Text className="font-sans-medium text-body text-ink">{dateLabel}</Text>
       )}
       <Text className="font-sans text-meta text-mute">{daySpan(weekday, nextWeekday)}</Text>
-      <ProgressBar done={progress.done} total={progress.required} />
+      {progress ? <ProgressBar done={progress.done} total={progress.required} /> : null}
     </View>
   )
 }

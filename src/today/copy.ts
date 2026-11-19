@@ -6,6 +6,8 @@ export const TODAY_COPY = {
   monthly: 'هذا الشهر',
   until: 'حتى',
   recorded: 'سُجّل',
+  loadFailed: 'تعذّر تحميل اليوم. حاول مرة أخرى.',
+  retry: 'إعادة المحاولة',
 } as const
 
 export function daySpan(weekday: string, nextWeekday: string): string {

@@ -23,6 +23,7 @@ export type TodayDayPlan = {
   currentDay: DayId
   plan: DayPlan
   versionId: string | null
+  status: 'loading' | 'ready' | 'failed'
   refresh: () => void
 }
 
@@ -56,7 +57,11 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
   }, [])
 
   const read = useCallback(async () => {
-    await repository.healVersionFromLevels({ today: currentDay })
+    try {
+      await repository.healVersionFromLevels({ today: currentDay })
+    } catch (cause: unknown) {
+      logger.error(`Native Today version healing failed for day ${currentDay}`, cause)
+    }
     const [versions, entries, monthEntries] = await Promise.all([
       repository.listVersions(),
       repository.getDayEntries(day),
@@ -64,7 +69,7 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
     ])
     return { versions, entries, monthEntries }
   }, [currentDay, day, repository])
-  const { data, refresh } = useLiveRepositoryQuery(read)
+  const { data, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
   const date = dateForDay(day)
   const nextDate = dateForDay(nextDay(day))
   const times = location.coordinates ? computeDayTimes(location.coordinates, date, methodId) : null
@@ -72,6 +77,8 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
     ? computeDayTimes(location.coordinates, nextDate, methodId).fajr
     : null
   const version = data ? (versionInForce(data.versions, day) ?? data.versions[0] ?? null) : null
+  const status: TodayDayPlan['status'] =
+    data && version && !hasError ? 'ready' : isLoading && !hasError ? 'loading' : 'failed'
   const plan = buildDayPlan({
     now,
     day,
@@ -86,6 +93,7 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
     currentDay,
     plan,
     versionId: version?.id ?? null,
+    status,
     refresh,
   }
 }
