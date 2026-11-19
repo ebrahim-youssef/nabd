@@ -8,6 +8,7 @@ const PERMISSIONS = [
 ]
 
 const PRAYER_ALARM_RECEIVER = 'expo.modules.nabddevice.PrayerAlarmReceiver'
+const PRAYER_ACTION_RECEIVER = 'expo.modules.nabddevice.PrayerActionReceiver'
 const SYSTEM_TIME_RECEIVER = 'expo.modules.nabddevice.SystemTimeReceiver'
 const SYSTEM_TIME_ACTIONS = [
   'android.intent.action.BOOT_COMPLETED',
@@ -44,6 +45,20 @@ function applyManifest(androidManifest) {
     receivers.push({
       $: {
         'android:name': PRAYER_ALARM_RECEIVER,
+        'android:exported': 'false',
+      },
+    })
+  }
+
+  const prayerActionReceiver = receivers.find(
+    (receiver) => receiver.$?.['android:name'] === PRAYER_ACTION_RECEIVER,
+  )
+  if (prayerActionReceiver) {
+    prayerActionReceiver.$['android:exported'] = 'false'
+  } else {
+    receivers.push({
+      $: {
+        'android:name': PRAYER_ACTION_RECEIVER,
         'android:exported': 'false',
       },
     })

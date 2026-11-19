@@ -56,6 +56,13 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
     router.push(`/today/${home.day}`)
   }
 
+  const openPrayerActionReview = async () => {
+    const review = home.prayerActionReview
+    if (!review) return
+    await home.markPrayerActionReviewSeen(review.actionId)
+    router.push(`/today/${review.day}`)
+  }
+
   const renderItem = (item: DayPlanItem, sub?: string, sheet: OpenSheet = null, first = false) => (
     <ChecklistRow
       done={item.done}
@@ -112,6 +119,19 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
           ) : null}
           <View className="gap-3 px-6 pt-4">
             <DailyLines dhikr={home.dailyLines.dhikr.text} intention={home.dailyLines.intention} />
+
+            {home.prayerActionReview ? (
+              <Pressable
+                accessibilityRole="link"
+                className="py-3.5"
+                onPress={() => void openPrayerActionReview()}
+                testID="prayer-action-review"
+              >
+                <Text className="text-start font-sans text-caption text-mute">
+                  {HOME_COPY.prayerActionReview}
+                </Text>
+              </Pressable>
+            ) : null}
 
             {home.status === 'failed' ? (
               <View className="gap-3 py-4">

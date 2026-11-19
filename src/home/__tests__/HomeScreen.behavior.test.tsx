@@ -123,6 +123,29 @@ describe('HomeScreen', () => {
     expect(screen.getByTestId('current-block')).toHaveTextContent('يبدأ', { exact: false })
   })
 
+  it('shows the needs-review link for the latest stale prayer action', () => {
+    showPlan(makePlan(NOW))
+    mockedUseHomeDayPlan.mockImplementation(() => ({
+      ...homeDayPlan(makePlan(NOW)),
+      prayerActionReview: { actionId: 'stale-action', day: '2026-06-09', at: NOW },
+    }))
+
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(screen.getByTestId('prayer-action-review')).toHaveTextContent(
+      'تسجيل من الإشعار يحتاج مراجعة',
+    )
+    expect(screen.getByTestId('prayer-action-review').props.accessibilityRole).toBe('link')
+  })
+
+  it('hides the needs-review link when no stale prayer action is pending', () => {
+    showPlan(makePlan(NOW))
+
+    render(<HomeScreen persisted={persisted()} />)
+
+    expect(screen.queryByTestId('prayer-action-review')).toBeNull()
+  })
+
   it('sets a ticked row to done and offers undo that records false', async () => {
     showPlan(makePlan(NOW))
     render(<HomeScreen persisted={persisted()} />)
@@ -227,6 +250,8 @@ describe('HomeScreen', () => {
         intention: { deed: 'الصلاة', text: 'أحافظ عليها' },
         dhikr: { text: 'الحمد لله' },
       },
+      prayerActionReview: null,
+      markPrayerActionReviewSeen: jest.fn(async () => undefined),
       status: 'ready',
     }))
     const view = render(<HomeScreen persisted={persisted()} />)
@@ -319,8 +344,31 @@ function showPlan(
     coordinates,
     runLocationAction,
     dailyLines: { intention: { deed: 'الصلاة', text: 'أحافظ عليها' }, dhikr: { text: 'الحمد لله' } },
+    prayerActionReview: null,
+    markPrayerActionReviewSeen: jest.fn(async () => undefined),
     status,
   })
+}
+
+function homeDayPlan(plan: DayPlan) {
+  return {
+    day: DAY,
+    plan,
+    versionId: 'version-1',
+    refresh,
+    now: NOW,
+    times: TIMES,
+    nextFajr: NEXT_FAJR,
+    coordinates: { latitude: 1, longitude: 2 },
+    runLocationAction,
+    dailyLines: {
+      intention: { deed: 'الصلاة', text: 'أحافظ عليها' },
+      dhikr: { text: 'الحمد لله' },
+    },
+    prayerActionReview: null,
+    markPrayerActionReviewSeen: jest.fn(async () => undefined),
+    status: 'ready' as const,
+  }
 }
 
 function persisted(): PersistedOnboarding {

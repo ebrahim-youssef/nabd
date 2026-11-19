@@ -378,6 +378,93 @@ describe('native wird version healing', () => {
 })
 
 describe('native wird set-state writes', () => {
+  it('keeps action-backed entries current after the device clock moves backwards', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const input = {
+        day: TODAY,
+        versionId: VERSION_ID,
+        itemId,
+        done: true,
+        at: CREATED_AT + 100,
+      }
+
+      await expect(repository.setItemState(input)).resolves.toMatchObject({
+        ok: true,
+        value: { outcome: 'applied', entry: { at: CREATED_AT + 100 } },
+      })
+      await expect(
+        repository.setItemState({
+          ...input,
+          actionId: 'clock-rollback',
+          done: false,
+          at: CREATED_AT,
+        }),
+      ).resolves.toMatchObject({
+        ok: true,
+        value: { outcome: 'applied', entry: { at: CREATED_AT + 101 } },
+      })
+      await expect(
+        repository.setItemState({ ...input, actionId: 'clock-forward', at: CREATED_AT + 150 }),
+      ).resolves.toMatchObject({
+        ok: true,
+        value: { outcome: 'applied', entry: { at: CREATED_AT + 150 } },
+      })
+      await expect(
+        repository.setItemState({ ...input, actionId: 'clock-rollback', at: CREATED_AT + 200 }),
+      ).resolves.toMatchObject({ ok: true, value: { outcome: 'duplicate', entry: null } })
+
+      expect(await repository.getDayEntries(TODAY)).toEqual([
+        expect.objectContaining({ at: CREATED_AT + 100, done: true }),
+        expect.objectContaining({ at: CREATED_AT + 101, done: false }),
+        expect.objectContaining({ at: CREATED_AT + 150, done: true }),
+      ])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('returns the newest stale action by insertion order despite its older timestamp', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+
+      await repository.setItemState({
+        actionId: 'stale-old',
+        day: TODAY,
+        versionId: 'old-version',
+        itemId,
+        done: true,
+        at: CREATED_AT + 1,
+      })
+      await repository.setItemState({
+        actionId: 'stale-new',
+        day: TOMORROW,
+        versionId: 'old-version',
+        itemId,
+        done: true,
+        at: CREATED_AT,
+      })
+
+      await expect(repository.readLatestStaleAction()).resolves.toEqual({
+        actionId: 'stale-new',
+        day: TOMORROW,
+        at: CREATED_AT,
+      })
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('appends only state changes and deduplicates action ids across reopen', async () => {
     const { directory, connection } = fresh()
     let connectionClosed = false

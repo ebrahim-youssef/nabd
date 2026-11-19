@@ -13,6 +13,7 @@ export const PREFERENCE_KEYS = {
   notificationPrefs: 'nabd:notification-prefs',
   silentMode: 'nabd:notification-silent-mode',
   countdownEnabled: 'nabd:notification-countdown-enabled',
+  prayerActionReviewSeenId: 'nabd:prayer-action-review-seen-id',
   theme: 'nabd:theme',
 } as const
 

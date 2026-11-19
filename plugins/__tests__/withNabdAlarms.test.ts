@@ -45,12 +45,14 @@ describe('withNabdAlarms', () => {
     const receivers = manifest.manifest.application[0].receiver ?? []
     expect(receivers.map((receiver) => receiver.$['android:name'])).toEqual([
       'expo.modules.nabddevice.PrayerAlarmReceiver',
+      'expo.modules.nabddevice.PrayerActionReceiver',
       'expo.modules.nabddevice.SystemTimeReceiver',
     ])
     expect(receivers[0].$['android:exported']).toBe('false')
-    expect(receivers[1].$['android:exported']).toBe('true')
+    expect(receivers[1].$['android:exported']).toBe('false')
+    expect(receivers[2].$['android:exported']).toBe('true')
     expect(
-      receivers[1]['intent-filter']?.[0].action.map((action) => action.$['android:name']),
+      receivers[2]['intent-filter']?.[0].action.map((action) => action.$['android:name']),
     ).toEqual([
       'android.intent.action.BOOT_COMPLETED',
       'android.intent.action.TIME_SET',
@@ -69,6 +71,6 @@ describe('withNabdAlarms', () => {
     const entries = manifest.manifest['uses-permission']
     expect(entries).toHaveLength(4)
     expect(entries[1].$['android:maxSdkVersion']).toBe('32')
-    expect(manifest.manifest.application[0].receiver).toHaveLength(2)
+    expect(manifest.manifest.application[0].receiver).toHaveLength(3)
   })
 })

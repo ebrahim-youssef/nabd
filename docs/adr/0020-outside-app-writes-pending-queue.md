@@ -5,8 +5,8 @@
 
 ## Context
 
-In 1.1.0 two places outside the app record wird items: the "صلّيت" action on an adhan
-notification and the checkboxes on the home-screen widget (NBD-115, issue #284). Both run in
+In 1.1.0 two places outside the app record wird items: the "صلّيت" action on adhan and iqamah
+notifications and the checkboxes on the home-screen widget (NBD-115, issue #284). Both run in
 Kotlin, often while the JS runtime is not alive. The wird data lives in SQLite owned by the JS app,
 with its own schema and migrations. A second writer on that database would have to track every
 migration, and a tap that is lost or applied twice breaks the record.
@@ -21,6 +21,8 @@ Each action carries an action id, the item, the wird day and the wird version.
   runtime is alive. Each action goes through the same set-state write the app uses for its own
   ticks, and is removed from the queue only after its transaction commits. Drains run one at a
   time.
+- The adhan and matching iqamah notification for a prayer share one action id, so tapping either
+  notification records the action at most once.
 - Dedupe lives in a new table `wird_actions` (action id, item, day, version, outcome, time). A known
   action id is ignored. `wird_entries` keeps its six columns. Backup exports and imports the new
   table.
@@ -43,3 +45,11 @@ at once. A force-stopped app on Android 15 gets no actions and a disabled widget
 opened; that is documented, not worked around. Invariants: one action id applies at most once
 (primary key inside the transaction); a write lands only on its own occurrence (day and version
 check in the same transaction); the queue never loses an action (removed only after commit).
+
+Accepted limit (2026-11-19): an action's write is stamped one past the newest entry for its day
+and item when the device clock moved back after the tap, so a queued tap is never hidden by older
+state. The cost is that a tap drained after a later in-app undo of the same item marks it done
+again. The drain runs on the native signal right after the tap, so that window is very short, and
+fixing both cases needs a monotonic clock that survives reboots, which the app does not have. A full
+queue (100 actions) refuses the new tap and leaves the notification in place, so nothing queued is
+ever dropped.

@@ -16,6 +16,9 @@ import { setPrayerAlarmSyncOutcome, subscribePrayerReschedule } from '../prayerA
 import { usePrayerAlarms } from '../usePrayerAlarms'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
+jest.mock('../../wird/db', () => ({
+  createWirdRepository: jest.fn(() => ({ listVersions: jest.fn().mockResolvedValue([]) })),
+}))
 jest.mock('../notifications', () => {
   class ExactAlarmDeniedError extends Error {
     constructor() {
@@ -185,6 +188,7 @@ describe('usePrayerAlarms', () => {
       methodId: 'egyptian',
       notificationPrefs: { ...DEFAULT_NOTIFICATION_PREFS, enabled: true },
       now: NOW,
+      versions: [],
     })
     expect(mockedSchedule).toHaveBeenCalledWith([alarm(101)], false, NOW)
     expect(mockedConfigure).toHaveBeenCalledTimes(1)

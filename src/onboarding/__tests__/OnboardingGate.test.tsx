@@ -435,6 +435,7 @@ describe('OnboardingGate', () => {
     expect(screen.getByText('نية اليوم')).toBeTruthy()
     expect(persisted.database.runAsync).toHaveBeenCalledTimes(2)
     expect(persisted.state()?.effective_from).toBe('2026-08-10')
+    expect(mockedRequestPrayerReschedule).toHaveBeenCalledTimes(1)
 
     firstMount.unmount()
     await renderGate(persisted.database)

@@ -10,6 +10,7 @@ import { I18nManager } from 'react-native'
 import { DATABASE_NAME, migrateDatabase } from '../src/db/database'
 import { CountdownNotificationBootstrap } from '../src/device/useCountdownNotification'
 import { PrayerAlarmsBootstrap } from '../src/device/usePrayerAlarms'
+import { PrayerActionDrainBootstrap } from '../src/device/PrayerActionDrainBootstrap'
 import { logger } from '../src/observability/logger'
 import { DatabaseError, DatabaseLoading } from '../src/shell/DatabaseStatus'
 import { WirdTodayProvider } from '../src/day-plan/WirdTodayProvider'
@@ -67,6 +68,7 @@ function RootLayout() {
       >
         <WirdTodayProvider>
           <PrayerAlarmsBootstrap />
+          <PrayerActionDrainBootstrap />
           <CountdownNotificationBootstrap />
           <Stack screenOptions={{ headerShown: false }} />
         </WirdTodayProvider>

@@ -10,6 +10,12 @@ type LiveRepositoryQueryState<T> = {
   refresh: () => void
 }
 
+const liveRepositoryRefreshers = new Set<() => void>()
+
+export function refreshLiveRepositoryQueries(): void {
+  for (const refresh of [...liveRepositoryRefreshers]) refresh()
+}
+
 export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositoryQueryState<T> {
   const [data, setData] = useState<T>()
   const [isLoading, setIsLoading] = useState(true)
@@ -24,6 +30,13 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
     setHasError(false)
     setRefreshToken((current) => current + 1)
   }, [])
+
+  useEffect(() => {
+    liveRepositoryRefreshers.add(refresh)
+    return () => {
+      liveRepositoryRefreshers.delete(refresh)
+    }
+  }, [refresh])
 
   // Expo tabs stay mounted while the user moves between them. Re-read on a
   // subsequent focus so a mounted tab reflects writes made by another tab.

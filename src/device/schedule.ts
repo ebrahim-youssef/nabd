@@ -1,6 +1,8 @@
 import type { AlarmPayload, CalculationMethodId } from '../prayer-times/logic'
 import type { NotificationPrefs } from './logic'
 import type { Coords } from './types'
+import type { WirdVersion } from '../wird/types'
+import { toDayId } from '../lib/day'
 import {
   ADHKAR_REMINDER_MINUTES,
   BEFORE_ADHAN_MINUTES,
@@ -22,11 +24,13 @@ export function buildPrayerSchedule({
   methodId,
   notificationPrefs,
   now,
+  versions = [],
 }: {
   coords: Coords
   methodId: CalculationMethodId
   notificationPrefs: NotificationPrefs
   now: number
+  versions?: WirdVersion[]
 }): AlarmPayload[] {
   const alarms: AlarmPayload[] = []
   const startDate = new Date(now)
@@ -42,7 +46,9 @@ export function buildPrayerSchedule({
       ADHKAR_REMINDER_MINUTES,
       now,
     )
-    alarms.push(...buildAlarmPayloads(moments, MOMENT_LABELS, NOTIFICATION_COPY))
+    alarms.push(
+      ...buildAlarmPayloads(moments, MOMENT_LABELS, NOTIFICATION_COPY, versions, toDayId(date)),
+    )
   }
 
   return alarms

@@ -248,6 +248,7 @@ export function OnboardingGate({ now }: { now: () => Date }) {
         versionId: `${LEVEL_VERSION_PREFIX}${selectedLevelId}`,
       })
       setOnboardingComplete(true)
+      requestPrayerReschedule()
       setGate({ status: 'ready', persisted })
     } catch (cause: unknown) {
       logger.error('Native onboarding completion failed', cause)

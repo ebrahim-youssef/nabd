@@ -202,6 +202,7 @@ describe('SettingsRoute', () => {
       getMonthEntries: jest.fn(),
       getEntriesInRange: jest.fn(),
       getAllEntries: jest.fn(),
+      readLatestStaleAction: jest.fn(async () => null),
       addVersion: jest.fn(),
       setItemState: jest.fn(),
       healVersionFromLevels: jest.fn(),
@@ -259,7 +260,7 @@ describe('SettingsRoute', () => {
       )
       expect(mockSetColorScheme).toHaveBeenCalledWith('system')
       expect(mockSetColorScheme).toHaveBeenCalledWith('dark')
-      expect(requestPrayerReschedule).toHaveBeenCalledTimes(1)
+      expect(requestPrayerReschedule).toHaveBeenCalledTimes(2)
       expect(readPreference).not.toHaveBeenCalledWith('nabd:mode')
     })
 
@@ -281,6 +282,26 @@ describe('SettingsRoute', () => {
         { operation: 'change-calculation-method' },
       ),
     )
+    expect(requestPrayerReschedule).not.toHaveBeenCalled()
+  })
+
+  it('requests an alarm reschedule after a successful level change', async () => {
+    render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('level-level-1')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('level-level-2'))
+
+    await waitFor(() => expect(requestPrayerReschedule).toHaveBeenCalledTimes(1))
+  })
+
+  it('does not request an alarm reschedule after a failed level change', async () => {
+    setWirdLevel.mockResolvedValueOnce({ ok: false, error: 'set_failed' })
+    render(<SettingsRoute />)
+
+    await waitFor(() => expect(screen.getByTestId('level-level-1')).toBeTruthy())
+    fireEvent.press(screen.getByTestId('level-level-2'))
+
+    await waitFor(() => expect(setWirdLevel).toHaveBeenCalledTimes(1))
     expect(requestPrayerReschedule).not.toHaveBeenCalled()
   })
 

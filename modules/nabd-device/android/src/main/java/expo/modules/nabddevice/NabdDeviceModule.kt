@@ -15,15 +15,17 @@ import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 private const val TIME_CHANGE_EVENT = "onTimeChange"
+private const val PRAYER_ACTION_QUEUED_EVENT = "onPrayerActionQueued"
 
 class NabdDeviceModule : Module() {
   private val context: Context
     get() = appContext.reactContext ?: throw Exceptions.ReactContextLost()
   private var timeChangeReceiver: BroadcastReceiver? = null
+  private var prayerActionEventListener: ((Context) -> Unit)? = null
 
   override fun definition() = ModuleDefinition {
     Name("NabdDevice")
-    Events(TIME_CHANGE_EVENT)
+    Events(TIME_CHANGE_EVENT, PRAYER_ACTION_QUEUED_EVENT)
 
     Function("getExactAlarmStatus") {
       val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
@@ -54,6 +56,14 @@ class NabdDeviceModule : Module() {
       PrayerAlarmScheduler.cancelAll(context)
     }
 
+    Function("readPendingPrayerActions") {
+      PendingPrayerActionStore.read(context)
+    }
+
+    Function("acknowledgePendingPrayerActions") { actionIds: List<String> ->
+      PendingPrayerActionStore.acknowledge(context, actionIds)
+    }
+
     Function("isIgnoringBatteryOptimizations") {
       val powerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
       powerManager.isIgnoringBatteryOptimizations(context.packageName)
@@ -71,11 +81,13 @@ class NabdDeviceModule : Module() {
     }
 
     OnCreate {
+      registerPrayerActionHook()
       registerTimeChangeReceiver()
     }
 
     OnDestroy {
       unregisterTimeChangeReceiver()
+      unregisterPrayerActionHook()
     }
   }
 
@@ -106,6 +118,18 @@ class NabdDeviceModule : Module() {
     timeChangeReceiver = null
     val reactContext = appContext.reactContext ?: return
     reactContext.unregisterReceiver(receiver)
+  }
+
+  private fun registerPrayerActionHook() {
+    val listener: (Context) -> Unit = { sendEvent(PRAYER_ACTION_QUEUED_EVENT) }
+    prayerActionEventListener = listener
+    PrayerActionHooks.register(listener)
+  }
+
+  private fun unregisterPrayerActionHook() {
+    val listener = prayerActionEventListener ?: return
+    prayerActionEventListener = null
+    PrayerActionHooks.unregister(listener)
   }
 
   private fun startBatteryOptimizationIntent(action: String, data: Uri? = null): Boolean {
