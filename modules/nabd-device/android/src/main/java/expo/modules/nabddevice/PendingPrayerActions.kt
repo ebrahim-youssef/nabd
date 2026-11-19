@@ -42,7 +42,12 @@ internal object PendingPrayerActions {
     val day = json.opt("day") as? String ?: return null
     val versionId = json.opt("versionId") as? String ?: return null
     val at = (json.opt("at") as? Number)?.toString()?.toLongOrNull() ?: return null
-    return PendingPrayerAction(actionId, itemId, day, versionId, at)
+    val done = when (val value = json.opt("done")) {
+      null -> true
+      is Boolean -> value
+      else -> return null
+    }
+    return PendingPrayerAction(actionId, itemId, day, versionId, at, done)
   }
 
   private fun encode(actions: List<PendingPrayerAction>): String {
@@ -54,7 +59,8 @@ internal object PendingPrayerActions {
           .put("itemId", action.itemId)
           .put("day", action.day)
           .put("versionId", action.versionId)
-          .put("at", action.at),
+          .put("at", action.at)
+          .put("done", action.done),
       )
     }
     return encodedActions.toString()

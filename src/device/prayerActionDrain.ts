@@ -88,7 +88,7 @@ async function performDrain(
         itemId: action.itemId,
         day: action.day,
         versionId: action.versionId,
-        done: true,
+        done: action.done,
         at: action.at,
       })
     } catch (cause: unknown) {

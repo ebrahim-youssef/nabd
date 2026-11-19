@@ -10,6 +10,7 @@ const firstEntry: PrayerActionQueueEntry = {
   day: '2026-11-19',
   versionId: 'v1',
   at: 1_800_000_000_000,
+  done: true,
 }
 const secondEntry: PrayerActionQueueEntry = {
   ...firstEntry,
@@ -71,6 +72,15 @@ describe('drainPrayerActions', () => {
     )
     expect(state.refreshViews).toHaveBeenCalledTimes(1)
     expect(state.queuedEntries()).toEqual([])
+  })
+
+  it('applies the queued absolute desired state when it is false', async () => {
+    const undoneEntry = { ...firstEntry, actionId: 'widget:undo', done: false }
+    const state = createDependencies([undoneEntry])
+
+    await drainPrayerActions(state.deps)
+
+    expect(state.repository.setItemState).toHaveBeenCalledWith(undoneEntry)
   })
 
   it('acknowledges a duplicate action on a later drain', async () => {

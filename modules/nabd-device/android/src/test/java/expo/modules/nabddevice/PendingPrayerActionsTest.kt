@@ -14,6 +14,38 @@ class PendingPrayerActionsTest {
   }
 
   @Test
+  fun encodesTheAbsoluteDesiredStateAndReadsLegacyEntriesAsDone() {
+    val undone = entry("undo", done = false)
+    val encoded = appendEntry("[]", undone)
+
+    assertEquals(listOf(undone), PendingPrayerActions.decode(encoded))
+    assertEquals(
+      listOf(entry("legacy")),
+      PendingPrayerActions.decode("""[{"actionId":"legacy","itemId":"fajr","day":"2026-11-19","versionId":"v1","at":42}]"""),
+    )
+  }
+
+  @Test
+  fun preservesWidgetEntryWhenReadAndUnrelatedActionIsAcknowledged() {
+    val widgetEntry = entry("widget", itemId = "custom-item")
+    val encoded = appendEntry("[]", widgetEntry)
+    val read = PendingPrayerActions.acknowledge(encoded, emptyList())
+    val acknowledged = PendingPrayerActions.acknowledge(read, listOf("another-action"))
+
+    assertEquals(listOf(widgetEntry), PendingPrayerActions.decode(read))
+    assertEquals(listOf(widgetEntry), PendingPrayerActions.decode(acknowledged))
+  }
+
+  @Test
+  fun deduplicatesNonPrayerActionsWithoutDroppingTheExistingEntry() {
+    val existing = entry("widget:same", itemId = "custom-item")
+    val encoded = appendEntry("[]", existing)
+    val appended = PendingPrayerActions.append(encoded, entry("widget:same", itemId = "other-item"))
+
+    assertEquals(listOf(existing), PendingPrayerActions.decode(appended))
+  }
+
+  @Test
   fun keepsTheExistingEntryWhenAnActionIdIsAppendedAgain() {
     val existing = entry("same", at = 10L)
     val encoded = appendEntry("[]", existing)
@@ -72,10 +104,12 @@ class PendingPrayerActionsTest {
   fun skipsMalformedEntriesWhileDecodingValidOnes() {
     val encoded = JSONArray()
       .put(JSONArrayEntry.valid("good"))
-      .put(JSONArrayEntry.malformedItemId())
+      .put(JSONArrayEntry.blankItemId())
       .put(JSONArrayEntry.missingActionId())
       .put(JSONArrayEntry.missingTimestamp())
       .put(JSONArrayEntry.stringTimestamp())
+      .put(JSONArrayEntry.negativeTimestamp())
+      .put(JSONArrayEntry.invalidDesiredState())
       .toString()
 
     assertEquals(listOf(entry("good")), PendingPrayerActions.decode(encoded))
@@ -92,17 +126,26 @@ class PendingPrayerActionsTest {
     actionId: String,
     itemId: String = "fajr",
     at: Long = 42L,
-  ) = PendingPrayerAction(actionId, itemId, "2026-11-19", "v1", at)
+    done: Boolean = true,
+  ) = PendingPrayerAction(actionId, itemId, "2026-11-19", "v1", at, done)
 
   private fun appendEntry(json: String?, action: PendingPrayerAction): String =
     requireNotNull(PendingPrayerActions.append(json, action))
 
   private object JSONArrayEntry {
     fun valid(actionId: String) = json(actionId, "fajr", "2026-11-19", "v1", 42L)
-    fun malformedItemId() = json("bad-item", "sunrise", "2026-11-19", "v1", 42L)
+    fun blankItemId() = json("bad-item", " ", "2026-11-19", "v1", 42L)
     fun missingActionId() = json(null, "fajr", "2026-11-19", "v1", 42L)
     fun missingTimestamp() = json("bad-time", "fajr", "2026-11-19", "v1", null)
     fun stringTimestamp() = json("string-time", "fajr", "2026-11-19", "v1", "42")
+    fun negativeTimestamp() = json("negative-time", "fajr", "2026-11-19", "v1", -1L)
+    fun invalidDesiredState() = org.json.JSONObject()
+      .put("actionId", "bad-done")
+      .put("itemId", "fajr")
+      .put("day", "2026-11-19")
+      .put("versionId", "v1")
+      .put("at", 42L)
+      .put("done", "true")
 
     private fun json(
       actionId: String?,

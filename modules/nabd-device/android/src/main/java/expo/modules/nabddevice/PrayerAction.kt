@@ -14,6 +14,7 @@ data class PendingPrayerAction(
   val day: String,
   val versionId: String,
   val at: Long,
+  val done: Boolean = true,
 )
 
 internal fun isValidPrayerAction(action: PrayerAction): Boolean =
@@ -24,14 +25,17 @@ internal fun isValidPrayerAction(action: PrayerAction): Boolean =
     action.label.isNotBlank()
 
 internal fun isValidPendingPrayerAction(action: PendingPrayerAction): Boolean =
-  action.itemId in PRAYER_ACTION_ITEM_IDS &&
+  isValidPendingPrayerActionFields(action) && action.at >= 0
+
+private fun isValidPendingPrayerActionFields(action: PendingPrayerAction): Boolean =
+  action.actionId.isNotBlank() &&
+    action.itemId.isNotBlank() &&
     action.day.matches(PRAYER_ACTION_DAY_PATTERN) &&
-    action.versionId.isNotBlank() &&
-    action.actionId.isNotBlank()
+    action.versionId.isNotBlank()
 
 internal const val PRAYER_NOTIFICATION_TAG = "nabd-prayer"
 
-private val PRAYER_ACTION_ITEM_IDS = setOf("fajr", "dhuhr", "asr", "maghrib", "isha")
+internal val PRAYER_ACTION_ITEM_IDS = setOf("fajr", "dhuhr", "asr", "maghrib", "isha")
 private val PRAYER_ACTION_DAY_PATTERN = Regex("\\d{4}-\\d{2}-\\d{2}")
 
 internal data class PrayerActionReceiverPayload(
@@ -45,6 +49,7 @@ internal data class PrayerActionReceiverPayload(
     day = action.day,
     versionId = action.versionId,
     at = at,
+    done = true,
   )
 
   companion object {
