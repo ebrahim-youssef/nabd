@@ -24,6 +24,5 @@ internal object PrayerActionHooks {
     } catch (cause: Exception) {
       Log.w(LOG_TAG, "Could not emit the pending prayer action event", cause)
     }
-    // P6 refreshes the widget snapshot here.
   }
 }

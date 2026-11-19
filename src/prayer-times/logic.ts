@@ -225,20 +225,24 @@ export function buildAlarmPayloads(
   versions: WirdVersion[],
   scheduleDay: DayId,
 ): AlarmPayload[] {
+  const version = versionInForce(versions, scheduleDay)
+  const versionPrayerIds = new Set(
+    version?.definition.items
+      .map((item) => item.id)
+      .filter((itemId) => ACTION_PRAYER_IDS.includes(itemId)) ?? [],
+  )
+
   return moments.map((moment) => {
     const label = labels[moment.prayerId] ?? moment.prayerId
     const { title, body } = copy[moment.kind](label)
     const hasPrayerAction = moment.kind === 'adhan' || moment.kind === 'iqamah'
-    const day = hasPrayerAction ? scheduleDay : null
-    const version = day ? versionInForce(versions, day) : null
-    const hasPrayerItem = version?.definition.items.some((item) => item.id === moment.prayerId)
     const prayerAction =
-      day && ACTION_PRAYER_IDS.includes(moment.prayerId) && version && hasPrayerItem
+      hasPrayerAction && versionPrayerIds.has(moment.prayerId) && version
         ? {
             itemId: moment.prayerId,
-            day,
+            day: scheduleDay,
             versionId: version.id,
-            actionId: `prayer:${day}:${moment.prayerId}:${version.id}`,
+            actionId: `prayer:${scheduleDay}:${moment.prayerId}:${version.id}`,
             label: PRAYER_ACTION_COPY(labels[moment.prayerId] ?? moment.prayerId),
           }
         : undefined

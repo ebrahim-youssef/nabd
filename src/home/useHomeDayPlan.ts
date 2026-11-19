@@ -97,9 +97,11 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
   const { data, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
   const readPrayerActionReview = useCallback(async () => {
     try {
-      const seenIdValue = await preferences.read(PREFERENCE_KEYS.prayerActionReviewSeenId)
-      const seenActionId = parsePrayerActionReviewSeenId(seenIdValue)
-      const latestStaleAction = await repository.readLatestStaleAction()
+      const [seenIdValue, latestStaleAction] = await Promise.all([
+        preferences.read(PREFERENCE_KEYS.prayerActionReviewSeenId),
+        repository.readLatestStaleAction(),
+      ])
+      const seenActionId = seenIdValue?.trim() || null
       return latestStaleAction?.actionId === seenActionId ? null : latestStaleAction
     } catch (cause: unknown) {
       logger.error('Native Home prayer action review read failed', cause)
@@ -167,9 +169,4 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
     prayerActionReview: prayerActionReview ?? null,
     markPrayerActionReviewSeen,
   }
-}
-
-function parsePrayerActionReviewSeenId(value: string | null): string | null {
-  const actionId = value?.trim()
-  return actionId || null
 }
