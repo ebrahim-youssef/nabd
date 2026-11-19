@@ -47,6 +47,24 @@ describe('AdhkarRoute', () => {
     expect(screen.getByTestId('adhkar-flow-morning')).toBeTruthy()
   })
 
+  it('opens the category passed by its route parameter', async () => {
+    await render(<AdhkarRoute initialCategoryId="evening" />)
+
+    expect(screen.getByTestId('adhkar-category-evening').props.accessibilityState.selected).toBe(
+      true,
+    )
+    expect(screen.getByTestId('adhkar-flow-evening')).toBeTruthy()
+  })
+
+  it('falls back to the first category when its route parameter is unknown', async () => {
+    await render(<AdhkarRoute initialCategoryId="unknown" />)
+
+    expect(
+      screen.getByTestId(`adhkar-category-${ADHKAR_LIBRARY[0].id}`).props.accessibilityState
+        .selected,
+    ).toBe(true)
+  })
+
   it('switches between morning and evening categories', async () => {
     await render(<AdhkarRoute />)
 

@@ -1,7 +1,6 @@
 import type { CalculationMethodId } from '../prayer-times/logic'
 import { WIRD_LEVELS } from '../content/levels'
 import { CALCULATION_METHODS, DEFAULT_METHOD_ID } from '../prayer-times/logic'
-import { shellCopy } from '../shell/copy'
 import { SETTINGS_COPY } from './copy'
 import { useRouter } from 'expo-router'
 import { useSQLiteContext } from 'expo-sqlite'
@@ -76,14 +75,14 @@ function OptionButton({
     <Pressable
       accessibilityRole="radio"
       accessibilityState={{ selected, disabled }}
-      className={`rounded-card border p-3 ${selected ? 'border-primary bg-primary/10' : 'border-border bg-surface'} ${disabled ? 'opacity-50' : ''}`}
+      className={`rounded-card border p-3 ${selected ? 'border-accent bg-accent/10' : 'border-line bg-surface'} ${disabled ? 'opacity-50' : ''}`}
       disabled={disabled}
       onPress={onPress}
       testID={testID}
     >
-      <Text className="text-body text-start text-foreground">{label}</Text>
+      <Text className="text-body text-start text-ink">{label}</Text>
       {description ? (
-        <Text className="text-small mt-1 text-start text-muted-foreground">{description}</Text>
+        <Text className="text-meta mt-1 text-start text-ink">{description}</Text>
       ) : null}
     </Pressable>
   )
@@ -101,11 +100,11 @@ function ActionButton({
   return (
     <Pressable
       accessibilityRole="button"
-      className="rounded-button border border-primary bg-primary/10 px-4 py-3"
+      className="rounded-button border border-accent bg-accent/10 px-4 py-3"
       onPress={onPress}
       testID={testID}
     >
-      <Text className="text-body text-center font-body-medium text-primary">{label}</Text>
+      <Text className="text-body text-center font-sans-medium text-accent">{label}</Text>
     </Pressable>
   )
 }
@@ -215,16 +214,16 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
       <View className="gap-6">
         <Text
           accessibilityRole="header"
-          className="font-display text-title text-start text-primary"
+          className="font-display text-sheet-title text-start text-accent"
         >
-          {shellCopy.nav.settings}
+          الإعدادات
         </Text>
         {!hydrated ? (
-          <Text className="text-body text-start text-muted-foreground">جارٍ تحميل الإعدادات…</Text>
+          <Text className="text-body text-start text-ink">جارٍ تحميل الإعدادات…</Text>
         ) : null}
 
         <View className="gap-3" testID="settings-appearance">
-          <Text className="font-display text-label text-start text-muted-foreground">
+          <Text className="font-sans-bold text-chip text-start text-ink">
             {SETTINGS_COPY.appearance.themeTitle}
           </Text>
           <View className="gap-2" accessibilityRole="radiogroup">
@@ -241,7 +240,7 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
         </View>
 
         <View className="gap-3" testID="settings-prayer-method">
-          <Text className="font-display text-label text-start text-muted-foreground">
+          <Text className="font-sans-bold text-chip text-start text-ink">
             {SETTINGS_COPY.prayerMethod.title}
           </Text>
           <View className="gap-2" accessibilityRole="radiogroup">
@@ -260,24 +259,24 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
         <LocationSection />
 
         <View className="gap-3" testID="settings-notifications">
-          <Text className="font-display text-label text-start text-muted-foreground">
+          <Text className="font-sans-bold text-chip text-start text-ink">
             {SETTINGS_COPY.groups.notifications}
           </Text>
           <Text
             accessibilityRole="header"
-            className="font-display text-title text-start text-primary"
+            className="font-display text-sheet-title text-start text-accent"
           >
             {SETTINGS_COPY.notifications.heading}
           </Text>
           <View
-            className="gap-3 rounded-card border border-border bg-surface p-4"
+            className="gap-3 rounded-card border border-line bg-surface p-4"
             testID="notification-settings"
           >
             <View
               className="flex-row items-center justify-between gap-3"
               testID="notification-master-row"
             >
-              <Text className="text-body text-start text-foreground">
+              <Text className="text-body text-start text-ink">
                 {SETTINGS_COPY.notifications.enable}
               </Text>
               <Switch
@@ -293,10 +292,7 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
               />
             </View>
             <View className="gap-2" testID="notification-status">
-              <Text
-                className="text-small text-start text-muted-foreground"
-                testID="notification-status-message"
-              >
+              <Text className="text-meta text-start text-ink" testID="notification-status-message">
                 {notificationStatus.message}
               </Text>
               {notificationAction ? (
@@ -313,7 +309,7 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
             />
             {!notificationSettings.hasCoordinates ? (
               <Text
-                className="text-small text-start text-muted-foreground"
+                className="text-meta text-start text-ink"
                 testID="notification-location-required"
               >
                 {SETTINGS_COPY.notifications.locationRequired}
@@ -322,7 +318,7 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
             {showPrayerAlarmSyncFailure ? (
               <View className="gap-2" testID="notification-alarm-sync-failure">
                 <Text
-                  className="text-small text-start text-muted-foreground"
+                  className="text-meta text-start text-ink"
                   testID="notification-alarm-sync-failure-message"
                 >
                   {deviceCopy.notifications.syncFailed}
@@ -342,10 +338,10 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
                   const pending = notificationSettings.isPending(moment.key)
                   return (
                     <View
-                      className={`flex-row items-center justify-between gap-3 rounded-card border p-3 ${notificationSettings.prefs[moment.key] ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
+                      className={`flex-row items-center justify-between gap-3 rounded-card border p-3 ${notificationSettings.prefs[moment.key] ? 'border-accent bg-accent/10' : 'border-line bg-surface'}`}
                       key={moment.key}
                     >
-                      <Text className="text-small text-start text-foreground">{moment.label}</Text>
+                      <Text className="text-meta text-start text-ink">{moment.label}</Text>
                       <Switch
                         accessibilityLabel={moment.label}
                         accessibilityRole="switch"
@@ -362,14 +358,14 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
                 })}
               </View>
               <View
-                className="flex-row items-start justify-between gap-3 rounded-card border border-border bg-surface p-4"
+                className="flex-row items-start justify-between gap-3 rounded-card border border-line bg-surface p-4"
                 testID="notification-silent-mode"
               >
                 <View className="flex-1 gap-1">
-                  <Text className="text-body text-start text-foreground">
+                  <Text className="text-body text-start text-ink">
                     {NATIVE_SETTINGS_COPY.notifications.silentTitle}
                   </Text>
-                  <Text className="text-small text-start text-muted-foreground">
+                  <Text className="text-meta text-start text-ink">
                     {NATIVE_SETTINGS_COPY.notifications.silentBody}
                   </Text>
                 </View>
@@ -387,7 +383,7 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
               </View>
               {showPrayerAlarmSyncDegraded ? (
                 <Text
-                  className="text-small text-start text-muted-foreground"
+                  className="text-meta text-start text-ink"
                   testID="notification-alarm-sync-degraded-notice"
                 >
                   {deviceCopy.notifications.syncDegradedNotice}
@@ -395,12 +391,10 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
               ) : null}
               {showExactAlarm || showPrayerAlarmSyncDegraded ? (
                 <View
-                  className="gap-2 rounded-card border border-border bg-surface p-4"
+                  className="gap-2 rounded-card border border-line bg-surface p-4"
                   testID="notification-exact-alarm"
                 >
-                  <Text className="text-small text-start text-muted-foreground">
-                    {exactAlarmStatus.message}
-                  </Text>
+                  <Text className="text-meta text-start text-ink">{exactAlarmStatus.message}</Text>
                   {exactAlarmAction ? (
                     <ActionButton
                       label={exactAlarmAction.label}
@@ -417,17 +411,17 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
                 </View>
               ) : null}
               <View className="gap-2" testID="notification-lifecycle-guidance">
-                <Text className="text-small text-start text-muted-foreground">
+                <Text className="text-meta text-start text-ink">
                   {deviceCopy.notifications.recoveryHeading}
                 </Text>
                 <Text
-                  className="text-small text-start text-muted-foreground"
+                  className="text-meta text-start text-ink"
                   testID="notification-reboot-recovery"
                 >
                   {deviceCopy.notifications.rebootRecovery}
                 </Text>
                 <Text
-                  className="text-small text-start text-muted-foreground"
+                  className="text-meta text-start text-ink"
                   testID="notification-time-change-recovery"
                 >
                   {deviceCopy.notifications.timeChangeRecovery}
@@ -442,10 +436,10 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
         <SoundPreviewSection />
 
         <View className="gap-3" testID="settings-level">
-          <Text className="font-display text-label text-start text-muted-foreground">
+          <Text className="font-sans-bold text-chip text-start text-ink">
             {SETTINGS_COPY.level.title}
           </Text>
-          <Text className="text-body text-start text-foreground">{SETTINGS_COPY.level.label}</Text>
+          <Text className="text-body text-start text-ink">{SETTINGS_COPY.level.label}</Text>
           <View className="gap-2" accessibilityRole="radiogroup">
             {WIRD_LEVELS.map((level) => (
               <OptionButton
@@ -459,28 +453,26 @@ function SettingsContent({ onRestored, today }: { onRestored: () => void; today:
               />
             ))}
           </View>
-          <Text className="text-small text-start text-muted-foreground">
-            {SETTINGS_COPY.level.hint}
-          </Text>
+          <Text className="text-meta text-start text-ink">{SETTINGS_COPY.level.hint}</Text>
         </View>
 
         <View className="gap-2" testID="settings-links">
-          <Text className="text-label text-start text-muted-foreground">
+          <Text className="font-sans-bold text-chip text-start text-ink">
             {SETTINGS_COPY.links.title}
           </Text>
           {[
-            ['/prayer-times', shellCopy.nav.prayerTimes, 'settings-link-prayer-times'],
-            ['/libraries', shellCopy.nav.libraries, 'settings-link-libraries'],
-            ['/stats', shellCopy.nav.stats, 'settings-link-stats'],
+            ['/prayer-times', 'مواقيت الصلاة', 'settings-link-prayer-times'],
+            ['/libraries', 'المكتبات', 'settings-link-libraries'],
+            ['/stats', 'الإحصائيات', 'settings-link-stats'],
           ].map(([href, label, testID]) => (
             <Pressable
               accessibilityRole="button"
-              className="rounded-card border border-border bg-surface p-3"
+              className="rounded-card border border-line bg-surface p-3"
               key={href}
               onPress={() => router.push(href)}
               testID={testID}
             >
-              <Text className="text-body text-start text-primary">{label}</Text>
+              <Text className="text-body text-start text-accent">{label}</Text>
             </Pressable>
           ))}
         </View>

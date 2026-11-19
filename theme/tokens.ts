@@ -1,51 +1,106 @@
-export const themeTokens = {
-  typography: {
-    display: { size: '40px', lineHeight: '1.2' },
-    title: { size: '24px', lineHeight: '1.2' },
-    subtitle: { size: '22px', lineHeight: '1.3' },
-    body: { size: '16px', lineHeight: '1.7' },
-    small: { size: '13px', lineHeight: '1.5' },
-    xsmall: { size: '12px', lineHeight: '1.5' },
-    label: { size: '11px', lineHeight: '1.4' },
-    scripture: { size: '16px', lineHeight: '2' },
+import { useColorScheme } from 'nativewind'
+
+export const LIGHT = {
+  bg: '#F5F0E5',
+  surface: '#FFFFFF',
+  now: '#FBF6EA',
+  line: '#E7DECB',
+  track: '#EDE5D3',
+  ink: '#13302A',
+  mute: '#5B6B64',
+  hero: '#0B3A32',
+  'hero-ink': '#F2E5C6',
+  'hero-mute': '#B9C9C2',
+  gold: '#CFA552',
+  'gold-ink': '#8A6620',
+  progress: '#8A6620',
+  accent: '#114A40',
+  'on-accent': '#FFFFFF',
+  box: '#9A8866',
+  tick: '#13302A',
+  'toast-action': '#CFA552',
+  scrim: 'rgba(11,30,26,0.45)',
+  sun: '#FFE3A3',
+  moon: '#F4E2B4',
+  'path-rest': 'rgba(242,229,198,0.22)',
+  'mark-rest': 'rgba(242,229,198,0.4)',
+} as const
+
+export const DARK = {
+  bg: '#06171A',
+  surface: '#0D2527',
+  now: '#102C2E',
+  line: '#183539',
+  track: '#183539',
+  ink: '#ECF2EE',
+  mute: '#93A8A3',
+  hero: '#030D10',
+  'hero-ink': '#F2E5C6',
+  'hero-mute': '#8DA19C',
+  gold: '#D9B25E',
+  'gold-ink': '#D9B25E',
+  progress: '#D9B25E',
+  accent: '#D9B25E',
+  'on-accent': '#1A1405',
+  box: '#5E7E80',
+  tick: '#06171A',
+  'toast-action': '#8A6620',
+  scrim: 'rgba(0,0,0,0.6)',
+  sun: '#FFE3A3',
+  moon: '#F4E2B4',
+  'path-rest': 'rgba(242,229,198,0.22)',
+  'mark-rest': 'rgba(242,229,198,0.4)',
+} as const
+
+export type ThemeColors = { [Key in keyof typeof LIGHT]: string }
+
+export const RADII = {
+  control: 10,
+  button: 14,
+  tile: 18,
+  card: 20,
+  widget: 26,
+  tabs: 26,
+  sheet: 28,
+  hero: 30,
+  pill: 9999,
+} as const
+
+export const TYPE_SCALE = {
+  'screen-title': { size: '30px', lineHeight: '38px' },
+  'prayer-name': { size: '27px', lineHeight: '31.05px' },
+  'sheet-title': { size: '22px', lineHeight: '30px' },
+  'tile-count': { size: '20px', lineHeight: '26px' },
+  'card-title': { size: '18px', lineHeight: '26px' },
+  countdown: { size: '22px', lineHeight: '27.5px', letterSpacing: '0.5px' },
+  'row-label': { size: '15px', lineHeight: '20.25px' },
+  button: { size: '15px', lineHeight: '20px' },
+  body: { size: '14px', lineHeight: '22.4px' },
+  meta: { size: '12.5px', lineHeight: '17.5px' },
+  caption: { size: '12px', lineHeight: '16.2px' },
+  chip: { size: '11px', lineHeight: '16px' },
+  'daily-line': { size: '13.5px', lineHeight: '21.6px' },
+} as const
+
+export const SHADOWS = {
+  light: {
+    card: '0 10px 26px -18px rgba(11,58,50,0.45)',
+    sheet: '0 -10px 40px rgba(0,0,0,0.25)',
   },
-  spacing: {
-    1: 4,
-    2: 8,
-    3: 12,
-    4: 16,
-    5: 20,
-    6: 24,
-    8: 32,
-    10: 40,
-    12: 48,
-  },
-  radii: {
-    sm: 8.4,
-    md: 11.2,
-    lg: 14,
-    xl: 19.6,
-    '2xl': 25.2,
-    icon: 9999,
-    button: 14,
-    chip: 22,
-    card: 16,
-    ring: 9999,
-  },
-  shadows: {
-    card: 'var(--shadow)',
-    cardSmall: 'var(--shadow-sm)',
-    values: {
-      light: {
-        card: '0 8px 24px rgba(14, 90, 90, 0.1)',
-        cardSmall: '0 2px 8px rgba(14, 90, 90, 0.08)',
-      },
-      dark: {
-        card: '0 10px 30px rgba(0, 0, 0, 0.35)',
-        cardSmall: '0 3px 12px rgba(0, 0, 0, 0.3)',
-      },
-    },
+  dark: {
+    card: '0 0 0 0 rgba(0,0,0,0)',
+    sheet: '0 -10px 40px rgba(0,0,0,0.25)',
   },
 } as const
 
-export type ThemeTokens = typeof themeTokens
+export const ROW_HEIGHT = 46
+export const STAR_SIZE = 28
+export const ICON_SIZE = 24
+export const PATTERN_SIZE = 56
+export const TABBAR_HEIGHT = 86
+export const HERO_HEIGHT = 262
+
+export function useThemeColors(): ThemeColors {
+  const { colorScheme } = useColorScheme()
+  return colorScheme === 'dark' ? DARK : LIGHT
+}

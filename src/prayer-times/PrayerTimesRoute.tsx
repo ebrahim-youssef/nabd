@@ -1,6 +1,6 @@
 import { SETTINGS_COPY } from '../settings/copy'
-import { shellCopy } from '../shell/copy'
 import { CALCULATION_METHODS } from './logic'
+import { COPY } from './copy'
 import { ActivityIndicator, Pressable, View } from 'react-native'
 
 import { PageHeader } from '../shell/PageHeader'
@@ -31,9 +31,9 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
   return (
     <ScreenContainer testID="prayer-times-screen">
       <View className="gap-6">
-        <PageHeader backHref="/" title={shellCopy.nav.prayerTimes} />
+        <PageHeader backHref="/" title={COPY.pageTitle} />
         <View className="gap-3" testID="prayer-methods">
-          <Text className="font-display text-label text-start text-muted-foreground">
+          <Text className="font-sans-bold text-chip text-start text-ink">
             {SETTINGS_COPY.prayerMethod.title}
           </Text>
           <View className="gap-2">
@@ -41,16 +41,14 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
               <Pressable
                 accessibilityRole="radio"
                 accessibilityState={{ selected: method.id === methodId }}
-                className={`rounded-card border px-4 py-3 ${method.id === methodId ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
+                className={`rounded-card border px-4 py-3 ${method.id === methodId ? 'border-accent bg-accent' : 'border-line bg-surface'}`}
                 key={method.id}
                 onPress={() => void changeMethod(method.id)}
                 testID={`prayer-method-${method.id}`}
               >
                 <Text
                   className={
-                    method.id === methodId
-                      ? 'text-body text-on-primary'
-                      : 'text-body text-foreground'
+                    method.id === methodId ? 'text-body text-on-accent' : 'text-body text-ink'
                   }
                 >
                   {method.label}
@@ -60,7 +58,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
           </View>
         </View>
         <View
-          className="gap-3 rounded-card border border-border bg-surface p-4 shadow-card-sm"
+          className="gap-3 rounded-card border border-line bg-surface p-4 shadow-card"
           testID="prayer-times-location-card"
         >
           <View className="flex-row items-center gap-2">
@@ -69,10 +67,7 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
             ) : null}
           </View>
           {showLocationMessage ? (
-            <Text
-              className="text-small text-start text-muted-foreground"
-              testID="prayer-times-location-message"
-            >
+            <Text className="text-meta text-start text-ink" testID="prayer-times-location-message">
               {locationStatus.message}
             </Text>
           ) : null}
@@ -80,12 +75,12 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ disabled: isRefreshing }}
-              className={`rounded-button border border-primary bg-primary/10 px-4 py-3 ${isRefreshing ? 'opacity-50' : ''}`}
+              className={`rounded-button border border-accent bg-accent/10 px-4 py-3 ${isRefreshing ? 'opacity-50' : ''}`}
               disabled={isRefreshing}
               onPress={() => void runAction()}
               testID="prayer-times-location-action"
             >
-              <Text className="text-body text-center font-body-medium text-primary">
+              <Text className="text-body text-center font-sans-medium text-accent">
                 {locationStatus.action.label}
               </Text>
             </Pressable>
@@ -93,19 +88,19 @@ export function PrayerTimesRoute({ now = Date.now, today }: PrayerTimesRouteProp
         </View>
         {times ? (
           <View className="gap-3" testID="prayer-times-table">
-            <Text className="text-body text-start text-primary" testID="prayer-status">
+            <Text className="text-body text-start text-accent" testID="prayer-status">
               {prayerStatus ?? ''}
             </Text>
             <View className="gap-2">
               {points.map((point) => (
                 <View
                   accessibilityState={{ selected: timeline?.point.id === point.id }}
-                  className={`flex-row items-center justify-between rounded-card border px-4 py-3 ${timeline?.point.id === point.id ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
+                  className={`flex-row items-center justify-between rounded-card border px-4 py-3 ${timeline?.point.id === point.id ? 'border-accent bg-accent/10' : 'border-line bg-surface'}`}
                   key={point.id}
                   testID={`prayer-row-${point.id}`}
                 >
-                  <Text className="text-body text-start text-foreground">{point.label}</Text>
-                  <Text className="text-body text-start text-primary">
+                  <Text className="text-body text-start text-ink">{point.label}</Text>
+                  <Text className="text-body text-start text-accent">
                     {formatPrayerTime(point.at)}
                   </Text>
                 </View>

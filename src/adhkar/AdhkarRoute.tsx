@@ -11,8 +11,9 @@ import { AdhkarList } from './AdhkarList'
 import { AdhkarFlow } from './AdhkarFlow'
 import { DailyAdhkarList } from './DailyAdhkarList'
 
-export function AdhkarRoute() {
-  const [selected, setSelected] = useState(ADHKAR_LIBRARY[0]?.id ?? '')
+export function AdhkarRoute({ initialCategoryId }: { initialCategoryId?: string } = {}) {
+  const initialCategory = ADHKAR_LIBRARY.find((entry) => entry.id === initialCategoryId)
+  const [selected, setSelected] = useState(initialCategory?.id ?? ADHKAR_LIBRARY[0]?.id ?? '')
   const category = ADHKAR_LIBRARY.find((entry) => entry.id === selected) ?? ADHKAR_LIBRARY[0]
 
   return (
@@ -24,16 +25,14 @@ export function AdhkarRoute() {
             <Pressable
               accessibilityRole="tab"
               accessibilityState={{ selected: entry.id === selected }}
-              className={`rounded-chip border px-3 py-2 ${entry.id === selected ? 'border-primary bg-primary' : 'border-border bg-surface'}`}
+              className={`rounded-pill border px-3 py-2 ${entry.id === selected ? 'border-accent bg-accent' : 'border-line bg-surface'}`}
               key={entry.id}
               onPress={() => setSelected(entry.id)}
               testID={`adhkar-category-${entry.id}`}
             >
               <Text
                 className={
-                  entry.id === selected
-                    ? 'text-small text-on-primary'
-                    : 'text-small text-foreground'
+                  entry.id === selected ? 'text-meta text-on-accent' : 'text-meta text-ink'
                 }
               >
                 {entry.title}

@@ -55,25 +55,25 @@ export function CompletionCelebration() {
     >
       <View
         accessibilityViewIsModal
-        className="flex-1 items-center justify-center gap-6 bg-primary px-6"
+        className="flex-1 items-center justify-center gap-6 bg-accent px-6"
         testID={CELEBRATION_TEST_ID}
       >
-        <View className="h-28 w-28 items-center justify-center rounded-ring border-4 border-gold">
-          <Text accessibilityElementsHidden className="text-display text-gold">
+        <View className="h-28 w-28 items-center justify-center rounded-pill border-4 border-gold">
+          <Text accessibilityElementsHidden className="text-screen-title text-gold">
             {AWARD_MARK}
           </Text>
         </View>
-        <Text className="font-display text-display text-center text-on-primary">
+        <Text className="font-display text-screen-title text-center text-on-accent">
           {WIRD_COPY.celebrationTitle}
         </Text>
-        <Text className="font-scripture text-scripture text-center text-on-primary">
+        <Text className="font-text text-daily-line text-center text-on-accent">
           {WIRD_COPY.celebrationHadith}
         </Text>
         <View className="flex-row items-center gap-3">
           <Pressable
             accessibilityLabel={WIRD_COPY.celebrationShare}
             accessibilityRole="button"
-            className="rounded-button border border-on-primary px-6 py-3"
+            className="rounded-button border border-on-accent px-6 py-3"
             onPress={() => {
               void Share.share({ message: WIRD_COPY.celebrationShareText }).catch(
                 (cause: unknown) => logger.error('Native celebration share failed', cause),
@@ -81,16 +81,16 @@ export function CompletionCelebration() {
             }}
             testID={SHARE_TEST_ID}
           >
-            <Text className="text-body text-on-primary">{WIRD_COPY.celebrationShare}</Text>
+            <Text className="text-body text-on-accent">{WIRD_COPY.celebrationShare}</Text>
           </Pressable>
           <Pressable
             accessibilityLabel={WIRD_COPY.celebrationDismiss}
             accessibilityRole="button"
-            className="rounded-button bg-on-primary px-6 py-3"
+            className="rounded-button bg-on-accent px-6 py-3"
             onPress={() => setShow(false)}
             testID={DISMISS_TEST_ID}
           >
-            <Text className="text-body text-primary">{WIRD_COPY.celebrationDismiss}</Text>
+            <Text className="text-body text-accent">{WIRD_COPY.celebrationDismiss}</Text>
           </Pressable>
         </View>
       </View>

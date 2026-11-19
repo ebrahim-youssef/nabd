@@ -35,12 +35,10 @@ export function WirdChecklist() {
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set())
 
   if (isLoading && areas.length === 0) {
-    return (
-      <View className="h-40 w-full rounded-card bg-surface-2" testID="wird-checklist-loading" />
-    )
+    return <View className="h-40 w-full rounded-card bg-bg" testID="wird-checklist-loading" />
   }
   if (!versionId || areas.length === 0) {
-    return <Text className="text-body text-muted-foreground">{WIRD_COPY.empty}</Text>
+    return <Text className="text-body text-ink">{WIRD_COPY.empty}</Text>
   }
 
   function toggleArea(areaId: string) {
@@ -55,7 +53,7 @@ export function WirdChecklist() {
   return (
     <View className="gap-4" testID={CHECKLIST_TEST_ID}>
       {hasError && (
-        <Text accessibilityRole="alert" className="text-small text-destructive">
+        <Text accessibilityRole="alert" className="text-meta text-gold-ink">
           {WIRD_COPY.toggleError}
         </Text>
       )}
@@ -65,7 +63,7 @@ export function WirdChecklist() {
           <View className="gap-2" key={area.id}>
             <AreaHeader area={area} isOpen={isOpen} onToggle={() => toggleArea(area.id)} />
             {area.id === PRAYERS_AREA_ID && prayerStatus ? (
-              <Text className="text-body text-start text-primary" testID="prayer-status">
+              <Text className="text-body text-start text-accent" testID="prayer-status">
                 {prayerStatus}
               </Text>
             ) : null}
@@ -123,23 +121,21 @@ function AreaHeader({
       <View className="gap-2 py-1">
         <View className="flex-row items-center justify-between gap-3">
           <View className="min-w-0 flex-1 flex-row items-center gap-2">
-            <Text className="font-display text-title text-primary">{area.label}</Text>
-            <Text className="text-small text-muted-foreground">{isOpen ? '⌄' : '⌃'}</Text>
+            <Text className="font-display text-sheet-title text-accent">{area.label}</Text>
+            <Text className="text-meta text-ink">{isOpen ? '⌄' : '⌃'}</Text>
           </View>
           <Text
-            className={`rounded-chip border px-2 py-1 text-small ${
-              complete
-                ? 'border-gold bg-gold-soft text-gold'
-                : 'border-border bg-surface text-muted-foreground'
+            className={`rounded-pill border px-2 py-1 text-meta ${
+              complete ? 'border-gold bg-now text-gold' : 'border-line bg-surface text-ink'
             }`}
             testID={`${COUNT_TEST_PREFIX}${area.id}`}
           >
             {toArabicIndic(doneCount)}/{toArabicIndic(counted.length)}
           </Text>
         </View>
-        <View className="h-1 overflow-hidden rounded-chip bg-border">
+        <View className="h-1 overflow-hidden rounded-pill bg-line">
           <View
-            className={complete ? 'h-full rounded-chip bg-gold' : 'h-full rounded-chip bg-accent'}
+            className={complete ? 'h-full rounded-pill bg-gold' : 'h-full rounded-pill bg-accent'}
             style={{ width: `${progress}%` }}
           />
         </View>
@@ -170,24 +166,22 @@ function ChecklistRow({
     >
       <View
         className={`flex-row items-center gap-3 rounded-card border p-3 ${
-          item.done ? 'border-primary bg-primary/10' : 'border-border bg-surface'
+          item.done ? 'border-accent bg-accent/10' : 'border-line bg-surface'
         }`}
       >
         <View
-          className={`h-6 w-6 items-center justify-center rounded-icon border-2 ${
-            item.done ? 'border-primary bg-primary' : 'border-faint'
+          className={`h-6 w-6 items-center justify-center rounded-pill border-2 ${
+            item.done ? 'border-accent bg-accent' : 'border-mute'
           }`}
         >
-          {item.done && <Text className="text-body text-on-primary">{CHECKMARK}</Text>}
+          {item.done && <Text className="text-body text-on-accent">{CHECKMARK}</Text>}
         </View>
         <View className="min-w-0 flex-1 items-start gap-0.5">
-          <Text
-            className={`text-body ${item.done ? 'text-muted-foreground line-through' : 'text-foreground'}`}
-          >
+          <Text className={`text-body ${item.done ? 'text-ink line-through' : 'text-ink'}`}>
             {item.label}
           </Text>
           {detail && (
-            <Text className="text-small text-muted-foreground">
+            <Text className="text-meta text-ink">
               {item.minimum}
               {item.minimum && item.monthlyProgress && VALUE_SEPARATOR}
               {item.monthlyProgress && (
@@ -200,20 +194,17 @@ function ChecklistRow({
           )}
         </View>
         {item.targetToday && (
-          <Text className="rounded-chip border border-primary bg-primary/10 px-2 py-1 text-label text-primary">
+          <Text className="rounded-pill border border-accent bg-accent/10 px-2 py-1 font-sans-bold text-chip text-accent">
             {WIRD_COPY.targetToday}
           </Text>
         )}
         {item.optional && (
-          <Text className="rounded-chip bg-gold-soft px-2 py-1 text-label text-gold">
+          <Text className="rounded-pill bg-now px-2 py-1 font-sans-bold text-chip text-gold">
             {WIRD_COPY.voluntary}
           </Text>
         )}
         {prayerTime !== undefined ? (
-          <Text
-            className="shrink-0 text-small text-muted-foreground"
-            testID={`prayer-time-${item.id}`}
-          >
+          <Text className="shrink-0 text-meta text-ink" testID={`prayer-time-${item.id}`}>
             {formatPrayerTime(prayerTime)}
           </Text>
         ) : null}

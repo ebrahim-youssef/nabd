@@ -21,9 +21,7 @@ describe('AdhkarList', () => {
     await render(<AdhkarList category={CATEGORY} />)
 
     expect(screen.getByText('فضل الذكر')).toBeTruthy()
-    expect(screen.getByTestId('adhkar-list-track-sleep-1').props.className).toContain(
-      'bg-surface-2',
-    )
+    expect(screen.getByTestId('adhkar-list-track-sleep-1').props.className).toContain('bg-bg')
     expect(screen.getByTestId('adhkar-list-progress-sleep-1')).toHaveTextContent('٠/٢')
 
     await fireEvent.press(screen.getByTestId('adhkar-list-count-sleep-1'))

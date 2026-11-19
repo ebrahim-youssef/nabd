@@ -6,7 +6,7 @@ import { BOTTOM_NAV_CLEARANCE } from './BottomNav'
 
 export function ScreenContainer({ children, testID }: { children: ReactNode; testID: string }) {
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-bg">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: BOTTOM_NAV_CLEARANCE }}

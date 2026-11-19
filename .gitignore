@@ -29,5 +29,5 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
-# Design system import material (raw handoff; source of truth is the Claude Design project, NBD-3)
-design-import/
+# Licensed design fonts are provided locally and must never be committed.
+assets/fonts/thmanyah/

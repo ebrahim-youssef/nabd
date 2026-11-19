@@ -40,15 +40,13 @@ function LocationSetup({ location }: { location: LocationView }) {
       : (location.status.action?.label ?? ONBOARDING_COPY.locationButton)
 
   return (
-    <View className="gap-3 rounded-card border border-border bg-surface p-4">
-      <Text className="text-body text-start font-body-medium text-foreground">
+    <View className="gap-3 rounded-card border border-line bg-surface p-4">
+      <Text className="text-body text-start font-sans-medium text-ink">
         {ONBOARDING_COPY.locationHeading}
       </Text>
-      <Text className="text-small text-start text-muted-foreground">
-        {ONBOARDING_COPY.locationBody}
-      </Text>
+      <Text className="text-meta text-start text-ink">{ONBOARDING_COPY.locationBody}</Text>
       {ready ? (
-        <Text className="text-small text-start font-body-medium text-primary">
+        <Text className="text-meta text-start font-sans-medium text-accent">
           {ONBOARDING_COPY.locationGranted}
         </Text>
       ) : (
@@ -59,7 +57,7 @@ function LocationSetup({ location }: { location: LocationView }) {
             testID="onboarding-location"
           />
           {showMessage ? (
-            <Text className="text-small text-start text-gold" testID="onboarding-location-message">
+            <Text className="text-meta text-start text-gold" testID="onboarding-location-message">
               {location.status.message}
             </Text>
           ) : null}
@@ -81,15 +79,13 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
   }
 
   return (
-    <View className="gap-3 rounded-card border border-border bg-surface p-4">
-      <Text className="text-body text-start font-body-medium text-foreground">
+    <View className="gap-3 rounded-card border border-line bg-surface p-4">
+      <Text className="text-body text-start font-sans-medium text-ink">
         {ONBOARDING_COPY.notificationsHeading}
       </Text>
-      <Text className="text-small text-start text-muted-foreground">
-        {ONBOARDING_COPY.notificationsBody}
-      </Text>
+      <Text className="text-meta text-start text-ink">{ONBOARDING_COPY.notificationsBody}</Text>
       <View className="flex-row items-center justify-between gap-3">
-        <Text className="text-body flex-1 text-start text-foreground">
+        <Text className="text-body flex-1 text-start text-ink">
           {ONBOARDING_COPY.notificationsToggle}
         </Text>
         <Switch
@@ -107,10 +103,7 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
       </View>
       {showDenied ? (
         <>
-          <Text
-            className="text-small text-start text-gold"
-            testID="onboarding-notifications-denied"
-          >
+          <Text className="text-meta text-start text-gold" testID="onboarding-notifications-denied">
             {NATIVE_ONBOARDING_COPY.notificationsDenied}
           </Text>
           <OnboardingButton
@@ -122,7 +115,7 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
       ) : null}
       {showBlocked ? (
         <>
-          <Text className="text-small text-start text-gold">
+          <Text className="text-meta text-start text-gold">
             {notifications.notificationStatus.message}
           </Text>
           <OnboardingButton
@@ -136,7 +129,7 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
         <View className="gap-2 ps-7" testID="onboarding-notification-moments">
           {NOTIFICATION_MOMENTS.map((moment) => (
             <View className="flex-row items-center justify-between gap-3" key={moment.key}>
-              <Text className="text-small flex-1 text-start text-foreground">{moment.label}</Text>
+              <Text className="text-meta flex-1 text-start text-ink">{moment.label}</Text>
               <Switch
                 accessibilityLabel={moment.label}
                 accessibilityRole="switch"
@@ -161,7 +154,10 @@ export function PermissionsStep({
 }: PermissionsStepProps) {
   return (
     <View testID="onboarding-permissions">
-      <Text accessibilityRole="header" className="font-display text-title text-start text-primary">
+      <Text
+        accessibilityRole="header"
+        className="font-display text-sheet-title text-start text-accent"
+      >
         {ONBOARDING_COPY.permissionsTitle}
       </Text>
       <View className="mt-6 gap-4">

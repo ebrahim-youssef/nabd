@@ -1,28 +1,38 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { themeTokens } from '../../theme/tokens'
 import { cssToReactNativeRuntime } from 'react-native-css-interop/dist/css-to-rn'
 
-import { DARK, LIGHT } from '../../theme/palette'
+import {
+  DARK,
+  HERO_HEIGHT,
+  ICON_SIZE,
+  LIGHT,
+  PATTERN_SIZE,
+  RADII,
+  ROW_HEIGHT,
+  SHADOWS,
+  STAR_SIZE,
+  TABBAR_HEIGHT,
+  TYPE_SCALE,
+} from '../../theme/tokens'
 
 const postcss = require('postcss')
 const tailwindcss = require('tailwindcss')
 const tailwindTheme = require('../../theme/tailwind-theme.cjs') as {
-  fontSize: Record<string, [string, { lineHeight: string }]>
-  spacing: Record<string, number>
+  fontSize: Record<string, [string, { lineHeight: string; letterSpacing?: string }]>
   borderRadius: Record<string, number>
   boxShadow: Record<string, string>
+  elevation: Record<string, number>
 }
 const tailwindConfig = require('../../tailwind.config.cjs') as {
-  [key: string]: unknown
-  theme: {
-    boxShadowColor?: Record<string, unknown>
-    extend: { colors: Record<string, string> }
-  }
+  theme: { boxShadowColor?: Record<string, unknown>; extend: { colors: Record<string, string> } }
 }
-
 const GLOBAL_CSS = readFileSync(join(__dirname, '../../global.css'), 'utf8')
+
+function normalizeWhitespace(value: string): string {
+  return value.replace(/\s/g, '')
+}
 
 function readRootBlock(selector: string): string {
   const start = GLOBAL_CSS.indexOf(`${selector} {`)
@@ -40,149 +50,139 @@ function readVariables(selector: string): Record<string, string> {
   )
 }
 
-function channels(value: string): string {
+function colorParts(value: string): { channels: string; alpha: string | null } {
   const hex = value.match(/^#([\da-f]{6})$/i)
   if (hex) {
-    return [0, 2, 4]
-      .map((offset) => Number.parseInt(hex[1].slice(offset, offset + 2), 16))
-      .join(' ')
+    return {
+      channels: [0, 2, 4]
+        .map((offset) => Number.parseInt(hex[1].slice(offset, offset + 2), 16))
+        .join(' '),
+      alpha: null,
+    }
   }
-  const rgba = value.match(/^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([\d.]+)\s*\)$/)
-  if (rgba) return rgba.slice(1, 4).join(' ')
+  const rgba = value.match(/^rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)$/)
+  if (rgba) return { channels: rgba.slice(1, 4).join(' '), alpha: rgba[4] }
   throw new Error(`Unsupported color value: ${value}`)
 }
 
-function alpha(value: string): number | null {
-  const rgba = value.match(/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)$/)
-  return rgba ? Number(rgba[1]) : null
-}
-
-function sharedColors(theme: 'light' | 'dark') {
-  return theme === 'light' ? LIGHT : DARK
-}
-
-const ALPHA_COLOR_KEYS = ['border', 'input', 'line', 'ring-track', 'sidebar-border'] as const
-
 async function compileTailwindUtilities(rawContent: string): Promise<string> {
   const result = await postcss([
-    tailwindcss({
-      ...tailwindConfig,
-      content: [{ raw: rawContent, extension: 'tsx' }],
-    }),
+    tailwindcss({ ...tailwindConfig, content: [{ raw: rawContent, extension: 'tsx' }] }),
   ]).process('@tailwind utilities;', { from: undefined })
   return result.css
 }
 
-describe('native classic theme consistency', () => {
-  it('defines a literal light root and NativeWind-recognized dark root', () => {
-    const light = readRootBlock(':root')
-    const dark = readRootBlock('.dark:root')
+describe('design token parity', () => {
+  it('keeps every semantic color and alpha in parity across JS, light CSS, dark CSS, and Tailwind', () => {
+    const themes = [
+      { colors: LIGHT, variables: readVariables(':root') },
+      { colors: DARK, variables: readVariables('.dark:root') },
+    ] as const
 
-    expect(light).toContain('--color-background:')
-    expect(dark).toContain('--color-background:')
-    expect(dark).toContain('--shadow:')
-    expect(themeTokens.shadows.values.dark.card).toBe('0 10px 30px rgba(0, 0, 0, 0.35)')
-  })
-
-  it('keeps CSS color channels and palette values in parity with shared classic themes', () => {
-    const lightVariables = readVariables(':root')
-    const darkVariables = readVariables('.dark:root')
-    const lightShared = sharedColors('light')
-    const darkShared = sharedColors('dark')
-
-    expect(Object.keys(lightVariables).sort()).toEqual(Object.keys(darkVariables).sort())
-    for (const [key, value] of Object.entries(lightShared)) {
-      expect(lightVariables[`--color-${key}`]).toBe(channels(value))
-      expect(LIGHT[key as keyof typeof LIGHT]).toBe(
-        value.startsWith('rgba(') ? value.replaceAll(' ', '') : value.toLowerCase(),
-      )
+    expect(Object.keys(LIGHT).sort()).toEqual(Object.keys(DARK).sort())
+    expect(Object.keys(tailwindConfig.theme.extend.colors).sort()).toEqual(
+      Object.keys(LIGHT).sort(),
+    )
+    for (const { colors, variables } of themes) {
+      for (const [key, value] of Object.entries(colors)) {
+        const { channels, alpha } = colorParts(value)
+        expect(variables[`--color-${key}`]).toBe(channels)
+        expect(tailwindConfig.theme.extend.colors[key]).toBe(
+          alpha === null
+            ? `rgb(var(--color-${key}) / <alpha-value>)`
+            : `rgb(var(--color-${key}) / var(--alpha-${key}))`,
+        )
+        if (alpha !== null) expect(variables[`--alpha-${key}`]).toBe(alpha)
+      }
     }
-    for (const [key, value] of Object.entries(darkShared)) {
-      expect(darkVariables[`--color-${key}`]).toBe(channels(value))
-      expect(DARK[key as keyof typeof DARK]).toBe(
-        value.startsWith('rgba(') ? value.replaceAll(' ', '') : value.toLowerCase(),
-      )
-    }
-    for (const key of ALPHA_COLOR_KEYS) {
-      expect(Number(lightVariables[`--alpha-${key}`])).toBe(alpha(lightShared[key]))
-      expect(Number(darkVariables[`--alpha-${key}`])).toBe(alpha(darkShared[key]))
-    }
-    expect(lightVariables['--shadow']).toBe(themeTokens.shadows.values.light.card)
-    expect(lightVariables['--shadow-sm']).toBe(themeTokens.shadows.values.light.cardSmall)
-    expect(darkVariables['--shadow']).toBe(themeTokens.shadows.values.dark.card)
-    expect(darkVariables['--shadow-sm']).toBe(themeTokens.shadows.values.dark.cardSmall)
-  })
-
-  it('keeps classic typography, radii, spacing, shadows, and collision guard hand-written', () => {
-    for (const [name, token] of Object.entries(themeTokens.typography)) {
-      const [size, options] = tailwindTheme.fontSize[name]
-      expect(size).toBe(`${Number.parseFloat(token.size)}px`)
-      expect(options.lineHeight).toBe(
-        `${Number((Number.parseFloat(token.size) * Number(token.lineHeight)).toFixed(3))}px`,
-      )
-    }
-    expect(tailwindTheme.fontSize).toMatchObject({
-      body: ['16px', { lineHeight: '27.2px' }],
-      scripture: ['16px', { lineHeight: '32px' }],
-    })
-    for (const [key, value] of Object.entries(themeTokens.spacing)) {
-      expect(tailwindTheme.spacing[key]).toBe(value)
-    }
-    expect(tailwindTheme.borderRadius).toEqual(themeTokens.radii)
-    expect(tailwindTheme.boxShadow).toMatchObject({
-      card: themeTokens.shadows.card,
-      'card-sm': themeTokens.shadows.cardSmall,
-    })
+    expect(Object.keys(readVariables(':root')).sort()).toEqual(
+      Object.keys(readVariables('.dark:root')).sort(),
+    )
+    expect(
+      Object.keys(readVariables(':root'))
+        .filter((key) => key.startsWith('--alpha-'))
+        .map((key) => key.slice('--alpha-'.length))
+        .sort(),
+    ).toEqual(
+      Object.entries(LIGHT)
+        .filter(([, value]) => value.startsWith('rgba('))
+        .map(([key]) => key)
+        .sort(),
+    )
     expect(tailwindConfig.theme.boxShadowColor).toEqual({})
-    expect(tailwindConfig.theme.extend.colors.border).toBe(
-      'rgb(var(--color-border) / var(--alpha-border))',
-    )
-    expect(tailwindConfig.theme.extend.colors['ring-track']).toBe(
-      'rgb(var(--color-ring-track) / var(--alpha-ring-track))',
-    )
   })
 
-  it('compiles real Tailwind utilities with theme-aware alpha values', async () => {
-    const lightShared = sharedColors('light')
-    const darkShared = sharedColors('dark')
-    const tailwindCss = await compileTailwindUtilities(
-      '<View className="bg-ring-track border-border bg-primary/50" />',
-    )
-    expect(tailwindCss).toContain('var(--alpha-ring-track)')
-    expect(tailwindCss).toContain('var(--alpha-border)')
-    expect(tailwindCss).toContain('rgb(var(--color-primary) / 0.5)')
+  it('keeps every radius and type entry in parity with Tailwind', () => {
+    expect(tailwindTheme.borderRadius).toEqual(RADII)
+    expect(Object.keys(tailwindTheme.fontSize).sort()).toEqual(Object.keys(TYPE_SCALE).sort())
+    for (const [key, token] of Object.entries(TYPE_SCALE)) {
+      const [size, options] = tailwindTheme.fontSize[key]
+      expect(size).toBe(token.size)
+      const letterSpacing = 'letterSpacing' in token ? token.letterSpacing : undefined
+      expect(options).toEqual({
+        lineHeight: token.lineHeight,
+        ...(letterSpacing ? { letterSpacing } : {}),
+      })
+      expect(options.lineHeight).toMatch(/^\d+(?:\.\d+)?px$/)
+    }
+  })
 
+  it('exports the fixed JavaScript size tokens', () => {
+    expect({ ROW_HEIGHT, STAR_SIZE, ICON_SIZE, PATTERN_SIZE, TABBAR_HEIGHT, HERO_HEIGHT }).toEqual({
+      ROW_HEIGHT: 46,
+      STAR_SIZE: 28,
+      ICON_SIZE: 24,
+      PATTERN_SIZE: 56,
+      TABBAR_HEIGHT: 86,
+      HERO_HEIGHT: 262,
+    })
+  })
+
+  it('keeps card and sheet shadows in parity, with no visible dark card shadow', () => {
+    const light = readVariables(':root')
+    const dark = readVariables('.dark:root')
+
+    expect(tailwindTheme.boxShadow).toEqual({
+      card: 'var(--shadow-card)',
+      sheet: 'var(--shadow-sheet)',
+    })
+    expect(tailwindTheme.elevation).toEqual({ card: 2, sheet: 16 })
+    expect(normalizeWhitespace(light['--shadow-card'])).toBe(
+      normalizeWhitespace(SHADOWS.light.card),
+    )
+    expect(normalizeWhitespace(dark['--shadow-card'])).toBe(normalizeWhitespace(SHADOWS.dark.card))
+    expect(normalizeWhitespace(light['--shadow-sheet'])).toBe(
+      normalizeWhitespace(SHADOWS.light.sheet),
+    )
+    expect(normalizeWhitespace(dark['--shadow-sheet'])).toBe(
+      normalizeWhitespace(SHADOWS.dark.sheet),
+    )
+    expect(colorParts(DARK.scrim).alpha).toBe('0.6')
+  })
+
+  it('compiles alpha colors and the transparent dark card shadow through NativeWind', async () => {
+    const tailwindCss = await compileTailwindUtilities(
+      '<View className="bg-scrim bg-path-rest bg-mark-rest border-line shadow-card shadow-sheet" />',
+    )
+    expect(tailwindCss).toContain('var(--alpha-scrim)')
+    expect(tailwindCss).toContain('var(--alpha-path-rest)')
+    expect(tailwindCss).toContain('var(--alpha-mark-rest)')
     const compiled = cssToReactNativeRuntime(
-      `${GLOBAL_CSS}\n${tailwindCss}\n.bg-background { background-color: rgb(var(--color-background) / 1); }\n.shadow-card { box-shadow: var(--shadow); }`,
+      `${GLOBAL_CSS}\n${tailwindCss}\n.shadow-card { box-shadow: var(--shadow-card); }`,
       { darkMode: { type: 'class', value: 'dark' } } as never,
     )
     const rootVariables = compiled.rootVariables as Record<
       string,
       { light?: unknown; dark?: unknown }
     >
-    expect(rootVariables['--color-background']).toEqual({
-      light: [234, 242, 240],
-      dark: [8, 32, 31],
-    })
-    const ringTrackAlpha = rootVariables['--alpha-ring-track'] as {
-      light: number
-      dark: number
-    }
-    expect(ringTrackAlpha.light).toBeCloseTo(alpha(lightShared['ring-track']) ?? 0)
-    expect(ringTrackAlpha.dark).toBeCloseTo(alpha(darkShared['ring-track']) ?? 0)
-    const borderAlpha = rootVariables['--alpha-border'] as {
-      light: number
-      dark: number
-    }
-    expect(borderAlpha.light).toBeCloseTo(alpha(lightShared.border) ?? 0)
-    expect(borderAlpha.dark).toBeCloseTo(alpha(darkShared.border) ?? 0)
-    expect(rootVariables['--shadow']).toEqual({
-      light: [0, 8, 24, '#0e5a5a1a'],
-      dark: [0, 10, 30, '#00000059'],
-    })
+    expect(rootVariables['--alpha-scrim']?.light as number).toBeCloseTo(0.45, 5)
+    expect(rootVariables['--alpha-scrim']?.dark as number).toBeCloseTo(0.6, 5)
+    expect(rootVariables['--alpha-path-rest']?.light as number).toBeCloseTo(0.22, 5)
+    expect(rootVariables['--alpha-path-rest']?.dark as number).toBeCloseTo(0.22, 5)
+    expect(rootVariables['--alpha-mark-rest']?.light as number).toBeCloseTo(0.4, 5)
+    expect(rootVariables['--alpha-mark-rest']?.dark as number).toBeCloseTo(0.4, 5)
+    expect(JSON.stringify(rootVariables['--shadow-card']?.dark)).toMatch(/#(?:[\da-f]{6})00/i)
     expect(compiled.rules?.['shadow-card']).toBeDefined()
-    expect(JSON.stringify(compiled.rules?.['shadow-card'])).toContain('boxShadow')
-    expect(compiled.rules?.['bg-ring-track']).toBeDefined()
-    expect(compiled.rules?.['border-border']).toBeDefined()
+    expect(compiled.rules?.['shadow-sheet']).toBeDefined()
   })
 })

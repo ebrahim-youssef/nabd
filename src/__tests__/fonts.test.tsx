@@ -1,45 +1,46 @@
-import { readdirSync } from 'node:fs'
-import { join } from 'node:path'
 import { render } from '@testing-library/react-native'
 
 import appConfig from '../../app.json'
 import { Text } from '../shell/Text'
 
-const FONTS_DIR = join(__dirname, '../../assets/fonts')
-const TTF_FILES = readdirSync(FONTS_DIR)
-  .filter((file) => file.endsWith('.ttf'))
-  .sort()
+const fontPaths = require('../../theme/fonts.cjs') as string[]
+const tailwindTheme = require('../../theme/tailwind-theme.cjs') as {
+  fontFamily: Record<string, string[]>
+}
 
-describe('native bundled fonts', () => {
-  it('registers every bundled ttf with the expo-font plugin', () => {
+describe('native Thmanyah fonts', () => {
+  it('registers exactly the font paths listed by the shared font manifest', () => {
     const plugin = appConfig.expo.plugins.find(
       (entry): entry is [string, { fonts: string[] }] =>
         Array.isArray(entry) && entry[0] === 'expo-font',
     )
 
-    expect(plugin).toBeDefined()
-    expect(plugin?.[1].fonts.sort()).toEqual(TTF_FILES.map((file) => './assets/fonts/' + file))
+    expect(plugin?.[1].fonts).toEqual(fontPaths)
   })
 
-  it('keeps every configured NativeWind font family backed by a bundled file', () => {
-    const theme = require('../../theme/tailwind-theme.cjs') as {
-      fontFamily: Record<string, string[]>
-    }
+  it('maps every NativeWind family to exactly one listed font file', () => {
+    const configuredNames = new Set(
+      fontPaths.map((path) =>
+        path
+          .split('/')
+          .pop()
+          ?.replace(/\.otf$/, ''),
+      ),
+    )
 
-    const configuredFiles = new Set(TTF_FILES.map((file) => file.slice(0, -4)))
-    for (const family of Object.values(theme.fontFamily)) {
+    for (const family of Object.values(tailwindTheme.fontFamily)) {
       expect(family).toHaveLength(1)
-      expect(configuredFiles.has(family[0])).toBe(true)
+      expect(configuredNames.has(family[0])).toBe(true)
     }
   })
 
-  it('applies the body family to a plain app Text', () => {
+  it('applies sans to a plain app Text', () => {
     const { getByText } = render(<Text>نص</Text>)
 
-    expect(getByText('نص').props.className).toBe('font-body')
+    expect(getByText('نص').props.className).toBe('font-sans')
   })
 
-  it('does not add the body family to nested Text or explicit family classes', () => {
+  it('preserves nested and explicit families', () => {
     const { getByTestId } = render(
       <Text className="font-display" testID="outer">
         <Text testID="nested">١</Text>
@@ -50,13 +51,13 @@ describe('native bundled fonts', () => {
     expect(getByTestId('nested').props.className).toBeUndefined()
   })
 
-  it('does not add the body family when a family utility is explicit', () => {
+  it('preserves explicit text family classes', () => {
     const { getByTestId } = render(
-      <Text className="font-scripture text-scripture" testID="scripture">
+      <Text className="font-text text-daily-line" testID="scripture">
         نص
       </Text>,
     )
 
-    expect(getByTestId('scripture').props.className).toBe('font-scripture text-scripture')
+    expect(getByTestId('scripture').props.className).toBe('font-text text-daily-line')
   })
 })

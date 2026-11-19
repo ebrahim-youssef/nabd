@@ -15,14 +15,6 @@ export const SETTINGS_COPY = {
     themeTitle: 'المظهر',
     light: 'فاتح',
     dark: 'ليلي',
-    classic: {
-      title: 'كلاسيكي',
-      description: 'خطّ رقعة تراثيّ وزوايا هادئة.',
-    },
-    modern: {
-      title: 'عصري',
-      description: 'خطّ كوفيّ هندسيّ وزوايا أوضح.',
-    },
   },
   level: {
     title: 'مستوى الورد',

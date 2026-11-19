@@ -15,16 +15,19 @@ type PowerStepProps = {
 export function PowerStep({ status, onRequest, onFinish }: PowerStepProps) {
   return (
     <View testID="onboarding-power">
-      <Text accessibilityRole="header" className="font-display text-title text-start text-primary">
+      <Text
+        accessibilityRole="header"
+        className="font-display text-sheet-title text-start text-accent"
+      >
         {ONBOARDING_COPY.powerTitle}
       </Text>
-      <View className="mt-6 gap-3 rounded-card border border-border bg-surface p-4">
-        <Text className="text-body text-start font-body-medium text-foreground">
+      <View className="mt-6 gap-3 rounded-card border border-line bg-surface p-4">
+        <Text className="text-body text-start font-sans-medium text-ink">
           {ONBOARDING_COPY.powerBody}
         </Text>
         <View className="gap-1 ps-5">
           {ONBOARDING_COPY.powerSteps.map((step) => (
-            <Text className="text-small text-start text-muted-foreground" key={step}>
+            <Text className="text-meta text-start text-ink" key={step}>
               {step}
             </Text>
           ))}
@@ -36,10 +39,7 @@ export function PowerStep({ status, onRequest, onFinish }: PowerStepProps) {
             testID="onboarding-power-enable"
           />
         ) : status === 'exempt' ? (
-          <Text
-            className="text-body text-start text-foreground"
-            testID="onboarding-power-protected"
-          >
+          <Text className="text-body text-start text-ink" testID="onboarding-power-protected">
             {NATIVE_SETTINGS_COPY.battery.protectionEnabled}
           </Text>
         ) : null}

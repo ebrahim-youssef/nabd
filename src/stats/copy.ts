@@ -1,4 +1,5 @@
 export const STATS_COPY = {
+  pageTitle: 'الإحصائيات',
   streakSingular: 'يوم',
   streakPlural: 'أيام',
   streakSuffix: 'متتالية',

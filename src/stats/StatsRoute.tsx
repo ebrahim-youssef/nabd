@@ -25,22 +25,22 @@ export function StatsRoute() {
   return (
     <ScreenContainer testID="stats-screen">
       <View className="gap-6">
-        <PageHeader backHref="/" title={shellCopy.nav.stats} />
-        {isLoading ? <View className="h-40 w-full rounded-card bg-surface-2" /> : null}
+        <PageHeader backHref="/" title={STATS_COPY.pageTitle} />
+        {isLoading ? <View className="h-40 w-full rounded-card bg-bg" /> : null}
         {!isLoading && error ? (
           <View
-            className="gap-4 rounded-card border border-border bg-surface p-4"
+            className="gap-4 rounded-card border border-line bg-surface p-4"
             testID="stats-error"
           >
-            <Text className="text-body text-start text-primary">{shellCopy.error}</Text>
+            <Text className="text-body text-start text-accent">{shellCopy.error}</Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={shellCopy.retry}
-              className="rounded-button bg-primary px-5 py-4"
+              className="rounded-button bg-accent px-5 py-4"
               onPress={refresh}
               testID="stats-retry"
             >
-              <Text className="text-body text-center font-body-medium text-primary-foreground">
+              <Text className="text-body text-center font-sans-medium text-on-accent">
                 {shellCopy.retry}
               </Text>
             </Pressable>
@@ -49,23 +49,23 @@ export function StatsRoute() {
         {!isLoading && !error ? (
           <>
             <View
-              className="gap-3 rounded-card border border-border bg-surface p-4"
+              className="gap-3 rounded-card border border-line bg-surface p-4"
               testID="stats-streak-card"
             >
-              <Text className="text-body text-muted-foreground">{STATS_COPY.streakSuffix}</Text>
+              <Text className="text-body text-ink">{STATS_COPY.streakSuffix}</Text>
               <Text
-                className="font-display text-display text-primary"
+                className="font-display text-screen-title text-accent"
                 testID="stats-current-streak"
               >
                 {toArabicIndic(current)}
               </Text>
-              <Text className="text-small text-muted-foreground">{STATS_COPY.streakPrompt}</Text>
+              <Text className="text-meta text-ink">{STATS_COPY.streakPrompt}</Text>
             </View>
             <View className="gap-3" testID="stats-week-chart">
-              <Text className="font-display text-title text-primary">
+              <Text className="font-display text-sheet-title text-accent">
                 {STATS_COPY.completionTile}
               </Text>
-              <View className="h-32 flex-row items-end justify-between gap-1 rounded-card border border-border bg-surface p-3">
+              <View className="h-32 flex-row items-end justify-between gap-1 rounded-card border border-line bg-surface p-3">
                 {chartDays.map((day) => {
                   const completion = data.completions.find((entry) => entry.day === day)
                   const percent = completion
@@ -77,14 +77,14 @@ export function StatsRoute() {
                       key={day}
                     >
                       <View
-                        className="w-full rounded-chip bg-primary"
+                        className="w-full rounded-pill bg-accent"
                         style={{
                           height: `${Math.max(percent, completion ? CHART_BAR_MIN_HEIGHT : 0)}%`,
                         }}
                         testID={`stats-bar-${day}`}
                       />
                       <Text
-                        className="min-w-0 max-w-full text-center text-small text-muted-foreground"
+                        className="min-w-0 max-w-full text-center text-meta text-ink"
                         ellipsizeMode="tail"
                         numberOfLines={1}
                       >
@@ -96,29 +96,34 @@ export function StatsRoute() {
               </View>
             </View>
             <View className="gap-3" testID="stats-summary-card">
-              <View className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
-                <Text className="text-body text-foreground">{STATS_COPY.completionTile}</Text>
-                <Text className="font-display text-title text-primary" testID="stats-summary">
+              <View className="flex-row items-center justify-between gap-3 rounded-card border border-line bg-surface p-4">
+                <Text className="text-body text-ink">{STATS_COPY.completionTile}</Text>
+                <Text className="font-display text-sheet-title text-accent" testID="stats-summary">
                   {formatCompletion(data.summary.done, data.summary.total)}
                 </Text>
               </View>
-              <View className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4">
-                <Text className="text-body text-foreground">{STATS_COPY.bestStreakTile}</Text>
-                <Text className="font-display text-title text-primary" testID="stats-best-streak">
+              <View className="flex-row items-center justify-between gap-3 rounded-card border border-line bg-surface p-4">
+                <Text className="text-body text-ink">{STATS_COPY.bestStreakTile}</Text>
+                <Text
+                  className="font-display text-sheet-title text-accent"
+                  testID="stats-best-streak"
+                >
                   {toArabicIndic(best)}
                 </Text>
               </View>
             </View>
             <View className="gap-3" testID="stats-today-areas">
-              <Text className="font-display text-title text-primary">{STATS_COPY.todayDetail}</Text>
+              <Text className="font-display text-sheet-title text-accent">
+                {STATS_COPY.todayDetail}
+              </Text>
               {data.todayAreas.map((area) => (
                 <View
-                  className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4"
+                  className="flex-row items-center justify-between gap-3 rounded-card border border-line bg-surface p-4"
                   key={area.areaId}
                   testID={`stats-area-${area.areaId}`}
                 >
-                  <Text className="text-body text-foreground">{area.label}</Text>
-                  <Text className="text-body text-primary">
+                  <Text className="text-body text-ink">{area.label}</Text>
+                  <Text className="text-body text-accent">
                     {formatCompletion(area.done, area.total)}
                   </Text>
                 </View>
@@ -127,36 +132,36 @@ export function StatsRoute() {
             <ItemStatsSection items={data.itemStats} />
             <Pressable
               accessibilityRole="button"
-              className="gap-1 rounded-card border border-border bg-surface p-4"
+              className="gap-1 rounded-card border border-line bg-surface p-4"
               onPress={() => router.push('/qada')}
               testID="stats-qada-link"
             >
               <View className="flex-row items-center justify-between gap-3">
-                <Text className="font-display text-body text-primary">{QADA_COPY.pageTitle}</Text>
-                <Text className="text-body text-primary">{toArabicIndic(qadaTotal)}</Text>
+                <Text className="font-sans text-body text-accent">{QADA_COPY.pageTitle}</Text>
+                <Text className="text-body text-accent">{toArabicIndic(qadaTotal)}</Text>
               </View>
-              <Text className="text-small text-muted-foreground">{QADA_COPY.statsDescription}</Text>
+              <Text className="text-meta text-ink">{QADA_COPY.statsDescription}</Text>
             </Pressable>
             <View className="gap-3" testID="stats-export">
-              <Text className="text-label text-start text-muted-foreground">
+              <Text className="font-sans-bold text-chip text-start text-ink">
                 {STATS_COPY.exportData}
               </Text>
               <View className="flex-row gap-2">
                 <Pressable
                   accessibilityRole="button"
-                  className="rounded-button bg-surface-2 px-3 py-2"
+                  className="rounded-button bg-bg px-3 py-2"
                   onPress={() => void exportRange(CHART_WINDOW_DAYS, 'week')}
                   testID="stats-export-week"
                 >
-                  <Text className="text-small text-foreground">{STATS_COPY.exportWeek}</Text>
+                  <Text className="text-meta text-ink">{STATS_COPY.exportWeek}</Text>
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  className="rounded-button bg-surface-2 px-3 py-2"
+                  className="rounded-button bg-bg px-3 py-2"
                   onPress={() => void exportRange(STATS_WINDOW_DAYS, 'month')}
                   testID="stats-export-month"
                 >
-                  <Text className="text-small text-foreground">{STATS_COPY.exportMonth}</Text>
+                  <Text className="text-meta text-ink">{STATS_COPY.exportMonth}</Text>
                 </Pressable>
               </View>
             </View>

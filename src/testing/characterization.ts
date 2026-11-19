@@ -13,7 +13,6 @@ import type { CalculationMethodId } from '../prayer-times/logic'
 import type { WirdDefinition, WirdVersion } from '../wird/types'
 
 type Theme = 'light' | 'dark'
-type Mode = 'classic' | 'modern'
 
 const FIRST_DAY = '2026-08-10'
 const SECOND_DAY = '2026-08-11'
@@ -207,7 +206,6 @@ export async function assertRepositoryCharacterization(
 
 export type SharedPreferenceFixture = {
   theme: Theme
-  mode: Mode
   calculationMethod: CalculationMethodId
   coords: Coords
   // No client implements this cache today; the legacy third-party reverse geocode is a separate
@@ -227,7 +225,6 @@ export const preferenceCharacterizationFixture: {
 } = {
   shared: {
     theme: 'dark',
-    mode: 'modern',
     calculationMethod: 'umm_al_qura',
     coords: { latitude: 21.4225, longitude: 39.8262 },
     city: 'مكة المكرمة',
@@ -272,7 +269,6 @@ export async function assertPreferenceCharacterization(
     preferenceCharacterizationFixture.shared.theme,
     'dark theme round-trips',
   )
-  assertEqual(shared.mode, preferenceCharacterizationFixture.shared.mode, 'modern mode round-trips')
   assertEqual(
     shared.calculationMethod,
     preferenceCharacterizationFixture.shared.calculationMethod,

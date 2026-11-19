@@ -11,20 +11,18 @@ export default function NotFoundRoute() {
 
   return (
     <ScreenContainer testID="not-found">
-      <Text accessibilityRole="header" className="font-display text-title text-primary">
+      <Text accessibilityRole="header" className="font-display text-sheet-title text-accent">
         {shellCopy.notFound}
       </Text>
-      <Text className="mt-4 text-body text-start text-muted-foreground">
-        {shellCopy.appNotFoundHint}
-      </Text>
+      <Text className="mt-4 text-body text-start text-ink">{shellCopy.appNotFoundHint}</Text>
       <Pressable
         accessibilityLabel={shellCopy.returnHome}
         accessibilityRole="button"
-        className="mt-6 rounded-button bg-primary px-5 py-4"
+        className="mt-6 rounded-button bg-accent px-5 py-4"
         onPress={() => router.replace('/')}
         testID="not-found-home"
       >
-        <Text className="text-body text-center font-body-medium text-on-primary">
+        <Text className="text-body text-center font-sans-medium text-on-accent">
           {shellCopy.returnHome}
         </Text>
       </Pressable>

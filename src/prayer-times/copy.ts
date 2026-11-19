@@ -19,6 +19,7 @@ export const IQAMAH_OFFSET_MINUTES: Record<string, number> = {
 }
 
 export const COPY = {
+  pageTitle: 'مواقيت الصلاة',
   enableLocation: 'فعّل الموقع لعرض مواقيت الصلاة',
   locationDenied: 'تعذّر الوصول إلى الموقع — لن تظهر مواقيت الصلاة.',
   tomorrowFajr: 'الفجر غدًا',

@@ -47,7 +47,7 @@ are append-only, and the version in force is derived from effective date and cre
     shell/                     native providers, shell components, and tests
   modules/nabd-device/         Android Expo module, including exact-alarm status
   plugins/                     Expo config plugins for native configuration
-  theme/                       palette.ts, tokens.ts, and tailwind-theme.cjs
+    theme/                       tokens.ts, fonts.cjs, and tailwind-theme.cjs
 ```
 
 Expo Router route files may render feature components, but they do not contain SQLite queries or

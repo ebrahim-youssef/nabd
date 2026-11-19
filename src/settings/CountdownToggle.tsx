@@ -38,18 +38,18 @@ export function CountdownToggle({
 
   return (
     <View
-      className={`flex-row items-start justify-between gap-3 rounded-card border p-4 ${enabled ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
+      className={`flex-row items-start justify-between gap-3 rounded-card border p-4 ${enabled ? 'border-accent bg-accent/10' : 'border-line bg-surface'}`}
       testID="notification-countdown-row"
     >
       <View className="flex-1 gap-1">
-        <Text className="text-body text-start text-foreground">
+        <Text className="text-body text-start text-ink">
           {NATIVE_SETTINGS_COPY.notifications.countdownTitle}
         </Text>
-        <Text className="text-small text-start text-muted-foreground">
+        <Text className="text-meta text-start text-ink">
           {NATIVE_SETTINGS_COPY.notifications.countdownBody}
         </Text>
         {enabled && status === 'channel-blocked' ? (
-          <Text className="text-small text-start text-muted-foreground">
+          <Text className="text-meta text-start text-ink">
             {NATIVE_SETTINGS_COPY.notifications.countdownBlocked}
           </Text>
         ) : null}

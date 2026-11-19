@@ -20,14 +20,12 @@ export function OnboardingButton({
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ disabled }}
-      className={`mt-6 rounded-button bg-primary px-5 py-4 ${disabled ? 'opacity-50' : ''}`}
+      className={`mt-6 rounded-button bg-accent px-5 py-4 ${disabled ? 'opacity-50' : ''}`}
       disabled={disabled}
       onPress={onPress}
       testID={testID}
     >
-      <Text className="text-body text-center font-body-medium text-primary-foreground">
-        {label}
-      </Text>
+      <Text className="text-body text-center font-sans-medium text-on-accent">{label}</Text>
     </Pressable>
   )
 }
