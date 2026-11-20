@@ -9,6 +9,7 @@ const MORE_PATHS = [
   '/libraries',
   '/settings',
   '/backup',
+  '/level',
 ] as const
 
 describe('isNavMatch', () => {

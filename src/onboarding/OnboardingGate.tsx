@@ -30,6 +30,8 @@ import { PermissionsStep } from './PermissionsStep'
 import { PowerStep } from './PowerStep'
 import { useWirdToday } from '../day-plan/WirdTodayProvider'
 import { OptionCard } from '../ui/OptionCard'
+import { ArrowRight } from 'lucide-react-native'
+import { ICON_SIZE, useThemeColors } from '../../theme/tokens'
 
 type Screen = 'welcome' | 'questions' | 'level' | 'permissions' | 'power'
 type GateState =
@@ -352,15 +354,17 @@ export function OnboardingGate({ now }: { now: () => Date }) {
 }
 
 function Progress({ step, onBack }: { step: number; onBack: () => void }) {
+  const theme = useThemeColors()
   return (
     <View className="flex-row items-center justify-between" testID="onboarding-dots">
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={SHARED_COPY.back}
+        className="size-9 items-center justify-center rounded-control border border-line bg-surface"
         onPress={onBack}
         testID="onboarding-back"
       >
-        <Text className="text-body text-accent">{SHARED_COPY.back}</Text>
+        <ArrowRight accessible={false} color={theme.ink} size={ICON_SIZE} />
       </Pressable>
       <View className="flex-row gap-2">
         {[0, 1, 2, 3].map((index) => (
@@ -370,7 +374,7 @@ function Progress({ step, onBack }: { step: number; onBack: () => void }) {
           />
         ))}
       </View>
-      <View className="w-8" />
+      <View className="w-9" />
     </View>
   )
 }

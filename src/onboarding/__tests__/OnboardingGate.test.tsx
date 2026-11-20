@@ -17,6 +17,7 @@ import { PowerStep } from '../PowerStep'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
 jest.mock('lucide-react-native', () => ({
+  ArrowRight: () => null,
   ChevronLeft: () => null,
   Download: () => null,
   ShieldCheck: () => null,
@@ -220,6 +221,7 @@ describe('OnboardingGate', () => {
     expect(screen.queryByText(QUESTIONS[1].prompt)).toBeNull()
     fireEvent.press(screen.getByText(QUESTIONS[0].options[0].label))
     expect(screen.getByText(QUESTIONS[1].prompt)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'رجوع' })).toBeTruthy()
     fireEvent.press(screen.getByTestId('onboarding-back'))
     expect(
       screen.getByRole('radio', { name: QUESTIONS[0].options[0].label }).props.accessibilityState

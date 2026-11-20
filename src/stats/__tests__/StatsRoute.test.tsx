@@ -114,6 +114,26 @@ describe('StatsRoute', () => {
     expect(mockPush).toHaveBeenCalledWith('/qada')
   })
 
+  it('shows helpful zero states for streaks, the week, and qada', async () => {
+    const empty = repository()
+    const incomplete = [{ ...entries[0], done: false }]
+    empty.getEntriesInRange = jest.fn(async () => incomplete)
+    empty.getAllEntries = jest.fn(async () => incomplete)
+    mockedUseWirdRepository.mockReturnValue(empty)
+    mockedCreateQadaRepository.mockReturnValue({
+      listQadaEvents: jest.fn(async () => []),
+      addQadaDebt: jest.fn(),
+      payQadaPrayer: jest.fn(),
+    })
+    render(<StatsRoute />)
+    await waitFor(() => expect(screen.getByText('ابدأ سلسلتك اليوم')).toBeTruthy())
+    expect(screen.queryByText(/أفضل سلسلة/)).toBeNull()
+    expect(
+      screen.getByText('لم تُتمّ وردك في الأيام السبعة الماضية بعد، واليوم ٠٪ حتى الآن.'),
+    ).toBeTruthy()
+    expect(screen.getByText('لا فوائت')).toBeTruthy()
+  })
+
   it('keeps item details collapsed and reveals required and voluntary parity metrics', async () => {
     const detailedVersion: WirdVersion = {
       id: 'detail-version',

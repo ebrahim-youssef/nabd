@@ -78,6 +78,7 @@ export function BottomNav({ isVisible = true }: { isVisible?: boolean }) {
         '/libraries',
         '/settings',
         '/backup',
+        '/level',
       ],
       testId: 'nav-more',
     },

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { View } from 'react-native'
 
 import { toArabicIndic } from '../lib/format'
-import { formatStreak } from '../more/copy'
+import { formatQadaCount, formatStreak } from '../more/copy'
 import { QADA_PRAYERS } from '../qada/logic'
 import { shellCopy } from '../shell/copy'
 import { PageHeader } from '../shell/PageHeader'
@@ -74,10 +74,11 @@ export function StatsRoute() {
           <>
             <View className="gap-2 rounded-card border border-line bg-surface p-4">
               <Text className="font-display text-screen-title text-accent">
-                {formatStreak(current) ??
-                  `${toArabicIndic(0)} ${STATS_COPY.streakPlural} ${STATS_COPY.streakSuffix}`}
+                {formatStreak(current) ?? STATS_COPY.streakStart}
               </Text>
-              <Text className="text-meta text-mute">{STATS_COPY.best(toArabicIndic(best))}</Text>
+              {best > 0 ? (
+                <Text className="text-meta text-mute">{STATS_COPY.best(toArabicIndic(best))}</Text>
+              ) : null}
               {todayPercent < 100 ? (
                 <Text className="text-meta text-ink">{STATS_COPY.streakPrompt}</Text>
               ) : null}
@@ -108,7 +109,7 @@ export function StatsRoute() {
               <View className="flex-1">
                 <StatTile
                   label={STATS_COPY.qada}
-                  value={toArabicIndic(qadaTotal)}
+                  value={formatQadaCount(qadaTotal)}
                   caption={STATS_COPY.openLedger}
                   onPress={() => router.push('/qada')}
                 />

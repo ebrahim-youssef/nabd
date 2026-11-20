@@ -135,7 +135,12 @@ export function CompletionCelebration() {
       visible={visibleDay === day}
     >
       <View className="items-center gap-4 py-4">
-        <Star accessible={false} color={theme.gold} size={CELEBRATION_ICON_SIZE} />
+        <Star
+          accessible={false}
+          color={theme.gold}
+          fill={theme.gold}
+          size={CELEBRATION_ICON_SIZE}
+        />
         <Text className="text-center text-body text-ink">{WIRD_COPY.celebrationHadith}</Text>
         {streak ? <Text className="text-center text-meta text-mute">{streak}</Text> : null}
       </View>

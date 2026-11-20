@@ -15,6 +15,7 @@ import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 import { planVersionHealing } from './logic'
+import { queueWrite } from '../db/writeQueue'
 
 // Keep a healed version just above the version it heals so later explicit choices still win.
 const HEALED_VERSION_CREATED_AT_OFFSET = 1
@@ -64,9 +65,11 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
   ): Promise<Result<{ outcome: SetItemStateOutcome; entry: WirdEntry | null }>> {
     try {
       let value: { outcome: SetItemStateOutcome; entry: WirdEntry | null } | undefined
-      await database.withExclusiveTransactionAsync(async (transaction) => {
-        value = await setItemStateInTransaction(transaction, input)
-      })
+      await queueWrite(() =>
+        database.withExclusiveTransactionAsync(async (transaction) => {
+          value = await setItemStateInTransaction(transaction, input)
+        }),
+      )
       if (!value) throw new Error('wird state transaction returned no outcome')
       return { ok: true, value }
     } catch (cause: unknown) {
@@ -76,24 +79,26 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
   }
   async function healVersionFromLevels({ today }: HealVersionInput) {
     let result: HealVersionResult = { created: false, effectiveFrom: null }
-    await database.withExclusiveTransactionAsync(async (transaction) => {
-      const versions = (
-        await transaction.getAllAsync<VersionRow>(
-          'SELECT id, effective_from, definition_json, created_at FROM wird_versions',
-        )
-      ).map(asVersion)
-      const current = versionInForce(versions, nextDay(today))
-      const plan = planVersionHealing(current, WIRD_LEVELS, today)
-      if (!current || !plan) return
+    await queueWrite(() =>
+      database.withExclusiveTransactionAsync(async (transaction) => {
+        const versions = (
+          await transaction.getAllAsync<VersionRow>(
+            'SELECT id, effective_from, definition_json, created_at FROM wird_versions',
+          )
+        ).map(asVersion)
+        const current = versionInForce(versions, nextDay(today))
+        const plan = planVersionHealing(current, WIRD_LEVELS, today)
+        if (!current || !plan) return
 
-      await transaction.runAsync(
-        `INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (${SQLITE_ID}, ?, ?, ?)`,
-        plan.effectiveFrom,
-        JSON.stringify(plan.definition),
-        current.createdAt + HEALED_VERSION_CREATED_AT_OFFSET,
-      )
-      result = { created: true, effectiveFrom: plan.effectiveFrom }
-    })
+        await transaction.runAsync(
+          `INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (${SQLITE_ID}, ?, ?, ?)`,
+          plan.effectiveFrom,
+          JSON.stringify(plan.definition),
+          current.createdAt + HEALED_VERSION_CREATED_AT_OFFSET,
+        )
+        result = { created: true, effectiveFrom: plan.effectiveFrom }
+      }),
+    )
     return result
   }
   return {

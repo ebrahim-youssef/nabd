@@ -117,10 +117,11 @@ function AdhkarHub({ currentId, linkedIds = [] }: { currentId?: string; linkedId
                 {COPY.now}
               </Text>
               <Text className="font-display text-card-title text-ink">{current.title}</Text>
-              <ProgressBar done={done} total={current.items.length} />
-              <Text className="text-meta text-mute">
-                {COPY.progress(done, current.items.length)}
-              </Text>
+              <ProgressBar
+                done={done}
+                total={current.items.length}
+                meta={COPY.progress(done, current.items.length)}
+              />
               <Button
                 label={done === 0 ? COPY.begin : COPY.continue}
                 onPress={() => open(current)}

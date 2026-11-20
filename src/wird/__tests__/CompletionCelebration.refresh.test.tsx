@@ -50,9 +50,13 @@ it('reads the completed plan after the global repository refresh', async () => {
   await waitFor(() => expect(screen.getByText(WIRD_COPY.celebrationTitle)).toBeTruthy(), {
     timeout: 5000,
   })
-  expect(mockPreferences.write).toHaveBeenCalledWith(
-    'nabd:celebrated-day',
-    '2026-11-20',
-    expect.any(Number),
+  await waitFor(
+    () =>
+      expect(mockPreferences.write).toHaveBeenCalledWith(
+        'nabd:celebrated-day',
+        '2026-11-20',
+        expect.any(Number),
+      ),
+    { timeout: 5000 },
   )
-})
+}, 20_000)

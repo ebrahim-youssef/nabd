@@ -19,10 +19,10 @@ export function SwitchRow({
   disabledReason?: string
 }) {
   const theme = useThemeColors()
-  const detail = disabled && disabledReason ? disabledReason : description
   return (
     <Pressable
       accessibilityLabel={label}
+      accessibilityHint={disabled ? disabledReason : undefined}
       accessibilityRole="switch"
       accessibilityState={{ checked: value, disabled }}
       className={`min-h-[54px] flex-row items-center gap-3 px-3.5 py-2 ${disabled ? 'opacity-[0.45]' : ''}`}
@@ -31,7 +31,7 @@ export function SwitchRow({
     >
       <View className="flex-1">
         <Text className="font-sans-medium text-row-label text-ink">{label}</Text>
-        {detail ? <Text className="font-sans text-meta text-mute">{detail}</Text> : null}
+        {description ? <Text className="font-sans text-meta text-mute">{description}</Text> : null}
       </View>
       <Switch
         accessibilityElementsHidden

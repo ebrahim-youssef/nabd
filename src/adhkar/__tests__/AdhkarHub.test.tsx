@@ -53,6 +53,8 @@ describe('AdhkarRoute', () => {
     await waitFor(() => expect(screen.getAllByText(/٢ من/).length).toBeGreaterThan(0), {
       timeout: 5000,
     })
+    expect(screen.getAllByText(/٢ من/)).toHaveLength(1)
+    expect(screen.queryByText(/مطلوبة/)).toBeNull()
     expect(screen.queryByTestId('page-back')).toBeNull()
     fireEvent.press(screen.getByText('أكمل'))
     expect(mockPush).toHaveBeenCalledWith('/adhkar/morning')

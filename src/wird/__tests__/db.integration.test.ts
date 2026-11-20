@@ -126,6 +126,35 @@ function entryRows(connection: DatabaseSync) {
 }
 
 describe('native wird version healing', () => {
+  it('applies concurrent item changes in call order', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const results = await Promise.all(
+        [true, false, true, false, true, false].map((done, index) =>
+          repository.setItemState({
+            day: TODAY,
+            versionId: VERSION_ID,
+            itemId,
+            done,
+            at: CREATED_AT + index,
+            actionId: `rapid-${index}`,
+          }),
+        ),
+      )
+      expect(results.map((result) => result.ok && result.value.outcome)).toEqual(
+        Array(6).fill('applied'),
+      )
+      expect(entryRows(connection).map((row) => row.done)).toEqual([1, 0, 1, 0, 1, 0])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('does nothing when the current definition is unchanged', async () => {
     const { directory, connection } = fresh()
     try {
