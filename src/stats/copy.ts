@@ -17,6 +17,7 @@ export const STATS_COPY = {
   streakPlural: 'أيام',
   streakSuffix: 'متتالية',
   streakPrompt: 'أكمل وِرد اليوم لتُبقي الشعلة مشتعلة',
+  streakStart: 'ابدأ سلسلتك اليوم',
   todayDetail: 'اليوم بالتفصيل',
   itemStats: 'محاسبة العناصر',
   voluntary: 'تطوّع',
@@ -31,6 +32,8 @@ export const STATS_COPY = {
 } as const
 
 export function formatWeekSummary(completedDays: number, todayPercent: number): string {
+  if (completedDays === 0)
+    return `لم تُتمّ وردك في الأيام السبعة الماضية بعد، واليوم ${toArabicIndic(todayPercent)}٪ حتى الآن.`
   const days = completedDays === 1 ? 'يومًا' : completedDays === 2 ? 'يومين' : 'أيام'
   return `أتممت وِردك ${toArabicIndic(completedDays)} ${days} من ٧، واليوم ${toArabicIndic(todayPercent)}٪ حتى الآن.`
 }

@@ -54,6 +54,7 @@ it.each([
 it('shows the current values and version without a back button', () => {
   render(<MoreRoute />)
   expect(screen.getByText(/العصر/)).toBeTruthy()
+  expect(screen.getByText(/العصر/).props.children).toMatch(/^العصر\u00a0/)
   expect(screen.getByText('١٢ يومًا متتاليًا')).toBeTruthy()
   expect(screen.getByText('٢٤٣ فائتة')).toBeTruthy()
   expect(screen.getByText('نبض ١.٢.٣')).toBeTruthy()

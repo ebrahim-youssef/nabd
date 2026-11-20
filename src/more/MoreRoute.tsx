@@ -23,7 +23,7 @@ export function MoreRoute() {
   const { data, isLoading, error } = useStats()
   const level = useWirdLevel()
   const prayerValue = nextPrayer
-    ? `${nextPrayer.label} ${formatPrayerTime(nextPrayer.at)}`
+    ? `${nextPrayer.label}\u00a0${formatPrayerTime(nextPrayer.at)}`
     : undefined
   const qadaTotal = Object.values(data.qada).reduce((total, count) => total + count, 0)
   const levelTitle = WIRD_LEVELS.find((entry) => entry.id === level.currentLevelId)?.title

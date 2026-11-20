@@ -3,6 +3,7 @@ import type { QadaEvent, QadaRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
 import type { QadaPrayerId } from './logic'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
+import { queueWrite } from '../db/writeQueue'
 
 type Row = { id: string; prayer_id: QadaPrayerId; delta: number; at: number }
 const asEvent = (row: Row): QadaEvent => ({
@@ -22,15 +23,17 @@ export function createQadaRepository(database: ProductDatabase): QadaRepository 
     async addQadaDebt(days: number, at: number): Promise<Result<null>> {
       if (days <= 0) return { ok: true, value: null }
       try {
-        await database.withExclusiveTransactionAsync(async (transaction) => {
-          for (const prayer of QADA_PRAYERS)
-            await transaction.runAsync(
-              `INSERT INTO qada_events (id, prayer_id, delta, at) VALUES (${SQLITE_ID}, ?, ?, ?)`,
-              prayer.id,
-              days,
-              at,
-            )
-        })
+        await queueWrite(() =>
+          database.withExclusiveTransactionAsync(async (transaction) => {
+            for (const prayer of QADA_PRAYERS)
+              await transaction.runAsync(
+                `INSERT INTO qada_events (id, prayer_id, delta, at) VALUES (${SQLITE_ID}, ?, ?, ?)`,
+                prayer.id,
+                days,
+                at,
+              )
+          }),
+        )
         return { ok: true, value: null }
       } catch {
         return { ok: false, error: 'add_debt_failed' }
@@ -38,13 +41,15 @@ export function createQadaRepository(database: ProductDatabase): QadaRepository 
     },
     async payQadaPrayer(prayerId: QadaPrayerId, at: number): Promise<Result<null>> {
       try {
-        const result = (await database.runAsync(
-          `INSERT INTO qada_events (id, prayer_id, delta, at)
+        const result = (await queueWrite(() =>
+          database.runAsync(
+            `INSERT INTO qada_events (id, prayer_id, delta, at)
            SELECT ${SQLITE_ID}, ?, -1, ?
            WHERE (SELECT COALESCE(SUM(delta), 0) FROM qada_events WHERE prayer_id = ?) > 0`,
-          prayerId,
-          at,
-          prayerId,
+            prayerId,
+            at,
+            prayerId,
+          ),
         )) as { changes: number | bigint }
         return result.changes ? { ok: true, value: null } : { ok: false, error: 'pay_failed' }
       } catch {
@@ -60,10 +65,12 @@ export async function restoreQadaPrayer(
   at: number,
 ): Promise<Result<null>> {
   try {
-    await database.runAsync(
-      `INSERT INTO qada_events (id, prayer_id, delta, at) VALUES (${SQLITE_ID}, ?, 1, ?)`,
-      prayerId,
-      at,
+    await queueWrite(() =>
+      database.runAsync(
+        `INSERT INTO qada_events (id, prayer_id, delta, at) VALUES (${SQLITE_ID}, ?, 1, ?)`,
+        prayerId,
+        at,
+      ),
     )
     return { ok: true, value: null }
   } catch {

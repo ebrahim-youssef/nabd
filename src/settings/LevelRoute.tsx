@@ -53,7 +53,7 @@ export function LevelRoute() {
   return (
     <ScreenContainer testID="level-screen">
       <View className="gap-6">
-        <PageHeader title={SETTINGS_COPY.level.title} backHref="/settings" />
+        <PageHeader title={SETTINGS_COPY.level.title} backHref="/settings" directBack />
         <Text className="font-sans text-body text-start text-mute">{LEVEL_PAGE_COPY.intro}</Text>
         <View accessibilityRole="radiogroup" className="gap-2">
           {WIRD_LEVELS.map((level) => (

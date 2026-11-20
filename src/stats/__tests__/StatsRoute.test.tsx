@@ -17,7 +17,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({
     back: jest.fn(),
     canGoBack: () => false,
-    replace: jest.fn(),
+    replace: mockReplace,
     push: mockPush,
   }),
   useFocusEffect: jest.fn(),
@@ -33,6 +33,7 @@ jest.mock('../../qada/db', () => ({ createQadaRepository: jest.fn() }))
 jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: jest.fn() }))
 
 const mockPush = jest.fn()
+const mockReplace = jest.fn()
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedUseWirdRepository = useWirdRepository as jest.MockedFunction<typeof useWirdRepository>
@@ -107,11 +108,36 @@ describe('StatsRoute', () => {
     expect(screen.getByText('يوم واحد متتالٍ')).toBeTruthy()
     expect(screen.getByText('أفضل سلسلة: ١')).toBeTruthy()
     expect(screen.getByText('أتممت وِردك ١ يومًا من ٧، واليوم ٥٠٪ حتى الآن.')).toBeTruthy()
+    for (const percentage of screen.getAllByText('٥٠٪')) {
+      expect(percentage).toHaveStyle({ direction: 'ltr' })
+    }
     expect(screen.getByText('الأساس')).toBeTruthy()
+    fireEvent.press(screen.getByTestId('page-back'))
+    expect(mockReplace).toHaveBeenCalledWith('/more')
     fireEvent.press(screen.getByRole('button', { name: /محاسبة العناصر/ }))
     expect(screen.getByText('الأول')).toBeTruthy()
     fireEvent.press(screen.getByRole('button', { name: /قضاء الفوائت/ }))
     expect(mockPush).toHaveBeenCalledWith('/qada')
+  })
+
+  it('shows helpful zero states for streaks, the week, and qada', async () => {
+    const empty = repository()
+    const incomplete = [{ ...entries[0], done: false }]
+    empty.getEntriesInRange = jest.fn(async () => incomplete)
+    empty.getAllEntries = jest.fn(async () => incomplete)
+    mockedUseWirdRepository.mockReturnValue(empty)
+    mockedCreateQadaRepository.mockReturnValue({
+      listQadaEvents: jest.fn(async () => []),
+      addQadaDebt: jest.fn(),
+      payQadaPrayer: jest.fn(),
+    })
+    render(<StatsRoute />)
+    await waitFor(() => expect(screen.getByText('ابدأ سلسلتك اليوم')).toBeTruthy())
+    expect(screen.queryByText(/أفضل سلسلة/)).toBeNull()
+    expect(
+      screen.getByText('لم تُتمّ وردك في الأيام السبعة الماضية بعد، واليوم ٠٪ حتى الآن.'),
+    ).toBeTruthy()
+    expect(screen.getByText('لا فوائت')).toBeTruthy()
   })
 
   it('keeps item details collapsed and reveals required and voluntary parity metrics', async () => {

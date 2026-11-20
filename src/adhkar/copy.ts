@@ -31,8 +31,8 @@ export const COPY = {
   begin: 'ابدأ',
   continue: 'أكمل',
   footer: 'أذكار الصباح والمساء تُعلَّم في وِردك تلقائيًا عند إتمامها.',
-  morningHint: 'من الفجر في وِردك',
-  eveningHint: 'من العصر في وِردك',
+  morningHint: 'من وِردك اليوم',
+  eveningHint: 'من وِردك اليوم',
   progress: (done: number, total: number) =>
     `${toArabicIndic(done)} من ${formatAdhkarCount(total)}`,
   readerFinishedTitle: 'أتممت أذكار هذا القسم',

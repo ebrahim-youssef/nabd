@@ -63,6 +63,14 @@ it('counts card presses and accessibility increment actions', async () => {
   expect(mockFlow.tap).toHaveBeenCalledTimes(2)
 })
 
+it('shows one count and allows the dhikr text to scale', async () => {
+  mockFlow.state = { index: 0, count: 1, finished: false }
+  await render(<AdhkarReader category={CATEGORY} />)
+  expect(screen.getAllByText(/١ من ٢/)).toHaveLength(1)
+  expect(screen.queryByText(/مطلوبة/)).toBeNull()
+  expect(screen.getByText('الذكر الأول').props.allowFontScaling).toBe(true)
+})
+
 it('previews the next two dhikr', async () => {
   await render(<AdhkarReader category={CATEGORY} />)
   expect(screen.getByText('الذكر الثاني')).toBeTruthy()

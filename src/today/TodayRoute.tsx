@@ -13,6 +13,7 @@ import { Text } from '../shell/Text'
 import type { DayId } from '../wird/types'
 import type { DayPlanItem } from '../day-plan/types'
 import { useToggleItem } from '../wird/useToggleItem'
+import { useChecklistCallbacks } from '../wird/useChecklistCallbacks'
 import { TODAY_COPY } from './copy'
 import { useTodayDayPlan } from './useTodayDayPlan'
 import { toArabicIndic } from '../lib/format'
@@ -23,7 +24,10 @@ type ToastItem = { item: DayPlanItem; saved: boolean }
 export function TodayRoute({ day }: { day: DayId }) {
   const today = useTodayDayPlan(day)
   const { plan } = today
-  const { toggle } = useToggleItem(today.versionId, today.refresh)
+  const { toggle, optimisticItems, getOptimisticDone } = useToggleItem(today.versionId, undefined, {
+    day,
+    revision: today.observation,
+  })
   const router = useRouter()
   const [toastItem, setToastItem] = useState<ToastItem | null>(null)
   const canGoNext = compareDayId(day, today.currentDay) < 0
@@ -32,9 +36,12 @@ export function TodayRoute({ day }: { day: DayId }) {
 
   const record = async (item: DayPlanItem, done: boolean) => {
     setToastItem(null)
-    const wasSaved = await toggle(day, item.id, done)
+    const wasSaved = await toggle(day, item.id, done, item.done)
     setToastItem(wasSaved ? (done ? { item, saved: true } : null) : { item, saved: false })
   }
+  const getOnToggle = useChecklistCallbacks((item) => {
+    void record(item, !getOptimisticDone(day, item.id, item.done))
+  })
 
   const undo = async () => {
     if (!toastItem?.saved) return
@@ -46,11 +53,11 @@ export function TodayRoute({ day }: { day: DayId }) {
     items.map((item, index) => (
       <View key={item.id}>
         <ChecklistRow
-          done={item.done}
+          done={optimisticItems?.get(`${day}:${item.id}`)?.done ?? item.done}
           first={index === 0}
           label={item.label}
           muteDone={false}
-          onToggle={() => void record(item, !item.done)}
+          onToggle={getOnToggle(item)}
           optional={item.optional}
           sub={item.minimum}
           testID={`today-row-${item.id}`}
@@ -112,11 +119,11 @@ export function TodayRoute({ day }: { day: DayId }) {
                   {plan.monthly.map(({ item, progress }, index) => (
                     <View key={item.id}>
                       <ChecklistRow
-                        done={item.done}
+                        done={optimisticItems?.get(`${day}:${item.id}`)?.done ?? item.done}
                         first={index === 0}
                         label={item.label}
                         muteDone={false}
-                        onToggle={() => void record(item, !item.done)}
+                        onToggle={getOnToggle(item)}
                         optional={item.optional}
                         sub={`${toArabicIndic(progress.done)} من ${toArabicIndic(progress.target)}`}
                         testID={`today-row-${item.id}`}

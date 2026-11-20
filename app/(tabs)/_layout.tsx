@@ -37,6 +37,7 @@ function TabsContent() {
     <ToastProvider>
       <NativeAppearanceBootstrap />
       <Tabs
+        backBehavior="history"
         screenOptions={{ headerShown: false }}
         tabBar={() => <BottomNav isVisible={isOnboardingComplete} />}
       />

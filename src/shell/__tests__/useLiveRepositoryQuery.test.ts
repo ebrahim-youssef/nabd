@@ -3,6 +3,7 @@ import { useFocusEffect } from 'expo-router'
 
 import { logger } from '../../observability/logger'
 import { refreshLiveRepositoryQueries, useLiveRepositoryQuery } from '../useLiveRepositoryQuery'
+import { queueWrite } from '../../db/writeQueue'
 
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 
@@ -102,6 +103,32 @@ describe('useLiveRepositoryQuery', () => {
 
     await waitFor(() => expect(result.current.data).toBe('second'))
     expect(read).toHaveBeenCalledTimes(2)
+  })
+
+  it('coalesces refreshes until queued writes finish', async () => {
+    const read = jest.fn().mockResolvedValue('value')
+    renderHook(() => useLiveRepositoryQuery(read))
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(1))
+    let release: () => void = () => undefined
+    const first = queueWrite(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        }),
+    )
+    const second = queueWrite(async () => undefined)
+    await act(async () => {
+      refreshLiveRepositoryQueries()
+      refreshLiveRepositoryQueries()
+      refreshLiveRepositoryQueries()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(read).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      release()
+      await Promise.all([first, second])
+    })
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2))
   })
 
   it('keeps stale data when a refresh fails', async () => {

@@ -49,4 +49,12 @@ describe('RouteStub', () => {
     expect(mockReplace).toHaveBeenCalledWith('/fallback')
     expect(mockBack).not.toHaveBeenCalled()
   })
+
+  it('uses the specified parent even when history exists', () => {
+    mockCanGoBack.mockReturnValue(true)
+    render(<PageHeader title="الإحصائيات" backHref="/more" directBack />)
+    fireEvent.press(screen.getByTestId('page-back'))
+    expect(mockReplace).toHaveBeenCalledWith('/more')
+    expect(mockBack).not.toHaveBeenCalled()
+  })
 })

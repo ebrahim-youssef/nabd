@@ -156,8 +156,10 @@ function Reader({ category, progress }: { category: AdhkarCategory; progress: Re
           onPress={increment}
           className="gap-4 rounded-card border border-line bg-surface p-6"
         >
-          <Text className="font-text text-daily-line text-start text-ink">{item.text}</Text>
-          <ProgressBar done={count} total={target} />
+          <Text allowFontScaling className="font-text text-daily-line text-start text-ink">
+            {item.text}
+          </Text>
+          <ProgressBar done={count} total={target} meta={null} />
           <Text className="text-body text-accent">{COPY.readerCount(count, target)}</Text>
         </Pressable>
         <Text className="text-meta text-mute">{COPY.readerTapHint}</Text>

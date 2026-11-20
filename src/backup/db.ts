@@ -1,5 +1,6 @@
 import { logger } from '../observability/logger'
 import type { ProductDatabase } from '../db/productDatabase'
+import { queueWrite } from '../db/writeQueue'
 import { conflictTableFrom, planRestore } from './logic'
 import type {
   AdhkarFlowProgressRow,
@@ -185,9 +186,11 @@ export function createBackupRepository(database: ProductDatabase) {
   return {
     async readSnapshot(): Promise<BackupRows> {
       let snapshot: BackupRows | undefined
-      await database.withExclusiveTransactionAsync(async (transaction) => {
-        snapshot = await readSnapshotRows(transaction)
-      })
+      await queueWrite(() =>
+        database.withExclusiveTransactionAsync(async (transaction) => {
+          snapshot = await readSnapshotRows(transaction)
+        }),
+      )
       if (!snapshot) throw new Error('Backup snapshot transaction returned no rows')
       return snapshot
     },
@@ -195,17 +198,19 @@ export function createBackupRepository(database: ProductDatabase) {
     async restore(backup: BackupEnvelope): Promise<BackupRestoreResult> {
       let restoreCounts: RestoreCounts | undefined
       try {
-        await database.withExclusiveTransactionAsync(async (transaction) => {
-          const deviceRows = await readSnapshotRows(transaction)
-          const planned = planRestore(backup, deviceRows)
-          if (!planned.ok) {
-            const table = conflictTableFrom(planned.error)
-            if (table) throw new RestoreConflictError(table)
-            throw new Error(`Backup restore planning failed: ${planned.error}`)
-          }
-          await insertPlannedRows(transaction, planned.value.inserts)
-          restoreCounts = planned.value.counts
-        })
+        await queueWrite(() =>
+          database.withExclusiveTransactionAsync(async (transaction) => {
+            const deviceRows = await readSnapshotRows(transaction)
+            const planned = planRestore(backup, deviceRows)
+            if (!planned.ok) {
+              const table = conflictTableFrom(planned.error)
+              if (table) throw new RestoreConflictError(table)
+              throw new Error(`Backup restore planning failed: ${planned.error}`)
+            }
+            await insertPlannedRows(transaction, planned.value.inserts)
+            restoreCounts = planned.value.counts
+          }),
+        )
         if (!restoreCounts) throw new Error('Backup restore transaction returned no counts')
         void requestWidgetSnapshotWrite()
         return { ok: true, value: restoreCounts }

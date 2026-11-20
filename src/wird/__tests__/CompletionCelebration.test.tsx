@@ -14,7 +14,8 @@ let mockProgress = { done: 1, required: 2 }
 let mockHasData = true
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => mockDatabase }))
-jest.mock('lucide-react-native', () => ({ Star: () => null }))
+const mockStar = jest.fn((_props: unknown) => null)
+jest.mock('lucide-react-native', () => ({ Star: (props: unknown) => mockStar(props) }))
 jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => mockDay }))
 jest.mock('../../preferences/db', () => ({
   PREFERENCE_KEYS: { celebratedDay: 'nabd:celebrated-day' },
@@ -69,6 +70,7 @@ describe('CompletionCelebration', () => {
     })
     expect(mockWrite).toHaveBeenCalledWith('nabd:celebrated-day', mockDay, expect.any(Number))
     expect(screen.getByText('يومان متتاليان')).toBeTruthy()
+    expect(mockStar).toHaveBeenCalledWith(expect.objectContaining({ color: 'gold', fill: 'gold' }))
     fireEvent.press(screen.getByText(WIRD_COPY.celebrationDismiss))
     rerender(<CompletionCelebration />)
     expect(screen.queryByText(WIRD_COPY.celebrationTitle)).toBeNull()

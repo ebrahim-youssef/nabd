@@ -54,6 +54,7 @@ function ItemStatRow({ item }: { item: ItemStat }) {
         ) : (
           <Text
             className="shrink-0 text-meta font-sans-medium text-accent"
+            style={{ direction: 'ltr' }}
             testID={`item-consistency-${item.itemId}`}
           >
             {percentage}

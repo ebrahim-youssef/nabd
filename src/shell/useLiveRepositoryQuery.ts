@@ -2,22 +2,38 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 
 import { logger } from '../observability/logger'
+import { whenWritesIdle } from '../db/writeQueue'
 
 type LiveRepositoryQueryState<T> = {
   data: T | undefined
+  readSequence: number | undefined
   isLoading: boolean
   hasError: boolean
   refresh: () => void
 }
 
 const liveRepositoryRefreshers = new Set<() => void>()
+let refreshScheduled = false
+let readSequence = 0
+
+export function getLiveRepositoryReadSequence(): number {
+  return readSequence
+}
 
 export function refreshLiveRepositoryQueries(): void {
-  for (const refresh of [...liveRepositoryRefreshers]) refresh()
+  if (refreshScheduled) return
+  refreshScheduled = true
+  setTimeout(() => {
+    void whenWritesIdle().then(() => {
+      refreshScheduled = false
+      for (const refresh of [...liveRepositoryRefreshers]) refresh()
+    })
+  }, 0)
 }
 
 export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositoryQueryState<T> {
-  const [data, setData] = useState<T>()
+  const [snapshot, setSnapshot] = useState<{ data: T; readSequence: number }>()
+  const data = snapshot?.data
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)
   const [refreshToken, setRefreshToken] = useState(0)
@@ -54,24 +70,27 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
     if (cachedReadRef.current !== read) {
       dataRef.current = undefined
       cachedReadRef.current = undefined
-      setData(undefined)
+      setSnapshot(undefined)
       setIsLoading(true)
       setHasError(false)
     }
     void Promise.resolve()
-      .then(read)
-      .then((nextData) => {
+      .then(() => {
+        const started = ++readSequence
+        return read().then((nextData) => ({ nextData, started }))
+      })
+      .then(({ nextData, started }) => {
         if (!active) return
         dataRef.current = nextData
         cachedReadRef.current = read
-        setData(nextData)
+        setSnapshot({ data: nextData, readSequence: started })
         setIsLoading(false)
         setHasError(false)
       })
       .catch((cause: unknown) => {
         logger.error('Native repository query failed', cause)
         if (!active) return
-        if (dataRef.current === undefined) setData(undefined)
+        if (dataRef.current === undefined) setSnapshot(undefined)
         setIsLoading(false)
         setHasError(true)
       })
@@ -81,5 +100,5 @@ export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositor
     }
   }, [read, refreshToken])
 
-  return { data, isLoading, hasError, refresh }
+  return { data, readSequence: snapshot?.readSequence, isLoading, hasError, refresh }
 }

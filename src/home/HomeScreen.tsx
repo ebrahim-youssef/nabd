@@ -9,6 +9,7 @@ import { toArabicIndic } from '../lib/format'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
 import { useToggleItem } from '../wird/useToggleItem'
+import { useChecklistCallbacks } from '../wird/useChecklistCallbacks'
 import { BlockCard } from '../ui/BlockCard'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
@@ -28,7 +29,10 @@ type ToastRecord = { item: DayPlanItem; sheet: OpenSheet; saved: boolean }
 export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const home = useHomeDayPlan(persisted)
   const { plan } = home
-  const { toggle } = useToggleItem(home.versionId, home.refresh)
+  const { toggle, optimisticItems, getOptimisticDone } = useToggleItem(home.versionId, undefined, {
+    day: home.day,
+    revision: home.observation,
+  })
   const router = useRouter()
   const [openSheet, setOpenSheet] = useState<OpenSheet>(null)
   const [toastRecord, setToastRecord] = useState<ToastRecord | null>(null)
@@ -37,13 +41,16 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const unrecordedGroups = home.status === 'ready' ? buildUnrecordedGroups(plan) : []
 
   const record = async (item: DayPlanItem, done: boolean, sheet: OpenSheet = null) => {
-    const wasSaved = await toggle(home.day, item.id, done)
+    const wasSaved = await toggle(home.day, item.id, done, item.done)
     if (!wasSaved) {
       setToastRecord({ item, sheet, saved: false })
       return
     }
     setToastRecord(done ? { item, sheet, saved: true } : null)
   }
+  const getOnToggle = useChecklistCallbacks<Exclude<OpenSheet, null>>((item, sheet) => {
+    void record(item, !getOptimisticDone(home.day, item.id, item.done), sheet)
+  })
 
   const undo = async () => {
     if (!toastRecord?.saved) return
@@ -65,10 +72,10 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
 
   const renderItem = (item: DayPlanItem, sub?: string, sheet: OpenSheet = null, first = false) => (
     <ChecklistRow
-      done={item.done}
+      done={optimisticItems?.get(`${home.day}:${item.id}`)?.done ?? item.done}
       first={first}
       label={item.label}
-      onToggle={() => void record(item, !item.done, sheet)}
+      onToggle={getOnToggle(item, sheet)}
       optional={item.optional}
       sub={sub ?? item.minimum}
       testID={sheet ? `sheet-row-${item.id}` : `home-row-${item.id}`}

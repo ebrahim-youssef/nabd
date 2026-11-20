@@ -20,10 +20,61 @@ import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 import { planVersionHealing } from './logic'
+import { getWriteQueueSequence, queueWrite } from '../db/writeQueue'
 import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 // Keep a healed version just above the version it heals so later explicit choices still win.
 const HEALED_VERSION_CREATED_AT_OFFSET = 1
+
+type WriteValue = { outcome: SetItemStateOutcome; entry: WirdEntry | null }
+type PendingWrite = { input: SetItemStateInput; resolve: (result: Result<WriteValue>) => void }
+type PendingBatch = { writes: PendingWrite[]; sequence: number }
+const pendingWrites = new WeakMap<ProductDatabase, PendingBatch>()
+
+function enqueueItemState(
+  database: ProductDatabase,
+  input: SetItemStateInput,
+): Promise<Result<WriteValue>> {
+  return new Promise((resolve) => {
+    const pending = pendingWrites.get(database)
+    if (pending && pending.sequence === getWriteQueueSequence()) {
+      pending.writes.push({ input, resolve })
+      return
+    }
+    const batch: PendingBatch = { writes: [{ input, resolve }], sequence: 0 }
+    pendingWrites.set(database, batch)
+    void queueWrite(async () => {
+      if (pendingWrites.get(database) === batch) pendingWrites.delete(database)
+      const results: Result<WriteValue>[] = []
+      try {
+        await runWirdStateTransaction(database, async (transaction) => {
+          for (const write of batch.writes) {
+            // Savepoints isolate individual failures while sharing the costly connection.
+            await transaction.execAsync('SAVEPOINT wird_item')
+            try {
+              const value = await setItemStateInTransaction(transaction, write.input)
+              await transaction.execAsync('RELEASE SAVEPOINT wird_item')
+              results.push({ ok: true, value })
+            } catch (cause: unknown) {
+              await transaction.execAsync('ROLLBACK TO SAVEPOINT wird_item')
+              await transaction.execAsync('RELEASE SAVEPOINT wird_item')
+              logger.error('Native wird state write failed', cause)
+              results.push({ ok: false, error: 'set_item_state_failed' })
+            }
+          }
+          return results
+        })
+      } catch (cause: unknown) {
+        logger.error('Native wird state transaction failed', cause)
+        for (const write of batch.writes)
+          write.resolve({ ok: false, error: 'set_item_state_failed' })
+        return
+      }
+      batch.writes.forEach((write, index) => write.resolve(results[index]))
+    })
+    batch.sequence = getWriteQueueSequence()
+  })
+}
 
 export type HealVersionInput = {
   today: DayId
@@ -69,38 +120,30 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
   async function setItemState(
     input: SetItemStateInput,
   ): Promise<Result<{ outcome: SetItemStateOutcome; entry: WirdEntry | null }>> {
-    try {
-      let value: { outcome: SetItemStateOutcome; entry: WirdEntry | null } | undefined
-      value = await runWirdStateTransaction(database, async (transaction) => {
-        return setItemStateInTransaction(transaction, input)
-      })
-      if (!value) throw new Error('wird state transaction returned no outcome')
-      return { ok: true, value }
-    } catch (cause: unknown) {
-      logger.error('Native wird state write failed', cause)
-      return { ok: false, error: 'set_item_state_failed' }
-    }
+    return enqueueItemState(database, input)
   }
   async function healVersionFromLevels({ today }: HealVersionInput) {
     let result: HealVersionResult = { created: false, effectiveFrom: null }
-    await database.withExclusiveTransactionAsync(async (transaction) => {
-      const versions = (
-        await transaction.getAllAsync<VersionRow>(
-          'SELECT id, effective_from, definition_json, created_at FROM wird_versions',
-        )
-      ).map(asVersion)
-      const current = versionInForce(versions, nextDay(today))
-      const plan = planVersionHealing(current, WIRD_LEVELS, today)
-      if (!current || !plan) return
+    await queueWrite(() =>
+      database.withExclusiveTransactionAsync(async (transaction) => {
+        const versions = (
+          await transaction.getAllAsync<VersionRow>(
+            'SELECT id, effective_from, definition_json, created_at FROM wird_versions',
+          )
+        ).map(asVersion)
+        const current = versionInForce(versions, nextDay(today))
+        const plan = planVersionHealing(current, WIRD_LEVELS, today)
+        if (!current || !plan) return
 
-      await transaction.runAsync(
-        `INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (${SQLITE_ID}, ?, ?, ?)`,
-        plan.effectiveFrom,
-        JSON.stringify(plan.definition),
-        current.createdAt + HEALED_VERSION_CREATED_AT_OFFSET,
-      )
-      result = { created: true, effectiveFrom: plan.effectiveFrom }
-    })
+        await transaction.runAsync(
+          `INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (${SQLITE_ID}, ?, ?, ?)`,
+          plan.effectiveFrom,
+          JSON.stringify(plan.definition),
+          current.createdAt + HEALED_VERSION_CREATED_AT_OFFSET,
+        )
+        result = { created: true, effectiveFrom: plan.effectiveFrom }
+      }),
+    )
     if (result.created) void requestWidgetSnapshotWrite()
     return result
   }

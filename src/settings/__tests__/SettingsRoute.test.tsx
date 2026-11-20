@@ -6,10 +6,11 @@ import { requestPrayerReschedule, setPrayerAlarmSyncOutcome } from '../../device
 import { useNotificationSettings } from '../../device/useNotificationSettings'
 import { logger } from '../../observability/logger'
 import { NATIVE_SETTINGS_COPY } from '../constants'
-import { SETTINGS_COPY } from '../copy'
+import { SETTINGS_COPY, SETTINGS_LAYOUT_COPY } from '../copy'
 
 const mockDatabase = {}
 const mockPush = jest.fn()
+const mockReplace = jest.fn()
 const mockRead = jest.fn(async (_key: string): Promise<string | null> => null)
 const mockWrite = jest.fn(async (_key: string, _value: string, _updatedAt: number) => undefined)
 const mockEnabled = jest.fn()
@@ -47,7 +48,7 @@ jest.mock('lucide-react-native', () => ({
   ArrowRight: () => null,
 }))
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
   useFocusEffect: jest.fn(),
 }))
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => mockDatabase }))
@@ -111,7 +112,9 @@ describe('SettingsRoute', () => {
     expect(mockWrite).toHaveBeenCalledWith('theme', 'dark', expect.any(Number))
     fireEvent.press(screen.getByTestId('settings-level-row'))
     expect(mockPush).toHaveBeenCalledWith('/level')
-  })
+    fireEvent.press(screen.getByTestId('page-back'))
+    expect(mockReplace).toHaveBeenCalledWith('/more')
+  }, 10_000)
   it('writes each notification preference', () => {
     render(<SettingsRoute />)
     fireEvent.press(screen.getByRole('switch', { name: SETTINGS_COPY.notifications.enable }))
@@ -140,7 +143,12 @@ describe('SettingsRoute', () => {
       },
     } as never)
     render(<SettingsRoute />)
-    expect(screen.getAllByText('افتح الإعدادات').length).toBeGreaterThan(1)
+    expect(screen.getAllByText('افتح الإعدادات')).toHaveLength(1)
+    expect(screen.getByText(SETTINGS_LAYOUT_COPY.atAdhan)).toBeTruthy()
+    expect(
+      screen.getByRole('switch', { name: SETTINGS_COPY.notifications.atAdhan }).props
+        .accessibilityHint,
+    ).toBe('افتح الإعدادات')
     expect(
       screen.getByRole('switch', { name: SETTINGS_COPY.notifications.atAdhan }).props
         .accessibilityState.disabled,
@@ -353,13 +361,18 @@ describe('SettingsRoute', () => {
     mockCountdownStatus.mockReturnValue('channel-blocked')
     render(<SettingsRoute />)
     await waitFor(() =>
-      expect(
-        screen.getAllByText(NATIVE_SETTINGS_COPY.notifications.countdownBlocked).length,
-      ).toBeGreaterThan(1),
+      expect(screen.getAllByText(NATIVE_SETTINGS_COPY.notifications.countdownBlocked)).toHaveLength(
+        1,
+      ),
     )
     expect(
       screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }),
     ).toBeDisabled()
+    expect(screen.getByText(NATIVE_SETTINGS_COPY.notifications.countdownBody)).toBeTruthy()
+    expect(
+      screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }).props
+        .accessibilityHint,
+    ).toBe(NATIVE_SETTINGS_COPY.notifications.countdownBlocked)
     fireEvent.press(screen.getByRole('button', { name: deviceCopy.actions.openAppSettings }))
     expect(mockAction).toHaveBeenCalledWith('open-app-settings')
   })
@@ -384,10 +397,18 @@ describe('SettingsRoute', () => {
     mockCountdownStatus.mockReturnValue('channel-blocked')
     act(() => listeners.forEach((listener) => listener('active')))
     await waitFor(() =>
-      expect(
-        screen.getAllByText(NATIVE_SETTINGS_COPY.notifications.countdownBlocked).length,
-      ).toBeGreaterThan(1),
+      expect(screen.getAllByText(NATIVE_SETTINGS_COPY.notifications.countdownBlocked)).toHaveLength(
+        1,
+      ),
     )
+    expect(
+      screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }),
+    ).toBeDisabled()
+    expect(screen.getByText(NATIVE_SETTINGS_COPY.notifications.countdownBody)).toBeTruthy()
+    expect(
+      screen.getByRole('switch', { name: NATIVE_SETTINGS_COPY.notifications.countdownTitle }).props
+        .accessibilityHint,
+    ).toBe(NATIVE_SETTINGS_COPY.notifications.countdownBlocked)
     expect(mockCountdownStatus).toHaveBeenCalledTimes(2)
     view.unmount()
     spy.mockRestore()

@@ -12,6 +12,7 @@ import {
   setItemStateInTransaction,
 } from '../db/wirdState'
 import type { EntryRow } from '../db/wirdState'
+import { queueWrite } from '../db/writeQueue'
 type Row = {
   category_id: string
   day: string
@@ -55,22 +56,23 @@ export function createAdhkarProgressRepository(
     async writeFlowProgress(categoryId, day, state: FlowState) {
       if (!ONCE_DAILY_CATEGORIES.has(categoryId)) return
       try {
-        await database.runAsync(
-          'INSERT INTO adhkar_flow_progress (category_id, day, "index", count, finished) VALUES (?, ?, ?, ?, ?) ON CONFLICT(category_id) DO UPDATE SET day=excluded.day, "index"=excluded."index", count=excluded.count, finished=excluded.finished',
-          categoryId,
-          day,
-          state.index,
-          state.count,
-          state.finished ? 1 : 0,
+        await queueWrite(() =>
+          database.runAsync(
+            'INSERT INTO adhkar_flow_progress (category_id, day, "index", count, finished) VALUES (?, ?, ?, ?, ?) ON CONFLICT(category_id) DO UPDATE SET day=excluded.day, "index"=excluded."index", count=excluded.count, finished=excluded.finished',
+            categoryId,
+            day,
+            state.index,
+            state.count,
+            state.finished ? 1 : 0,
+          ),
         )
       } catch {}
     },
     async clearFlowProgress(categoryId) {
       if (!ONCE_DAILY_CATEGORIES.has(categoryId)) return
       try {
-        await database.runAsync(
-          'DELETE FROM adhkar_flow_progress WHERE category_id = ?',
-          categoryId,
+        await queueWrite(() =>
+          database.runAsync('DELETE FROM adhkar_flow_progress WHERE category_id = ?', categoryId),
         )
       } catch {}
     },
@@ -103,22 +105,24 @@ export function createAdhkarRepository(database: ProductDatabase): AdhkarReposit
 
       try {
         let value: WirdEntry | null = null
-        await runWirdStateTransaction(database, async (transaction) => {
-          const version = await readVersionInForce(transaction, day)
-          const result = await setItemStateInTransaction(
-            transaction,
-            {
-              day,
-              versionId: version?.id ?? '',
-              itemId,
-              done: true,
-              at,
-            },
-            version,
-          )
-          value = result.entry
-          return result
-        })
+        await queueWrite(() =>
+          runWirdStateTransaction(database, async (transaction) => {
+            const version = await readVersionInForce(transaction, day)
+            const result = await setItemStateInTransaction(
+              transaction,
+              {
+                day,
+                versionId: version?.id ?? '',
+                itemId,
+                done: true,
+                at,
+              },
+              version,
+            )
+            value = result.entry
+            return result
+          }),
+        )
         return { ok: true, value }
       } catch {
         return { ok: false, error: 'complete_failed' }

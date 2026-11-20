@@ -83,6 +83,7 @@ describe('BottomNav', () => {
     ['/libraries', 'nav-more'],
     ['/settings', 'nav-more'],
     ['/backup', 'nav-more'],
+    ['/level', 'nav-more'],
   ] as const)('marks %s as active in %s', (pathname, activeId) => {
     mockUsePathname.mockReturnValue(pathname)
     renderBottomNav()

@@ -122,8 +122,18 @@ describe('Home design components', () => {
     )
 
     expect(screen.getByText('٢ من ٥ مطلوبة')).toBeTruthy()
+    expect(screen.getByText('٤٠٪')).toHaveStyle({ direction: 'ltr' })
     expect(screen.getByText('أحافظ عليها')).toBeTruthy()
     expect(screen.getByText('الحمد لله')).toBeTruthy()
+  })
+
+  it.each([
+    [0, '٠٪'],
+    [1, '٣٣٪'],
+    [3, '١٠٠٪'],
+  ])('shows Arabic percentage %s with stable direction', (done, expected) => {
+    render(<ProgressBar done={done as number} total={3} />)
+    expect(screen.getByText(expected as string)).toHaveStyle({ direction: 'ltr' })
   })
 
   it('renders outline and solid buttons with their labels', () => {
@@ -285,7 +295,11 @@ describe('Home design components', () => {
         />
       </>,
     )
-    expect(screen.getByText('السبب')).toBeTruthy()
+    expect(screen.getByText('وصف')).toBeTruthy()
+    expect(screen.queryByText('السبب')).toBeNull()
+    expect(screen.getByRole('switch', { name: 'التنبيهات المعطلة' }).props.accessibilityHint).toBe(
+      'السبب',
+    )
     fireEvent.press(screen.getByRole('switch', { name: 'التنبيهات' }))
     expect(onValueChange).toHaveBeenCalledWith(true)
     expect(

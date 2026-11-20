@@ -40,7 +40,7 @@ export function ListRow({
         </View>
       ) : null}
       <View className="flex-1">
-        <Text className="font-sans-medium text-row-label text-ink">{label}</Text>
+        <Text className="font-sans-medium text-body text-ink">{label}</Text>
         {description ? <Text className="font-sans text-meta text-mute">{description}</Text> : null}
       </View>
       {value ? <Text className="font-sans text-meta text-mute">{value}</Text> : null}

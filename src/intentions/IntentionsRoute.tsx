@@ -15,7 +15,7 @@ export function IntentionsRoute() {
   return (
     <ScreenContainer testID="intentions-screen">
       <View className="gap-6">
-        <PageHeader backHref="/more" title={INTENTIONS_COPY.libraryTitle} />
+        <PageHeader backHref="/more" directBack title={INTENTIONS_COPY.libraryTitle} />
         <Text className="text-body text-start text-ink">{INTENTIONS_COPY.introduction}</Text>
         <View className="gap-3" testID="intentions-library">
           {INTENTIONS_LIBRARY.map((entry) => (

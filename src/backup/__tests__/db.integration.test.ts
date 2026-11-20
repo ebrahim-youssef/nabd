@@ -8,7 +8,10 @@ import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { parseBackup, serializeBackup, type BackupEnvelope, type BackupRows } from '../logic'
 import { createBackupRepository } from '../db'
+import { createWirdRepository } from '../../wird/db'
+import { latestStateByItem } from '../../lib/wird'
 import * as widgetSnapshotWriter from '../../device/widgetSnapshotWriter'
+import { queueWrite } from '../../db/writeQueue'
 
 type BackupDatabase = ProductDatabase & MigrationDatabase
 
@@ -193,6 +196,46 @@ afterEach(() => {
 })
 
 describe('backup SQLite repository', () => {
+  it('waits for the writer queue before restoring wird data', async () => {
+    const target = await migratedDatabase()
+    try {
+      const transaction = jest.spyOn(target.database, 'withExclusiveTransactionAsync')
+      let release: () => void = () => undefined
+      const blocker = queueWrite(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve
+          }),
+      )
+      await Promise.resolve()
+      const restore = createBackupRepository(target.database).restore(validBackup(rows))
+      expect(transaction).not.toHaveBeenCalled()
+      release()
+      await blocker
+      expect((await restore).ok).toBe(true)
+      expect(transaction).toHaveBeenCalledTimes(1)
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves tied entry timestamps and their insertion order on restore', async () => {
+    const target = await migratedDatabase()
+    try {
+      const entries = [rows.wird_entries[0], { ...rows.wird_entries[0], id: 'entry-2', done: 0 }]
+      const repository = createBackupRepository(target.database)
+      const result = await repository.restore(validBackup({ ...rows, wird_entries: entries }))
+      expect(result.ok).toBe(true)
+      expect((await repository.readSnapshot()).wird_entries).toEqual(entries)
+      const restored = await createWirdRepository(target.database).getDayEntries('2026-10-18')
+      expect(latestStateByItem(restored).get('item-1')).toBe(false)
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
   it('restores a snapshot onto a fresh database with identical rows', async () => {
     const source = await migratedDatabase()
     const target = await migratedDatabase()

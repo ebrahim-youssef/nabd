@@ -1,4 +1,5 @@
 import { Pressable, View } from 'react-native'
+import { memo } from 'react'
 
 import { Text } from '../shell/Text'
 import { StarCheckbox } from './StarCheckbox'
@@ -14,7 +15,7 @@ type ChecklistRowProps = {
   muteDone?: boolean
 }
 
-export function ChecklistRow({
+export const ChecklistRow = memo(function ChecklistRow({
   label,
   sub,
   optional = false,
@@ -61,4 +62,4 @@ export function ChecklistRow({
       />
     </Pressable>
   )
-}
+})

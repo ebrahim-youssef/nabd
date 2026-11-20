@@ -24,7 +24,7 @@ export default function BackupRoute() {
   return (
     <ScreenContainer testID="backup-screen">
       <View className="gap-6">
-        <PageHeader backHref="/more" title={BACKUP_COPY.title} />
+        <PageHeader backHref="/more" directBack title={BACKUP_COPY.title} />
         <BackupContent key={refreshKey} onRestored={onRestored} />
       </View>
     </ScreenContainer>

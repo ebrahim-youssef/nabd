@@ -32,6 +32,7 @@ import {
 } from '../prayer-times/logic'
 import { MethodSheet } from '../prayer-times/MethodSheet'
 import { ScreenContainer } from '../shell/ScreenContainer'
+import { PageHeader } from '../shell/PageHeader'
 import { Text } from '../shell/Text'
 import { ListGroup } from '../ui/ListGroup'
 import { ListRow } from '../ui/ListRow'
@@ -201,12 +202,7 @@ export function SettingsRoute() {
   return (
     <ScreenContainer testID="settings-screen">
       <View className="gap-6">
-        <Text
-          accessibilityRole="header"
-          className="font-display text-sheet-title text-start text-accent"
-        >
-          {COPY.title}
-        </Text>
+        <PageHeader backHref="/more" directBack title={COPY.title} />
         {!hydrated ? <Text className="text-body text-start text-ink">{COPY.loading}</Text> : null}
         <View className="gap-3">
           <SectionHeader title={SETTINGS_COPY.appearance.themeTitle} />

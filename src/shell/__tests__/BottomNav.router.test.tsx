@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Stack } from 'expo-router'
-import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library'
+import { fireEvent, renderRouter, screen, testRouter, waitFor } from 'expo-router/testing-library'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import AdhkarLayout from '../../../app/(tabs)/adhkar/_layout'
@@ -71,6 +71,28 @@ function RouterTestWrapper({ children }: { children: ReactNode }) {
 }
 
 describe('BottomNav router integration', () => {
+  it('keeps tab navigation working and returns to the visited parent on back', async () => {
+    const router = renderRouter(
+      {
+        _layout: RootLayout,
+        '(tabs)/_layout': TabsLayout,
+        '(tabs)/index': HomeRoute,
+        '(tabs)/more': HomeRoute,
+        '(tabs)/stats': HomeRoute,
+        '(tabs)/settings': HomeRoute,
+        '(tabs)/level': HomeRoute,
+      },
+      { initialUrl: '/', wrapper: RouterTestWrapper },
+    )
+    fireEvent.press(screen.getByTestId('nav-more'))
+    await waitFor(() => expect(router.getPathname()).toBe('/more'))
+    testRouter.push('/stats')
+    testRouter.back('/more')
+    testRouter.push('/settings')
+    testRouter.push('/level')
+    testRouter.back('/settings')
+  })
+
   it('navigates from Home directly to Today for the current wird day', async () => {
     const router = renderRouter(
       {
