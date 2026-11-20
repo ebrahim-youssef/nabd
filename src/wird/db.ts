@@ -20,6 +20,52 @@ import { queueWrite } from '../db/writeQueue'
 // Keep a healed version just above the version it heals so later explicit choices still win.
 const HEALED_VERSION_CREATED_AT_OFFSET = 1
 
+type WriteValue = { outcome: SetItemStateOutcome; entry: WirdEntry | null }
+type PendingWrite = { input: SetItemStateInput; resolve: (result: Result<WriteValue>) => void }
+const pendingWrites = new WeakMap<ProductDatabase, PendingWrite[]>()
+
+function enqueueItemState(
+  database: ProductDatabase,
+  input: SetItemStateInput,
+): Promise<Result<WriteValue>> {
+  return new Promise((resolve) => {
+    const pending = pendingWrites.get(database)
+    if (pending) {
+      pending.push({ input, resolve })
+      return
+    }
+    pendingWrites.set(database, [{ input, resolve }])
+    void queueWrite(async () => {
+      const batch = pendingWrites.get(database) ?? []
+      pendingWrites.delete(database)
+      const results: Result<WriteValue>[] = []
+      try {
+        await database.withExclusiveTransactionAsync(async (transaction) => {
+          for (const write of batch) {
+            // Savepoints isolate individual failures while sharing the costly connection.
+            await transaction.execAsync('SAVEPOINT wird_item')
+            try {
+              const value = await setItemStateInTransaction(transaction, write.input)
+              await transaction.execAsync('RELEASE SAVEPOINT wird_item')
+              results.push({ ok: true, value })
+            } catch (cause: unknown) {
+              await transaction.execAsync('ROLLBACK TO SAVEPOINT wird_item')
+              await transaction.execAsync('RELEASE SAVEPOINT wird_item')
+              logger.error('Native wird state write failed', cause)
+              results.push({ ok: false, error: 'set_item_state_failed' })
+            }
+          }
+        })
+      } catch (cause: unknown) {
+        logger.error('Native wird state transaction failed', cause)
+        for (const write of batch) write.resolve({ ok: false, error: 'set_item_state_failed' })
+        return
+      }
+      batch.forEach((write, index) => write.resolve(results[index]))
+    })
+  })
+}
+
 export type HealVersionInput = {
   today: DayId
 }
@@ -63,19 +109,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
   async function setItemState(
     input: SetItemStateInput,
   ): Promise<Result<{ outcome: SetItemStateOutcome; entry: WirdEntry | null }>> {
-    try {
-      let value: { outcome: SetItemStateOutcome; entry: WirdEntry | null } | undefined
-      await queueWrite(() =>
-        database.withExclusiveTransactionAsync(async (transaction) => {
-          value = await setItemStateInTransaction(transaction, input)
-        }),
-      )
-      if (!value) throw new Error('wird state transaction returned no outcome')
-      return { ok: true, value }
-    } catch (cause: unknown) {
-      logger.error('Native wird state write failed', cause)
-      return { ok: false, error: 'set_item_state_failed' }
-    }
+    return enqueueItemState(database, input)
   }
   async function healVersionFromLevels({ today }: HealVersionInput) {
     let result: HealVersionResult = { created: false, effectiveFrom: null }

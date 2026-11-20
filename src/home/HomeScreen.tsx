@@ -9,6 +9,7 @@ import { toArabicIndic } from '../lib/format'
 import { ScreenContainer } from '../shell/ScreenContainer'
 import { Text } from '../shell/Text'
 import { useToggleItem } from '../wird/useToggleItem'
+import { useChecklistCallbacks } from '../wird/useChecklistCallbacks'
 import { BlockCard } from '../ui/BlockCard'
 import { BottomSheet } from '../ui/BottomSheet'
 import { Button } from '../ui/Button'
@@ -47,6 +48,9 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
     }
     setToastRecord(done ? { item, sheet, saved: true } : null)
   }
+  const getOnToggle = useChecklistCallbacks<Exclude<OpenSheet, null>>((item, sheet) => {
+    void record(item, !getOptimisticDone(home.day, item.id, item.done), sheet)
+  })
 
   const undo = async () => {
     if (!toastRecord?.saved) return
@@ -71,7 +75,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
       done={optimisticItems?.get(`${home.day}:${item.id}`)?.done ?? item.done}
       first={first}
       label={item.label}
-      onToggle={() => void record(item, !getOptimisticDone(home.day, item.id, item.done), sheet)}
+      onToggle={getOnToggle(item, sheet)}
       optional={item.optional}
       sub={sub ?? item.minimum}
       testID={sheet ? `sheet-row-${item.id}` : `home-row-${item.id}`}

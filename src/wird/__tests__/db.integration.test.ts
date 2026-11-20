@@ -11,6 +11,7 @@ import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { createWirdRepository } from '../db'
 import { createDhikrCompletionRepository } from '../../counter/db'
+import { queueWrite } from '../../db/writeQueue'
 
 const TODAY = '2026-10-18'
 const TOMORROW = '2026-10-19'
@@ -131,24 +132,154 @@ describe('native wird version healing', () => {
     try {
       const database = await migrate(connection)
       insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const transactions = jest.spyOn(database, 'withExclusiveTransactionAsync')
       const repository = createWirdRepository(database)
       const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const resolved: number[] = []
       const results = await Promise.all(
         [true, false, true, false, true, false].map((done, index) =>
-          repository.setItemState({
-            day: TODAY,
-            versionId: VERSION_ID,
-            itemId,
-            done,
-            at: CREATED_AT + index,
-            actionId: `rapid-${index}`,
-          }),
+          repository
+            .setItemState({
+              day: TODAY,
+              versionId: VERSION_ID,
+              itemId,
+              done,
+              at: CREATED_AT + index,
+              actionId: `rapid-${index}`,
+            })
+            .then((result) => {
+              resolved.push(index)
+              return result
+            }),
         ),
       )
       expect(results.map((result) => result.ok && result.value.outcome)).toEqual(
         Array(6).fill('applied'),
       )
       expect(entryRows(connection).map((row) => row.done)).toEqual([1, 0, 1, 0, 1, 0])
+      expect(transactions).toHaveBeenCalledTimes(1)
+      expect(resolved).toEqual([0, 1, 2, 3, 4, 5])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('rolls back a failed batch item without losing the other items', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const transact = database.withExclusiveTransactionAsync.bind(database)
+      const transactions = jest
+        .spyOn(database, 'withExclusiveTransactionAsync')
+        .mockImplementation((task) =>
+          transact((transaction) =>
+            task({
+              ...transaction,
+              runAsync: async (sql, ...parameters) => {
+                if (sql.includes('INSERT INTO wird_actions') && parameters[0] === 'fails') {
+                  throw new Error('injected action failure')
+                }
+                const values = parameters.map((value): SqlValue => {
+                  if (typeof value === 'boolean') return Number(value)
+                  if (value === null || typeof value === 'string' || typeof value === 'number')
+                    return value
+                  throw new Error('Unexpected binary SQLite parameter in batch test')
+                })
+                return transaction.runAsync(sql, ...values)
+              },
+            }),
+          ),
+        )
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const results = await Promise.all(
+        [true, false, false].map((done, index) =>
+          repository.setItemState({
+            day: TODAY,
+            versionId: VERSION_ID,
+            itemId,
+            done,
+            at: CREATED_AT + index,
+            actionId: index === 1 ? 'fails' : `batch-${index}`,
+          }),
+        ),
+      )
+      expect(transactions).toHaveBeenCalledTimes(1)
+      expect(results.map((result) => result.ok)).toEqual([true, false, true])
+      expect(results[1]).toEqual({ ok: false, error: 'set_item_state_failed' })
+      expect(entryRows(connection).map((row) => row.done)).toEqual([1, 0])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('batches writes that arrive while another writer holds the gate', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const transactions = jest.spyOn(database, 'withExclusiveTransactionAsync')
+      let release: () => void = () => undefined
+      const blocker = queueWrite(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve
+          }),
+      )
+      await Promise.resolve()
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const writes = [true, false, true].map((done, index) =>
+        repository.setItemState({
+          day: TODAY,
+          versionId: VERSION_ID,
+          itemId,
+          done,
+          at: CREATED_AT + index,
+        }),
+      )
+      expect(transactions).not.toHaveBeenCalled()
+      release()
+      await blocker
+      expect((await Promise.all(writes)).map((result) => result.ok)).toEqual([true, true, true])
+      expect(transactions).toHaveBeenCalledTimes(1)
+      expect(entryRows(connection).map((row) => row.done)).toEqual([1, 0, 1])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('reports every item as failed when the enclosing transaction rolls back', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const transact = database.withExclusiveTransactionAsync.bind(database)
+      jest.spyOn(database, 'withExclusiveTransactionAsync').mockImplementation((task) =>
+        transact(async (transaction) => {
+          await task(transaction)
+          throw new Error('injected transaction failure')
+        }),
+      )
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const results = await Promise.all(
+        [true, false].map((done, index) =>
+          repository.setItemState({
+            day: TODAY,
+            versionId: VERSION_ID,
+            itemId,
+            done,
+            at: CREATED_AT + index,
+          }),
+        ),
+      )
+      expect(results.map((result) => result.ok)).toEqual([false, false])
+      expect(entryRows(connection)).toEqual([])
     } finally {
       connection.close()
       rmSync(directory, { recursive: true, force: true })
