@@ -2,12 +2,34 @@ import { act, renderHook } from '@testing-library/react-native'
 
 import { useWirdRepository } from '../useWirdRepository'
 import { useToggleItem } from '../useToggleItem'
+import { refreshLiveRepositoryQueries } from '../../shell/useLiveRepositoryQuery'
 
 jest.mock('../useWirdRepository')
+jest.mock('../../shell/useLiveRepositoryQuery', () => ({ refreshLiveRepositoryQueries: jest.fn() }))
 
 const mockedUseWirdRepository = useWirdRepository as jest.MockedFunction<typeof useWirdRepository>
 
 describe('useToggleItem', () => {
+  beforeEach(() => jest.clearAllMocks())
+
+  it('refreshes live queries only for applied writes, including undo', async () => {
+    const setItemState = jest
+      .fn()
+      .mockResolvedValueOnce({ ok: true, value: { outcome: 'applied', entry: null } })
+      .mockResolvedValueOnce({ ok: true, value: { outcome: 'applied', entry: null } })
+      .mockResolvedValueOnce({ ok: true, value: { outcome: 'unchanged', entry: null } })
+      .mockResolvedValueOnce({ ok: true, value: { outcome: 'duplicate', entry: null } })
+      .mockResolvedValueOnce({ ok: true, value: { outcome: 'stale', entry: null } })
+      .mockResolvedValueOnce({ ok: false, error: 'write failed' })
+    mockedUseWirdRepository.mockReturnValue({ setItemState } as never)
+    const { result } = renderHook(() => useToggleItem('version-1'))
+    for (const [index, done] of [true, false, false, false, false, false].entries()) {
+      await act(async () => {
+        await result.current.toggle('2026-06-10', 'fajr', done)
+      })
+      expect(refreshLiveRepositoryQueries).toHaveBeenCalledTimes(Math.min(index + 1, 2))
+    }
+  })
   it('writes a state change with an action id', async () => {
     const setItemState = jest.fn().mockResolvedValue({
       ok: true,

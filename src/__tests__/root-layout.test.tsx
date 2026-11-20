@@ -13,6 +13,7 @@ import { shellCopy } from '../shell/copy'
 
 import { NATIVE_SHELL_COPY } from '../shell/constants'
 
+jest.mock('../wird/CompletionCelebration', () => ({ CompletionCelebration: () => null }))
 jest.mock('../day-plan/WirdTodayProvider', () => ({
   WirdTodayProvider: ({ children }: { children: ReactNode }) => children,
   useWirdToday: () => '2026-09-14',

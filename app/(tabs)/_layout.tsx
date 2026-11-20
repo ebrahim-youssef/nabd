@@ -10,6 +10,7 @@ import { readStoredTheme } from '../../src/preferences/theme'
 import { logger } from '../../src/observability/logger'
 import { DatabaseError } from '../../src/shell/DatabaseStatus'
 import { ToastProvider } from '../../src/ui/ToastProvider'
+import { CompletionCelebration } from '../../src/wird/CompletionCelebration'
 
 function NativeAppearanceBootstrap() {
   const database = useSQLiteContext()
@@ -39,6 +40,7 @@ function TabsContent() {
         screenOptions={{ headerShown: false }}
         tabBar={() => <BottomNav isVisible={isOnboardingComplete} />}
       />
+      <CompletionCelebration />
     </ToastProvider>
   )
 }

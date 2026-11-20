@@ -6,6 +6,7 @@ import { setOnboardingComplete } from '../completion'
 import { createOnboardingRepository } from '../db'
 import { requestWidgetSnapshotWrite } from '../../device/widgetSnapshotWriter'
 
+jest.mock('../../wird/CompletionCelebration', () => ({ CompletionCelebration: () => null }))
 jest.mock('expo-router', () => {
   const React = require('react') as typeof import('react')
 
