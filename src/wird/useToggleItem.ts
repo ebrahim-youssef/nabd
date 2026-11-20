@@ -22,7 +22,6 @@ export function useToggleItem(
 ) {
   const repository = useWirdRepository()
   const pendingItems = useRef(new Set<string>())
-  const pendingOperations = useRef(new Map<string, Promise<boolean>>())
   const [pendingItemIds, setPendingItemIds] = useState<ReadonlySet<string>>(new Set())
   const [hasError, setHasError] = useState(false)
   const optimisticRef = useRef(new Map<string, OptimisticItem>())
@@ -51,7 +50,6 @@ export function useToggleItem(
     previousDone = !nextDone,
   ): Promise<boolean> {
     const key = `${day}:${itemId}`
-    const previousOperation = pendingOperations.current.get(key)
     const current = optimisticRef.current.get(key)
     const optimistic = current ?? { done: previousDone, committed: previousDone, pending: 0 }
     optimistic.done = nextDone
@@ -62,7 +60,6 @@ export function useToggleItem(
     pendingItems.current.add(itemId)
     setPendingItemIds(new Set(pendingItems.current))
     const operation = (async () => {
-      if (previousOperation) await previousOperation
       setHasError(false)
       try {
         const result = versionId
@@ -76,24 +73,24 @@ export function useToggleItem(
             })
           : { ok: false as const, error: 'version_not_found' }
         const wasSaved = result.ok && result.value.outcome !== 'stale'
-        if (result.ok && result.value.outcome === 'applied') refreshLiveRepositoryQueries()
+        if (!wasSaved || (result.ok && result.value.outcome === 'applied'))
+          refreshLiveRepositoryQueries()
         if (!wasSaved) setHasError(true)
         else onRefresh?.()
         return wasSaved
       } catch (cause: unknown) {
         logger.error('Native wird item toggle failed', cause)
+        refreshLiveRepositoryQueries()
         setHasError(true)
         return false
       }
     })()
-    pendingOperations.current.set(key, operation)
     const wasSaved = await operation
     optimistic.pending -= 1
     if (wasSaved) optimistic.committed = nextDone
     if (optimistic.pending === 0 && !wasSaved) optimistic.done = optimistic.committed
     setOptimisticItems(new Map(optimisticRef.current))
-    if (pendingOperations.current.get(key) === operation) {
-      pendingOperations.current.delete(key)
+    if (optimistic.pending === 0) {
       pendingItems.current.delete(itemId)
       setPendingItemIds(new Set(pendingItems.current))
     }
