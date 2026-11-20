@@ -22,7 +22,7 @@ const EMPTY_DEFINITION: WirdDefinition = { areas: [], items: [] }
 export type TodayDayPlan = {
   currentDay: DayId
   plan: DayPlan
-  observation?: unknown
+  observation?: number
   versionId: string | null
   status: 'loading' | 'ready' | 'failed' | 'unavailable'
   earliestVersionDay: DayId | null
@@ -71,7 +71,7 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
     ])
     return { versions, entries, monthEntries }
   }, [currentDay, day, repository])
-  const { data, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
+  const { data, readSequence, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
   const date = dateForDay(day)
   const nextDate = dateForDay(nextDay(day))
   const times = location.coordinates ? computeDayTimes(location.coordinates, date, methodId) : null
@@ -111,7 +111,7 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
   return {
     currentDay,
     plan,
-    observation: data,
+    observation: readSequence,
     versionId: version?.id ?? null,
     status,
     earliestVersionDay,

@@ -31,7 +31,7 @@ const NUMBER_PADDING = '0'
 export type HomeDayPlan = {
   day: DayId
   plan: DayPlan
-  observation?: unknown
+  observation?: number
   status: 'loading' | 'ready' | 'failed'
   versionId: string | null
   refresh: () => void
@@ -95,7 +95,7 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
     const version = versionInForce(versions, day) ?? persisted.activeWird
     return { entries, monthEntries, version }
   }, [day, persisted.activeWird, repository])
-  const { data, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
+  const { data, readSequence, isLoading, hasError, refresh } = useLiveRepositoryQuery(read)
   const readPrayerActionReview = useCallback(async () => {
     try {
       const [seenIdValue, latestStaleAction] = await Promise.all([
@@ -158,7 +158,7 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
   return {
     day,
     plan,
-    observation: data,
+    observation: readSequence,
     status,
     versionId: data?.version.id ?? null,
     refresh,

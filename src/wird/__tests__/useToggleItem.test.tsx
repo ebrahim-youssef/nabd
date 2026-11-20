@@ -8,7 +8,10 @@ import { WIRD_LEVELS } from '../../content/levels'
 import { queueWrite } from '../../db/writeQueue'
 
 jest.mock('../useWirdRepository')
-jest.mock('../../shell/useLiveRepositoryQuery', () => ({ refreshLiveRepositoryQueries: jest.fn() }))
+jest.mock('../../shell/useLiveRepositoryQuery', () => ({
+  refreshLiveRepositoryQueries: jest.fn(),
+  getLiveRepositoryReadSequence: () => 0,
+}))
 
 const mockedUseWirdRepository = useWirdRepository as jest.MockedFunction<typeof useWirdRepository>
 
@@ -221,9 +224,9 @@ describe('useToggleItem', () => {
       entries: [],
     })
     const itemId = plan.blocks[0].items[0].id
-    const firstObservation = {}
+    const firstObservation = 0
     const { result, rerender } = renderHook(
-      ({ revision }: { revision: object }) =>
+      ({ revision }: { revision: number }) =>
         useToggleItem('version-1', undefined, { day, revision }),
       { initialProps: { revision: firstObservation } },
     )
@@ -231,7 +234,7 @@ describe('useToggleItem', () => {
       await result.current.toggle(day, itemId, true, false)
     })
     expect(result.current.getOptimisticDone(day, itemId, false)).toBe(true)
-    rerender({ revision: plan })
+    rerender({ revision: 1 })
     expect(result.current.optimisticItems.has(`${day}:${itemId}`)).toBe(false)
     expect(result.current.getOptimisticDone(day, itemId, plan.blocks[0].items[0].done)).toBe(false)
     await act(async () => {
@@ -268,15 +271,15 @@ describe('useToggleItem', () => {
       entries: [{ id: 'other', day, versionId: 'version-1', itemId, done: true, at: 1 }],
     })
     const { result, rerender } = renderHook(
-      ({ revision }: { revision: object }) =>
+      ({ revision }: { revision: number }) =>
         useToggleItem('version-1', undefined, { day, revision }),
-      { initialProps: { revision: {} } },
+      { initialProps: { revision: 0 } },
     )
     await act(async () => {
       await result.current.toggle(day, itemId, true, false)
     })
     expect(result.current.optimisticItems.has(`${day}:${itemId}`)).toBe(true)
-    rerender({ revision: plan })
+    rerender({ revision: 1 })
     expect(result.current.optimisticItems.has(`${day}:${itemId}`)).toBe(false)
     expect(result.current.getOptimisticDone(day, itemId, plan.blocks[0].items[0].done)).toBe(true)
   })
@@ -293,21 +296,21 @@ describe('useToggleItem', () => {
     } as never)
     const day = '2026-06-10'
     const { result, rerender } = renderHook(
-      ({ revision }: { revision: object }) =>
+      ({ revision }: { revision: number }) =>
         useToggleItem('version-1', undefined, { day, revision }),
-      { initialProps: { revision: {} } },
+      { initialProps: { revision: 0 } },
     )
     let write: Promise<boolean> = Promise.resolve(false)
     act(() => {
       write = result.current.toggle(day, 'fajr', true, false)
     })
-    rerender({ revision: {} })
+    rerender({ revision: 1 })
     expect(result.current.getOptimisticDone(day, 'fajr', false)).toBe(true)
     await act(async () => {
       release({ ok: true, value: { outcome: 'applied', entry: null } })
       await write
     })
-    rerender({ revision: {} })
+    rerender({ revision: 2 })
     expect(result.current.optimisticItems.has(`${day}:fajr`)).toBe(false)
   })
 
@@ -323,22 +326,22 @@ describe('useToggleItem', () => {
     } as never)
     const day = '2026-06-10'
     const { result, rerender } = renderHook(
-      ({ revision }: { revision: object }) =>
+      ({ revision }: { revision: number }) =>
         useToggleItem('version-1', undefined, { day, revision }),
-      { initialProps: { revision: {} } },
+      { initialProps: { revision: 0 } },
     )
     let write: Promise<boolean> = Promise.resolve(true)
     act(() => {
       write = result.current.toggle(day, 'fajr', true, false)
     })
-    rerender({ revision: {} })
+    rerender({ revision: 1 })
     expect(result.current.getOptimisticDone(day, 'fajr', false)).toBe(true)
     await act(async () => {
       release({ ok: false, error: 'failed' })
       expect(await write).toBe(false)
     })
     expect(refreshLiveRepositoryQueries).toHaveBeenCalledTimes(1)
-    rerender({ revision: {} })
+    rerender({ revision: 2 })
     expect(result.current.optimisticItems.has(`${day}:fajr`)).toBe(false)
     expect(result.current.getOptimisticDone(day, 'fajr', true)).toBe(true)
   })

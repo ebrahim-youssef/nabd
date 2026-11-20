@@ -12,6 +12,7 @@ import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { createWirdRepository } from '../db'
 import { createDhikrCompletionRepository } from '../../counter/db'
 import { queueWrite } from '../../db/writeQueue'
+import { drainPrayerActions } from '../../device/prayerActionDrain'
 
 const TODAY = '2026-10-18'
 const TOMORROW = '2026-10-19'
@@ -127,6 +128,87 @@ function entryRows(connection: DatabaseSync) {
 }
 
 describe('native wird version healing', () => {
+  it('drains and acknowledges a prayer action without changing duplicate handling', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const repository = createWirdRepository(database)
+      await repository.setItemState({
+        day: TODAY,
+        versionId: VERSION_ID,
+        itemId,
+        done: false,
+        at: 100,
+      })
+      const acknowledge = jest.fn(() => true)
+      const action = {
+        actionId: 'prayer-action',
+        day: TODAY,
+        versionId: VERSION_ID,
+        itemId,
+        at: 100,
+      }
+      const dependencies = {
+        repository,
+        queue: { read: () => ({ valid: [action], malformedIds: [] }), acknowledge },
+        refreshViews: jest.fn(),
+      }
+      await expect(drainPrayerActions(dependencies)).resolves.toMatchObject({ applied: 1 })
+      await expect(drainPrayerActions(dependencies)).resolves.toMatchObject({ duplicate: 1 })
+      expect(acknowledge).toHaveBeenCalledWith(['prayer-action'])
+      expect(entryRows(connection).map((row) => [row.done, row.at])).toEqual([
+        [0, 100],
+        [1, 101],
+      ])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('keeps a later linked completion after taps with the same timestamp', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const repository = createWirdRepository(database)
+      const on = await repository.setItemState({
+        day: TODAY,
+        versionId: VERSION_ID,
+        itemId,
+        done: true,
+        at: 100,
+        actionId: 'on',
+      })
+      const off = await repository.setItemState({
+        day: TODAY,
+        versionId: VERSION_ID,
+        itemId,
+        done: false,
+        at: 100,
+        actionId: 'off',
+      })
+      const linked = await createDhikrCompletionRepository(database).completeLinkedWirdItem(
+        TODAY,
+        itemId,
+        100,
+      )
+      expect([on.ok, off.ok, linked.ok]).toEqual([true, true, true])
+      expect(entryRows(connection).map((row) => [row.done, row.at])).toEqual([
+        [1, 100],
+        [0, 101],
+        [1, 102],
+      ])
+      expect((await repository.getDayEntries(TODAY)).at(-1)?.done).toBe(true)
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('applies concurrent item changes in call order', async () => {
     const { directory, connection } = fresh()
     try {

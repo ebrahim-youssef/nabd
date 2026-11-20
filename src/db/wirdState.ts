@@ -78,7 +78,7 @@ export async function setItemStateInTransaction(
           input.itemId,
         )
       : null
-  const at = input.actionId !== undefined && latest ? Math.max(input.at, latest.at + 1) : input.at
+  const at = latest ? Math.max(input.at, latest.at + 1) : input.at
   const outcome: SetItemStateOutcome = !isCurrentItem
     ? 'stale'
     : latest && (latest.done === 1) === input.done

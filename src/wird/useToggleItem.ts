@@ -3,10 +3,18 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import type { DayId } from './types'
 
 import { logger } from '../observability/logger'
-import { refreshLiveRepositoryQueries } from '../shell/useLiveRepositoryQuery'
+import {
+  getLiveRepositoryReadSequence,
+  refreshLiveRepositoryQueries,
+} from '../shell/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
 
-type OptimisticItem = { done: boolean; committed: boolean; pending: number }
+type OptimisticItem = {
+  done: boolean
+  committed: boolean
+  pending: number
+  settledReadSequence: number
+}
 
 let actionSequence = 0
 
@@ -18,7 +26,7 @@ function nextActionId(itemId: string): string {
 export function useToggleItem(
   versionId: string | null,
   onRefresh?: () => void,
-  observed?: { day: DayId; revision: unknown },
+  observed?: { day: DayId; revision: number | undefined },
 ) {
   const repository = useWirdRepository()
   const pendingItems = useRef(new Set<string>())
@@ -35,7 +43,11 @@ export function useToggleItem(
     if (!observedDay || observedRevision === undefined) return
     let changed = false
     for (const [key, optimistic] of optimisticRef.current) {
-      if (key.startsWith(`${observedDay}:`) && optimistic.pending === 0) {
+      if (
+        key.startsWith(`${observedDay}:`) &&
+        optimistic.pending === 0 &&
+        observedRevision > optimistic.settledReadSequence
+      ) {
         optimisticRef.current.delete(key)
         changed = true
       }
@@ -51,7 +63,12 @@ export function useToggleItem(
   ): Promise<boolean> {
     const key = `${day}:${itemId}`
     const current = optimisticRef.current.get(key)
-    const optimistic = current ?? { done: previousDone, committed: previousDone, pending: 0 }
+    const optimistic = current ?? {
+      done: previousDone,
+      committed: previousDone,
+      pending: 0,
+      settledReadSequence: 0,
+    }
     optimistic.done = nextDone
     optimistic.pending += 1
     optimisticRef.current.set(key, optimistic)
@@ -87,6 +104,7 @@ export function useToggleItem(
     })()
     const wasSaved = await operation
     optimistic.pending -= 1
+    optimistic.settledReadSequence = getLiveRepositoryReadSequence()
     if (wasSaved) optimistic.committed = nextDone
     if (optimistic.pending === 0 && !wasSaved) optimistic.done = optimistic.committed
     setOptimisticItems(new Map(optimisticRef.current))

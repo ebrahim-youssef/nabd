@@ -8,6 +8,8 @@ import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { parseBackup, serializeBackup, type BackupEnvelope, type BackupRows } from '../logic'
 import { createBackupRepository } from '../db'
+import { createWirdRepository } from '../../wird/db'
+import { latestStateByItem } from '../../lib/wird'
 
 type BackupDatabase = ProductDatabase & MigrationDatabase
 
@@ -192,6 +194,22 @@ afterEach(() => {
 })
 
 describe('backup SQLite repository', () => {
+  it('preserves tied entry timestamps and their insertion order on restore', async () => {
+    const target = await migratedDatabase()
+    try {
+      const entries = [rows.wird_entries[0], { ...rows.wird_entries[0], id: 'entry-2', done: 0 }]
+      const repository = createBackupRepository(target.database)
+      const result = await repository.restore(validBackup({ ...rows, wird_entries: entries }))
+      expect(result.ok).toBe(true)
+      expect((await repository.readSnapshot()).wird_entries).toEqual(entries)
+      const restored = await createWirdRepository(target.database).getDayEntries('2026-10-18')
+      expect(latestStateByItem(restored).get('item-1')).toBe(false)
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
   it('restores a snapshot onto a fresh database with identical rows', async () => {
     const source = await migratedDatabase()
     const target = await migratedDatabase()
