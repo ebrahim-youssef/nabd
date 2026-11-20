@@ -22,6 +22,7 @@ const EMPTY_DEFINITION: WirdDefinition = { areas: [], items: [] }
 export type TodayDayPlan = {
   currentDay: DayId
   plan: DayPlan
+  observation?: unknown
   versionId: string | null
   status: 'loading' | 'ready' | 'failed' | 'unavailable'
   earliestVersionDay: DayId | null
@@ -110,6 +111,7 @@ export function useTodayDayPlan(day: DayId): TodayDayPlan {
   return {
     currentDay,
     plan,
+    observation: data,
     versionId: version?.id ?? null,
     status,
     earliestVersionDay,

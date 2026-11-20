@@ -253,6 +253,52 @@ describe('native wird version healing', () => {
     }
   })
 
+  it('preserves order when a linked completion is queued between item batches', async () => {
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      insertEntry(connection, 'initial', TODAY, VERSION_ID)
+      let release: () => void = () => undefined
+      const blocker = queueWrite(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve
+          }),
+      )
+      await Promise.resolve()
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const repository = createWirdRepository(database)
+      const first = repository.setItemState({
+        day: TODAY,
+        versionId: VERSION_ID,
+        itemId,
+        done: false,
+        at: CREATED_AT + 1,
+      })
+      const linked = createDhikrCompletionRepository(database).completeLinkedWirdItem(
+        TODAY,
+        itemId,
+        CREATED_AT + 2,
+      )
+      const last = repository.setItemState({
+        day: TODAY,
+        versionId: VERSION_ID,
+        itemId,
+        done: false,
+        at: CREATED_AT + 3,
+      })
+      release()
+      await blocker
+      const results = await Promise.all([first, linked, last])
+      expect(results.map((result) => result.ok)).toEqual([true, true, true])
+      expect(entryRows(connection).map((row) => row.done)).toEqual([1, 0, 1, 0])
+    } finally {
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('reports every item as failed when the enclosing transaction rolls back', async () => {
     const { directory, connection } = fresh()
     try {

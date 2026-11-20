@@ -15,14 +15,15 @@ import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from './types'
 import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 import { planVersionHealing } from './logic'
-import { queueWrite } from '../db/writeQueue'
+import { getWriteQueueSequence, queueWrite } from '../db/writeQueue'
 
 // Keep a healed version just above the version it heals so later explicit choices still win.
 const HEALED_VERSION_CREATED_AT_OFFSET = 1
 
 type WriteValue = { outcome: SetItemStateOutcome; entry: WirdEntry | null }
 type PendingWrite = { input: SetItemStateInput; resolve: (result: Result<WriteValue>) => void }
-const pendingWrites = new WeakMap<ProductDatabase, PendingWrite[]>()
+type PendingBatch = { writes: PendingWrite[]; sequence: number }
+const pendingWrites = new WeakMap<ProductDatabase, PendingBatch>()
 
 function enqueueItemState(
   database: ProductDatabase,
@@ -30,18 +31,18 @@ function enqueueItemState(
 ): Promise<Result<WriteValue>> {
   return new Promise((resolve) => {
     const pending = pendingWrites.get(database)
-    if (pending) {
-      pending.push({ input, resolve })
+    if (pending && pending.sequence === getWriteQueueSequence()) {
+      pending.writes.push({ input, resolve })
       return
     }
-    pendingWrites.set(database, [{ input, resolve }])
+    const batch: PendingBatch = { writes: [{ input, resolve }], sequence: 0 }
+    pendingWrites.set(database, batch)
     void queueWrite(async () => {
-      const batch = pendingWrites.get(database) ?? []
-      pendingWrites.delete(database)
+      if (pendingWrites.get(database) === batch) pendingWrites.delete(database)
       const results: Result<WriteValue>[] = []
       try {
         await database.withExclusiveTransactionAsync(async (transaction) => {
-          for (const write of batch) {
+          for (const write of batch.writes) {
             // Savepoints isolate individual failures while sharing the costly connection.
             await transaction.execAsync('SAVEPOINT wird_item')
             try {
@@ -58,11 +59,13 @@ function enqueueItemState(
         })
       } catch (cause: unknown) {
         logger.error('Native wird state transaction failed', cause)
-        for (const write of batch) write.resolve({ ok: false, error: 'set_item_state_failed' })
+        for (const write of batch.writes)
+          write.resolve({ ok: false, error: 'set_item_state_failed' })
         return
       }
-      batch.forEach((write, index) => write.resolve(results[index]))
+      batch.writes.forEach((write, index) => write.resolve(results[index]))
     })
+    batch.sequence = getWriteQueueSequence()
   })
 }
 

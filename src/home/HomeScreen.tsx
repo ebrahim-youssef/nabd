@@ -31,7 +31,7 @@ export function HomeScreen({ persisted }: { persisted: PersistedOnboarding }) {
   const { plan } = home
   const { toggle, optimisticItems, getOptimisticDone } = useToggleItem(home.versionId, undefined, {
     day: home.day,
-    plan,
+    revision: home.observation,
   })
   const router = useRouter()
   const [openSheet, setOpenSheet] = useState<OpenSheet>(null)

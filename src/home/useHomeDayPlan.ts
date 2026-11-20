@@ -31,6 +31,7 @@ const NUMBER_PADDING = '0'
 export type HomeDayPlan = {
   day: DayId
   plan: DayPlan
+  observation?: unknown
   status: 'loading' | 'ready' | 'failed'
   versionId: string | null
   refresh: () => void
@@ -157,6 +158,7 @@ export function useHomeDayPlan(persisted: PersistedOnboarding): HomeDayPlan {
   return {
     day,
     plan,
+    observation: data,
     status,
     versionId: data?.version.id ?? null,
     refresh,

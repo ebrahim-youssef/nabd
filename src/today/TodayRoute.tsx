@@ -26,7 +26,7 @@ export function TodayRoute({ day }: { day: DayId }) {
   const { plan } = today
   const { toggle, optimisticItems, getOptimisticDone } = useToggleItem(today.versionId, undefined, {
     day,
-    plan,
+    revision: today.observation,
   })
   const router = useRouter()
   const [toastItem, setToastItem] = useState<ToastItem | null>(null)

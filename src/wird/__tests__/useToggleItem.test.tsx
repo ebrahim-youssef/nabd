@@ -3,6 +3,8 @@ import { act, renderHook } from '@testing-library/react-native'
 import { useWirdRepository } from '../useWirdRepository'
 import { useToggleItem } from '../useToggleItem'
 import { refreshLiveRepositoryQueries } from '../../shell/useLiveRepositoryQuery'
+import { buildDayPlan } from '../../day-plan/logic'
+import { WIRD_LEVELS } from '../../content/levels'
 
 jest.mock('../useWirdRepository')
 jest.mock('../../shell/useLiveRepositoryQuery', () => ({ refreshLiveRepositoryQueries: jest.fn() }))
@@ -159,5 +161,110 @@ describe('useToggleItem', () => {
     })
     expect(setItemState.mock.calls.map(([input]) => input.done)).toEqual([true, false])
     expect(result.current.getOptimisticDone('2026-06-10', 'fajr', true)).toBe(false)
+  })
+
+  it('accepts a newer observed value after a successful write and toggles from it', async () => {
+    const setItemState = jest
+      .fn()
+      .mockResolvedValue({ ok: true, value: { outcome: 'applied', entry: null } })
+    mockedUseWirdRepository.mockReturnValue({ setItemState } as never)
+    const day = '2026-06-10'
+    const plan = buildDayPlan({
+      day,
+      now: 0,
+      times: null,
+      nextFajr: null,
+      definition: WIRD_LEVELS[0].wird,
+      entries: [],
+    })
+    const itemId = plan.blocks[0].items[0].id
+    const firstObservation = {}
+    const { result, rerender } = renderHook(
+      ({ revision }: { revision: object }) =>
+        useToggleItem('version-1', undefined, { day, revision }),
+      { initialProps: { revision: firstObservation } },
+    )
+    await act(async () => {
+      await result.current.toggle(day, itemId, true, false)
+    })
+    expect(result.current.getOptimisticDone(day, itemId, false)).toBe(true)
+    rerender({ revision: plan })
+    expect(result.current.optimisticItems.has(`${day}:${itemId}`)).toBe(false)
+    expect(result.current.getOptimisticDone(day, itemId, plan.blocks[0].items[0].done)).toBe(false)
+    await act(async () => {
+      await result.current.toggle(
+        day,
+        itemId,
+        !result.current.getOptimisticDone(day, itemId, plan.blocks[0].items[0].done),
+        false,
+      )
+    })
+    expect(setItemState).toHaveBeenLastCalledWith(expect.objectContaining({ done: true }))
+  })
+
+  it('clears a failed override when a newer plan is observed', async () => {
+    mockedUseWirdRepository.mockReturnValue({
+      setItemState: jest.fn().mockResolvedValue({ ok: false, error: 'failed' }),
+    } as never)
+    const day = '2026-06-10'
+    const initialPlan = buildDayPlan({
+      day,
+      now: 0,
+      times: null,
+      nextFajr: null,
+      definition: WIRD_LEVELS[0].wird,
+      entries: [],
+    })
+    const itemId = initialPlan.blocks[0].items[0].id
+    const plan = buildDayPlan({
+      day,
+      now: 0,
+      times: null,
+      nextFajr: null,
+      definition: WIRD_LEVELS[0].wird,
+      entries: [{ id: 'other', day, versionId: 'version-1', itemId, done: true, at: 1 }],
+    })
+    const { result, rerender } = renderHook(
+      ({ revision }: { revision: object }) =>
+        useToggleItem('version-1', undefined, { day, revision }),
+      { initialProps: { revision: {} } },
+    )
+    await act(async () => {
+      await result.current.toggle(day, itemId, true, false)
+    })
+    expect(result.current.optimisticItems.has(`${day}:${itemId}`)).toBe(true)
+    rerender({ revision: plan })
+    expect(result.current.optimisticItems.has(`${day}:${itemId}`)).toBe(false)
+    expect(result.current.getOptimisticDone(day, itemId, plan.blocks[0].items[0].done)).toBe(true)
+  })
+
+  it('keeps an override while its write is pending even if a plan arrives', async () => {
+    let release: (value: unknown) => void = () => undefined
+    mockedUseWirdRepository.mockReturnValue({
+      setItemState: jest.fn(
+        () =>
+          new Promise((resolve) => {
+            release = resolve
+          }),
+      ),
+    } as never)
+    const day = '2026-06-10'
+    const { result, rerender } = renderHook(
+      ({ revision }: { revision: object }) =>
+        useToggleItem('version-1', undefined, { day, revision }),
+      { initialProps: { revision: {} } },
+    )
+    let write: Promise<boolean> = Promise.resolve(false)
+    act(() => {
+      write = result.current.toggle(day, 'fajr', true, false)
+    })
+    rerender({ revision: {} })
+    expect(result.current.getOptimisticDone(day, 'fajr', false)).toBe(true)
+    await act(async () => {
+      release({ ok: true, value: { outcome: 'applied', entry: null } })
+      await write
+    })
+    rerender({ revision: {} })
+    expect(result.current.optimisticItems.has(`${day}:fajr`)).toBe(false)
   })
 })

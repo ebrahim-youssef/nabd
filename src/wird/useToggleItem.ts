@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 
 import type { DayId } from './types'
 
 import { logger } from '../observability/logger'
 import { refreshLiveRepositoryQueries } from '../shell/useLiveRepositoryQuery'
 import { useWirdRepository } from './useWirdRepository'
-import type { DayPlan } from '../day-plan/types'
 
 type OptimisticItem = { done: boolean; committed: boolean; pending: number }
 
@@ -19,7 +18,7 @@ function nextActionId(itemId: string): string {
 export function useToggleItem(
   versionId: string | null,
   onRefresh?: () => void,
-  observed?: { day: DayId; plan: DayPlan },
+  observed?: { day: DayId; revision: unknown },
 ) {
   const repository = useWirdRepository()
   const pendingItems = useRef(new Set<string>())
@@ -31,26 +30,19 @@ export function useToggleItem(
     new Map(),
   )
 
-  useEffect(() => {
-    if (!observed) return
-    const { plan, day } = observed
-    const items = [
-      ...plan.blocks.flatMap((block) => block.items),
-      ...plan.timedActs.flatMap((act) => act.items),
-      ...plan.anyTime,
-      ...plan.monthly.map(({ item }) => item),
-    ]
+  const observedDay = observed?.day
+  const observedRevision = observed?.revision
+  useLayoutEffect(() => {
+    if (!observedDay || observedRevision === undefined) return
     let changed = false
-    for (const item of items) {
-      const key = `${day}:${item.id}`
-      const optimistic = optimisticRef.current.get(key)
-      if (optimistic && optimistic.pending === 0 && optimistic.done === item.done) {
+    for (const [key, optimistic] of optimisticRef.current) {
+      if (key.startsWith(`${observedDay}:`) && optimistic.pending === 0) {
         optimisticRef.current.delete(key)
         changed = true
       }
     }
     if (changed) setOptimisticItems(new Map(optimisticRef.current))
-  }, [observed])
+  }, [observedDay, observedRevision])
 
   async function toggle(
     day: DayId,
