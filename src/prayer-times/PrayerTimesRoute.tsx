@@ -67,7 +67,7 @@ export function PrayerTimesRoute({
   return (
     <ScreenContainer testID="prayer-times-screen">
       <View className="gap-6">
-        <PageHeader backHref="/more" title={COPY.pageTitle} />
+        <PageHeader backHref="/more" directBack title={COPY.pageTitle} />
         {isEmpty ? (
           <StateView
             kind="empty"

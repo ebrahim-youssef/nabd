@@ -10,9 +10,11 @@ import type { DayId } from '../../wird/types'
 import { TodayRoute } from '../TodayRoute'
 import { useTodayDayPlan } from '../useTodayDayPlan'
 import { useToggleItem } from '../../wird/useToggleItem'
+import { useWirdRepository } from '../../wird/useWirdRepository'
 
 jest.mock('../useTodayDayPlan')
 jest.mock('../../wird/useToggleItem')
+jest.mock('../../wird/useWirdRepository')
 jest.mock('expo-router', () => ({ useRouter: jest.fn() }))
 jest.mock('lucide-react-native', () => ({ ChevronLeft: () => null, ChevronRight: () => null }))
 jest.mock('../../shell/ScreenContainer', () => ({
@@ -46,7 +48,13 @@ describe('TodayRoute', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     toggle.mockResolvedValue(true)
-    mockedUseToggleItem.mockReturnValue({ toggle, pendingItemIds: new Set(), hasError: false })
+    mockedUseToggleItem.mockReturnValue({
+      toggle,
+      pendingItemIds: new Set(),
+      hasError: false,
+      optimisticItems: new Map(),
+      getOptimisticDone: (_day, _id, done) => done,
+    })
     mockedUseRouter.mockReturnValue(router as never)
   })
 
@@ -140,8 +148,12 @@ describe('TodayRoute', () => {
     expect(screen.getByText('صلاة الفجر (النسخة السابقة)')).toBeTruthy()
     expect(screen.queryByText(/الاستغفار/)).toBeNull()
     fireEvent.press(screen.getByTestId('today-row-fajr'))
-    expect(toggle).toHaveBeenCalledWith(DAY, 'fajr', true)
-    expect(mockedUseToggleItem).toHaveBeenCalledWith('version-old', refresh)
+    expect(toggle).toHaveBeenCalledWith(DAY, 'fajr', true, false)
+    expect(mockedUseToggleItem).toHaveBeenCalledWith(
+      'version-old',
+      undefined,
+      expect.objectContaining({ day: DAY }),
+    )
     expect(await screen.findByTestId('today-toast')).toBeTruthy()
     fireEvent.press(screen.getByRole('button', { name: 'تراجع' }))
     expect(toggle).toHaveBeenLastCalledWith(DAY, 'fajr', false)
@@ -163,6 +175,28 @@ describe('TodayRoute', () => {
     await act(async () => resolveWrite(false))
     expect(await screen.findByText('تعذّر حفظ الفجر (جماعة). حاول مرة أخرى.')).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'تراجع' })).toBeNull()
+  })
+
+  it('shows the tapped row immediately and reverts it with a failure toast', async () => {
+    let resolveWrite: (result: unknown) => void = () => undefined
+    jest.mocked(useWirdRepository).mockReturnValue({
+      setItemState: () =>
+        new Promise((resolve) => {
+          resolveWrite = resolve
+        }),
+    } as never)
+    mockedUseToggleItem.mockImplementation(
+      jest.requireActual('../../wird/useToggleItem').useToggleItem,
+    )
+    showDay(DAY, 'version-1', WIRD_LEVELS[1].wird, NOW)
+    render(<TodayRoute day={DAY} />)
+    const row = screen.getByTestId('today-row-fajr')
+    fireEvent.press(row)
+    expect(screen.getByTestId('today-row-fajr').props.accessibilityState.checked).toBe(true)
+    await act(async () => resolveWrite({ ok: false, error: 'write failed' }))
+    expect(screen.getByTestId('today-row-fajr').props.accessibilityState.checked).toBe(false)
+    expect(await screen.findByText('تعذّر حفظ الفجر (جماعة). حاول مرة أخرى.')).toBeTruthy()
+    mockedUseToggleItem.mockReset()
   })
 
   it('shows a failed-save toast without undo when the undo write fails', async () => {
@@ -232,7 +266,7 @@ describe('TodayRoute', () => {
     expect(expectedIds).toHaveLength(screen.getAllByRole('checkbox').length)
     for (const id of expectedIds) expect(screen.getByTestId(`today-row-${id}`)).toBeTruthy()
     fireEvent.press(screen.getAllByRole('checkbox')[0])
-    expect(toggle).toHaveBeenCalledWith(DAY, expect.any(String), true)
+    expect(toggle).toHaveBeenCalledWith(DAY, expect.any(String), true, false)
   })
 })
 

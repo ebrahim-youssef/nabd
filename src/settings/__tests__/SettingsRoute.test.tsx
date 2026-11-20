@@ -10,6 +10,7 @@ import { SETTINGS_COPY, SETTINGS_LAYOUT_COPY } from '../copy'
 
 const mockDatabase = {}
 const mockPush = jest.fn()
+const mockReplace = jest.fn()
 const mockRead = jest.fn(async (_key: string): Promise<string | null> => null)
 const mockWrite = jest.fn(async (_key: string, _value: string, _updatedAt: number) => undefined)
 const mockEnabled = jest.fn()
@@ -47,7 +48,7 @@ jest.mock('lucide-react-native', () => ({
   ArrowRight: () => null,
 }))
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
   useFocusEffect: jest.fn(),
 }))
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => mockDatabase }))
@@ -111,6 +112,8 @@ describe('SettingsRoute', () => {
     expect(mockWrite).toHaveBeenCalledWith('theme', 'dark', expect.any(Number))
     fireEvent.press(screen.getByTestId('settings-level-row'))
     expect(mockPush).toHaveBeenCalledWith('/level')
+    fireEvent.press(screen.getByTestId('page-back'))
+    expect(mockReplace).toHaveBeenCalledWith('/more')
   }, 10_000)
   it('writes each notification preference', () => {
     render(<SettingsRoute />)

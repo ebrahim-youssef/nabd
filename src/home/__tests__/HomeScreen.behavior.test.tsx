@@ -45,7 +45,13 @@ describe('HomeScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     toggle.mockResolvedValue(true)
-    mockedUseToggleItem.mockReturnValue({ toggle, pendingItemIds: new Set(), hasError: false })
+    mockedUseToggleItem.mockReturnValue({
+      toggle,
+      pendingItemIds: new Set(),
+      hasError: false,
+      optimisticItems: new Map(),
+      getOptimisticDone: (_day, _id, done) => done,
+    })
     mockedUseRouter.mockReturnValue(openRouter as never)
   })
 
@@ -151,7 +157,7 @@ describe('HomeScreen', () => {
     render(<HomeScreen persisted={persisted()} />)
 
     fireEvent.press(screen.getByRole('checkbox', { name: /سنة الظهر القبلية/ }))
-    expect(toggle).toHaveBeenLastCalledWith(DAY, 'rawatib-dhuhr-before', true)
+    expect(toggle).toHaveBeenLastCalledWith(DAY, 'rawatib-dhuhr-before', true, false)
     expect(await screen.findByText('سُجّل سنة الظهر القبلية')).toBeTruthy()
     fireEvent.press(screen.getByRole('button', { name: 'تراجع' }))
     await waitFor(() => expect(toggle).toHaveBeenLastCalledWith(DAY, 'rawatib-dhuhr-before', false))
@@ -291,7 +297,7 @@ describe('HomeScreen', () => {
     fireEvent.press(screen.getByRole('button', { name: /أعمال اليوم/ }))
     fireEvent.press(screen.getByRole('checkbox', { name: /الاستغفار/ }))
 
-    expect(toggle).toHaveBeenCalledWith(DAY, 'istighfar', true)
+    expect(toggle).toHaveBeenCalledWith(DAY, 'istighfar', true, false)
   })
 
   it('shows the no-location prompt and starts the existing location request flow', () => {

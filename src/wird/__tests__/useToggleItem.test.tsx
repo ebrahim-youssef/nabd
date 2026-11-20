@@ -107,4 +107,57 @@ describe('useToggleItem', () => {
     expect(setItemState.mock.calls.map(([input]) => input.done)).toEqual([true, false])
     expect(setItemState.mock.calls[0][0].actionId).not.toBe(setItemState.mock.calls[1][0].actionId)
   })
+
+  it('shows a pending tap immediately and restores the saved state on failure', async () => {
+    let resolveWrite: (result: unknown) => void = () => undefined
+    const setItemState = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveWrite = resolve
+        }),
+    )
+    mockedUseWirdRepository.mockReturnValue({ setItemState } as never)
+    const { result } = renderHook(() => useToggleItem('version-1'))
+    let write: Promise<boolean> = Promise.resolve(true)
+    act(() => {
+      write = result.current.toggle('2026-06-10', 'fajr', true, false)
+    })
+    expect(result.current.getOptimisticDone('2026-06-10', 'fajr', false)).toBe(true)
+    await act(async () => {
+      resolveWrite({ ok: false, error: 'write failed' })
+      await write
+    })
+    expect(result.current.getOptimisticDone('2026-06-10', 'fajr', false)).toBe(false)
+    expect(result.current.hasError).toBe(true)
+  })
+
+  it('keeps the last of two rapid taps visible while both writes finish in order', async () => {
+    let release: () => void = () => undefined
+    const setItemState = jest
+      .fn((_input: { done: boolean }) =>
+        Promise.resolve({ ok: true, value: { outcome: 'applied' } }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            release = () => resolve({ ok: true, value: { outcome: 'applied' } })
+          }),
+      )
+      .mockResolvedValueOnce({ ok: true, value: { outcome: 'applied' } })
+    mockedUseWirdRepository.mockReturnValue({ setItemState } as never)
+    const { result } = renderHook(() => useToggleItem('version-1'))
+    let first: Promise<boolean> = Promise.resolve(false)
+    let second: Promise<boolean> = Promise.resolve(false)
+    act(() => {
+      first = result.current.toggle('2026-06-10', 'fajr', true, false)
+      second = result.current.toggle('2026-06-10', 'fajr', false, false)
+    })
+    expect(result.current.getOptimisticDone('2026-06-10', 'fajr', true)).toBe(false)
+    await act(async () => {
+      release()
+      await Promise.all([first, second])
+    })
+    expect(setItemState.mock.calls.map(([input]) => input.done)).toEqual([true, false])
+    expect(result.current.getOptimisticDone('2026-06-10', 'fajr', true)).toBe(false)
+  })
 })

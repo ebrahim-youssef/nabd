@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useFocusEffect } from 'expo-router'
 
 import { logger } from '../observability/logger'
+import { whenWritesIdle } from '../db/writeQueue'
 
 type LiveRepositoryQueryState<T> = {
   data: T | undefined
@@ -11,9 +12,17 @@ type LiveRepositoryQueryState<T> = {
 }
 
 const liveRepositoryRefreshers = new Set<() => void>()
+let refreshScheduled = false
 
 export function refreshLiveRepositoryQueries(): void {
-  for (const refresh of [...liveRepositoryRefreshers]) refresh()
+  if (refreshScheduled) return
+  refreshScheduled = true
+  setTimeout(() => {
+    void whenWritesIdle().then(() => {
+      refreshScheduled = false
+      for (const refresh of [...liveRepositoryRefreshers]) refresh()
+    })
+  }, 0)
 }
 
 export function useLiveRepositoryQuery<T>(read: () => Promise<T>): LiveRepositoryQueryState<T> {

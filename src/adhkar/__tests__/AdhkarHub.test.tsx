@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react-native'
 
 import { ADHKAR_LIBRARY } from '../../content/adhkar'
 import { formatAdhkarCount } from '../copy'
@@ -7,7 +7,10 @@ import { AdhkarRoute } from '../AdhkarRoute'
 const mockPush = jest.fn()
 const mockReadProgress = jest.fn()
 const mockReadLinked = jest.fn()
-const mockPlan = { openTimedActs: [{ id: 'morning-adhkar' }], timedActs: [] }
+const mockPlan = {
+  openTimedActs: [{ id: 'morning-adhkar' }],
+  timedActs: [] as { id: string; items: unknown[] }[],
+}
 
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -41,6 +44,7 @@ describe('AdhkarRoute', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockPlan.openTimedActs = [{ id: 'morning-adhkar' }]
+    mockPlan.timedActs = []
     mockReadProgress.mockResolvedValue({ index: 2, count: 0, finished: false })
     mockReadLinked.mockResolvedValue(false)
   })
@@ -76,6 +80,16 @@ describe('AdhkarRoute', () => {
     })
     for (const category of ADHKAR_LIBRARY)
       expect(screen.getByTestId(`adhkar-row-${category.id}`)).toBeTruthy()
+  })
+
+  it('identifies a linked morning set and leaves its title room to scale', async () => {
+    mockPlan.openTimedActs = []
+    mockPlan.timedActs = [{ id: 'morning-adhkar', items: [{}] }]
+    render(<AdhkarRoute />)
+    await waitFor(() => expect(screen.getByTestId('adhkar-row-morning')).toBeTruthy())
+    const row = within(screen.getByTestId('adhkar-row-morning'))
+    await waitFor(() => expect(row.getByText(/من وِردك اليوم/)).toBeTruthy())
+    expect(row.getByText('أذكار الصباح').props.className).toContain('text-body')
   })
 
   it('opens each other category from its row', async () => {

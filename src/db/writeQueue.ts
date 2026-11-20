@@ -9,3 +9,11 @@ export function queueWrite<T>(write: () => Promise<T>): Promise<T> {
   )
   return result
 }
+
+export async function whenWritesIdle(): Promise<void> {
+  let current: Promise<void>
+  do {
+    current = tail
+    await current
+  } while (current !== tail)
+}

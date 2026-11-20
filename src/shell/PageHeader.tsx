@@ -7,7 +7,15 @@ import { shellCopy } from './copy'
 import { ICON_SIZE, useThemeColors } from '../../theme/tokens'
 import { Text } from './Text'
 
-export function PageHeader({ title, backHref }: { title: string; backHref?: string }) {
+export function PageHeader({
+  title,
+  backHref,
+  directBack = false,
+}: {
+  title: string
+  backHref?: string
+  directBack?: boolean
+}) {
   const router = useRouter()
   const theme = useThemeColors()
 
@@ -18,7 +26,9 @@ export function PageHeader({ title, backHref }: { title: string; backHref?: stri
           accessibilityLabel={shellCopy.back}
           accessibilityRole="button"
           className="size-9 items-center justify-center rounded-control border border-line bg-surface"
-          onPress={() => (router.canGoBack() ? router.back() : router.replace(backHref))}
+          onPress={() =>
+            !directBack && router.canGoBack() ? router.back() : router.replace(backHref)
+          }
           testID="page-back"
         >
           <ArrowRight accessible={false} color={theme.ink} size={ICON_SIZE} />
