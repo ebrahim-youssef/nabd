@@ -5,16 +5,14 @@ import { Pressable } from 'react-native'
 import { Text } from '../src/shell/Text'
 
 import { ScreenContainer } from '../src/shell/ScreenContainer'
+import { StateView } from '../src/ui/StateView'
 
 export default function NotFoundRoute() {
   const router = useRouter()
 
   return (
     <ScreenContainer testID="not-found">
-      <Text accessibilityRole="header" className="font-display text-sheet-title text-accent">
-        {shellCopy.notFound}
-      </Text>
-      <Text className="mt-4 text-body text-start text-ink">{shellCopy.appNotFoundHint}</Text>
+      <StateView kind="empty" title={shellCopy.notFound} body={shellCopy.publicNotFoundHint} />
       <Pressable
         accessibilityLabel={shellCopy.returnHome}
         accessibilityRole="button"

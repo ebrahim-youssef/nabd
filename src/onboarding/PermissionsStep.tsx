@@ -4,21 +4,10 @@ import { Switch, View } from 'react-native'
 
 import { deviceCopy } from '../device/copy'
 import { useLocationCapability } from '../device/useLocationCapability'
-import {
-  useNotificationSettings,
-  type NotificationMomentKey,
-} from '../device/useNotificationSettings'
+import { useNotificationSettings } from '../device/useNotificationSettings'
 import { Text } from '../shell/Text'
 import { NATIVE_ONBOARDING_COPY } from './copy'
 import { OnboardingButton } from './OnboardingButton'
-
-const NOTIFICATION_MOMENTS: readonly { key: NotificationMomentKey; label: string }[] = [
-  { key: 'beforeAdhan', label: ONBOARDING_COPY.momentBefore },
-  { key: 'atAdhan', label: ONBOARDING_COPY.momentAdhan },
-  { key: 'atIqamah', label: ONBOARDING_COPY.momentIqamah },
-  { key: 'morningAdhkar', label: ONBOARDING_COPY.momentMorningAdhkar },
-  { key: 'eveningAdhkar', label: ONBOARDING_COPY.momentEveningAdhkar },
-]
 
 type LocationView = ReturnType<typeof useLocationCapability>
 type NotificationView = ReturnType<typeof useNotificationSettings>
@@ -26,7 +15,6 @@ type NotificationView = ReturnType<typeof useNotificationSettings>
 type PermissionsStepProps = {
   location: LocationView
   notifications: NotificationView
-  isFinalStep: boolean
   onContinue: () => void
 }
 
@@ -72,7 +60,6 @@ function LocationSetup({ location }: { location: LocationView }) {
 
 function NotificationSetup({ notifications }: { notifications: NotificationView }) {
   const [notificationRequestDenied, setNotificationRequestDenied] = useState(false)
-  const showMoments = notifications.permission === 'granted' && notifications.prefs.enabled
   const showDenied = notifications.permission === 'denied' && notificationRequestDenied
   const showBlocked = notifications.permission === 'blocked'
 
@@ -131,33 +118,11 @@ function NotificationSetup({ notifications }: { notifications: NotificationView 
           />
         </>
       ) : null}
-      {showMoments ? (
-        <View className="gap-2 ps-7" testID="onboarding-notification-moments">
-          {NOTIFICATION_MOMENTS.map((moment) => (
-            <View className="flex-row items-center justify-between gap-3" key={moment.key}>
-              <Text className="text-meta flex-1 text-start text-ink">{moment.label}</Text>
-              <Switch
-                accessibilityLabel={moment.label}
-                accessibilityRole="switch"
-                accessibilityState={{ checked: notifications.prefs[moment.key] }}
-                onValueChange={(value) => void notifications.setMoment(moment.key, value)}
-                testID={`onboarding-moment-${moment.key}`}
-                value={notifications.prefs[moment.key]}
-              />
-            </View>
-          ))}
-        </View>
-      ) : null}
     </View>
   )
 }
 
-export function PermissionsStep({
-  location,
-  notifications,
-  isFinalStep,
-  onContinue,
-}: PermissionsStepProps) {
+export function PermissionsStep({ location, notifications, onContinue }: PermissionsStepProps) {
   return (
     <View testID="onboarding-permissions">
       <Text
@@ -171,7 +136,7 @@ export function PermissionsStep({
         <NotificationSetup notifications={notifications} />
       </View>
       <OnboardingButton
-        label={isFinalStep ? ONBOARDING_COPY.finish : ONBOARDING_COPY.confirm}
+        label={ONBOARDING_COPY.confirm}
         onPress={onContinue}
         testID="onboarding-permissions-continue"
       />
