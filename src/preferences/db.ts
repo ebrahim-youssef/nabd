@@ -2,6 +2,7 @@ import type { NotificationPrefs } from '../device/logic'
 import { DEFAULT_NOTIFICATION_PREFS, parseNotificationPrefs } from '../device/logic'
 
 import type { ProductDatabase } from '../db/productDatabase'
+import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 export const PREFERENCE_KEYS = {
   celebratedDay: 'nabd:celebrated-day',
@@ -49,10 +50,16 @@ export function createPreferencesRepository(database: ProductDatabase) {
 
     async write(key: PreferenceKey, value: string, updatedAt: number): Promise<void> {
       await database.runAsync(WRITE_PREFERENCE, key, value, updatedAt)
+      if (isWidgetPrayerPreference(key)) void requestWidgetSnapshotWrite()
     },
 
     async clear(key: PreferenceKey): Promise<void> {
       await database.runAsync(CLEAR_PREFERENCE, key)
+      if (isWidgetPrayerPreference(key)) void requestWidgetSnapshotWrite()
     },
   }
+}
+
+function isWidgetPrayerPreference(key: PreferenceKey): boolean {
+  return key === PREFERENCE_KEYS.calculationMethod
 }

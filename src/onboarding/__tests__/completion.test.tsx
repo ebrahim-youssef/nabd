@@ -4,6 +4,7 @@ import { useSQLiteContext } from 'expo-sqlite'
 import TabsLayout from '../../../app/(tabs)/_layout'
 import { setOnboardingComplete } from '../completion'
 import { createOnboardingRepository } from '../db'
+import { requestWidgetSnapshotWrite } from '../../device/widgetSnapshotWriter'
 
 jest.mock('../../wird/CompletionCelebration', () => ({ CompletionCelebration: () => null }))
 jest.mock('expo-router', () => {
@@ -33,6 +34,9 @@ jest.mock('../../shell/BottomNav', () => {
   }
 })
 jest.mock('../db', () => ({ createOnboardingRepository: jest.fn() }))
+jest.mock('../../device/widgetSnapshotWriter', () => ({
+  requestWidgetSnapshotWrite: jest.fn(),
+}))
 
 const mockedUseSQLiteContext = useSQLiteContext as jest.MockedFunction<typeof useSQLiteContext>
 const mockedCreateOnboardingRepository = createOnboardingRepository as jest.MockedFunction<
@@ -75,5 +79,11 @@ describe('onboarding completion bootstrap', () => {
     await act(async () => resolveLoad({ selectedLevelId: 'light' }))
 
     expect(screen.queryByTestId('bottom-nav')).toBeNull()
+  })
+
+  it('requests a widget snapshot when onboarding completes', () => {
+    setOnboardingComplete(true)
+
+    expect(requestWidgetSnapshotWrite).toHaveBeenCalledTimes(1)
   })
 })

@@ -5,7 +5,12 @@ import type { Result } from '../lib/result'
 import type { DayId, WirdEntry } from '../wird/types'
 import type { FlowState } from './logic'
 import type { ProductDatabase } from '../db/productDatabase'
-import { asEntry, readVersionInForce, setItemStateInTransaction } from '../db/wirdState'
+import {
+  asEntry,
+  readVersionInForce,
+  runWirdStateTransaction,
+  setItemStateInTransaction,
+} from '../db/wirdState'
 import type { EntryRow } from '../db/wirdState'
 import { queueWrite } from '../db/writeQueue'
 type Row = {
@@ -101,7 +106,7 @@ export function createAdhkarRepository(database: ProductDatabase): AdhkarReposit
       try {
         let value: WirdEntry | null = null
         await queueWrite(() =>
-          database.withExclusiveTransactionAsync(async (transaction) => {
+          runWirdStateTransaction(database, async (transaction) => {
             const version = await readVersionInForce(transaction, day)
             const result = await setItemStateInTransaction(
               transaction,
@@ -115,6 +120,7 @@ export function createAdhkarRepository(database: ProductDatabase): AdhkarReposit
               version,
             )
             value = result.entry
+            return result
           }),
         )
         return { ok: true, value }

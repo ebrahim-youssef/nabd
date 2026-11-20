@@ -3,6 +3,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 
 import { logger } from '../observability/logger'
 import { createOnboardingRepository } from './db'
+import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 type OnboardingCompletionListener = () => void
 
@@ -15,6 +16,7 @@ export function setOnboardingComplete(value: boolean) {
   if (onboardingComplete === value) return
   onboardingComplete = value
   onboardingCompletionListeners.forEach((listener) => listener())
+  if (value) void requestWidgetSnapshotWrite()
 }
 
 export function useOnboardingComplete(): boolean {

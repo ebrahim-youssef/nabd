@@ -10,6 +10,8 @@ import { parseBackup, serializeBackup, type BackupEnvelope, type BackupRows } fr
 import { createBackupRepository } from '../db'
 import { createWirdRepository } from '../../wird/db'
 import { latestStateByItem } from '../../lib/wird'
+import * as widgetSnapshotWriter from '../../device/widgetSnapshotWriter'
+import { queueWrite } from '../../db/writeQueue'
 
 type BackupDatabase = ProductDatabase & MigrationDatabase
 
@@ -194,6 +196,30 @@ afterEach(() => {
 })
 
 describe('backup SQLite repository', () => {
+  it('waits for the writer queue before restoring wird data', async () => {
+    const target = await migratedDatabase()
+    try {
+      const transaction = jest.spyOn(target.database, 'withExclusiveTransactionAsync')
+      let release: () => void = () => undefined
+      const blocker = queueWrite(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve
+          }),
+      )
+      await Promise.resolve()
+      const restore = createBackupRepository(target.database).restore(validBackup(rows))
+      expect(transaction).not.toHaveBeenCalled()
+      release()
+      await blocker
+      expect((await restore).ok).toBe(true)
+      expect(transaction).toHaveBeenCalledTimes(1)
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
   it('preserves tied entry timestamps and their insertion order on restore', async () => {
     const target = await migratedDatabase()
     try {
@@ -216,6 +242,7 @@ describe('backup SQLite repository', () => {
     try {
       await seed(source.database, rows)
       const snapshot = await createBackupRepository(source.database).readSnapshot()
+      const snapshotWrite = jest.spyOn(widgetSnapshotWriter, 'requestWidgetSnapshotWrite')
 
       await expect(
         createBackupRepository(target.database).restore(validBackup(snapshot)),
@@ -231,6 +258,7 @@ describe('backup SQLite repository', () => {
           wird_actions: 1,
         },
       })
+      expect(snapshotWrite).toHaveBeenCalledTimes(1)
       await expect(createBackupRepository(target.database).readSnapshot()).resolves.toEqual(
         snapshot,
       )

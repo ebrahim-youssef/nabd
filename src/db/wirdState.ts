@@ -2,6 +2,7 @@ import { versionInForce } from '../lib/wird'
 import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from '../wird/types'
 import type { SetItemStateInput, SetItemStateOutcome } from './contracts'
 import { SQLITE_ID, type ProductDatabase } from './productDatabase'
+import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 export type VersionRow = {
   id: string
@@ -111,4 +112,17 @@ export async function setItemStateInTransaction(
     )
   }
   return { outcome, entry }
+}
+
+export async function runWirdStateTransaction<T>(
+  database: ProductDatabase,
+  task: (transaction: ProductDatabase) => Promise<T>,
+): Promise<T> {
+  let result: T | undefined
+  await database.withExclusiveTransactionAsync(async (transaction) => {
+    result = await task(transaction)
+  })
+  if (result === undefined) throw new Error('wird state transaction returned no result')
+  void requestWidgetSnapshotWrite()
+  return result
 }

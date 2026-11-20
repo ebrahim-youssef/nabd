@@ -1,6 +1,7 @@
 import { createPreferencesRepository, PREFERENCE_KEYS } from '../preferences/db'
 import type { ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
+import { requestWidgetSnapshotWrite } from './widgetSnapshotWriter'
 
 const LOCATION_CACHE_MAX_AGE_MINUTES = 10
 const MINUTE_MS = 60 * 1000
@@ -113,6 +114,7 @@ export function createDeviceRepository(database: ProductDatabase) {
           recordedAt,
         )
       })
+      void requestWidgetSnapshotWrite()
     } catch (cause: unknown) {
       logger.error('Native location cache write failed', cause, { operation: 'write' })
       throw cause

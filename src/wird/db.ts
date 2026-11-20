@@ -1,7 +1,12 @@
 import { WIRD_LEVELS } from '../content/levels'
 import { nextDay } from '../lib/day'
 import { versionInForce } from '../lib/wird'
-import { asEntry, asVersion, setItemStateInTransaction } from '../db/wirdState'
+import {
+  asEntry,
+  asVersion,
+  runWirdStateTransaction,
+  setItemStateInTransaction,
+} from '../db/wirdState'
 import type { EntryRow, VersionRow } from '../db/wirdState'
 import { sameDefinition } from './logic'
 import type {
@@ -16,6 +21,7 @@ import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
 import { logger } from '../observability/logger'
 import { planVersionHealing } from './logic'
 import { getWriteQueueSequence, queueWrite } from '../db/writeQueue'
+import { requestWidgetSnapshotWrite } from '../device/widgetSnapshotWriter'
 
 // Keep a healed version just above the version it heals so later explicit choices still win.
 const HEALED_VERSION_CREATED_AT_OFFSET = 1
@@ -41,7 +47,7 @@ function enqueueItemState(
       if (pendingWrites.get(database) === batch) pendingWrites.delete(database)
       const results: Result<WriteValue>[] = []
       try {
-        await database.withExclusiveTransactionAsync(async (transaction) => {
+        await runWirdStateTransaction(database, async (transaction) => {
           for (const write of batch.writes) {
             // Savepoints isolate individual failures while sharing the costly connection.
             await transaction.execAsync('SAVEPOINT wird_item')
@@ -56,6 +62,7 @@ function enqueueItemState(
               results.push({ ok: false, error: 'set_item_state_failed' })
             }
           }
+          return results
         })
       } catch (cause: unknown) {
         logger.error('Native wird state transaction failed', cause)
@@ -103,6 +110,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
         createdAt,
       )
       if (!row) throw new Error('missing version')
+      void requestWidgetSnapshotWrite()
       return { ok: true, value: asVersion(row) }
     } catch (cause: unknown) {
       logger.error('Native wird version insert failed', cause)
@@ -136,6 +144,7 @@ export function createWirdRepository(database: ProductDatabase): NativeWirdRepos
         result = { created: true, effectiveFrom: plan.effectiveFrom }
       }),
     )
+    if (result.created) void requestWidgetSnapshotWrite()
     return result
   }
   return {

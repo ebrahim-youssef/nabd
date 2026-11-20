@@ -13,6 +13,7 @@ import { createWirdRepository } from '../db'
 import { createDhikrCompletionRepository } from '../../counter/db'
 import { queueWrite } from '../../db/writeQueue'
 import { drainPrayerActions } from '../../device/prayerActionDrain'
+import * as widgetSnapshotWriter from '../../device/widgetSnapshotWriter'
 
 const TODAY = '2026-10-18'
 const TOMORROW = '2026-10-19'
@@ -128,6 +129,82 @@ function entryRows(connection: DatabaseSync) {
 }
 
 describe('native wird version healing', () => {
+  it('requests one widget snapshot after a batch commits', async () => {
+    const events: string[] = []
+    const snapshotWrite = jest
+      .spyOn(widgetSnapshotWriter, 'requestWidgetSnapshotWrite')
+      .mockImplementation(async () => {
+        events.push('snapshot')
+      })
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      const transact = database.withExclusiveTransactionAsync.bind(database)
+      const transactions = jest
+        .spyOn(database, 'withExclusiveTransactionAsync')
+        .mockImplementation(async (task) => {
+          await transact(task)
+          events.push('commit')
+        })
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const results = await Promise.all(
+        [true, false, true].map((done, index) =>
+          repository.setItemState({
+            day: TODAY,
+            versionId: VERSION_ID,
+            itemId,
+            done,
+            at: CREATED_AT + index,
+          }),
+        ),
+      )
+      expect(results.map((result) => result.ok)).toEqual([true, true, true])
+      expect(transactions).toHaveBeenCalledTimes(1)
+      expect(snapshotWrite).toHaveBeenCalledTimes(1)
+      expect(events).toEqual(['commit', 'snapshot'])
+    } finally {
+      snapshotWrite.mockRestore()
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('does not request a widget snapshot when the batch transaction rolls back', async () => {
+    const snapshotWrite = jest
+      .spyOn(widgetSnapshotWriter, 'requestWidgetSnapshotWrite')
+      .mockResolvedValue(undefined)
+    const { directory, connection } = fresh()
+    try {
+      const database = await migrate(connection)
+      insertVersion(connection, VERSION_ID, TODAY, WIRD_LEVELS[0].wird, CREATED_AT)
+      jest
+        .spyOn(database, 'withExclusiveTransactionAsync')
+        .mockRejectedValue(new Error('transaction failed'))
+      const repository = createWirdRepository(database)
+      const itemId = WIRD_LEVELS[0].wird.items[0].id
+      const results = await Promise.all(
+        [true, false].map((done) =>
+          repository.setItemState({
+            day: TODAY,
+            versionId: VERSION_ID,
+            itemId,
+            done,
+            at: CREATED_AT,
+          }),
+        ),
+      )
+      expect(results.map((result) => result.ok)).toEqual([false, false])
+      expect(snapshotWrite).not.toHaveBeenCalled()
+      expect(entryRows(connection)).toEqual([])
+    } finally {
+      snapshotWrite.mockRestore()
+      connection.close()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
   it('drains and acknowledges a prayer action without changing duplicate handling', async () => {
     const { directory, connection } = fresh()
     try {
@@ -148,6 +225,7 @@ describe('native wird version healing', () => {
         day: TODAY,
         versionId: VERSION_ID,
         itemId,
+        done: true,
         at: 100,
       }
       const dependencies = {
