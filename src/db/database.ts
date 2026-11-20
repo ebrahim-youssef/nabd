@@ -1,5 +1,9 @@
 import * as SQLite from 'expo-sqlite'
-import { CURRENT_SCHEMA_VERSION, SCHEMA_VERSION_PREFERENCES } from './schemaVersion'
+import {
+  CURRENT_SCHEMA_VERSION,
+  SCHEMA_VERSION_ACTIONS,
+  SCHEMA_VERSION_PREFERENCES,
+} from './schemaVersion'
 
 export const DATABASE_NAME = 'nabd-native.db'
 export const SCHEMA_VERSION_MIGRATIONS = 1
@@ -48,6 +52,9 @@ const CREATE_ADHKAR_FLOW_TABLE = `CREATE TABLE IF NOT EXISTS adhkar_flow_progres
   finished INTEGER NOT NULL)`
 const CREATE_APP_PREFERENCES_TABLE =
   'CREATE TABLE IF NOT EXISTS app_preferences (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)'
+const CREATE_WIRD_ACTIONS_TABLE = `CREATE TABLE IF NOT EXISTS wird_actions (
+  action_id TEXT PRIMARY KEY, item_id TEXT NOT NULL, day TEXT NOT NULL, version_id TEXT NOT NULL,
+  done INTEGER NOT NULL, outcome TEXT NOT NULL, at INTEGER NOT NULL)`
 
 async function applyMigration(database: MigrationDatabase, version: number): Promise<void> {
   if (version === SCHEMA_VERSION_MIGRATIONS) return
@@ -76,6 +83,10 @@ async function applyMigration(database: MigrationDatabase, version: number): Pro
   }
   if (version === SCHEMA_VERSION_PREFERENCES) {
     await database.execAsync(CREATE_APP_PREFERENCES_TABLE)
+    return
+  }
+  if (version === SCHEMA_VERSION_ACTIONS) {
+    await database.execAsync(CREATE_WIRD_ACTIONS_TABLE)
     return
   }
   throw new Error(`SQLite migration ${version} is not defined`)

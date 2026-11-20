@@ -43,6 +43,7 @@ describe('migrateDatabase', () => {
     expect(executed).toContain('wird_version_id TEXT NOT NULL REFERENCES wird_versions(id)')
     expect(executed).toContain('CREATE TABLE IF NOT EXISTS wird_versions')
     expect(executed).toContain('CREATE TABLE IF NOT EXISTS app_preferences')
+    expect(executed).toContain('CREATE TABLE IF NOT EXISTS wird_actions')
     expect(executed).toContain('idx_wird_versions_effective')
     expect(executed).not.toContain('is_active')
     expect(fake.version()).toBe(CURRENT_SCHEMA_VERSION)
@@ -97,5 +98,19 @@ describe('migrateDatabase', () => {
 
     await expect(migrateDatabase(fake.database)).rejects.toThrow('newer')
     expect(fake.database.withExclusiveTransactionAsync).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies the action log migration after preferences', async () => {
+    const fake = createMigrationDatabase(4)
+
+    await expect(migrateDatabase(fake.database)).resolves.toBe(5)
+
+    expect(fake.database.execAsync).toHaveBeenCalledWith(
+      expect.stringContaining('CREATE TABLE IF NOT EXISTS wird_actions'),
+    )
+    expect(fake.database.runAsync).toHaveBeenLastCalledWith(
+      expect.stringContaining('INSERT INTO schema_version'),
+      5,
+    )
   })
 })

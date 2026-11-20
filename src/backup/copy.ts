@@ -10,16 +10,19 @@ export const BACKUP_TABLE_LABELS: Record<BackupTable, string> = {
   qada_events: 'أحداث القضاء',
   adhkar_flow_progress: 'تقدّم الأذكار',
   app_preferences: 'التفضيلات',
+  wird_actions: 'سجل الإجراءات',
 }
 
 export const BACKUP_COPY = {
   title: 'النسخ الاحتياطي',
   description: 'احفظ بيانات نبض في ملف يمكنك مشاركته واستيراده لاحقًا.',
   onboardingRestoreTitle: 'استعادة من نسخة احتياطية',
-  onboardingRestoreBody: 'إذا كانت لديك نسخة محفوظة، يمكنك استعادة بياناتك قبل بدء الاستخدام.',
   export: 'تصدير نسخة احتياطية',
+  exportDescription: 'يُنشئ ملفًا ويفتح المشاركة لحفظه',
   import: 'استيراد نسخة احتياطية',
-  busy: 'جارٍ تجهيز النسخة الاحتياطية…',
+  importDescription: 'تُضاف السجلات ولا يُستبدل شيء',
+  privacyTitle: 'بياناتك على جهازك فقط.',
+  privacyDetail: 'الملف لا يُرفع إلى أي خادم؛ أنت من يختار أين يحفظه.',
   previewTitle: 'مراجعة الاستيراد',
   previewBody: 'ستُضاف السجلات التالية إلى بياناتك، ولن تُستبدل السجلات الموجودة.',
   previewEmpty: 'كل ما في هذا الملف موجود على جهازك بالفعل.',

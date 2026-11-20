@@ -1,20 +1,20 @@
 {
   "name": "nabd",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "build": "expo export --platform android",
-    "build:apk": "expo prebuild --platform android --clean && node scripts/run-gradle.cjs assembleRelease",
-    "build:aab": "expo prebuild --platform android --clean && node scripts/run-gradle.cjs bundleRelease",
+    "build:apk": "node scripts/check-fonts.cjs && expo prebuild --platform android --clean && node scripts/run-gradle.cjs assembleRelease",
+    "build:aab": "node scripts/check-fonts.cjs && expo prebuild --platform android --clean && node scripts/run-gradle.cjs bundleRelease",
     "lint": "vp lint",
     "format": "vp fmt",
     "format:check": "vp fmt --check",
     "check:no-sentry": "node scripts/check-no-sentry.mjs",
     "typecheck": "tsc --noEmit",
     "test": "jest --runInBand",
-    "test:native-module": "expo prebuild --platform android --no-install && node scripts/run-gradle.cjs :nabd-device:testReleaseUnitTest",
+    "test:native-module": "node scripts/check-fonts.cjs && expo prebuild --platform android --no-install && node scripts/run-gradle.cjs :nabd-device:testReleaseUnitTest",
     "prepare": "husky"
   },
   "dependencies": {

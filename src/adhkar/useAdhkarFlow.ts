@@ -1,7 +1,6 @@
 import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-import { toDayId } from '../lib/day'
 import { INITIAL_FLOW, tap as tapFlow } from './logic'
 import type { Dhikr } from '../content/adhkar'
 import type { DayId } from '../wird/types'
@@ -9,11 +8,12 @@ import type { FlowState } from './logic'
 
 import { createAdhkarRepository } from './db'
 import { normalizeFlowState } from './logic'
+import { refreshLiveRepositoryQueries } from '../shell/useLiveRepositoryQuery'
 
 export function useAdhkarFlow(
   categoryId: string,
   items: Dhikr[],
-  day: DayId = toDayId(new Date()),
+  day: DayId,
   now: () => number = Date.now,
 ) {
   const database = useSQLiteContext()
@@ -81,6 +81,7 @@ export function useAdhkarFlow(
     if (persisted) void repository.writeFlowProgress(categoryId, day, next)
     if (finishedNow) {
       void repository.completeLinkedWirdItem(day, categoryId, now()).then((result) => {
+        if (result.ok && result.value) refreshLiveRepositoryQueries()
         if (result.ok) setMarked({ key: flowKey, value: true })
       })
     }

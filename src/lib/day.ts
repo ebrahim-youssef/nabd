@@ -4,7 +4,7 @@ import type { DayId } from '../wird/types'
 // the impure clock (lib/impure/clock) — these functions only transform values passed in, so
 // they stay testable with zero mocks.
 
-const DAY_ID_PATTERN = /^\d{4}-\d{2}-\d{2}$/
+const DAY_ID_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/
 
 // Formats a Date to a DayId in the machine's local timezone. Local (not UTC) is deliberate: a
 // wird belongs to the user's calendar day, not the server's.
@@ -16,7 +16,16 @@ export function toDayId(date: Date): DayId {
 }
 
 export function isDayId(value: string): value is DayId {
-  return DAY_ID_PATTERN.test(value)
+  const match = DAY_ID_PATTERN.exec(value)
+  if (!match) return false
+
+  const year = Number(match[1])
+  const month = Number(match[2]) - 1
+  const day = Number(match[3])
+  const date = new Date(0)
+  date.setUTCFullYear(year, month, day)
+
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month && date.getUTCDate() === day
 }
 
 // Lexicographic comparison works for 'YYYY-MM-DD' and matches chronological order. Returns
@@ -44,6 +53,16 @@ const MS_PER_DAY = 86_400_000
 export function nextDay(day: DayId): DayId {
   const [year, month, dayOfMonth] = day.split('-').map(Number)
   const date = new Date(Date.UTC(year, month - 1, dayOfMonth) + MS_PER_DAY)
+  const y = date.getUTCFullYear()
+  const m = `${date.getUTCMonth() + 1}`.padStart(2, '0')
+  const d = `${date.getUTCDate()}`.padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+// The calendar day before `day`. Steps in UTC from the date parts, so it is DST-safe.
+export function previousDay(day: DayId): DayId {
+  const [year, month, dayOfMonth] = day.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, dayOfMonth) - MS_PER_DAY)
   const y = date.getUTCFullYear()
   const m = `${date.getUTCMonth() + 1}`.padStart(2, '0')
   const d = `${date.getUTCDate()}`.padStart(2, '0')

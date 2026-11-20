@@ -1,13 +1,13 @@
 import { NAV_ORDER, shellCopy } from '../copy'
 
 describe('shared shell copy', () => {
-  it('exports five distinct Arabic nav labels in the fixed navigation order', () => {
+  it('exports four distinct Arabic nav labels in the fixed navigation order', () => {
     const labels = NAV_ORDER.map((key) => shellCopy.nav[key])
 
-    expect(labels).toHaveLength(5)
+    expect(labels).toHaveLength(4)
     expect(new Set(labels).size).toBe(labels.length)
-    expect(NAV_ORDER).toEqual(['libraries', 'prayerTimes', 'home', 'stats', 'settings'])
-    expect(labels).toEqual(['المكتبات', 'المواقيت', 'الرئيسية', 'الإحصائيات', 'الإعدادات'])
+    expect(NAV_ORDER).toEqual(['home', 'today', 'adhkar', 'more'])
+    expect(labels).toEqual(['الرئيسية', 'اليوم', 'الأذكار', 'المزيد'])
   })
 
   it('keeps the reusable shell lines Arabic and distinct from the nav labels', () => {

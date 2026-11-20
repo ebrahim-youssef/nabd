@@ -1,15 +1,13 @@
 import { fireEvent, render, screen } from '@testing-library/react-native'
 
 import { SoundPreviewSection } from '../SoundPreviewSection'
+import { SOUND_PREVIEWS } from '../soundPreviews'
 import { useSoundPreview } from '../useSoundPreview'
+import { NATIVE_SETTINGS_COPY } from '../constants'
+import { uiCopy } from '../../ui/copy'
 
-jest.mock('../useSoundPreview', () => ({
-  useSoundPreview: jest.fn(),
-}))
-jest.mock('lucide-react-native', () => ({
-  Play: () => null,
-  Square: () => null,
-}))
+jest.mock('../useSoundPreview', () => ({ useSoundPreview: jest.fn() }))
+jest.mock('lucide-react-native', () => ({ Play: () => null, Square: () => null }))
 
 const mockedUseSoundPreview = useSoundPreview as jest.MockedFunction<typeof useSoundPreview>
 const play = jest.fn()
@@ -21,39 +19,26 @@ describe('SoundPreviewSection', () => {
     mockedUseSoundPreview.mockReturnValue({ currentId: null, play, stop })
   })
 
-  it('renders all four previews and starts the selected sound', async () => {
+  it.each(SOUND_PREVIEWS)('starts the $id preview', async ({ id, label }) => {
     await render(<SoundPreviewSection />)
-
-    expect(screen.getByTestId('settings-sounds')).toBeTruthy()
-    expect(screen.getByTestId('sound-preview-before')).toBeTruthy()
-    expect(screen.getByTestId('sound-preview-adhan')).toBeTruthy()
-    expect(screen.getByTestId('sound-preview-adhan-fajr')).toBeTruthy()
-    expect(screen.getByTestId('sound-preview-iqama')).toBeTruthy()
-
-    await fireEvent.press(screen.getByTestId('sound-preview-before'))
-
-    expect(play).toHaveBeenCalledWith('before')
+    await fireEvent.press(screen.getByRole('button', { name: `${uiCopy.play}، ${label}` }))
+    expect(play).toHaveBeenCalledWith(id)
   })
 
-  it('turns the active preview button into a stop control', async () => {
+  it('stops the active preview', async () => {
     mockedUseSoundPreview.mockReturnValue({ currentId: 'adhan', play, stop })
-
     await render(<SoundPreviewSection />)
-    expect(screen.getByTestId('sound-preview-adhan').props.accessibilityLabel).toBe('إيقاف الأذان')
-
-    await fireEvent.press(screen.getByTestId('sound-preview-adhan'))
-
+    await fireEvent.press(
+      screen.getByRole('button', {
+        name: `${uiCopy.stop}، ${NATIVE_SETTINGS_COPY.sounds.previews.adhan.label}`,
+      }),
+    )
     expect(stop).toHaveBeenCalledTimes(1)
     expect(play).not.toHaveBeenCalled()
   })
 
-  it('tells users to raise the volume or turn off silent mode to hear previews', async () => {
+  it('shows the volume and silent mode hint', async () => {
     await render(<SoundPreviewSection />)
-
-    expect(
-      screen.getByText(
-        'تتبع المعاينة مستوى صوت الوسائط ووضع الصامت في الهاتف؛ ارفع الصوت أو أوقف الوضع الصامت لسماعها.',
-      ),
-    ).toBeTruthy()
+    expect(screen.getByText(NATIVE_SETTINGS_COPY.sounds.note)).toBeTruthy()
   })
 })

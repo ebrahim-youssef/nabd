@@ -16,7 +16,19 @@ import type { OnboardingDatabase } from '../db'
 import { PowerStep } from '../PowerStep'
 
 jest.mock('expo-sqlite', () => ({ useSQLiteContext: jest.fn() }))
-jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
+jest.mock('lucide-react-native', () => ({
+  ArrowRight: () => null,
+  ChevronLeft: () => null,
+  Download: () => null,
+  ShieldCheck: () => null,
+  TriangleAlert: () => null,
+  Upload: () => null,
+}))
+jest.mock('../../day-plan/WirdTodayProvider', () => ({ useWirdToday: () => '2026-08-10' }))
+jest.mock('expo-router', () => ({
+  useFocusEffect: jest.fn(),
+  useRouter: () => ({ push: jest.fn() }),
+}))
 jest.mock('../../device/useBatteryOptimization', () => ({
   useBatteryOptimization: jest.fn(),
 }))
@@ -47,8 +59,6 @@ const mockedRequestPrayerReschedule = requestPrayerReschedule as jest.MockedFunc
 >
 const FIXED_DATE = new Date(2026, 7, 10, 0, 30)
 const NOW = () => FIXED_DATE
-// The first render in this file loads every onboarding module and can exceed the default 1s on CI.
-const COLD_RENDER_TIMEOUT_MS = 10_000
 
 type StateRow = {
   answers_json: string
@@ -107,11 +117,12 @@ const RESTORE_COUNTS = {
   qada_events: 0,
   adhkar_flow_progress: 0,
   app_preferences: 0,
+  wird_actions: 0,
 }
 
 const RESTORE_PREVIEW = {
   backup: {
-    formatVersion: 1 as const,
+    formatVersion: 2 as const,
     schemaVersion: 1,
     exportedAt: '2026-10-18T10:00:00.000Z',
     data: {
@@ -121,6 +132,7 @@ const RESTORE_PREVIEW = {
       qada_events: [],
       adhkar_flow_progress: [],
       app_preferences: [],
+      wird_actions: [],
     },
   },
   counts: RESTORE_COUNTS,
@@ -133,14 +145,15 @@ async function renderGate(database: OnboardingDatabase) {
 
 async function reachPermissions(database: OnboardingDatabase) {
   const view = await renderGate(database)
-  await screen.findByTestId('onboarding-welcome')
+  await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+    timeout: 5000,
+  })
   await fireEvent.press(screen.getByTestId('onboarding-begin'))
   for (const question of QUESTIONS) {
-    await fireEvent.press(screen.getByTestId(`answer-${question.id}-${question.options[0].id}`))
+    await fireEvent.press(screen.getByText(question.options[0].label))
   }
-  await fireEvent.press(screen.getByTestId('onboarding-submit'))
   await screen.findByTestId('onboarding-level')
-  await fireEvent.press(screen.getByTestId(`level-${WIRD_LEVELS[0].id}`))
+  await fireEvent.press(screen.getByText(WIRD_LEVELS[0].title))
   await fireEvent.press(screen.getByTestId('onboarding-confirm'))
   await screen.findByTestId('onboarding-permissions')
   return view
@@ -170,6 +183,7 @@ describe('OnboardingGate', () => {
         action: null,
       },
       coordinates: { latitude: 30, longitude: 31 },
+      hasReadCache: true,
       isRefreshing: false,
       refresh: jest.fn(),
       runAction: jest.fn(),
@@ -196,6 +210,37 @@ describe('OnboardingGate', () => {
     })
   })
 
+  it('advances one question at a time and back retains answers', async () => {
+    await renderGate(createPersistedDatabase().database)
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
+    fireEvent.press(screen.getByTestId('onboarding-begin'))
+    expect(screen.getByTestId('onboarding-dots')).toBeTruthy()
+    expect(screen.getByText(QUESTIONS[0].prompt)).toBeTruthy()
+    expect(screen.queryByText(QUESTIONS[1].prompt)).toBeNull()
+    fireEvent.press(screen.getByText(QUESTIONS[0].options[0].label))
+    expect(screen.getByText(QUESTIONS[1].prompt)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'رجوع' })).toBeTruthy()
+    fireEvent.press(screen.getByTestId('onboarding-back'))
+    expect(
+      screen.getByRole('radio', { name: QUESTIONS[0].options[0].label }).props.accessibilityState
+        .checked,
+    ).toBe(true)
+  })
+
+  it('shows the recommended level first and allows another selection', async () => {
+    await renderGate(createPersistedDatabase().database)
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
+    fireEvent.press(screen.getByTestId('onboarding-begin'))
+    for (const question of QUESTIONS) fireEvent.press(screen.getByText(question.options[0].label))
+    expect(screen.getAllByRole('radio')[0]).toHaveTextContent('مقترح', { exact: false })
+    fireEvent.press(screen.getAllByRole('radio')[1])
+    expect(screen.getAllByRole('radio')[1].props.accessibilityState.checked).toBe(true)
+  })
+
   it('renders retryable error and complete welcome content', async () => {
     const loadingDatabase: OnboardingDatabase = {
       getFirstAsync: jest.fn(async () => null),
@@ -203,7 +248,9 @@ describe('OnboardingGate', () => {
       withExclusiveTransactionAsync: jest.fn(),
     }
     const view = await renderGate(loadingDatabase)
-    await screen.findByTestId('onboarding-welcome', {}, { timeout: COLD_RENDER_TIMEOUT_MS })
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     for (const point of ONBOARDING_COPY.welcomePoints) {
       expect(screen.getByText(point)).toBeTruthy()
     }
@@ -221,7 +268,9 @@ describe('OnboardingGate', () => {
   it('shows a restore action on the welcome screen', async () => {
     const view = await renderGate(createPersistedDatabase().database)
 
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     expect(screen.getByTestId('onboarding-restore')).toHaveTextContent('استعادة من نسخة احتياطية')
 
     view.unmount()
@@ -269,12 +318,22 @@ describe('OnboardingGate', () => {
     }))
 
     const view = await renderGate(persisted.database)
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     await fireEvent.press(screen.getByTestId('onboarding-restore'))
     view.rerender(<OnboardingGate now={NOW} />)
     await screen.findByTestId('backup-preview')
+    expect(screen.getByText('مراجعة الاستيراد')).toBeTruthy()
+    expect(screen.getByTestId('backup-count-onboarding_state')).toHaveTextContent('سجل واحد', {
+      exact: false,
+    })
+    expect(screen.getByTestId('backup-count-wird_versions')).toHaveTextContent('سجل واحد', {
+      exact: false,
+    })
+    expect(screen.queryByTestId('backup-count-wird_entries')).toBeNull()
     await act(async () => {
-      await fireEvent.press(screen.getByTestId('backup-confirm'))
+      await fireEvent.press(screen.getByRole('button', { name: 'تأكيد الاستيراد' }))
     })
 
     await screen.findByTestId('home-shell')
@@ -307,15 +366,19 @@ describe('OnboardingGate', () => {
     }))
 
     const view = await renderGate(createPersistedDatabase().database)
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     await fireEvent.press(screen.getByTestId('onboarding-restore'))
     view.rerender(<OnboardingGate now={NOW} />)
     await screen.findByTestId('backup-preview')
     await act(async () => {
-      await fireEvent.press(screen.getByTestId('backup-confirm'))
+      await fireEvent.press(screen.getByRole('button', { name: 'تأكيد الاستيراد' }))
     })
 
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     expect(mockedRequestPrayerReschedule).toHaveBeenCalledTimes(1)
     expect(screen.queryByTestId('home-shell')).toBeNull()
     await waitFor(() => expect(mockSetColorScheme).toHaveBeenCalledWith('system'))
@@ -345,11 +408,13 @@ describe('OnboardingGate', () => {
     }))
 
     const view = await renderGate(persisted.database)
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     await fireEvent.press(screen.getByTestId('onboarding-restore'))
     view.rerender(<OnboardingGate now={NOW} />)
     await screen.findByTestId('backup-preview')
-    await fireEvent.press(screen.getByTestId('backup-cancel'))
+    await fireEvent.press(screen.getByRole('button', { name: 'إلغاء' }))
     view.rerender(<OnboardingGate now={NOW} />)
 
     expect(cancelRestore).toHaveBeenCalledTimes(1)
@@ -359,6 +424,29 @@ describe('OnboardingGate', () => {
     expect(screen.getByTestId('onboarding-welcome')).toBeTruthy()
 
     view.unmount()
+  })
+
+  it('does not allow confirming an empty welcome restore review', async () => {
+    const confirmRestore = jest.fn()
+    const emptyCounts = Object.fromEntries(
+      Object.keys(RESTORE_COUNTS).map((key) => [key, 0]),
+    ) as typeof RESTORE_COUNTS
+    mockedUseBackup.mockReturnValue({
+      cancelRestore: jest.fn(),
+      chooseFile: jest.fn(),
+      confirmRestore,
+      exportBackup: jest.fn(),
+      isBusy: false,
+      preview: { ...RESTORE_PREVIEW, counts: emptyCounts },
+      status: null,
+    })
+    await renderGate(createPersistedDatabase().database)
+    await waitFor(() => expect(screen.getByTestId('backup-preview')).toBeTruthy(), {
+      timeout: 5000,
+    })
+    expect(screen.getByText('كل ما في هذا الملف موجود على جهازك بالفعل.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'تأكيد الاستيراد' })).toBeDisabled()
+    expect(confirmRestore).not.toHaveBeenCalled()
   })
 
   it('does not reschedule after a failed welcome restore', async () => {
@@ -382,12 +470,14 @@ describe('OnboardingGate', () => {
     }))
 
     const view = await renderGate(createPersistedDatabase().database)
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     await fireEvent.press(screen.getByTestId('onboarding-restore'))
     view.rerender(<OnboardingGate now={NOW} />)
     await screen.findByTestId('backup-preview')
     await act(async () => {
-      await fireEvent.press(screen.getByTestId('backup-confirm'))
+      await fireEvent.press(screen.getByRole('button', { name: 'تأكيد الاستيراد' }))
     })
 
     expect(confirmRestore).toHaveBeenCalledTimes(1)
@@ -400,52 +490,53 @@ describe('OnboardingGate', () => {
   it('completes the reference questionnaire, permits a manual level, and restores after remount', async () => {
     const persisted = createPersistedDatabase()
     const firstMount = await renderGate(persisted.database)
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     await fireEvent.press(screen.getByTestId('onboarding-begin'))
 
-    expect(screen.getAllByRole('radio')).toHaveLength(
-      QUESTIONS.reduce((total, question) => total + question.options.length, 0),
-    )
+    expect(screen.getAllByRole('radio')).toHaveLength(QUESTIONS[0].options.length)
     for (const question of QUESTIONS) {
-      await fireEvent.press(screen.getByTestId(`answer-${question.id}-${question.options[0].id}`))
+      await fireEvent.press(screen.getByText(question.options[0].label))
     }
-    await fireEvent.press(screen.getByTestId('onboarding-submit'))
 
     await screen.findByTestId('onboarding-level')
-    await fireEvent.press(screen.getByTestId(`level-${WIRD_LEVELS[0].id}`))
-    expect(screen.getByTestId(`level-${WIRD_LEVELS[0].id}`).props.accessibilityState.checked).toBe(
-      true,
-    )
+    await fireEvent.press(screen.getByText(WIRD_LEVELS[0].title))
+    expect(
+      screen.getByRole('radio', { name: new RegExp(WIRD_LEVELS[0].title) }).props.accessibilityState
+        .checked,
+    ).toBe(true)
     await fireEvent.press(screen.getByTestId('onboarding-confirm'))
     expect(screen.getByTestId('onboarding-permissions')).toBeTruthy()
     expect(persisted.database.runAsync).not.toHaveBeenCalled()
     await fireEvent.press(screen.getByTestId('onboarding-permissions-continue'))
     await screen.findByTestId('onboarding-power')
     await fireEvent.press(screen.getByTestId('onboarding-finish'))
-    await fireEvent.press(screen.getByTestId('onboarding-finish'))
 
     await screen.findByTestId('home-shell')
-    expect(screen.getByText(WIRD_LEVELS[0].title)).toBeTruthy()
+    expect(screen.getByText('نية اليوم')).toBeTruthy()
     expect(persisted.database.runAsync).toHaveBeenCalledTimes(2)
     expect(persisted.state()?.effective_from).toBe('2026-08-10')
+    expect(mockedRequestPrayerReschedule).toHaveBeenCalledTimes(1)
 
     firstMount.unmount()
     await renderGate(persisted.database)
     await waitFor(() => expect(screen.getByTestId('home-shell')).toBeTruthy())
-    expect(screen.getByText(WIRD_LEVELS[0].title)).toBeTruthy()
+    expect(screen.getByText('نية اليوم')).toBeTruthy()
   })
 
   it('shows permissions before the optimized battery step', async () => {
     const persisted = createPersistedDatabase()
     const view = await renderGate(persisted.database)
-    await screen.findByTestId('onboarding-welcome')
+    await waitFor(() => expect(screen.getByTestId('onboarding-welcome')).toBeTruthy(), {
+      timeout: 5000,
+    })
     await fireEvent.press(screen.getByTestId('onboarding-begin'))
     for (const question of QUESTIONS) {
-      await fireEvent.press(screen.getByTestId(`answer-${question.id}-${question.options[0].id}`))
+      await fireEvent.press(screen.getByText(question.options[0].label))
     }
-    await fireEvent.press(screen.getByTestId('onboarding-submit'))
     await screen.findByTestId('onboarding-level')
-    await fireEvent.press(screen.getByTestId(`level-${WIRD_LEVELS[0].id}`))
+    await fireEvent.press(screen.getByText(WIRD_LEVELS[0].title))
     await fireEvent.press(screen.getByTestId('onboarding-confirm'))
 
     expect(screen.getByTestId('onboarding-permissions')).toBeTruthy()
@@ -463,7 +554,7 @@ describe('OnboardingGate', () => {
       const persisted = createPersistedDatabase()
       const view = await reachPermissions(persisted.database)
 
-      expect(screen.getByRole('button', { name: ONBOARDING_COPY.finish })).toBeTruthy()
+      expect(screen.getByRole('button', { name: ONBOARDING_COPY.confirm })).toBeTruthy()
       await fireEvent.press(screen.getByTestId('onboarding-permissions-continue'))
       await screen.findByTestId('home-shell')
       expect(screen.queryByTestId('onboarding-power')).toBeNull()
@@ -473,7 +564,7 @@ describe('OnboardingGate', () => {
     },
   )
 
-  it('keeps the power step finishable after requesting an exemption', async () => {
+  it('finishes after the requested battery exemption is granted', async () => {
     const request = jest.fn()
     let batteryStatus: 'optimized' | 'exempt' = 'optimized'
     mockedUseBatteryOptimization.mockImplementation(() => ({ status: batteryStatus, request }))
@@ -489,12 +580,6 @@ describe('OnboardingGate', () => {
     expect(request).toHaveBeenCalledTimes(1)
     batteryStatus = 'exempt'
     await view.rerender(<OnboardingGate now={NOW} />)
-    expect(screen.getByTestId('onboarding-power-protected')).toHaveTextContent(
-      'حماية التنبيهات مفعّلة.',
-    )
-    expect(screen.queryByTestId('onboarding-power-enable')).toBeNull()
-
-    await fireEvent.press(screen.getByTestId('onboarding-finish'))
     await screen.findByTestId('home-shell')
     expect(persisted.database.runAsync).toHaveBeenCalledTimes(2)
 
@@ -655,36 +740,30 @@ describe('OnboardingGate', () => {
     view.unmount()
   })
 
-  it('shows all five notification moments with their stored defaults after granting', async () => {
+  it('keeps notification moment defaults without showing their controls', async () => {
+    const setMoment = jest.fn()
+    const prefs = { ...DEFAULT_NOTIFICATION_PREFS, enabled: true }
     mockedUseNotificationSettings.mockReturnValue({
       permission: 'granted',
-      prefs: { ...DEFAULT_NOTIFICATION_PREFS, enabled: true },
+      prefs,
       silentMode: false,
       hasCoordinates: true,
       notificationStatus: { state: 'ready', message: deviceCopy.notifications.ready, action: null },
       exactAlarmStatus: { state: 'not-required', message: '', action: null },
       isPending: jest.fn(() => false),
       setEnabled: jest.fn(),
-      setMoment: jest.fn(),
+      setMoment,
       setSilentMode: jest.fn(),
       runAction: jest.fn(),
     })
     const view = await reachPermissions(createPersistedDatabase().database)
 
-    expect(screen.getByTestId('onboarding-notification-moments')).toBeTruthy()
-    const moments = [
-      ['beforeAdhan', ONBOARDING_COPY.momentBefore],
-      ['atAdhan', ONBOARDING_COPY.momentAdhan],
-      ['atIqamah', ONBOARDING_COPY.momentIqamah],
-      ['morningAdhkar', ONBOARDING_COPY.momentMorningAdhkar],
-      ['eveningAdhkar', ONBOARDING_COPY.momentEveningAdhkar],
-    ] as const
-    for (const [key, label] of moments) {
-      expect(screen.getByText(label)).toBeTruthy()
-      expect(screen.getByTestId(`onboarding-moment-${key}`).props.value).toBe(
-        DEFAULT_NOTIFICATION_PREFS[key],
-      )
-    }
+    expect(screen.queryByTestId('onboarding-notification-moments')).toBeNull()
+    await fireEvent.press(screen.getByTestId('onboarding-permissions-continue'))
+    await fireEvent.press(screen.getByTestId('onboarding-finish'))
+    await screen.findByTestId('home-shell')
+    expect(setMoment).not.toHaveBeenCalled()
+    expect(prefs).toEqual({ ...DEFAULT_NOTIFICATION_PREFS, enabled: true })
 
     view.unmount()
   })
@@ -734,8 +813,8 @@ describe('OnboardingGate', () => {
     expect(runAction).not.toHaveBeenCalled()
     expect(deniedNotifications.permission).toBe('granted')
     expect(deniedNotifications.prefs.enabled).toBe(true)
-    expect(screen.getByTestId('onboarding-notification-moments')).toBeTruthy()
-    expect(screen.getAllByRole('switch')).toHaveLength(6)
+    expect(screen.queryByTestId('onboarding-notification-moments')).toBeNull()
+    expect(screen.getAllByRole('switch')).toHaveLength(1)
 
     view.unmount()
   })

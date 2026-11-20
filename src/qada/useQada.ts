@@ -4,7 +4,7 @@ import { useSQLiteContext } from 'expo-sqlite'
 import { useCallback, useMemo } from 'react'
 
 import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
-import { createQadaRepository } from './db'
+import { createQadaRepository, restoreQadaPrayer } from './db'
 
 export function useQada() {
   const database = useSQLiteContext()
@@ -14,26 +14,37 @@ export function useQada() {
 
   const addDebt = useCallback(
     async (days: number) => {
-      await repository.addQadaDebt(days, Date.now())
-      refresh()
+      const result = await repository.addQadaDebt(days, Date.now())
+      if (result.ok) refresh()
+      return result.ok
     },
     [refresh, repository],
   )
 
   const payPrayer = useCallback(
     async (prayerId: QadaPrayerId) => {
-      await repository.payQadaPrayer(prayerId, Date.now())
-      refresh()
+      const result = await repository.payQadaPrayer(prayerId, Date.now())
+      if (result.ok) refresh()
+      return result.ok
     },
     [refresh, repository],
   )
 
-  const remaining = qadaRemaining(events)
+  const undoPrayer = useCallback(
+    async (prayerId: QadaPrayerId) => {
+      const result = await restoreQadaPrayer(database, prayerId, Date.now())
+      if (result.ok) refresh()
+      return result.ok
+    },
+    [database, refresh],
+  )
+
   return {
     isLoading,
     hasAny: events.length > 0,
-    remaining,
+    remaining: qadaRemaining(events),
     addDebt,
     payPrayer,
+    undoPrayer,
   }
 }

@@ -1,68 +1,28 @@
-import { useEffect, useState } from 'react'
-import { AppState, Switch, View } from 'react-native'
-
-import { devicePlatform, type CountdownNotificationResult } from '../device/platform'
-import { requestPrayerReschedule } from '../device/prayerAlarms'
-import type { NotificationPermission } from '../device/types'
-import { Text } from '../shell/Text'
-import { NATIVE_SETTINGS_COPY } from './constants'
 import { useCountdownPreference } from './useCountdownPreference'
-
-type CountdownToggleProps = {
-  notificationPermission: NotificationPermission
-  notificationsEnabled: boolean
-}
+import { requestPrayerReschedule } from '../device/prayerAlarms'
+import { SwitchRow } from '../ui/SwitchRow'
+import { NATIVE_SETTINGS_COPY } from './constants'
 
 export function CountdownToggle({
-  notificationPermission,
-  notificationsEnabled,
-}: CountdownToggleProps) {
+  disabled,
+  disabledReason,
+}: {
+  disabled: boolean
+  disabledReason?: string
+}) {
   const { enabled, setEnabled } = useCountdownPreference()
-  const [status, setStatus] = useState<CountdownNotificationResult | null>(null)
-  const disabled = notificationPermission !== 'granted' || !notificationsEnabled
-
-  useEffect(() => {
-    const readStatus = () => setStatus(devicePlatform.getCountdownNotificationStatus())
-    readStatus()
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') readStatus()
-    })
-
-    return () => subscription.remove()
-  }, [])
-
-  async function handleValueChange(value: boolean): Promise<void> {
+  async function change(value: boolean) {
     await setEnabled(value)
     requestPrayerReschedule()
   }
-
   return (
-    <View
-      className={`flex-row items-start justify-between gap-3 rounded-card border p-4 ${enabled ? 'border-primary bg-primary/10' : 'border-border bg-surface'}`}
-      testID="notification-countdown-row"
-    >
-      <View className="flex-1 gap-1">
-        <Text className="text-body text-start text-foreground">
-          {NATIVE_SETTINGS_COPY.notifications.countdownTitle}
-        </Text>
-        <Text className="text-small text-start text-muted-foreground">
-          {NATIVE_SETTINGS_COPY.notifications.countdownBody}
-        </Text>
-        {enabled && status === 'channel-blocked' ? (
-          <Text className="text-small text-start text-muted-foreground">
-            {NATIVE_SETTINGS_COPY.notifications.countdownBlocked}
-          </Text>
-        ) : null}
-      </View>
-      <Switch
-        accessibilityLabel={NATIVE_SETTINGS_COPY.notifications.countdownTitle}
-        accessibilityRole="switch"
-        accessibilityState={{ disabled }}
-        disabled={disabled}
-        onValueChange={(value) => void handleValueChange(value)}
-        testID="notification-countdown"
-        value={enabled}
-      />
-    </View>
+    <SwitchRow
+      label={NATIVE_SETTINGS_COPY.notifications.countdownTitle}
+      description={NATIVE_SETTINGS_COPY.notifications.countdownBody}
+      value={enabled}
+      onValueChange={(value) => void change(value)}
+      disabled={disabled}
+      disabledReason={disabledReason}
+    />
   )
 }

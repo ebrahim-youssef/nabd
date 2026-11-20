@@ -128,15 +128,30 @@ function alarmSnapshot(alarms: AlarmPayload[], silentMode: boolean, now: number)
     version: NATIVE_SNAPSHOT_VERSION,
     alarms: alarms
       .filter((alarm) => alarm.at > now)
-      .map((alarm) => ({
-        id: String(alarm.id),
-        at: alarm.at,
-        title: alarm.title,
-        body: alarm.body,
-        sound: soundFor(alarm.channelKey),
-        channelId: channelFor(alarm.channelKey, silentMode),
-        isAlarmChannel: silentMode,
-      })),
+      .map((alarm) => {
+        const supportsPrayerAction =
+          alarm.channelKey === 'adhan' ||
+          alarm.channelKey === 'adhanFajr' ||
+          alarm.channelKey === 'iqamah'
+        return {
+          id: String(alarm.id),
+          at: alarm.at,
+          title: alarm.title,
+          body: alarm.body,
+          sound: soundFor(alarm.channelKey),
+          channelId: channelFor(alarm.channelKey, silentMode),
+          isAlarmChannel: silentMode,
+          ...(supportsPrayerAction && alarm.prayerAction
+            ? {
+                actionItemId: alarm.prayerAction.itemId,
+                actionDay: alarm.prayerAction.day,
+                actionVersionId: alarm.prayerAction.versionId,
+                actionId: alarm.prayerAction.actionId,
+                actionLabel: alarm.prayerAction.label,
+              }
+            : {}),
+        }
+      }),
   })
 }
 

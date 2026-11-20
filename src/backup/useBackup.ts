@@ -49,6 +49,7 @@ export function useBackup() {
 
     inFlight.current = true
     setIsBusy(true)
+    setStatus(null)
     try {
       let snapshot
       try {
@@ -136,6 +137,7 @@ export function useBackup() {
 
     inFlight.current = true
     setIsBusy(true)
+    setStatus(null)
     try {
       let result: BackupRestoreResult
       try {

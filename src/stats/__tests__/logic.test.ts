@@ -1,4 +1,5 @@
 import { completionPercent, earliestDay, formatArabicWeekday, formatCompletion } from '../logic'
+import { formatWeekSummary } from '../copy'
 import type { WirdDefinition, WirdEntry, WirdItem, WirdVersion } from '../../wird/types'
 
 import {
@@ -260,6 +261,16 @@ describe('itemStat (per-item history, NBD-47)', () => {
     })
   })
 
+  it('lets the last same-time entry determine the item day history', () => {
+    const fajr = item('fajr')
+    const versions = [ver('v1', '2026-07-01', [fajr])]
+    const rows = [entry('2026-07-01', 'fajr', true, 1), entry('2026-07-01', 'fajr', false, 1)]
+
+    expect(itemStat(versions, rows, fajr, ['2026-07-01'], '2026-07-01')).toMatchObject({
+      doneDays: 0,
+    })
+  })
+
   it('bridges an absence: dropping then re-adding an item never breaks its streak nor fabricates misses', () => {
     const asr = item('asr')
     const versions = [
@@ -346,5 +357,13 @@ describe('itemStat (per-item history, NBD-47)', () => {
     )
     expect(stats).toHaveLength(1)
     expect(stats[0]).toMatchObject({ itemId: 'fajr', doneDays: 1, currentStreak: 1 })
+  })
+})
+
+describe('week summary copy', () => {
+  it('describes complete days and today’s progress in Arabic', () => {
+    expect(formatWeekSummary(5, 40)).toBe('أتممت وِردك ٥ أيام من ٧، واليوم ٤٠٪ حتى الآن.')
+    expect(formatWeekSummary(1, 0)).toBe('أتممت وِردك ١ يومًا من ٧، واليوم ٠٪ حتى الآن.')
+    expect(formatWeekSummary(2, 100)).toBe('أتممت وِردك ٢ يومين من ٧، واليوم ١٠٠٪ حتى الآن.')
   })
 })

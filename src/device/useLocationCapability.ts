@@ -33,6 +33,7 @@ export type LocationCapabilityView = {
   permission: LocationPermission
   status: LocationStatus
   coordinates: { latitude: number; longitude: number } | null
+  hasReadCache: boolean
   isRefreshing: boolean
   refresh: (options?: LocationRefreshOptions) => Promise<void>
   runAction: (action?: LocationActionType) => Promise<void>
@@ -48,6 +49,7 @@ const INITIAL_SNAPSHOT: LocationCapabilitySnapshot = {
 type LocationCapabilityViewState = {
   snapshot: LocationCapabilitySnapshot
   coordinates: { latitude: number; longitude: number } | null
+  hasReadCache: boolean
   isRefreshing: boolean
 }
 
@@ -62,25 +64,45 @@ const locationViewListeners = new Set<LocationViewListener>()
 let sharedRefreshPromise: Promise<void> | null = null
 let sharedRefreshIsForced = false
 let forcedRefreshQueued = false
+let hasUnforcedRefreshQueued = false
 
 const INITIAL_VIEW: LocationCapabilityViewState = {
   snapshot: INITIAL_SNAPSHOT,
   coordinates: null,
+  hasReadCache: false,
   isRefreshing: true,
+}
+
+let publishedLocationView = INITIAL_VIEW
+let publishedCachedLocation: CachedLocation | null = null
+
+export function __resetLocationViewForTests() {
+  publishedLocationView = INITIAL_VIEW
+  publishedCachedLocation = null
 }
 
 function subscribeLocationView(listener: LocationViewListener): () => void {
   locationViewListeners.add(listener)
+  listener(publishedLocationView, publishedCachedLocation)
   return () => locationViewListeners.delete(listener)
 }
 
 function publishLocationView(view: LocationCapabilityViewState, cached: CachedLocation | null) {
-  for (const listener of locationViewListeners) listener(view, cached)
+  const cacheWasRead = publishedLocationView.hasReadCache
+  const cacheReadWasDowngraded = cacheWasRead && !view.hasReadCache
+  const nextView = cacheReadWasDowngraded
+    ? { ...publishedLocationView, isRefreshing: view.isRefreshing }
+    : view
+  const nextCached = cacheReadWasDowngraded ? publishedCachedLocation : cached
+  publishedLocationView = nextView
+  publishedCachedLocation = nextCached
+  for (const listener of locationViewListeners) listener(nextView, nextCached)
 }
 
 function refreshAcrossInstances(force: boolean, performRefresh: RefreshOperation): Promise<void> {
   if (sharedRefreshPromise) {
     if (force && !sharedRefreshIsForced) forcedRefreshQueued = true
+    if (!force) hasUnforcedRefreshQueued = true
     return sharedRefreshPromise
   }
 
@@ -91,15 +113,24 @@ function refreshAcrossInstances(force: boolean, performRefresh: RefreshOperation
       while (true) {
         sharedRefreshIsForced = nextForce
         forcedRefreshQueued = false
+        hasUnforcedRefreshQueued = false
         await performRefresh(nextForce)
-        if (!forcedRefreshQueued) return
-        nextForce = true
+        if (forcedRefreshQueued) {
+          nextForce = true
+          continue
+        }
+        if (hasUnforcedRefreshQueued) {
+          nextForce = false
+          continue
+        }
+        return
       }
     } finally {
       if (sharedRefreshPromise === operation) {
         sharedRefreshPromise = null
         sharedRefreshIsForced = false
         forcedRefreshQueued = false
+        hasUnforcedRefreshQueued = false
       }
     }
   }
@@ -152,18 +183,23 @@ export function useLocationCapability(
   const { state: connectivity, refreshAndSet } = useConnectivityState(connectivityProvider)
   const now = options.now ?? Date.now
 
-  const [view, setView] = useState<LocationCapabilityViewState>(INITIAL_VIEW)
+  const [view, setView] = useState<LocationCapabilityViewState>(publishedLocationView)
   const mountedRef = useRef(false)
-  const viewRef = useRef<LocationCapabilityViewState>(INITIAL_VIEW)
-  const cachedLocationRef = useRef<CachedLocation | null>(null)
+  const viewRef = useRef<LocationCapabilityViewState>(publishedLocationView)
+  const cachedLocationRef = useRef<CachedLocation | null>(publishedCachedLocation)
   const connectivityRef = useRef(connectivity)
   const actionPromiseRef = useRef<Promise<void> | null>(null)
 
   const commit = useCallback(
-    (snapshot: LocationCapabilitySnapshot, cached: CachedLocation | null) => {
+    (
+      snapshot: LocationCapabilitySnapshot,
+      cached: CachedLocation | null,
+      hasReadCache = viewRef.current.hasReadCache,
+    ) => {
       const next: LocationCapabilityViewState = {
         snapshot,
         coordinates: coordinatesFrom(cached),
+        hasReadCache,
         isRefreshing: viewRef.current.isRefreshing,
       }
       cachedLocationRef.current = cached
@@ -199,9 +235,14 @@ export function useLocationCapability(
         const observedAt = now()
         const cacheState = await repository.readLocationCacheState(observedAt)
         let cacheFresh = cacheState?.fresh ?? false
+        cached = cacheState
+        commit(
+          makeSnapshot(permission, 'unknown', cacheState, cacheFresh, connectivityRef.current),
+          cacheState,
+          true,
+        )
         const currentConnectivity = await refreshAndSet()
         connectivityRef.current = currentConnectivity
-        cached = cacheState
         commit(makeSnapshot(permission, 'unknown', cached, cacheFresh, currentConnectivity), cached)
         if (permission !== 'granted') return
 
@@ -234,6 +275,7 @@ export function useLocationCapability(
         commit(
           { ...currentSnapshot(viewRef.current.snapshot, connectivityRef.current), fix: 'error' },
           cachedLocationRef.current,
+          true,
         )
       } finally {
         setRefreshing(false)
@@ -331,6 +373,7 @@ export function useLocationCapability(
     permission: view.snapshot.permission,
     status,
     coordinates: view.coordinates,
+    hasReadCache: view.hasReadCache,
     isRefreshing: view.isRefreshing,
     refresh,
     runAction,

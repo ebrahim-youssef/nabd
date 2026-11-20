@@ -7,10 +7,17 @@ import {
   waitFor,
 } from 'expo-router/testing-library'
 import { ExpoRoot } from 'expo-router/build/ExpoRoot'
+import type { ReactNode } from 'react'
 
 import { shellCopy } from '../shell/copy'
 
 import { NATIVE_SHELL_COPY } from '../shell/constants'
+
+jest.mock('../wird/CompletionCelebration', () => ({ CompletionCelebration: () => null }))
+jest.mock('../day-plan/WirdTodayProvider', () => ({
+  WirdTodayProvider: ({ children }: { children: ReactNode }) => children,
+  useWirdToday: () => '2026-09-14',
+}))
 
 const mockSQLiteState = {
   shouldFail: false,
@@ -84,11 +91,23 @@ jest.mock('lucide-react-native', () => {
   const React = require('react') as typeof import('react')
   const MockIcon = () => React.createElement('View')
   return {
+    ArrowRight: MockIcon,
     BarChart3: MockIcon,
+    BookOpen: MockIcon,
+    CalendarDays: MockIcon,
+    Check: MockIcon,
+    ChevronLeft: MockIcon,
     Clock: MockIcon,
+    Download: MockIcon,
+    Ellipsis: MockIcon,
     Home: MockIcon,
     LibraryBig: MockIcon,
+    Play: MockIcon,
     Settings: MockIcon,
+    ShieldCheck: MockIcon,
+    Square: MockIcon,
+    TriangleAlert: MockIcon,
+    Upload: MockIcon,
   }
 })
 

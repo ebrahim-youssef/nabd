@@ -12,6 +12,7 @@ class SystemTimeReceiver : BroadcastReceiver() {
 
     PrayerAlarmScheduler.rearm(context)
     CountdownNotificationService.refresh(context)
+    NabdWidgetRefresh.refresh(context)
   }
 
   companion object {

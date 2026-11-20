@@ -8,4 +8,7 @@ describe('QADA_COPY.remaining', () => {
     expect(QADA_COPY.remaining(10)).toBe('١٠ فوائت')
     expect(QADA_COPY.remaining(11)).toBe('١١ فائتة')
   })
+  it('describes the number of days for each prayer', () => {
+    expect(QADA_COPY.total(395)).toBe('لكل صلاة = ٣٩٥ يومًا')
+  })
 })

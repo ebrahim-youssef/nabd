@@ -3,6 +3,19 @@ import type { QadaPrayerId } from '../qada/logic'
 import type { Result } from '../lib/result'
 import type { DayId, WirdDefinition, WirdEntry, WirdVersion } from '../wird/types'
 
+export type SetItemStateInput = {
+  actionId?: string
+  day: DayId
+  versionId: string
+  itemId: string
+  done: boolean
+  at: number
+}
+
+export type SetItemStateOutcome = 'applied' | 'unchanged' | 'duplicate' | 'stale'
+
+export type StaleActionReview = { actionId: string; day: DayId; at: number }
+
 // Contracts describe product persistence without choosing Dexie, SQLite, ids, clocks, or sync.
 // Each platform owns those details and passes explicit day/time values into its adapter.
 
@@ -12,6 +25,7 @@ export type WirdRepository = {
   getMonthEntries(month: string): Promise<WirdEntry[]>
   getEntriesInRange(fromDay: DayId, toDay: DayId): Promise<WirdEntry[]>
   getAllEntries(): Promise<WirdEntry[]>
+  readLatestStaleAction(): Promise<StaleActionReview | null>
   addVersion(
     effectiveFrom: DayId,
     definition: WirdDefinition,
@@ -24,13 +38,9 @@ export type WirdRepository = {
     today: DayId,
     now: number,
   ): Promise<Result<WirdVersion | null>>
-  appendEntry(
-    day: DayId,
-    versionId: string,
-    itemId: string,
-    done: boolean,
-    at: number,
-  ): Promise<Result<WirdEntry>>
+  setItemState(
+    input: SetItemStateInput,
+  ): Promise<Result<{ outcome: SetItemStateOutcome; entry: WirdEntry | null }>>
 }
 
 export type OnboardingRepository = {

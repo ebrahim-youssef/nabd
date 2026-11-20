@@ -4,6 +4,7 @@ import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { PREFERENCE_KEYS } from '../../preferences/db'
 import { createDeviceRepository } from '../db'
+import * as widgetSnapshotWriter from '../widgetSnapshotWriter'
 
 const LOCATION_CACHE_MAX_AGE_MS = 10 * 60 * 1000
 
@@ -51,9 +52,11 @@ describe('device location SQLite repository', () => {
 
   afterEach(() => {
     connection.close()
+    jest.restoreAllMocks()
   })
 
   it('persists and restores coordinates and acquisition time', async () => {
+    const snapshotWrite = jest.spyOn(widgetSnapshotWriter, 'requestWidgetSnapshotWrite')
     await repository.writeCachedLocation({ latitude: 30.0444, longitude: 31.2357 }, 1_000)
 
     await expect(repository.readLocationCacheState(1_000)).resolves.toEqual({
@@ -62,6 +65,7 @@ describe('device location SQLite repository', () => {
       recordedAt: 1_000,
       fresh: true,
     })
+    expect(snapshotWrite).toHaveBeenCalledTimes(1)
   })
 
   it('marks cache fresh through ten minutes and stale afterward', async () => {

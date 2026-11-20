@@ -58,6 +58,12 @@ describe('latestStateByItem', () => {
     expect(state.has('asr')).toBe(false)
   })
 
+  it('lets the later entry win when events share the same `at`', () => {
+    const state = latestStateByItem([entry('fajr', true, 100), entry('fajr', false, 100)])
+
+    expect(state.get('fajr')).toBe(false)
+  })
+
   it('is order-independent', () => {
     const state = latestStateByItem([entry('fajr', false, 200), entry('fajr', true, 100)])
     expect(state.get('fajr')).toBe(false)

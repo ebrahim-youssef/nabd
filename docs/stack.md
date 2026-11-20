@@ -9,7 +9,7 @@
 | ------------------ | -------------------------------------------------------- | ------------------------------------------- |
 | Application        | Expo SDK `~57.0.24` and React Native `0.86.3`            | `package.json`                              |
 | Routing            | Expo Router `~57.0.22`                                   | `package.json`, `app`                       |
-| Persistence        | `expo-sqlite ~57.0.3`, database schema version 4         | `package.json`, `src/db/database.ts`        |
+| Persistence        | `expo-sqlite ~57.0.3`, database schema version 5         | `package.json`, `src/db/database.ts`        |
 | Styling            | NativeWind `^4.2.6` with Tailwind `^3.4.19`              | `package.json`, `tailwind.config.cjs`       |
 | Notifications      | `expo-notifications ~57.0.21`                            | `package.json`                              |
 | Location           | `expo-location ~57.0.20`                                 | `package.json`                              |
@@ -50,11 +50,10 @@ APIs, or clock globals. It receives data and time as parameters.
 
 ## Native theme and fonts
 
-The native visual tokens are defined by `theme/palette.ts` and
-`theme/tailwind-theme.cjs`, where light and dark semantic palettes are exposed to
-components.
-Bundled Expo fonts are Tajawal for body text, Aref Ruqaa for display text, and Amiri for scripture
-text. Font registration is configured in `app.json`.
+The native visual tokens are defined by `theme/tokens.ts`, `global.css`, and
+`theme/tailwind-theme.cjs`. Their light and dark color values are parity-tested. Font paths are
+listed in `theme/fonts.cjs`, registered by `app.json`, and must be copied locally under
+`assets/fonts/thmanyah/` under the license rule in `DESIGN_SYSTEM.md`.
 
 Theme preference is stored in SQLite `app_preferences` under the native preference repository.
 The native setting supports light, dark, and system behavior. Components use semantic theme tokens,

@@ -2,7 +2,8 @@ import { act, renderHook, waitFor } from '@testing-library/react-native'
 import { useFocusEffect } from 'expo-router'
 
 import { logger } from '../../observability/logger'
-import { useLiveRepositoryQuery } from '../useLiveRepositoryQuery'
+import { refreshLiveRepositoryQueries, useLiveRepositoryQuery } from '../useLiveRepositoryQuery'
+import { queueWrite } from '../../db/writeQueue'
 
 jest.mock('expo-router', () => ({ useFocusEffect: jest.fn() }))
 
@@ -25,8 +26,10 @@ describe('useLiveRepositoryQuery', () => {
     const { result } = renderHook(() => useLiveRepositoryQuery(read))
 
     expect(result.current.isLoading).toBe(true)
+    expect(result.current.hasError).toBe(false)
     await waitFor(() => expect(result.current.data).toBe('first'))
     expect(result.current.isLoading).toBe(false)
+    expect(result.current.hasError).toBe(false)
   })
 
   it('clears cached data when a new read rejects', async () => {
@@ -46,6 +49,7 @@ describe('useLiveRepositoryQuery', () => {
     )
     expect(result.current.data).toBeUndefined()
     expect(result.current.isLoading).toBe(false)
+    expect(result.current.hasError).toBe(true)
   })
 
   it('reports loading until a new read resolves', async () => {
@@ -90,6 +94,43 @@ describe('useLiveRepositoryQuery', () => {
     await waitFor(() => expect(result.current.data).toBe('second'))
   })
 
+  it('re-reads mounted repositories when an external write requests a live refresh', async () => {
+    const read = jest.fn().mockResolvedValueOnce('first').mockResolvedValueOnce('second')
+    const { result } = renderHook(() => useLiveRepositoryQuery(read))
+
+    await waitFor(() => expect(result.current.data).toBe('first'))
+    act(() => refreshLiveRepositoryQueries())
+
+    await waitFor(() => expect(result.current.data).toBe('second'))
+    expect(read).toHaveBeenCalledTimes(2)
+  })
+
+  it('coalesces refreshes until queued writes finish', async () => {
+    const read = jest.fn().mockResolvedValue('value')
+    renderHook(() => useLiveRepositoryQuery(read))
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(1))
+    let release: () => void = () => undefined
+    const first = queueWrite(
+      () =>
+        new Promise<void>((resolve) => {
+          release = resolve
+        }),
+    )
+    const second = queueWrite(async () => undefined)
+    await act(async () => {
+      refreshLiveRepositoryQueries()
+      refreshLiveRepositoryQueries()
+      refreshLiveRepositoryQueries()
+      await new Promise((resolve) => setTimeout(resolve, 20))
+    })
+    expect(read).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      release()
+      await Promise.all([first, second])
+    })
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2))
+  })
+
   it('keeps stale data when a refresh fails', async () => {
     const cause = new Error('refresh failed')
     const read = jest.fn().mockResolvedValueOnce('first').mockRejectedValueOnce(cause)
@@ -103,6 +144,19 @@ describe('useLiveRepositoryQuery', () => {
     )
     expect(result.current.data).toBe('first')
     expect(result.current.isLoading).toBe(false)
+    expect(result.current.hasError).toBe(true)
+  })
+
+  it('clears the read error after a successful retry', async () => {
+    const cause = new Error('read failed')
+    const read = jest.fn().mockRejectedValueOnce(cause).mockResolvedValueOnce('recovered')
+    const { result } = renderHook(() => useLiveRepositoryQuery(read))
+
+    await waitFor(() => expect(result.current.hasError).toBe(true))
+    act(() => result.current.refresh())
+    await waitFor(() => expect(result.current.data).toBe('recovered'))
+
+    expect(result.current.hasError).toBe(false)
   })
 
   it('re-reads the repository after a subsequent tab focus', async () => {
@@ -125,6 +179,7 @@ describe('useLiveRepositoryQuery', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false))
     expect(result.current.data).toBeUndefined()
+    expect(result.current.hasError).toBe(true)
     expect(mockedLogger.error).toHaveBeenCalledWith('Native repository query failed', cause)
   })
 

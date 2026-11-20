@@ -56,6 +56,7 @@ describe('useTodayPrayerTimes', () => {
       permission: 'granted',
       status: { state: 'ready', message: '', action: null },
       coordinates: { latitude: 30.0444, longitude: 31.2357 },
+      hasReadCache: true,
       isRefreshing: false,
       refresh: jest.fn(async () => undefined),
       runAction: jest.fn(async () => undefined),
@@ -129,5 +130,24 @@ describe('useTodayPrayerTimes', () => {
 
     expect(now.mock.calls.length).toBeGreaterThan(rendersBeforeChange)
     expect(result.current.times).not.toBeNull()
+  })
+
+  it('updates the current point and next prayer from the same clock tick', async () => {
+    let instant = Date.parse('2026-09-20T12:00:00Z')
+    const { result } = await renderHook(() => useTodayPrayerTimes({ now: () => instant }))
+    const dhuhr = result.current.points.find((point) => point.id === 'dhuhr')!
+    const asr = result.current.points.find((point) => point.id === 'asr')!
+
+    instant = dhuhr.at + 60_000
+    await act(async () => clockChangeListener?.())
+    expect(result.current.instant).toBe(instant)
+    expect(result.current.timeline?.kind).toBe('since')
+    expect(result.current.currentPoint).toEqual(dhuhr)
+    expect(result.current.nextPrayer).toEqual(asr)
+
+    instant = asr.at + 60_000
+    await act(async () => clockChangeListener?.())
+    expect(result.current.currentPoint).toEqual(asr)
+    expect(result.current.nextPrayer?.id).toBe('maghrib')
   })
 })

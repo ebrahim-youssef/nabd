@@ -1,3 +1,8 @@
+// Day-boundary tests use +03:00 fixtures, and Jest sandboxes process.env per file, so a TZ set
+// inside a test never reaches Date. Pin the zone here, before workers start, so CI (UTC) and
+// local runs agree.
+process.env.TZ = 'Asia/Riyadh'
+
 module.exports = {
   preset: 'jest-expo',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.ts'],

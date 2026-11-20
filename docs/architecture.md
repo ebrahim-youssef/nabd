@@ -47,7 +47,7 @@ are append-only, and the version in force is derived from effective date and cre
     shell/                     native providers, shell components, and tests
   modules/nabd-device/         Android Expo module, including exact-alarm status
   plugins/                     Expo config plugins for native configuration
-  theme/                       palette.ts, tokens.ts, and tailwind-theme.cjs
+    theme/                       tokens.ts, fonts.cjs, and tailwind-theme.cjs
 ```
 
 Expo Router route files may render feature components, but they do not contain SQLite queries or
@@ -71,7 +71,7 @@ repository.
 ## Persistence
 
 SQLite is the native source of truth. The database is `nabd-native.db`, opened and migrated by
-`src/db/database.ts`, currently at schema version 4. Feature repositories use
+`src/db/database.ts`, currently at schema version 5. Feature repositories use
 parameterized queries and preserve append-only history where the domain requires it. Persistent
 preferences use the `app_preferences` table. No Supabase client, remote sync, or authentication
 belongs in this architecture.

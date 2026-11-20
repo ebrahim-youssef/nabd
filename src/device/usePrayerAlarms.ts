@@ -11,6 +11,7 @@ import {
   parseStoredSilentMode,
   PREFERENCE_KEYS,
 } from '../preferences/db'
+import { createWirdRepository } from '../wird/db'
 import { createDeviceRepository } from './db'
 import { isExactAlarmSchedulingAllowed } from './logic'
 import {
@@ -39,7 +40,12 @@ function prayerAlarmSignature(
   return JSON.stringify({
     silentMode,
     access,
-    alarms: alarms.map(({ id, at, channelKey }) => ({ id, at, channelKey })),
+    alarms: alarms.map(({ id, at, channelKey, prayerAction }) => ({
+      id,
+      at,
+      channelKey,
+      prayerAction,
+    })),
   })
 }
 
@@ -51,6 +57,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
   const database = useSQLiteContext()
   const preferences = useMemo(() => createPreferencesRepository(database), [database])
   const deviceRepository = useMemo(() => createDeviceRepository(database), [database])
+  const wirdRepository = useMemo(() => createWirdRepository(database), [database])
   const now = options.now ?? Date.now
   const runningRef = useRef<Promise<void> | null>(null)
   const queuedRef = useRef(false)
@@ -60,15 +67,15 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
     try {
       const currentTime = now()
       const initialExactAlarm = devicePlatform.readExactTimingStatus()
-      const [permission, storedPrefs, storedSilentMode, storedMethod, location] = await Promise.all(
-        [
+      const [permission, storedPrefs, storedSilentMode, storedMethod, location, versions] =
+        await Promise.all([
           readNotificationPermission(),
           preferences.read(PREFERENCE_KEYS.notificationPrefs),
           preferences.read(PREFERENCE_KEYS.silentMode),
           preferences.read(PREFERENCE_KEYS.calculationMethod),
           deviceRepository.readLocationCacheState(currentTime),
-        ],
-      )
+          wirdRepository.listVersions(),
+        ])
       const notificationPrefs = parseStoredNotificationPrefs(storedPrefs)
       const silentMode = parseStoredSilentMode(storedSilentMode)
       const methodId = selectedMethod(storedMethod)
@@ -95,6 +102,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
         methodId,
         notificationPrefs,
         now: currentTime,
+        versions,
       })
       const currentExactAlarm = devicePlatform.readExactTimingStatus()
       if (
@@ -135,7 +143,7 @@ export function usePrayerAlarms(options: UsePrayerAlarmsOptions = {}): PrayerAla
         operation: 'sync',
       })
     }
-  }, [deviceRepository, now, preferences])
+  }, [deviceRepository, now, preferences, wirdRepository])
 
   const sync = useCallback((): Promise<void> => {
     const active = runningRef.current

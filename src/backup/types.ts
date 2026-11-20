@@ -44,6 +44,16 @@ export type AppPreferenceRow = {
   updated_at: number
 }
 
+export type WirdActionRow = {
+  action_id: string
+  item_id: string
+  day: string
+  version_id: string
+  done: number
+  outcome: 'applied' | 'unchanged' | 'stale'
+  at: number
+}
+
 export type BackupRows = {
   onboarding_state: OnboardingStateRow[]
   wird_versions: WirdVersionRow[]
@@ -51,10 +61,11 @@ export type BackupRows = {
   qada_events: QadaEventRow[]
   adhkar_flow_progress: AdhkarFlowProgressRow[]
   app_preferences: AppPreferenceRow[]
+  wird_actions: WirdActionRow[]
 }
 
 export type BackupEnvelope = {
-  formatVersion: 1
+  formatVersion: 1 | 2
   schemaVersion: number
   exportedAt: string
   data: BackupRows

@@ -1,43 +1,53 @@
-import { latestStateByItem, versionInForce } from '../lib/wird'
+import { latestStateByItem } from '../lib/wird'
 import type { DhikrCompletionRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
-import type { WirdEntry } from '../wird/types'
-import { SQLITE_ID, type ProductDatabase } from '../db/productDatabase'
-type EntryRow = {
-  id: string
-  day: string
-  version_id: string
-  item_id: string
-  done: number
-  at: number
-}
-const entry = (r: EntryRow): WirdEntry => ({
-  id: r.id,
-  day: r.day,
-  versionId: r.version_id,
-  itemId: r.item_id,
-  done: r.done === 1,
-  at: r.at,
-})
+import type { DayId, WirdEntry } from '../wird/types'
+import type { ProductDatabase } from '../db/productDatabase'
+import {
+  asEntry,
+  readVersionInForce,
+  runWirdStateTransaction,
+  setItemStateInTransaction,
+} from '../db/wirdState'
+import type { EntryRow } from '../db/wirdState'
+import { queueWrite } from '../db/writeQueue'
 export function createDhikrCompletionRepository(
   database: ProductDatabase,
 ): DhikrCompletionRepository {
   async function completeDhikr(
-    day: string,
+    day: DayId,
     versionId: string,
     itemId: string,
     at: number,
   ): Promise<Result<WirdEntry>> {
     try {
-      const row = await database.getFirstAsync<EntryRow>(
-        `INSERT INTO wird_entries (id, day, version_id, item_id, done, at) VALUES (${SQLITE_ID}, ?, ?, ?, 1, ?) RETURNING id, day, version_id, item_id, done, at`,
-        day,
-        versionId,
-        itemId,
-        at,
+      let value: WirdEntry | null = null
+      await queueWrite(() =>
+        runWirdStateTransaction(database, async (transaction) => {
+          const result = await setItemStateInTransaction(transaction, {
+            day,
+            versionId,
+            itemId,
+            done: true,
+            at,
+          })
+          value = result.entry
+          if (!value && result.outcome === 'unchanged') {
+            const row = await transaction.getFirstAsync<EntryRow>(
+              'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day = ? AND item_id = ? ORDER BY at DESC, rowid DESC LIMIT 1',
+              day,
+              itemId,
+            )
+            value = row ? asEntry(row) : null
+          }
+          if (result.outcome === 'stale' || !value) {
+            throw new Error(`wird item ${itemId} was stale or missing for day ${day}`)
+          }
+          return result
+        }),
       )
-      if (!row) throw new Error()
-      return { ok: true, value: entry(row) }
+      if (!value) throw new Error('wird item completion returned no entry')
+      return { ok: true, value }
     } catch {
       return { ok: false, error: 'complete_failed' }
     }
@@ -46,49 +56,34 @@ export function createDhikrCompletionRepository(
     completeDhikr,
     async isWirdItemDoneToday(day, itemId) {
       const rows = await database.getAllAsync<EntryRow>(
-        'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day = ? AND item_id = ?',
+        'SELECT id, day, version_id, item_id, done, at FROM wird_entries ' +
+          'WHERE day = ? AND item_id = ? ORDER BY at, rowid',
         day,
         itemId,
       )
-      return latestStateByItem(rows.map(entry)).get(itemId) ?? false
+      return latestStateByItem(rows.map(asEntry)).get(itemId) ?? false
     },
     async completeLinkedWirdItem(day, itemId, at): Promise<Result<WirdEntry | null>> {
       try {
         let value: WirdEntry | null = null
-        await database.withExclusiveTransactionAsync(async (tx) => {
-          const entries = (
-            await tx.getAllAsync<EntryRow>(
-              'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day = ? AND item_id = ?',
-              day,
-              itemId,
+        await queueWrite(() =>
+          runWirdStateTransaction(database, async (tx) => {
+            const version = await readVersionInForce(tx, day)
+            const result = await setItemStateInTransaction(
+              tx,
+              {
+                day,
+                versionId: version?.id ?? '',
+                itemId,
+                done: true,
+                at,
+              },
+              version,
             )
-          ).map(entry)
-          if (latestStateByItem(entries).get(itemId)) return
-          const versions = (
-            await tx.getAllAsync<{
-              id: string
-              effective_from: string
-              definition_json: string
-              created_at: number
-            }>('SELECT id, effective_from, definition_json, created_at FROM wird_versions')
-          ).map((r) => ({
-            id: r.id,
-            effectiveFrom: r.effective_from,
-            definition: JSON.parse(r.definition_json),
-            createdAt: r.created_at,
-          }))
-          const v = versionInForce(versions, day)
-          if (!v || !v.definition.items.some((i) => i.id === itemId)) return
-          const row = await tx.getFirstAsync<EntryRow>(
-            `INSERT INTO wird_entries (id, day, version_id, item_id, done, at) VALUES (${SQLITE_ID}, ?, ?, ?, 1, ?) RETURNING id, day, version_id, item_id, done, at`,
-            day,
-            v.id,
-            itemId,
-            at,
-          )
-          if (!row) throw new Error()
-          value = entry(row)
-        })
+            value = result.entry
+            return result
+          }),
+        )
         return { ok: true, value }
       } catch {
         return { ok: false, error: 'complete_failed' }

@@ -1,192 +1,176 @@
 import { QADA_COPY } from './copy'
-import { QADA_PRAYERS, daysFromPeriod } from './logic'
-import { Check, Plus } from 'lucide-react-native'
-import { useState } from 'react'
-import { Modal, Pressable, ScrollView, View } from 'react-native'
+import { DAYS_PER_MONTH, DAYS_PER_YEAR, QADA_PRAYERS, daysFromPeriod } from './logic'
+import type { QadaPrayerId } from './logic'
+import { useRef, useState } from 'react'
+import { Pressable, View } from 'react-native'
 
 import { Text } from '../shell/Text'
-import { TextInput } from '../shell/TextInput'
-import { ICON_SIZE, useThemeTokens } from '../../theme/palette'
+import { BottomSheet } from '../ui/BottomSheet'
+import { Button } from '../ui/Button'
+import { ListGroup } from '../ui/ListGroup'
+import { ListRow } from '../ui/ListRow'
+import { StateView } from '../ui/StateView'
+import { Stepper } from '../ui/Stepper'
+import { useToast } from '../ui/ToastProvider'
 import { useQada } from './useQada'
 
-const LEDGER_TEST_ID = 'qada-ledger'
-const ADD_TEST_ID = 'qada-add'
-const MODAL_TEST_ID = 'qada-modal'
-const COUNT_TEST_PREFIX = 'qada-count-'
-const PAY_TEST_PREFIX = 'qada-pay-'
-const ROW_TEST_PREFIX = 'qada-row-'
-const FIELD_TEST_IDS = {
-  years: 'qada-years',
-  months: 'qada-months',
-  days: 'qada-days',
-} as const
+const MAX_PERIOD = Math.floor(Number.MAX_SAFE_INTEGER / (DAYS_PER_YEAR + DAYS_PER_MONTH + 1))
+const EMPTY_PERIOD = { years: 0, months: 0, days: 0 }
 const PERIOD_FIELDS = [
-  { key: 'years', label: QADA_COPY.years, testID: FIELD_TEST_IDS.years },
-  { key: 'months', label: QADA_COPY.months, testID: FIELD_TEST_IDS.months },
-  { key: 'days', label: QADA_COPY.days, testID: FIELD_TEST_IDS.days },
+  { key: 'years', label: QADA_COPY.years },
+  { key: 'months', label: QADA_COPY.months },
+  { key: 'days', label: QADA_COPY.days },
 ] as const
-const CONFIRM_TEST_ID = 'qada-confirm'
-const TOTAL_TEST_ID = 'qada-total'
-const CHECKMARK = '✓'
 
 export function QadaLedger() {
-  const { isLoading, hasAny, remaining, addDebt, payPrayer } = useQada()
-  const theme = useThemeTokens()
-  const [isModalVisible, setIsModalVisible] = useState(false)
-  const [period, setPeriod] = useState({ years: '', months: '', days: '' })
-  const { years, months, days } = period
-  const totalDays = daysFromPeriod(Number(years), Number(months), Number(days))
+  const { isLoading, hasAny, remaining, addDebt, payPrayer, undoPrayer } = useQada()
+  const toast = useToast()
+  const [isSheetVisible, setIsSheetVisible] = useState(false)
+  const [isWriting, setIsWriting] = useState(false)
+  const writing = useRef(false)
+  const [period, setPeriod] = useState(EMPTY_PERIOD)
+  const totalDays = daysFromPeriod(period.years, period.months, period.days)
+  const total = QADA_PRAYERS.reduce((sum, prayer) => sum + remaining[prayer.id], 0)
 
-  function openModal() {
-    setPeriod({ years: '', months: '', days: '' })
-    setIsModalVisible(true)
+  function openSheet() {
+    setPeriod(EMPTY_PERIOD)
+    setIsSheetVisible(true)
   }
 
-  function dismissModal() {
-    setIsModalVisible(false)
+  async function pay(id: QadaPrayerId, label: string, count: number) {
+    if (writing.current) return
+    writing.current = true
+    setIsWriting(true)
+    try {
+      if (!(await payPrayer(id))) {
+        toast.show({ message: QADA_COPY.writeError })
+        return
+      }
+      toast.show({
+        message: QADA_COPY.paid(label, Math.max(0, count - 1)),
+        onUndo: () => {
+          void undo(id)
+        },
+      })
+    } catch {
+      toast.show({ message: QADA_COPY.writeError })
+    } finally {
+      writing.current = false
+      setIsWriting(false)
+    }
+  }
+
+  async function undo(id: QadaPrayerId) {
+    try {
+      if (!(await undoPrayer(id))) toast.show({ message: QADA_COPY.writeError })
+    } catch {
+      toast.show({ message: QADA_COPY.writeError })
+    }
   }
 
   async function confirm() {
-    await addDebt(totalDays)
-    dismissModal()
+    if (writing.current || totalDays === 0) return
+    writing.current = true
+    setIsWriting(true)
+    try {
+      if (!(await addDebt(totalDays))) {
+        toast.show({ message: QADA_COPY.writeError })
+        return
+      }
+      setIsSheetVisible(false)
+      toast.show({ message: QADA_COPY.added })
+    } catch {
+      toast.show({ message: QADA_COPY.writeError })
+    } finally {
+      writing.current = false
+      setIsWriting(false)
+    }
   }
 
-  if (isLoading) return <View className="h-40 w-full rounded-card bg-surface-2" />
+  if (isLoading) return <StateView kind="loading" />
 
-  return (
-    <View className="gap-4" testID={LEDGER_TEST_ID}>
-      <Text className="text-body text-muted-foreground">
-        {hasAny ? QADA_COPY.intro : QADA_COPY.empty}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        className="self-start flex-row items-center justify-center gap-2 rounded-button bg-primary px-5 py-2.5 text-body text-on-primary shadow-card-sm"
-        onPress={openModal}
-        testID={ADD_TEST_ID}
-      >
-        <Plus accessible={false} color={theme.hex['on-primary']} size={ICON_SIZE} />
-        <Text className="text-body text-on-primary">{QADA_COPY.addButton}</Text>
-      </Pressable>
-      <View className="gap-2">
-        {QADA_PRAYERS.map((prayer) => {
-          const count = remaining[prayer.id]
-          const clear = count === 0
-          return (
-            <View
-              className="flex-row items-center justify-between gap-3 rounded-card border border-border bg-surface p-4 shadow-card-sm"
-              key={prayer.id}
-              testID={`${ROW_TEST_PREFIX}${prayer.id}`}
-            >
-              <View className="min-w-0 flex-1 flex-row items-center gap-3">
-                <Text className="text-body text-foreground">{prayer.label}</Text>
-                <Text
-                  className={`shrink-0 rounded-chip border px-2.5 py-0.5 text-small ${clear ? 'border-gold/40 bg-gold-soft text-gold' : 'border-border bg-surface-2 text-muted-foreground'}`}
-                  testID={`${COUNT_TEST_PREFIX}${prayer.id}`}
-                >
-                  {clear ? QADA_COPY.done : QADA_COPY.remaining(count)}
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ disabled: clear }}
-                className={`shrink-0 flex-row items-center gap-1.5 rounded-chip border px-3 py-1.5 text-small ${clear ? 'border-border opacity-50' : 'border-primary/40 bg-primary/10'}`}
-                disabled={clear}
-                onPress={() => void payPrayer(prayer.id)}
-                testID={`${PAY_TEST_PREFIX}${prayer.id}`}
-              >
-                <Check
-                  accessible={false}
-                  color={clear ? theme.hex['muted-foreground'] : theme.hex.primary}
-                  size={ICON_SIZE - 4}
-                />
-                <Text
-                  className={clear ? 'text-small text-muted-foreground' : 'text-small text-primary'}
-                >
-                  {QADA_COPY.pay}
-                </Text>
-              </Pressable>
-            </View>
-          )
-        })}
-      </View>
-      <Modal
-        animationType="slide"
-        onRequestClose={dismissModal}
-        transparent
-        visible={isModalVisible}
-        testID={MODAL_TEST_ID}
-      >
-        <Pressable className="flex-1 justify-end bg-black/50" onPress={dismissModal}>
-          <View
-            className="max-h-[85%] w-full rounded-t-card bg-surface p-6 pt-3 shadow-card"
-            onStartShouldSetResponder={() => true}
-          >
-            <ScrollView className="flex-grow-0" contentContainerClassName="gap-4">
-              <View className="mx-auto mb-3 h-1 w-10 rounded-chip bg-border" />
-              <Text className="font-display text-title text-primary">{QADA_COPY.modalTitle}</Text>
-              <Text className="text-small text-muted-foreground">{QADA_COPY.modalNote}</Text>
-              <View className="flex-row gap-3">
-                {PERIOD_FIELDS.map(({ key, label, testID }) => (
-                  <PeriodField
-                    key={key}
-                    label={label}
-                    testID={testID}
-                    value={period[key]}
-                    onChange={(value) => setPeriod((current) => ({ ...current, [key]: value }))}
-                  />
-                ))}
-              </View>
-              <Text className="text-body text-primary" testID={TOTAL_TEST_ID}>
-                {QADA_COPY.total(totalDays)}
-              </Text>
-              <View className="flex-row justify-end gap-2">
-                <Pressable
-                  accessibilityRole="button"
-                  className="rounded-button border border-border bg-surface px-4 py-2"
-                  onPress={dismissModal}
-                >
-                  <Text className="text-body text-muted-foreground">{QADA_COPY.cancel}</Text>
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: totalDays === 0 }}
-                  className={`rounded-button bg-primary px-5 py-2 ${totalDays === 0 ? 'opacity-50' : ''}`}
-                  disabled={totalDays === 0}
-                  onPress={() => void confirm()}
-                  testID={CONFIRM_TEST_ID}
-                >
-                  <Text className="text-body text-on-primary">{QADA_COPY.confirm}</Text>
-                </Pressable>
-              </View>
-            </ScrollView>
-          </View>
-        </Pressable>
-      </Modal>
+  const footer = (
+    <View className="gap-2">
+      <Button
+        busy={isWriting}
+        disabled={totalDays === 0}
+        label={QADA_COPY.confirm}
+        onPress={() => void confirm()}
+        variant="solid"
+      />
+      <Button label={QADA_COPY.cancel} onPress={() => setIsSheetVisible(false)} />
     </View>
   )
-}
-
-function PeriodField({
-  label,
-  testID,
-  value,
-  onChange,
-}: {
-  label: string
-  testID: string
-  value: string
-  onChange: (value: string) => void
-}) {
   return (
-    <View className="min-w-0 flex-1 gap-1">
-      <Text className="text-small text-muted-foreground">{label}</Text>
-      <TextInput
-        className="w-full rounded-chip border border-border bg-surface-2 px-3 py-2 text-center text-body"
-        keyboardType="number-pad"
-        onChangeText={onChange}
-        testID={testID}
-        value={value}
-      />
+    <View className="gap-4" testID="qada-ledger">
+      {!hasAny && total === 0 ? (
+        <StateView
+          action={{ label: QADA_COPY.addButton, onPress: openSheet }}
+          body={QADA_COPY.intro}
+          kind="empty"
+          title={QADA_COPY.emptyTitle}
+        />
+      ) : (
+        <>
+          <View className="gap-1 rounded-card border border-line bg-surface p-4">
+            <Text className="text-meta text-mute">{QADA_COPY.remainingLabel}</Text>
+            <Text className="font-display text-sheet-title text-gold-ink">
+              {QADA_COPY.remaining(total)}
+            </Text>
+          </View>
+          <ListGroup>
+            {QADA_PRAYERS.map((prayer) => {
+              const count = remaining[prayer.id]
+              const disabled = count === 0 || isWriting
+              const accessory = (
+                <Pressable
+                  accessibilityLabel={QADA_COPY.payPrayer(prayer.label)}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled }}
+                  className={`rounded-pill border border-line px-3 py-1.5 ${disabled ? 'opacity-[0.45]' : ''}`}
+                  disabled={disabled}
+                  onPress={() => void pay(prayer.id, prayer.label, count)}
+                  testID={`qada-pay-${prayer.id}`}
+                >
+                  <Text className="text-meta text-accent">{QADA_COPY.pay}</Text>
+                </Pressable>
+              )
+              return (
+                <ListRow
+                  accessory={accessory}
+                  description={QADA_COPY.remaining(count)}
+                  key={prayer.id}
+                  label={prayer.label}
+                  testID={`qada-row-${prayer.id}`}
+                />
+              )
+            })}
+          </ListGroup>
+          <Button label={QADA_COPY.addButton} onPress={openSheet} />
+          <Text className="text-meta text-mute">{QADA_COPY.addDescription}</Text>
+        </>
+      )}
+      <BottomSheet
+        explanation={QADA_COPY.modalNote}
+        footer={footer}
+        onClose={() => setIsSheetVisible(false)}
+        title={QADA_COPY.modalTitle}
+        visible={isSheetVisible}
+      >
+        <ListGroup>
+          {PERIOD_FIELDS.map(({ key, label }) => (
+            <View className="px-3.5" key={key}>
+              <Stepper
+                label={label}
+                max={MAX_PERIOD}
+                onChange={(value) => setPeriod((current) => ({ ...current, [key]: value }))}
+                value={period[key]}
+              />
+            </View>
+          ))}
+        </ListGroup>
+        <Text className="mt-3 text-body text-accent">{QADA_COPY.total(totalDays)}</Text>
+      </BottomSheet>
     </View>
   )
 }

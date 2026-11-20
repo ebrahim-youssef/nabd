@@ -212,6 +212,8 @@ describe('buildAlarmPayloads (NBD-46 + NBD-61)', () => {
       ],
       labels,
       copy,
+      [],
+      '1970-01-01',
     )
     expect(payloads.map((p) => p.channelKey)).toEqual(['adhanFajr', 'adhan', 'before', 'iqamah'])
     expect(payloads[0].title).toBe('حان وقت الفجر')
@@ -226,6 +228,8 @@ describe('buildAlarmPayloads (NBD-46 + NBD-61)', () => {
       ],
       labels,
       copy,
+      [],
+      '1970-01-01',
     )
     const ids = sameMinute.map((p) => p.id)
     expect(new Set(ids).size).toBe(3)
@@ -234,6 +238,8 @@ describe('buildAlarmPayloads (NBD-46 + NBD-61)', () => {
       [{ at: 60_000, kind: 'before', prayerId: 'dhuhr' }],
       labels,
       copy,
+      [],
+      '1970-01-01',
     )
     expect(again[0].id).toBe(sameMinute[0].id)
   })
@@ -254,6 +260,8 @@ describe('buildAlarmPayloads (NBD-46 + NBD-61)', () => {
       ],
       labelsWithAdhkar,
       copyWithAdhkar,
+      [],
+      '1970-01-01',
     )
     expect(payloads.map((p) => p.channelKey)).toEqual(['adhkarReminder', 'adhkarReminder'])
     expect(payloads[0].title).toBe('تذكير أذكار الصباح')
@@ -273,6 +281,8 @@ describe('buildAlarmPayloads (NBD-46 + NBD-61)', () => {
       ],
       labelsWith,
       copyWith,
+      [],
+      '1970-01-01',
     )
     const ids = payloads.map((p) => p.id)
     expect(new Set(ids).size).toBe(2)

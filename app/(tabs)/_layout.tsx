@@ -9,6 +9,8 @@ import { createPreferencesRepository, PREFERENCE_KEYS } from '../../src/preferen
 import { readStoredTheme } from '../../src/preferences/theme'
 import { logger } from '../../src/observability/logger'
 import { DatabaseError } from '../../src/shell/DatabaseStatus'
+import { ToastProvider } from '../../src/ui/ToastProvider'
+import { CompletionCelebration } from '../../src/wird/CompletionCelebration'
 
 function NativeAppearanceBootstrap() {
   const database = useSQLiteContext()
@@ -32,13 +34,15 @@ function TabsContent() {
   const isOnboardingComplete = useOnboardingComplete()
 
   return (
-    <>
+    <ToastProvider>
       <NativeAppearanceBootstrap />
       <Tabs
+        backBehavior="history"
         screenOptions={{ headerShown: false }}
         tabBar={() => <BottomNav isVisible={isOnboardingComplete} />}
       />
-    </>
+      <CompletionCelebration />
+    </ToastProvider>
   )
 }
 

@@ -23,6 +23,39 @@ function databaseWithTransaction(overrides: Partial<ProductDatabase> = {}): Prod
 }
 
 describe('native adhkar repository', () => {
+  it.each([
+    ['the active version omits the linked item', true],
+    ['the day has no version in force', false],
+  ])('treats linked completion as a no-op when %s', async (_case, hasVersion) => {
+    const getAllAsync = jest.fn(async <T>() =>
+      hasVersion
+        ? ([
+            {
+              id: 'version-1',
+              effective_from: DAY,
+              definition_json: JSON.stringify({ areas: [], items: [] }),
+              created_at: 1,
+            },
+          ] as T[])
+        : [],
+    )
+    const getFirstAsync = jest.fn(
+      async <T>(_source: string, ..._parameters: SqlValue[]) => null as T | null,
+    )
+    const database = databaseWithTransaction({
+      getAllAsync: getAllAsync as ProductDatabase['getAllAsync'],
+      getFirstAsync: getFirstAsync as ProductDatabase['getFirstAsync'],
+    })
+    const repository = createAdhkarRepository(database)
+
+    await expect(repository.completeLinkedWirdItem(DAY, 'morning', 10)).resolves.toEqual({
+      ok: true,
+      value: null,
+    })
+    expect(getFirstAsync).not.toHaveBeenCalled()
+    expect(database.runAsync).not.toHaveBeenCalled()
+  })
+
   it('restores morning progress for the same day and ignores stale rows', async () => {
     const getFirstAsync = jest.fn(async () => ({
       category_id: 'morning',
@@ -68,14 +101,19 @@ describe('native adhkar repository', () => {
         },
       ] as T[]
     })
-    const getFirstAsync = jest.fn(async () => ({
-      id: 'entry-1',
-      day: DAY,
-      version_id: 'version-1',
-      item_id: 'morning-adhkar',
-      done: 1,
-      at: 10,
-    }))
+    const getFirstAsync = jest.fn(async (source: string) => {
+      if (source.startsWith('INSERT INTO wird_entries')) {
+        return {
+          id: 'entry-1',
+          day: DAY,
+          version_id: 'version-1',
+          item_id: 'morning-adhkar',
+          done: 1,
+          at: 10,
+        }
+      }
+      return entryRows.length > 0 ? { done: 1 } : null
+    })
     const repository = createAdhkarRepository(
       databaseWithTransaction({
         getAllAsync: getAllAsync as ProductDatabase['getAllAsync'],
@@ -102,6 +140,9 @@ describe('native adhkar repository', () => {
       ok: true,
       value: null,
     })
+    expect(
+      getFirstAsync.mock.calls.filter(([source]) => source.startsWith('INSERT INTO wird_entries')),
+    ).toHaveLength(1)
   })
 
   it('ignores an unmapped category without opening a transaction', async () => {

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="nabd_widget_large_label">وِرد الوقت</string>
+  <string name="nabd_widget_small_label">صلاة الوقت</string>
+  <string name="nabd_widget_large_description">صلاة الوقت وأعمالها، وما لم يُسجَّل بعد</string>
+  <string name="nabd_widget_small_description">صلاة الوقت والصلاة التالية</string>
+  <string name="nabd_widget_open_app">افتح التطبيق</string>
+  <string name="nabd_widget_stale">افتح التطبيق للتحديث</string>
+  <string name="nabd_widget_write_failed">افتح التطبيق لإكمال الحفظ</string>
+  <string name="nabd_widget_window">%1$s – %2$s</string>
+  <string name="nabd_widget_starts_at">يبدأ %1$s</string>
+  <string name="nabd_widget_unrecorded">%1$s لم يُسجَّل</string>
+  <string name="nabd_widget_next_prayer">%1$s %2$s</string>
+  <string name="nabd_widget_item_done">%1$s، تم</string>
+  <string name="nabd_widget_item_open">%1$s، لم يُسجَّل</string>
+</resources>

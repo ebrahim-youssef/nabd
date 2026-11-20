@@ -111,6 +111,19 @@ describe('buildChecklist — schedules (ADR-0008)', () => {
     expect(item?.monthlyProgress).toEqual({ done: 1, target: 3 })
   })
 
+  it('lets the last same-time monthly entry decide a day', () => {
+    const monthEntries = [
+      entry('fast-monthly', true, 100, '2026-07-01'),
+      entry('fast-monthly', false, 100, '2026-07-01'),
+    ]
+    const view = buildChecklist(scheduled, [], DAY, monthEntries)
+
+    expect(view[0].items.find((item) => item.id === 'fast-monthly')?.monthlyProgress).toEqual({
+      done: 0,
+      target: 3,
+    })
+  })
+
   it('carries optional and minimum through to the view', () => {
     const view = buildChecklist(scheduled, [], DAY)
     const qiyam = view[0].items.find((i) => i.id === 'qiyam')

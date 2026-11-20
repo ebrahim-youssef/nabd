@@ -1,4 +1,4 @@
-import { monthOf, toDayId } from '../lib/day'
+import { monthOf } from '../lib/day'
 import { versionInForce } from '../lib/wird'
 import { buildChecklist } from './logic'
 import type { ChecklistAreaView, DayId } from './types'
@@ -8,6 +8,7 @@ import { logger } from '../observability/logger'
 import { useLiveRepositoryQuery } from '../shell/useLiveRepositoryQuery'
 import type { HealVersionResult } from './db'
 import { useWirdRepository } from './useWirdRepository'
+import { useWirdToday } from '../day-plan/WirdTodayProvider'
 
 type ChecklistState = {
   isLoading: boolean
@@ -18,7 +19,7 @@ type ChecklistState = {
 
 export function useWirdChecklist(day: DayId): ChecklistState {
   const repository = useWirdRepository()
-  const today = toDayId(new Date())
+  const today = useWirdToday()
   const healingByDay = useRef(new Map<DayId, Promise<HealVersionResult | null>>())
   const ensureHealed = useCallback(() => {
     const existing = healingByDay.current.get(today)

@@ -1,90 +1,62 @@
-import { fireEvent, render, screen } from '@testing-library/react-native'
+import { render, screen } from '@testing-library/react-native'
 
-import { ADHKAR_LIBRARY } from '../../content/adhkar'
-import { COPY as ADHKAR_COPY } from '../copy'
+import AdhkarSetRoute from '../../../app/(tabs)/adhkar/[set]'
 
-import { AdhkarRoute } from '../AdhkarRoute'
-
+let mockSet: string | string[] | undefined = 'morning'
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: jest.fn(), canGoBack: () => false, replace: jest.fn() }),
-  useFocusEffect: jest.fn(),
+  useLocalSearchParams: () => ({ set: mockSet }),
+  Redirect: ({ href }: { href: string }) => {
+    const { Text } = require('react-native')
+    return <Text>{href}</Text>
+  },
+}))
+jest.mock('../AdhkarReader', () => ({
+  AdhkarReader: ({ category }: { category: { title: string } }) => {
+    const { Text } = require('react-native')
+    return <Text>{category.title}</Text>
+  },
 }))
 
-jest.mock('expo-sqlite', () => ({ useSQLiteContext: () => ({}) }))
-
-jest.mock('../../wird/useWirdChecklist', () => ({
-  useWirdChecklist: () => ({ isLoading: false, areas: [], versionId: null, refresh: jest.fn() }),
-}))
-
-jest.mock('../../counter/db', () => ({
-  createDhikrCompletionRepository: () => ({ completeLinkedWirdItem: jest.fn() }),
-}))
-
-jest.mock('lucide-react-native', () => ({
-  ArrowRight: () => null,
-  Check: () => null,
-  ChevronDown: () => null,
-  ChevronUp: () => null,
-  RotateCcw: () => null,
-}))
-
-jest.mock('../useAdhkarFlow', () => ({
-  useAdhkarFlow: () => ({
-    state: { index: 0, count: 0, finished: false },
-    tap: jest.fn(),
-    restart: jest.fn(),
-    markedInWird: false,
-  }),
-}))
-
-describe('AdhkarRoute', () => {
-  it('shows the adhkar library and morning flow', async () => {
-    await render(<AdhkarRoute />)
-
-    expect(screen.getByText(ADHKAR_COPY.libraryTitle)).toBeTruthy()
-    expect(screen.getByTestId('adhkar-category-morning')).toBeTruthy()
-    expect(screen.getByTestId('adhkar-flow-morning')).toBeTruthy()
+describe('adhkar set route', () => {
+  it('shows the morning reader', async () => {
+    mockSet = 'morning'
+    await render(<AdhkarSetRoute />)
+    expect(screen.getByText('أذكار الصباح')).toBeTruthy()
   })
 
-  it('switches between morning and evening categories', async () => {
-    await render(<AdhkarRoute />)
-
-    await fireEvent.press(screen.getByTestId('adhkar-category-evening'))
-    expect(screen.getByTestId('adhkar-flow-evening')).toBeTruthy()
+  it('opens the category passed by its route parameter', async () => {
+    mockSet = 'evening'
+    await render(<AdhkarSetRoute />)
+    expect(screen.getByText('أذكار المساء')).toBeTruthy()
   })
 
-  it('renders the repeatable list for after-prayer and sleep categories', async () => {
-    await render(<AdhkarRoute />)
-
-    await fireEvent.press(screen.getByTestId('adhkar-category-after-prayer'))
-    expect(screen.getByTestId('adhkar-list-after-prayer')).toBeTruthy()
-
-    await fireEvent.press(screen.getByTestId('adhkar-category-sleep'))
-    expect(screen.getByTestId('adhkar-list-sleep')).toBeTruthy()
+  it('returns to the library when its route parameter is unknown', async () => {
+    mockSet = 'unknown'
+    await render(<AdhkarSetRoute />)
+    expect(screen.getByText('/adhkar')).toBeTruthy()
   })
 
-  it('resets repeatable counts when a category is remounted', async () => {
-    await render(<AdhkarRoute />)
-
-    await fireEvent.press(screen.getByTestId('adhkar-category-after-prayer'))
-    const itemId = ADHKAR_LIBRARY.find((entry) => entry.id === 'after-prayer')?.items[0]?.id
-    expect(itemId).toBeTruthy()
-    const progress = screen.getByTestId(`adhkar-list-progress-${itemId}`)
-
-    await fireEvent.press(screen.getByTestId(`adhkar-list-count-${itemId}`))
-    expect(progress).toHaveTextContent('١/١')
-
-    await fireEvent.press(screen.getByTestId('adhkar-category-sleep'))
-    await fireEvent.press(screen.getByTestId('adhkar-category-after-prayer'))
-
-    expect(screen.getByTestId(`adhkar-list-progress-${itemId}`)).toHaveTextContent('٠/١')
+  it('opens the first value of an array route parameter', async () => {
+    mockSet = ['morning', 'evening']
+    await render(<AdhkarSetRoute />)
+    expect(screen.getByText('أذكار الصباح')).toBeTruthy()
   })
 
-  it('renders five daily cards when the daily category is selected', async () => {
-    await render(<AdhkarRoute />)
+  it('opens the after-prayer reader', async () => {
+    mockSet = 'after-prayer'
+    await render(<AdhkarSetRoute />)
+    expect(screen.getByText('أذكار بعد الصلاة')).toBeTruthy()
+  })
 
-    await fireEvent.press(screen.getByTestId('adhkar-category-daily'))
+  it('opens the sleep reader', async () => {
+    mockSet = 'sleep'
+    await render(<AdhkarSetRoute />)
+    expect(screen.getByText('أذكار النوم')).toBeTruthy()
+  })
 
-    expect(screen.getAllByTestId(/adhkar-daily-card-/)).toHaveLength(5)
+  it('opens the daily reader', async () => {
+    mockSet = 'daily'
+    await render(<AdhkarSetRoute />)
+    expect(screen.getByText('الأذكار اليومية')).toBeTruthy()
   })
 })

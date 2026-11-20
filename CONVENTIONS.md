@@ -52,7 +52,7 @@ diagnostic cause at the I/O boundary instead of leaking a raw exception into the
 ## Constants and tokens
 
 No magic numbers or strings. Extract repeated or meaningful values into named constants. Visual
-values come from the native theme tokens in `theme/palette.ts` and
+values come from the native theme tokens in `theme/tokens.ts` and
 `theme/tailwind-theme.cjs`. Components do not add raw colors, sizes, radii, or
 shadows.
 

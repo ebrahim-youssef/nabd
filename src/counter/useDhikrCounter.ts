@@ -5,6 +5,7 @@ import type { DayId } from '../wird/types'
 
 import { createDhikrCompletionRepository } from './db'
 import { useWirdDay } from '../wird/WirdDayProvider'
+import { refreshLiveRepositoryQueries } from '../shell/useLiveRepositoryQuery'
 
 // The in-progress tap count is ephemeral session state, not database state, so it does not belong
 // in SQLite. It does have to outlive a remount: tapping part-way through a dhikr, visiting another
@@ -42,6 +43,7 @@ export function useDhikrCounter(day: DayId, itemId: string, target: number, done
     completing.current = true
     const result = await repository.completeLinkedWirdItem(day, itemId, Date.now())
     if (result.ok) {
+      if (result.value) refreshLiveRepositoryQueries()
       write(0)
       refresh()
     }

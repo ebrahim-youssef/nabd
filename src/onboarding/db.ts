@@ -8,6 +8,7 @@ import { levelById } from './logic'
 import { ONBOARDING_STATE_ID } from './constants'
 import { hasCanonicalAnswers, parseAnswers } from './logic'
 import { parseDefinition } from '../wird/logic'
+import { queueWrite } from '../db/writeQueue'
 
 type SqlValue = string | number | null
 
@@ -124,35 +125,37 @@ export function createOnboardingRepository(database: OnboardingDatabase) {
       }
 
       let persisted: PersistedOnboarding | null = null
-      await database.withExclusiveTransactionAsync(async (transaction) => {
-        persisted = await loadFrom(transaction)
-        if (persisted) return
+      await queueWrite(() =>
+        database.withExclusiveTransactionAsync(async (transaction) => {
+          persisted = await loadFrom(transaction)
+          if (persisted) return
 
-        const state = await transaction.getFirstAsync<OnboardingRow>(
-          SELECT_ONBOARDING,
-          ONBOARDING_STATE_ID,
-        )
-        const version =
-          await transaction.getFirstAsync<Pick<WirdVersionRow, 'id'>>(SELECT_ANY_WIRD_VERSION)
-        if (state || version) throw new Error('Native onboarding persistence is malformed')
+          const state = await transaction.getFirstAsync<OnboardingRow>(
+            SELECT_ONBOARDING,
+            ONBOARDING_STATE_ID,
+          )
+          const version =
+            await transaction.getFirstAsync<Pick<WirdVersionRow, 'id'>>(SELECT_ANY_WIRD_VERSION)
+          if (state || version) throw new Error('Native onboarding persistence is malformed')
 
-        await transaction.runAsync(
-          INSERT_WIRD,
-          input.versionId,
-          input.effectiveFrom,
-          JSON.stringify(level.wird),
-          input.completedAt,
-        )
-        await transaction.runAsync(
-          INSERT_ONBOARDING,
-          ONBOARDING_STATE_ID,
-          JSON.stringify(input.answers),
-          input.selectedLevelId,
-          input.completedAt,
-          input.effectiveFrom,
-          input.versionId,
-        )
-      })
+          await transaction.runAsync(
+            INSERT_WIRD,
+            input.versionId,
+            input.effectiveFrom,
+            JSON.stringify(level.wird),
+            input.completedAt,
+          )
+          await transaction.runAsync(
+            INSERT_ONBOARDING,
+            ONBOARDING_STATE_ID,
+            JSON.stringify(input.answers),
+            input.selectedLevelId,
+            input.completedAt,
+            input.effectiveFrom,
+            input.versionId,
+          )
+        }),
+      )
       if (persisted) return persisted
       const completed = await this.load()
       if (!completed) throw new Error('SQLite onboarding completion round trip failed')

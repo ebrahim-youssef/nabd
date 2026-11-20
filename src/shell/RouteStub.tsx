@@ -18,13 +18,11 @@ export function RouteStub({
       {subPage ? (
         <PageHeader title={title} backHref={backHref} />
       ) : (
-        <Text accessibilityRole="header" className="text-title text-start text-primary">
+        <Text accessibilityRole="header" className="text-sheet-title text-start text-accent">
           {title}
         </Text>
       )}
-      <Text className="mt-4 text-body text-start text-muted-foreground">
-        {shellCopy.appNotFoundHint}
-      </Text>
+      <Text className="mt-4 text-body text-start text-ink">{shellCopy.appNotFoundHint}</Text>
     </ScreenContainer>
   )
 }

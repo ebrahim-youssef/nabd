@@ -8,6 +8,10 @@ import { migrateDatabase, type MigrationDatabase } from '../../db/database'
 import type { ProductDatabase, SqlValue } from '../../db/productDatabase'
 import { parseBackup, serializeBackup, type BackupEnvelope, type BackupRows } from '../logic'
 import { createBackupRepository } from '../db'
+import { createWirdRepository } from '../../wird/db'
+import { latestStateByItem } from '../../lib/wird'
+import * as widgetSnapshotWriter from '../../device/widgetSnapshotWriter'
+import { queueWrite } from '../../db/writeQueue'
 
 type BackupDatabase = ProductDatabase & MigrationDatabase
 
@@ -45,6 +49,17 @@ const rows: BackupRows = {
     { category_id: 'morning', day: '2026-10-18', index: 2, count: 3, finished: 0 },
   ],
   app_preferences: [{ key: 'nabd:theme', value: 'dark', updated_at: 1_760_000_000_000 }],
+  wird_actions: [
+    {
+      action_id: 'action-1',
+      item_id: 'item-1',
+      day: '2026-10-18',
+      version_id: 'version-1',
+      done: 1,
+      outcome: 'applied',
+      at: 1_760_000_000_000,
+    },
+  ],
 }
 
 function adapter(database: DatabaseSync, failInsert?: () => boolean): BackupDatabase {
@@ -85,7 +100,9 @@ function fresh() {
 async function seed(database: BackupDatabase, value: BackupRows): Promise<void> {
   for (const row of value.wird_versions) {
     await database.runAsync(
-      'INSERT INTO wird_versions (id, effective_from, definition_json, created_at) VALUES (?, ?, ?, ?)',
+      `INSERT INTO wird_versions
+         (id, effective_from, definition_json, created_at)
+       VALUES (?, ?, ?, ?)`,
       row.id,
       row.effective_from,
       row.definition_json,
@@ -105,7 +122,9 @@ async function seed(database: BackupDatabase, value: BackupRows): Promise<void> 
   }
   for (const row of value.onboarding_state) {
     await database.runAsync(
-      'INSERT INTO onboarding_state (id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id) VALUES (?, ?, ?, ?, ?, ?)',
+      `INSERT INTO onboarding_state
+         (id, answers_json, selected_level_id, completed_at, effective_from, wird_version_id)
+       VALUES (?, ?, ?, ?, ?, ?)`,
       row.id,
       row.answers_json,
       row.selected_level_id,
@@ -125,7 +144,9 @@ async function seed(database: BackupDatabase, value: BackupRows): Promise<void> 
   }
   for (const row of value.adhkar_flow_progress) {
     await database.runAsync(
-      'INSERT INTO adhkar_flow_progress (category_id, day, "index", count, finished) VALUES (?, ?, ?, ?, ?)',
+      `INSERT INTO adhkar_flow_progress
+         (category_id, day, "index", count, finished)
+       VALUES (?, ?, ?, ?, ?)`,
       row.category_id,
       row.day,
       row.index,
@@ -139,6 +160,20 @@ async function seed(database: BackupDatabase, value: BackupRows): Promise<void> 
       row.key,
       row.value,
       row.updated_at,
+    )
+  }
+  for (const row of value.wird_actions) {
+    await database.runAsync(
+      `INSERT INTO wird_actions
+         (action_id, item_id, day, version_id, done, outcome, at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      row.action_id,
+      row.item_id,
+      row.day,
+      row.version_id,
+      row.done,
+      row.outcome,
+      row.at,
     )
   }
 }
@@ -161,12 +196,53 @@ afterEach(() => {
 })
 
 describe('backup SQLite repository', () => {
+  it('waits for the writer queue before restoring wird data', async () => {
+    const target = await migratedDatabase()
+    try {
+      const transaction = jest.spyOn(target.database, 'withExclusiveTransactionAsync')
+      let release: () => void = () => undefined
+      const blocker = queueWrite(
+        () =>
+          new Promise<void>((resolve) => {
+            release = resolve
+          }),
+      )
+      await Promise.resolve()
+      const restore = createBackupRepository(target.database).restore(validBackup(rows))
+      expect(transaction).not.toHaveBeenCalled()
+      release()
+      await blocker
+      expect((await restore).ok).toBe(true)
+      expect(transaction).toHaveBeenCalledTimes(1)
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves tied entry timestamps and their insertion order on restore', async () => {
+    const target = await migratedDatabase()
+    try {
+      const entries = [rows.wird_entries[0], { ...rows.wird_entries[0], id: 'entry-2', done: 0 }]
+      const repository = createBackupRepository(target.database)
+      const result = await repository.restore(validBackup({ ...rows, wird_entries: entries }))
+      expect(result.ok).toBe(true)
+      expect((await repository.readSnapshot()).wird_entries).toEqual(entries)
+      const restored = await createWirdRepository(target.database).getDayEntries('2026-10-18')
+      expect(latestStateByItem(restored).get('item-1')).toBe(false)
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
   it('restores a snapshot onto a fresh database with identical rows', async () => {
     const source = await migratedDatabase()
     const target = await migratedDatabase()
     try {
       await seed(source.database, rows)
       const snapshot = await createBackupRepository(source.database).readSnapshot()
+      const snapshotWrite = jest.spyOn(widgetSnapshotWriter, 'requestWidgetSnapshotWrite')
 
       await expect(
         createBackupRepository(target.database).restore(validBackup(snapshot)),
@@ -179,8 +255,10 @@ describe('backup SQLite repository', () => {
           qada_events: 1,
           adhkar_flow_progress: 1,
           app_preferences: 1,
+          wird_actions: 1,
         },
       })
+      expect(snapshotWrite).toHaveBeenCalledTimes(1)
       await expect(createBackupRepository(target.database).readSnapshot()).resolves.toEqual(
         snapshot,
       )
@@ -236,6 +314,7 @@ describe('backup SQLite repository', () => {
           qada_events: 1,
           adhkar_flow_progress: 0,
           app_preferences: 0,
+          wird_actions: 0,
         },
       })
       await expect(createBackupRepository(target.database).readSnapshot()).resolves.toEqual({
@@ -264,6 +343,7 @@ describe('backup SQLite repository', () => {
           qada_events: 0,
           adhkar_flow_progress: 0,
           app_preferences: 0,
+          wird_actions: 0,
         },
       })
     } finally {
@@ -311,11 +391,36 @@ describe('backup SQLite repository', () => {
         'qada_events',
         'adhkar_flow_progress',
         'app_preferences',
+        'wird_actions',
       ]) {
         expect(target.connection.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get()).toEqual({
           count: 0,
         })
       }
+    } finally {
+      target.connection.close()
+      rmSync(target.directory, { recursive: true, force: true })
+    }
+  })
+
+  it('accepts and restores a format-1 backup without an action table', async () => {
+    const target = await migratedDatabase()
+    try {
+      const legacy = JSON.parse(
+        serializeBackup({ ...rows, wird_actions: [] }, '2026-10-18T10:00:00.000Z'),
+      ) as { formatVersion: number; schemaVersion: number; data: Record<string, unknown> }
+      legacy.formatVersion = 1
+      legacy.schemaVersion = 4
+      delete legacy.data.wird_actions
+      const parsed = parseBackup(JSON.stringify(legacy))
+      expect(parsed).toMatchObject({ ok: true, value: { data: { wird_actions: [] } } })
+      if (!parsed.ok) throw new Error(parsed.error)
+      await expect(
+        createBackupRepository(target.database).restore(parsed.value),
+      ).resolves.toMatchObject({
+        ok: true,
+        value: { wird_actions: 0, wird_entries: 1 },
+      })
     } finally {
       target.connection.close()
       rmSync(target.directory, { recursive: true, force: true })

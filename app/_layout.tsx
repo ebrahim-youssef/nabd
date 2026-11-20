@@ -10,8 +10,11 @@ import { I18nManager } from 'react-native'
 import { DATABASE_NAME, migrateDatabase } from '../src/db/database'
 import { CountdownNotificationBootstrap } from '../src/device/useCountdownNotification'
 import { PrayerAlarmsBootstrap } from '../src/device/usePrayerAlarms'
+import { PrayerActionDrainBootstrap } from '../src/device/PrayerActionDrainBootstrap'
+import { WidgetSnapshotWriterBootstrap } from '../src/device/WidgetSnapshotWriterBootstrap'
 import { logger } from '../src/observability/logger'
 import { DatabaseError, DatabaseLoading } from '../src/shell/DatabaseStatus'
+import { WirdTodayProvider } from '../src/day-plan/WirdTodayProvider'
 
 I18nManager.allowRTL(true)
 I18nManager.forceRTL(true)
@@ -64,9 +67,13 @@ function RootLayout() {
         onError={handleOpenError}
         onInit={initializeDatabase}
       >
-        <PrayerAlarmsBootstrap />
-        <CountdownNotificationBootstrap />
-        <Stack screenOptions={{ headerShown: false }} />
+        <WirdTodayProvider>
+          <PrayerAlarmsBootstrap />
+          <WidgetSnapshotWriterBootstrap />
+          <PrayerActionDrainBootstrap />
+          <CountdownNotificationBootstrap />
+          <Stack screenOptions={{ headerShown: false }} />
+        </WirdTodayProvider>
       </SQLiteProvider>
     </>
   )

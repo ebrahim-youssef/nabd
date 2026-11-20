@@ -1,11 +1,18 @@
-import { latestStateByItem, versionInForce } from '../lib/wird'
+import { latestStateByItem } from '../lib/wird'
 import { CATEGORY_TO_WIRD_ITEM, ONCE_DAILY_CATEGORIES } from './copy'
 import type { AdhkarProgressRepository } from '../db/contracts'
 import type { Result } from '../lib/result'
 import type { DayId, WirdEntry } from '../wird/types'
 import type { FlowState } from './logic'
 import type { ProductDatabase } from '../db/productDatabase'
-import { SQLITE_ID } from '../db/productDatabase'
+import {
+  asEntry,
+  readVersionInForce,
+  runWirdStateTransaction,
+  setItemStateInTransaction,
+} from '../db/wirdState'
+import type { EntryRow } from '../db/wirdState'
+import { queueWrite } from '../db/writeQueue'
 type Row = {
   category_id: string
   day: string
@@ -13,24 +20,6 @@ type Row = {
   count: number
   finished: number
 }
-
-type EntryRow = {
-  id: string
-  day: string
-  version_id: string
-  item_id: string
-  done: number
-  at: number
-}
-
-const toEntry = (row: EntryRow): WirdEntry => ({
-  id: row.id,
-  day: row.day,
-  versionId: row.version_id,
-  itemId: row.item_id,
-  done: row.done === 1,
-  at: row.at,
-})
 
 export type AdhkarRepository = AdhkarProgressRepository & {
   isLinkedWirdItemDone(day: DayId, categoryId: string): Promise<boolean>
@@ -67,22 +56,23 @@ export function createAdhkarProgressRepository(
     async writeFlowProgress(categoryId, day, state: FlowState) {
       if (!ONCE_DAILY_CATEGORIES.has(categoryId)) return
       try {
-        await database.runAsync(
-          'INSERT INTO adhkar_flow_progress (category_id, day, "index", count, finished) VALUES (?, ?, ?, ?, ?) ON CONFLICT(category_id) DO UPDATE SET day=excluded.day, "index"=excluded."index", count=excluded.count, finished=excluded.finished',
-          categoryId,
-          day,
-          state.index,
-          state.count,
-          state.finished ? 1 : 0,
+        await queueWrite(() =>
+          database.runAsync(
+            'INSERT INTO adhkar_flow_progress (category_id, day, "index", count, finished) VALUES (?, ?, ?, ?, ?) ON CONFLICT(category_id) DO UPDATE SET day=excluded.day, "index"=excluded."index", count=excluded.count, finished=excluded.finished',
+            categoryId,
+            day,
+            state.index,
+            state.count,
+            state.finished ? 1 : 0,
+          ),
         )
       } catch {}
     },
     async clearFlowProgress(categoryId) {
       if (!ONCE_DAILY_CATEGORIES.has(categoryId)) return
       try {
-        await database.runAsync(
-          'DELETE FROM adhkar_flow_progress WHERE category_id = ?',
-          categoryId,
+        await queueWrite(() =>
+          database.runAsync('DELETE FROM adhkar_flow_progress WHERE category_id = ?', categoryId),
         )
       } catch {}
     },
@@ -99,11 +89,12 @@ export function createAdhkarRepository(database: ProductDatabase): AdhkarReposit
       if (!itemId) return false
       try {
         const rows = await database.getAllAsync<EntryRow>(
-          'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day = ? AND item_id = ?',
+          'SELECT id, day, version_id, item_id, done, at FROM wird_entries ' +
+            'WHERE day = ? AND item_id = ? ORDER BY at, rowid',
           day,
           itemId,
         )
-        return latestStateByItem(rows.map(toEntry)).get(itemId) ?? false
+        return latestStateByItem(rows.map(asEntry)).get(itemId) ?? false
       } catch {
         return false
       }
@@ -114,42 +105,24 @@ export function createAdhkarRepository(database: ProductDatabase): AdhkarReposit
 
       try {
         let value: WirdEntry | null = null
-        await database.withExclusiveTransactionAsync(async (transaction) => {
-          const entries = (
-            await transaction.getAllAsync<EntryRow>(
-              'SELECT id, day, version_id, item_id, done, at FROM wird_entries WHERE day = ? AND item_id = ?',
-              day,
-              itemId,
+        await queueWrite(() =>
+          runWirdStateTransaction(database, async (transaction) => {
+            const version = await readVersionInForce(transaction, day)
+            const result = await setItemStateInTransaction(
+              transaction,
+              {
+                day,
+                versionId: version?.id ?? '',
+                itemId,
+                done: true,
+                at,
+              },
+              version,
             )
-          ).map(toEntry)
-          if (latestStateByItem(entries).get(itemId)) return
-
-          const versions = (
-            await transaction.getAllAsync<{
-              id: string
-              effective_from: string
-              definition_json: string
-              created_at: number
-            }>('SELECT id, effective_from, definition_json, created_at FROM wird_versions')
-          ).map((row) => ({
-            id: row.id,
-            effectiveFrom: row.effective_from,
-            definition: JSON.parse(row.definition_json),
-            createdAt: row.created_at,
-          }))
-          const version = versionInForce(versions, day)
-          if (!version || !version.definition.items.some((item) => item.id === itemId)) return
-
-          const row = await transaction.getFirstAsync<EntryRow>(
-            `INSERT INTO wird_entries (id, day, version_id, item_id, done, at) VALUES (${SQLITE_ID}, ?, ?, ?, 1, ?) RETURNING id, day, version_id, item_id, done, at`,
-            day,
-            version.id,
-            itemId,
-            at,
-          )
-          if (!row) throw new Error('linked wird completion did not return a row')
-          value = toEntry(row)
-        })
+            value = result.entry
+            return result
+          }),
+        )
         return { ok: true, value }
       } catch {
         return { ok: false, error: 'complete_failed' }

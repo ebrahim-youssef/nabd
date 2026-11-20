@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector android:alpha="0.45" xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="@dimen/nabd_widget_star"
+    android:height="@dimen/nabd_widget_star"
+    android:viewportWidth="28"
+    android:viewportHeight="28">
+  <path
+      android:fillColor="@color/nabd_widget_gold"
+      android:pathData="M14,1 L17.44,5.69 L23.19,4.81 L22.31,10.56 L27,14 L22.31,17.44 L23.19,23.19 L17.44,22.31 L14,27 L10.56,22.31 L4.81,23.19 L5.69,17.44 L1,14 L5.69,10.56 L4.81,4.81 L10.56,5.69 Z"
+      android:strokeColor="@color/nabd_widget_gold"
+      android:strokeWidth="1.6"
+      android:strokeLineJoin="round" />
+  <path
+      android:pathData="M8.4,14.2 L12,17.7 L19.8,9.8"
+      android:strokeColor="@color/nabd_widget_tick"
+      android:strokeWidth="2.2"
+      android:strokeLineCap="round"
+      android:strokeLineJoin="round" />
+</vector>
